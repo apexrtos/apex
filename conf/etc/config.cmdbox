@@ -1,0 +1,33 @@
+#
+# CmdBox configuration file
+#
+options 	CMDBOX
+#options 	CMD_CAL
+options 	CMD_CAT
+options 	CMD_CLEAR
+options 	CMD_CP
+options 	CMD_DATE
+options 	CMD_DMESG
+options 	CMD_ECHO
+options 	CMD_FREE
+options 	CMD_HEAD
+options 	CMD_HOSTNAME
+options 	CMD_KILL
+options 	CMD_LS
+options 	CMD_MKDIR
+options 	CMD_MOUNT
+options 	CMD_MV
+options 	CMD_NICE
+options 	CMD_PS
+options 	CMD_PWD
+options 	CMD_REBOOT
+options 	CMD_RM
+options 	CMD_RMDIR
+options 	CMD_SH
+options 	CMD_SHUTDOWN
+options 	CMD_SLEEP
+options 	CMD_SYNC
+options 	CMD_TEST
+options 	CMD_TOUCH
+options 	CMD_UMOUNT
+options 	CMD_UNAME

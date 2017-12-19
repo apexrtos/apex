@@ -1,0 +1,2 @@
+
+#define _BYTE_ORDER LITTLE_ENDIAN

@@ -1,0 +1,151 @@
+
+                       Prex Operating System
+
+
+What is Prex?
+-------------
+
+The Prex project is an open source initiative to provide a portable
+real-time operating system for embedded systems. Prex is designed
+specifically for small footprint platforms. It is written in C language
+from scratch based on a traditional micro kernel architecture.
+The Prex kernel provides only fundamental features for task, thread, memory,
+ipc, exception, and synchronization. The other basic OS functions such
+like process, file system, application loading, and networking are provided
+by user mode servers on top of the Prex kernel. This design allows systems
+to execute both of native real-time task and generic UNIX process
+simultaneously, without degrading the real-time performance. Futhermore, it
+helps the platform designer to construct OS by choosing appropriate server
+tasks for their target requirements.
+
+
+Licensing
+---------
+
+Prex is royalty-free software released under BSD License.
+
+
+Current Port
+------------
+
+Available port (arch-platform):
+
+  - i386-pc
+  - arm-gba
+  - arm-integrator
+
+
+How to Build?
+-------------
+
+Step 1: Prepare Toolchain
+
+  The following packages are required for compiling Prex.
+  - GCC 2.95.3 or later
+  - GNU Binutils 2.15 or later
+  - GNU Make
+
+  The toolchain should be built appropriately for your target
+  architecture to cross-compile Prex.
+
+Step 2: Prepare Sources
+
+  Unpack the sources and move to the top level directory of the source tree.
+
+  $ cd /usr/src
+  $ tar zxvf prex-X.X.X.tar.gz
+  $ cd prex-X.X.X
+
+Step 3: Configure
+
+  Setup target architecture and platform.
+  The following sample shows for i386-pc target.
+
+  $ ./configure --target=i386-pc
+
+  If you cross compile Prex from a different architecture and/or OS,
+  you have to set --cross-compile option. Please check other options
+  with --help option for 'configure'.
+
+Step 4: Build
+
+  Run make (and pray :)
+
+  $ make
+
+
+Note) If you want to run 'make' at the subdirectory, you have to set the
+      SRCDIR as follow.
+
+  $ export SRCDIR=/usr/src/prex-X.X.X
+
+
+Directory Structure
+-------------------
+
+Prex source code is divided into the following directories:
+
+ conf			System configuration files
+
+ mk			Common Makefiles
+
+ include		Common include files
+
+ sys			Prex microkernel
+	arch		Architecture/platform dependent code
+	include		Kernel headers
+	lib		Common kernel library
+	ipc		Inter process communication support
+	kern		Kernel main code
+	mem		Memory management code
+	sync		Synchronize related code
+
+ boot			Boot loader
+	arm		Architecture/platform dependent drivers
+	i386		Architecture/platform dependent drivers
+	include		Platform independent headers
+	lib		Common loader library
+	common		Common boot loader code
+
+ dev			Device driver module
+	arm		Architecture/platform dependent drivers
+	i386		Architecture/platform dependent drivers
+	include		Platform independent headers
+	lib		Common driver library
+	core		Driver core component
+	gen		Generic device drivers
+	power		Power management driver
+
+ usr			User mode programs
+	arch		Architecture/platform dependent code
+	bin		User command binaries
+	include		Header files
+	lib		User libraries
+	server		System servers
+	bin		System utilities
+	test		Function test programs
+	sample		Sample programs
+
+
+Documentation
+-------------
+
+Please open the following HTML file to view the documents.
+
+  /doc/html/doc/index.html
+
+
+Project Website
+---------------
+
+More information about Prex can be found at:
+
+  http://prex.sourceforge.net
+
+
+Author
+------
+
+  Kohsuke Ohtani <kohtani@users.sourceforge.net>
+
+  Have fun! ;)

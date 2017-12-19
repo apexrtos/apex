@@ -1,0 +1,80 @@
+#
+# Prex system configuration file
+#
+
+#
+# Memory address
+#
+memory		LOADER_BASE	0x00004000
+memory		KERNEL_BASE	0x00010000
+memory		DRIVER_BASE	AUTODETECT
+memory		SYSPAGE_BASE	0x00000000
+memory		BOOTIMG_BASE	0x00100000
+
+#
+# Make options
+#
+makeoptions	CFLAGS+= -march=i386
+makeoptions	CFLAGS+= -mpreferred-stack-boundary=2
+
+#
+# Tunable paramters
+#
+options 	HZ=1000		# Ticks/second of the clock
+options 	TIME_SLICE=50	# Context switch ratio (msec)
+options 	OPEN_MAX=8	# Max open files per process
+options 	BUF_CACHE=16	# Blocks for buffer cache
+options 	FS_THREADS=1	# Number of file system threads
+
+#
+# Platform settings
+#
+#options 	MMU		# Memory management unit
+options 	CACHE		# Cache memory
+#options 	FPU		# Floating point unit
+#options 	ROMBOOT		# Boot from ROM
+options 	BOOTDISK	# Disk for /boot directory
+
+#
+# Device drivers
+#
+options 	KEYBOARD	# Keyboard
+options 	CONSOLE		# Console
+#options 	FDD		# Floppy disk drive
+#options 	MOUSE		# Mouse
+options 	RTC		# Real time clock
+options 	RAMDISK		# RAM disk
+options 	TTY		# TTY driver
+options 	PM		# Power management
+options 	CPUFREQ		# CPU frequency control
+#options 	NULL		# NULL device
+#options 	ZERO		# Zero device
+#options 	SERIAL		# Serial console
+
+#
+# Power management
+#
+options 	PM_POWERSAVE	# Power policy: Battery optimized
+#options 	PM_PERFORMANCE	# Power policy: Parformance optimized
+options 	DVS_EMULATION	# Dynamic voltage scaling emulation
+
+#
+# Diagnostic options
+#
+options 	DIAG_SCREEN	# Diagnostic via screen
+#options 	DIAG_SERIAL	# Diagnostic via serial port
+options 	DIAG_BOCHS	# Diagnostic via Bochs emulater
+
+#
+# File systems
+#
+#options 	FIFOFS		# FIFO & Pipe
+options 	DEVFS		# Device file system
+options 	RAMFS		# RAM file system
+options 	ARFS		# Archive file system
+#options 	FATFS		# FAT file system
+
+#
+# Executable file formats
+#
+options 	ELF		# ELF file format

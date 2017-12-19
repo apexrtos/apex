@@ -1,0 +1,589 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Prex Power Management</title>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+  <meta name="keywords" content="Prex, embedded, real-time, operating system, RTOS, open source, free">
+  <meta name="author" content="Kohsuke Ohtani">
+  <link rel="stylesheet" type="text/css" href="../default.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="../print.css" media="print">
+</head>
+<body>
+<div id="top">
+</div>
+<div id="middle">
+
+<table id="content" cellpadding="0" cellspacing="0">
+  <tbody>
+
+    <tr>
+      <td id="header" colspan="2" valign="top">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td id="logo">
+            <a href="http://prex.sourceforge.net/">
+            <img alt="Prex logo" src="../img/logo.gif" border="0"
+            style="width: 250px; height: 54px;"></a>
+          </td>
+          <td id="brief" align="right" valign="bottom">
+            An Open Source, Royalty-free,<br>
+	    Real-time Operating System
+          </td>
+        </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td id="directory" style="vertical-align: top;">
+      <a href="http://prex.sourceforge.net/">Prex Home</a> >
+      <a href="index.html">Document Index</a> >
+      Prex Power Management
+    </tr>
+    <tr><td class="pad" colspan="2" style="vertical-align: top;"></td></tr>
+
+    <tr>
+      <td id="doc" style="vertical-align: top;">
+      <h1>Prex Power Management</h1>
+
+<i>Version 0.8.1, 2008/09/11</i><br>
+
+
+<h3>Table of Contents</h3>
+<ul>
+  <li><a href="#intro">Introduction</a></li>
+  <li><a href="#arch">Architecture Overview</a></li>
+  <li><a href="#syspm">System Power Management</a></li>
+  <li><a href="#pmdrv">PM Driver Interface</a></li>
+  <li><a href="#idle">Idle Thread</a></li>
+  <li><a href="#cpupm">Processor Power Management</a></li>
+  <li><a href="#cpudrv">Processor Driver Interface</a></li>
+  <li><a href="#util">Power Management Utilities</a></li>
+  <li><a href="#reset">System Reset</a></li>
+  <li><a href="#ref">References</a></li>
+</ul>
+<br>
+
+
+<h2 id="intro">Introduction</h2>
+<p>
+Prex is designed to be used with battery-powered devices,
+such as mobile phones or consumer electronics devices.
+
+So, Prex provides an integrated and system-wide set of
+power management features. It helps to extend
+battery life, save energy and reduce heat and noise.
+</p>
+<p>
+This document describes the design and implementation of the
+power management features of Prex.
+</p>
+
+
+<h2 id="arch">Architecture Overview</h2>
+<p>
+The following components work together for power management in Prex.
+</p>
+<ul>
+  <li><b>Idle Thread:</b> works to cut needless power when the system is in idle.</li>
+  <li><b>PM Driver:</b> controls the power state and maintains the power policy setting.</li>
+  <li><b>Architecture Dependent Layer:</b> controls the platform/architecture dependent hardware.</li>
+  <li><b>CPU Driver:</b> has responsible to control frequency/voltage of the processor.</li>
+  <li><b>Device Drivers:</b> has responsible to adjust power of each device.</li>
+</ul>
+<p>
+<img alt="Power Management Overview" src="img/power.gif" border="1"
+style="width: 596px; height: 406px;"><br>
+<i><b>Figure 1. Power Management Overview</b></i>
+</p>
+
+
+<h2 id="syspm">System Power Management</h2>
+
+<h3>Power States</h3>
+<p>
+Prex supports the following power states.
+</p>
+
+<ul>
+  <li><b>Power On</b></li>
+  <li><b>Suspend</b> </li>
+  <li><b>Power Off</b></li>
+</ul>
+<p>
+In the suspend state, the system powers down devices that are not needed in order to safe
+electricity, e.g. it may switch the monitor, sound card or modem off and
+turn them back on when the system returns from the suspend state.
+</p>
+
+
+<h3>Suspend Timer</h3>
+<p>
+Prex provides the suspend timer which enters the system to the suspend
+state after a period of inactivity.
+If a device driver detects some user activities (e.g. keyboard input),
+the driver should notify it to the PM driver by using
+pm_active() function to reload the suspend timer.
+</p>
+<p>
+An application can set the timeout value for suspend by using
+a device I/O control function of the PM driver.
+</p>
+
+
+<h3>Power Policy</h3>
+<p>
+The PM driver maintains a system-wide policy setting for its power operations.
+A user application can change the power policy appropriately for the
+user environment. Prex supports the following two power policies.
+</p>
+
+<i><b>Table 1. Power Policy</b></i>
+<table border="1" width="90%" cellspacing="0">
+<tbody>
+<tr>
+  <th>PM Policy</th>
+  <th>Frequency/Voltage Control</th>
+  <th>Suspend Timer</th>
+  <th>Device Performance</th>
+</tr>
+<tr>
+  <td>PM_POWERSAVE</td>
+  <td>Adaptive</td>
+  <td>Active</td>
+  <td>Full</td>
+</tr>
+<tr>
+  <td>PM_PERFORMANCE</td>
+  <td>Max Level</td>
+  <td>Frozen</td>
+  <td>Adaptive</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h2 id="pmdrv">PM Driver Interface</h2>
+<p>
+</p>
+
+<h3>PM I/O Control</h3>
+<p>
+IOCTL functions manipulate the power state and power policy used by
+the PM driver. It also handles the request for the suspend timer.
+</p>
+
+<i><b>Table 2. PM I/O Controls</b></i>
+<table border="1" width="80%" cellspacing="0">
+<tbody>
+<tr>
+  <th>Code</th>
+  <th>Parameter</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <td>PMIOC_SET_POWER</td>
+  <td>int</td>
+  <td>Set system power state</td>
+</tr>
+<tr>
+  <td>PMIOC_SET_TIMER</td>
+  <td>int</td>
+  <td>Set suspend timer</td>
+</tr>
+<tr>
+  <td>PMIOC_GET_TIMER</td>
+  <td>int</td>
+  <td>Get suspend timer</td>
+</tr>
+<tr>
+  <td>PMIOC_SET_POLICY</td>
+  <td>int</td>
+  <td>Set power policy</td>
+</tr>
+<tr>
+  <td>PMIOC_GET_POLICY</td>
+  <td>int</td>
+  <td>Get power policy</td>
+</tr>
+
+</tbody>
+</table>
+
+
+<h3>PM Messages</h3>
+<p>
+Each device driver can receive the power management messages sent by
+the PM driver.
+</p>
+<ul>
+<li>EVT_SHUTDOWN</li>
+<li>EVT_SUSPEND</li>
+<li>EVT_RESUME</li>
+<li>EVT_POLICY_CHANGE</li>
+</ul>
+<p>
+The device drivers should monitor these PM messages by using event() methods.
+And, when the driver receives EVT_SUSPEND, it should program the device
+to lower mode to conserve total system power.
+</p>
+
+<pre>
+int
+XXX_event(int event)
+{
+
+	switch (event) {
+	case EVT_SHUTDOWN:
+		/* Program h/w for shutdown */
+		break;
+	case EVT_SUSPEND:
+		/* Save h/w state for suspend */
+		break;
+	case EVT_RESUME:
+		/* Restore h/w state after suspend */
+		break;
+	case EVT_POLICY_CHANGE:
+		/* Change the power state depending on power policy */
+		break;
+	}
+}
+</pre>
+
+
+
+<h3>PM Services</h3>
+<p>
+PM driver exports the following functions for other device drivers.
+</p>
+
+<pre>
+int     pm_suspend(void);
+int     pm_resume(void);
+int     pm_poweroff(void);
+int     pm_reboot(void);
+void    pm_active(void);
+int     pm_getpolicy(void);
+</pre>
+
+<dl>
+<dt>pm_suspend()</dt>
+<dd>
+Set the system to suspend state. PM driver will broadcast the suspend
+message (PM_SUSPEND) to all drivers.
+</dd>
+</dl>
+
+<dl>
+<dt>pm_resume()</dt>
+<dd>
+Resume from the suspend state. This will be called by platform dependent code
+to broadcast the resume message (PM_RESUME) to all drivers.
+</dd>
+</dl>
+
+<dl>
+<dt>pm_poweroff()</dt>
+<dd>
+Power off the system.
+</dd>
+</dl>
+
+<dl>
+<dt>pm_reboot()</dt>
+<dd>
+Reboot the system.
+</dd>
+</dl>
+
+<dl>
+<dt>pm_active()</dt>
+<dd>
+Notify that the system detects the user activity.
+This can prevent the expiration of the suspend timer.
+</dd>
+</dl>
+
+<dl>
+<dt>pm_getpolicy()</dt>
+<dd>
+Get the current power policy.
+</dd>
+</dl>
+
+
+
+<h2>Idle Thread</h2>
+<p>
+The idle thread works as a kernel thread, and it is assigned the lowest scheduling priority in the system.
+Thus, the idle thread runs when no other thread is active.
+It has the role of cutting down the power consumption of the system.
+</p>
+<p>
+An idle thread is just a forever-loop to call the machine
+dependent routine to cut power. The following thread_idle() routine
+is called at the end of the kernel initialization.
+</p>
+<pre>
+void
+thread_idle(void)
+{
+
+        for (;;) {
+                machine_idle();
+                sched_yield();
+        }
+}
+</pre>
+<p>
+The machine_idle() routine will program the platform H/W to
+the low power mode. This is typically
+invoking the power saving (halt) instruction
+supported by the processor.
+If any interrupts are occurred in this low power mode, it must be returned
+immediately from machine_idle(). Then, the idle thread will
+call sched_yield() to check the re-scheduling.
+</p>
+
+
+<h2 id="cpupm">Processor Power Management</h2>
+
+<h3>Dynamic Voltage Scaling</h3>
+<p>
+Dynamic voltage scaling (DVS) is widely used with mobile systems to save the processor
+power consumption, with minimum impact on performance.
+The basic idea is come from the fact the power consumption is
+proportional to V^2 x f, where V is voltage and f is frequency.
+Since processor does not always require the full performance,
+we can reduce power consumption by lowering voltage and frequency.
+</p>
+
+<h3>Algorithm</h3>
+
+<h4>Adjusting CPU Speed</h4>
+
+<p>
+We use the DVS algorithm known as Weiser Style [1].
+If the utilization prediction x is high (over 70%), increase the
+speed by 20% of the maximum speed. If the utilization prediction
+is low (under 50%), decrease the speed by (60 - x)% of the
+maximum speed.
+</p>
+
+<p>
+DVS Algorithm: <b>Weiser Style</b>
+</p>
+
+<pre>
+run_cycles += excess_cycles;
+run_percent = (run_cycles * 100) / (idle_cycles + run_cycles);
+
+next_excess = run_cycles - speed * (run_cycles + idle_cycles) / 100;
+if (next_excess < 0)
+        next_excess = 0;
+
+if (excess_cycles > idle_cycles)
+        newspeed = 100;
+else if (run_percent > 70)
+        newspeed = speed + 20;
+else if (run_percent < 50)
+        newspeed = speed - (60 - run_percent);
+
+if (newspeed > max_speed)
+        newspeed = max_speed;
+if (newspeed < min_speed)
+        newspeed = min_speed;
+
+excess_cycles = next_excess;
+</pre>
+
+<p>
+excess_cycles is defined as the number of uncompleted run cycles
+from the last interval. For example, if we find 70% activity
+when running at full speed, and their processor speed was set to
+50% during that interval, excess_cycles is set to 20%. This
+value (20%) is used to calculate the processor speed in the next
+interval.
+</p>
+
+
+<h4>Max CPU Speed</h4>
+
+
+<p>
+The PM driver adjusts max CPU speed by using DVS algorithm called DVS<3> [2].
+It computes an exponentially moving average of the previous intervals.
+"weight" is the relative weighting of past intervals relative to
+the current interval.
+</p>
+DVS Algorithm: <b>AVG<3></b>
+
+<pre>
+predict = (weight x current + past) / (weight + 1)
+</pre>
+
+
+
+<h2 id="cpudrv">Processor Driver Interface</h2>
+
+
+<h3>CPU I/O Control</h3>
+<p>
+IOCTL functions for CPU are as follows:
+</p>
+
+<i><b>Table 3. CPU I/O Controls</b></i>
+<table border="1" width="80%" cellspacing="0">
+<tbody>
+<tr>
+  <th>Code</th>
+  <th>Parameter</th>
+  <th>Description</th>
+</tr>
+<tr>
+  <td>CPUIOC_GET_INFO</td>
+  <td>struct cpu_info</td>
+  <td>Get CPU information</td>
+</tr>
+<tr>
+  <td>CPUIOC_GET_STAT</td>
+  <td>struct cpu_stat</td>
+  <td>Get CPU statistics</td>
+</tr>
+
+</tbody>
+</table>
+
+<p>
+CPU information structure:
+</p>
+<pre>
+struct cpu_info {
+        unsigned int id;        /* processor id */
+        char name[50];          /* name string */
+        int speed;              /* max speed in MHz */
+        int power;              /* max power in mV */
+        int clock_ctrl;         /* true if it supports clock control */
+};
+</pre>
+
+<p>
+CPU statistics data:
+</p>
+
+<pre>
+struct cpu_stat {
+        int speed;              /* speed in MHz */
+        int power;              /* power in mVolt */
+};
+</pre>
+
+
+
+<h3>Performance Control Services</h3>
+<p>
+If the target processor supports performance control,
+the driver can export the following service to utilize it.
+</p>
+
+<pre>
+int cpu_initperf(void);
+int cpu_setperf(int level);
+int cpu_getperf(void);
+</pre>
+
+<dl>
+<dt>cpu_initperf()</dt>
+<dd>
+Initialize all state for performance control.
+</dd>
+</dl>
+
+<dl>
+<dt>cpu_setperf()</dt>
+<dd>
+Set the processor performance level.
+The argument is percent of CPU speed (0-100).
+</dd>
+</dl>
+
+<dl>
+<dt>cpu_getperf()</dt>
+<dd>
+Get the current performance level.
+</dd>
+</dl>
+
+
+
+<h2 id="util">Power Management Utilities</h2>
+
+<h3>CPU Monitor</h3>
+<p>
+The CPU monitor is a sample application to show the current
+processor power state - speed and its power.
+</p>
+<pre class="terminal">
+CPU voltage monitor
+Speed:  600MHz  0|********------------|100
+Power:  956mV   0|*************-------|100
+</pre>
+<p>
+The source code of this application can be found in the directory named
+"/usr/sample/cpumon".
+<p>
+
+
+<h2 id="reset">System Reset</h2>
+<p>
+When the PM driver receives a reset request from users or drivers,
+ it will call machine_reset()
+service in the microkernel.
+Or, the microkernel may reset the system by itself if it finds an unrecoverable error.
+</p>
+
+<p>
+The PM driver will broadcast a shutdown message (EVT_SHUTDOWN) for all
+device drivers. A device driver can prepare for the shutdown by
+monitoring this driver message.
+</p>
+
+<h2 id="ref">References</h2>
+
+<ul>
+<li>
+[1] M.Weiser, B.Welch, A.Demers, and S.Shenker,
+"Scheduling for Reduced CPU Energy", In Proceedings of the
+1st Symposium on Operating Systems Design and Implementation,
+pages 13-23, November 1994.
+</li>
+<li>
+[2] K.Govil, E.Chan, H.Wasserman,
+"Comparing Algorithm for Dynamic Speed-Setting of a Low-Power CPU".
+Proc. 1st Int'l Conference on Mobile Computing and Networking,
+Nov 1995.
+</li>
+</ul>
+
+
+      </td>
+    </tr>
+    <tr>
+      <td id="footer" colspan="2" style="vertical-align: top;">
+        <a href="http://sourceforge.net">
+        <img src="http://sourceforge.net/sflogo.php?group_id=132028&amp;type=1"
+        alt="SourceForge.net Logo" border="0" height="31" width="88"></a><br>
+        Copyright&copy; 2008 Kohsuke Ohtani
+      </td>
+    </tr>
+
+
+  </tbody>
+</table>
+
+</div>
+<div id="bottom"></div>
+
+</body>
+</html>

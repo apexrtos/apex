@@ -1,0 +1,547 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Prex Application Programming Guide</title>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+  <meta name="keywords" content="Prex, embedded, real-time, operating system, RTOS, open source, free">
+  <meta name="author" content="Kohsuke Ohtani">
+  <link rel="stylesheet" type="text/css" href="../default.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="../print.css" media="print">
+</head>
+<body>
+<div id="top">
+</div>
+<div id="middle">
+
+<table id="content" cellpadding="0" cellspacing="0">
+  <tbody>
+
+    <tr>
+      <td id="header" colspan="2" valign="top">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td id="logo">
+            <a href="http://prex.sourceforge.net/">
+            <img alt="Prex logo" src="../img/logo.gif" border="0"
+            style="width: 250px; height: 54px;"></a>
+          </td>
+          <td id="brief" align="right" valign="bottom">
+            An Open Source, Royalty-free,<br>
+            Real-time Operating System
+          </td>
+        </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td id="directory" style="vertical-align: top;">
+      <a href="http://prex.sourceforge.net/">Prex Home</a> >
+      <a href="index.html">Document Index</a> >
+      Application Programming Guide
+    </tr>
+    <tr><td class="pad" colspan="2" style="vertical-align: top;"></td></tr>
+
+    <tr>
+      <td id="doc" style="vertical-align: top;">
+      <h1>Prex Application Programming Guide</h1>
+
+<i>Version 0.8.1, 2008/09/17</i>
+
+<h3>Table of Contents</h3>
+<ul>
+  <li><a href="#intro">Introduction</a></li>
+  <li><a href="#overview">Application Overview</a></li>
+  <li><a href="#comp">Compiling Applications</a></li>
+  <li><a href="#test">Testing Applications</a></li>
+  <li><a href="#thread">Thread Creation</a></li>
+  <li><a href="#timer">Programming Timer</a></li>
+  <li><a href="#exc">Handling Exceptions</a></li>
+  <li><a href="#device">Device Access</a></li>
+  <li><a href="#log">Log Service</a></li>
+  <li><a href="#panic">Panic Service</a></li>
+</ul>
+<br>
+
+<h2 id="intro">Introduction</h2>
+
+<p>
+This document describes how to make a user application for Prex.
+</p>
+<p>
+For a full description of the Prex application interface,
+see the following documents.
+</p>
+<ul>
+  <li><a href="kapi.html">Prex Kernel API reference</a></li>
+  <li><a href="posix.html">POSIX Compliance</a></li>
+  <li><a href="sample.html">Prex Sample Applications</a></li>
+</ul>
+
+
+<h2 id="overview">Application Overview</h2>
+
+<p>
+Prex supports the following two different types of application:
+</p>
+<ul>
+  <li>Native Real-time Tasks</li>
+  <li>UNIX Processes</li>
+</ul>
+<p>
+They use different startup code, different C library and different Makefile.
+</p>
+
+
+<p>
+The following table shows the difference between these task types.
+</p>
+
+
+<i><b>Table 1. Prex Task Types</b></i>
+<table border="1" width="90%" cellspacing="0">
+<tbody>
+<tr>
+  <th>-</th>
+  <th>Real-time Task</th>
+  <th>UNIX Process</th>
+</tr>
+<tr>
+  <td>Task Priority</td>
+  <td>High</td>
+  <td>Low</td>
+</tr>
+<tr>
+  <td>Loaded by</td>
+  <td>Kernel</td>
+  <td>Exec Server</td>
+</tr>
+<tr>
+  <td>Loaded at</td>
+  <td>Boot</td>
+  <td>Runtime</td>
+</tr>
+<tr>
+  <td>UNIX System Calls</td>
+  <td>Not supported</td>
+  <td>Supported</td>
+</tr>
+<tr>
+  <td>File Access</td>
+  <td>Raw I/O</td>
+  <td>Buffered I/O</td>
+</tr>
+<tr>
+  <td>C library</td>
+  <td>Limited functions (libsa)</td>
+  <td>Full functions (libc)</td>
+</tr>
+<tr>
+  <td>Server Requirement</td>
+  <td>No need any servers</td>
+  <td>boot, fs, proc, exec</td>
+</tr>
+<tr>
+  <td>Privileged Operations</td>
+  <td>Allowed</td>
+  <td>Limited</td>
+</tr>
+<tr>
+  <td>Media</td>
+  <td>Stored in boot file system</td>
+  <td>Stored in any file systems</td>
+</tr>
+
+</tbody>
+</table>
+
+
+
+<h2 id="comp">Compiling Applications</h2>
+
+<p>
+Native real-time tasks and POSIX applications require
+different Makefiles to be compiled.
+</p>
+
+<h3>Compiling native tasks</h3>
+Makefile:
+<pre>
+TASK=   hello
+include $(SRCDIR)/mk/task.mk
+</pre>
+
+<h3>Compiling POSIX applications</h3>
+Makefile:
+<pre>
+PROG= hello
+include $(SRCDIR)/mk/prog.mk
+</pre>
+
+<p>
+Note: The detailed information for the Prex tool chain is described
+in <a href="build.html">Prex Build Guide</a>.
+</p>
+
+
+<h2 id="test">Testing Applications</h2>
+<p>
+All native real-time tasks are loaded by the kernel at boot time.
+On the other hand, POSIX applications are loaded by the exec server
+at runtime.
+In addition, POSIX applications require system servers to be loaded.
+
+<h3>Testing native tasks</h3>
+<p>
+To setup a native real-time task to be loaded at boot time,
+it must be registered as a boot task in the configuration file named
+"/conf/etc/files.mk".
+In order to load "hello" program at boot time, the following line
+will be added to the configuration file.
+</p>
+<pre>
+BOOTTASKS+=     $(SRCDIR)/usr/test/hello/hello
+</pre>
+The application is executed immediately after the kernel initialization
+with this setting.
+
+
+<h3>Testing POSIX applications</h3>
+<p>
+POSIX applications require that the following servers
+are loaded in the system.
+</p>
+<ul>
+  <li><b>boot:</b> - Boot Server</li>
+  <li><b>proc:</b> - Process Server</li>
+  <li><b>fs:</b> - File Server</li>
+  <li><b>exec:</b> - Exec Server</li>
+</ul>
+<p>
+To load these servers at boot time, the following lines must be added
+in the configuration file.
+</p>
+<pre>
+BOOTTASKS+=     $(SRCDIR)/usr/server/boot/boot
+BOOTTASKS+=     $(SRCDIR)/usr/server/proc/proc
+BOOTTASKS+=     $(SRCDIR)/usr/server/fs/fs
+BOOTTASKS+=     $(SRCDIR)/usr/server/exec/exec
+</pre>
+
+<p>
+</p>
+
+<p>
+A POSIX application can be stored in any file system.
+The following line will add the "hello" application into the boot
+file system.
+</p>
+<pre>
+BOOTFILES+=     $(SRCDIR)/usr/test/hello/hello
+</pre>
+<p>
+The registered files in the boot file system will appear under the directory
+named "/boot" on the target system. The "hello" application can
+be executed from the shell.
+</p>
+<pre class="terminal">
+[prex:/boot]# ls
+init cmdbox hello
+[prex:/boot]# hello
+Hello World!
+[prex:/boot]#
+</pre>
+
+
+<h2 id="thread">Thread Creation</h2>
+
+<h3>Creating a new thread</h3>
+
+<p>
+This is a sample to create and run a new thread in the same task.
+</p>
+<pre>
+int
+thread_run(void *start, void *stack, thread_t *th)
+{
+        thread_t t;
+        int err;
+
+        if ((err = thread_create(task_self(), &amp;t)) != 0)
+                 return err;
+
+        if ((err = thread_load(t, start, stack)) != 0)
+                 return err;
+
+        if ((err = thread_resume(t)) != 0)
+                 return err;
+
+        *th = t;
+        return 0;
+}
+</pre>
+The buffer for stack must be prepared by the parent thread.
+
+<h3>Thread Entry Point</h3>
+
+<p>
+The entry point for a thread takes the following form.
+</p>
+
+<pre>
+void
+thread_entry(void)
+{
+        ...
+}
+</pre>
+
+
+<h2 id="timer">Programming Timer</h2>
+
+<h3>Sleep timer</h3>
+
+The following sample will simply stop the task for 500ms.
+<pre>
+int
+main()
+{
+        timer_sleep(500, 0);
+}
+</pre>
+
+<h3>Periodic timer</h3>
+
+<p>
+This is a sample to show a message per 100msec starting after 5sec.
+</p>
+<pre>
+int
+main()
+{
+        int count = 0;
+
+        sys_log("periodic timer test program\n");
+
+        /* Setup timer */
+        timer_periodic(thread_self(), 5000, 100);
+
+        while (count++ < 5) {
+                timer_waitperiod();
+                sys_log("Hello!\n");
+        }
+
+        /* Cancel timer */
+        timer_periodic(thread_self(), 0, 0);
+        return 0;
+}
+</pre>
+
+
+<h2 id="exc">Handling Exceptions</h2>
+
+<h3>Exception handler</h3>
+
+<p>
+The Prex task can provide one exception handler for each task.
+The exception handler must call exception_return() at the end of
+the handler.
+</p>
+
+<pre>
+static void
+my_exception(int code)
+{
+
+        printf("Get exception code=%x\n", code);
+
+        switch (code) {
+        ...
+        }
+        exception_return();
+}
+</pre>
+
+<h3>Setup exception handler</h3>
+
+<p>
+The exception handler must be registered to the kernel by using
+exception_setup(). If the argument of exception_setup() is NULL,
+the previously used  exception handler will be uninstalled.
+</p>
+
+<pre>
+int
+main(int argc, char *argv[])
+{
+
+        /* Install the exception handler */
+        exception_setup(my_exception);
+
+        ...
+
+        /* Uninstall the exception handler */
+        exception_setup(NULL);
+
+        return 0;
+}
+</pre>
+
+
+<h3>Raising exception</h3>
+
+<p>
+An application can send a specific exception to the task.
+</p>
+<pre>
+        exception_raise(task, SIGTERM);
+</pre>
+<p>
+The task must have an appropriate capability to send an exception.
+</p>
+
+
+<h3>Getting alarm exception</h3>
+
+<p>
+timer_alarm() send a timer exception (SIGALRM) to the caller task
+at the specified time interval. The following sample programs
+to send an alarm exception in 500msec interval.
+</p>
+
+<pre>
+        timer_alarm(500, 0);
+</pre>
+
+
+<h2 id="device">Device Access</h2>
+
+<p>
+The Prex kernel provides some raw I/O operations for devices.
+It includes open/close/read/write/ioctl.
+</p>
+<p>
+The following code shows how to access the device from the application.
+</p>
+
+<pre>
+int
+main(int argc, char *argv[])
+{
+	device_t console_dev;
+	char buf[] = "ABCDEFGHIJKLMN";
+	size_t len;
+
+	/*
+	 * Open device
+	 */
+	if ((device_open("console", 0, &console_dev) != 0)
+		sys_log("device open err!\n");
+
+	/*
+	 * Display 'ABCDE'
+	 */
+	len = 5;
+	device_write(console_dev, buf, &len, 0);
+
+	/*
+	 * Close device
+	 */
+	if (device_close(console_dev) != 0)
+		sys_log("device close err!\n");
+
+	return 0;
+}
+</pre>
+
+
+<h2 id="log">Log Service</h2>
+
+<p>
+The Prex kernel supports the message log service for applications.
+The following service will display a message to the diagnostic port
+via the kernel.
+</p>
+
+<pre>
+int     sys_log(const char *msg);
+</pre>
+
+<p>
+Note: This service is available only when the kernel is built with a debug option.
+</p>
+
+<h2 id="panic">Panic Service</h2>
+
+<p>
+The panic service is generally used in the kernel mode to process unrecoverable
+errors.
+In case of Prex, this service is exported to the user mode applications
+in order to track the fatal condition caused by system tasks.
+</p>
+<p>
+Prex provides the following kernel API.
+</p>
+<pre>
+void    sys_panic(const char *msg);
+</pre>
+
+<p>
+The kernel behavior for this service is different depending on its build mode.
+</p>
+
+<ul>
+ <li><b>Release Build:</b> The kernel will terminate the task which calls
+ the sys_panic() service.</li>
+ <li><b>Debug Build:</b> The kernel will show the panic message and stop
+the entire system.</li>
+</ul>
+
+
+<pre class="terminal">
+User mode panic: task:sleep thread:8000a7d4
+test panic!
+============================
+Trap 3: Breakpoint
+============================
+Trap frame 8000ab18 error 0
+ eax 0000000d ebx 80009f34 ecx 00000000 edx 0000053b esi 00000001 edi 08050754
+ eip 800104ed esp 8000ab18 ebp 8000ab6c eflags 00000002
+ cs  00000010 ss  80000018 ds  80000018 es  80010018 esp0 8000abb4
+ >> interrupt is disabled
+ >> Oops! it's kernel mode now!!!
+ >> task=sleep (id:80009f34)
+Stack trace:
+ 0804a472
+ 0804a3a1
+ 0804810c
+ 080480aa
+</pre>
+
+<p>
+This service may be useful for the application developer to track
+the error conditions.
+</p>
+
+
+
+
+      </td>
+    </tr>
+    <tr>
+      <td id="footer" colspan="2" style="vertical-align: top;">
+        <a href="http://sourceforge.net">
+        <img src="http://sourceforge.net/sflogo.php?group_id=132028&amp;type=1"
+        alt="SourceForge.net Logo" border="0" height="31" width="88"></a><br>
+        Copyright&copy; 2008 Kohsuke Ohtani
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+</div>
+<div id="bottom"></div>
+
+</body>
+</html>

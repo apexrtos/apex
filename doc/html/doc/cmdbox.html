@@ -1,0 +1,1097 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>CmdBox User's Guide</title>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+  <meta name="keywords" content="Prex, embedded, real-time, operating system, RTOS, open source, free">
+  <meta name="author" content="Kohsuke Ohtani">
+  <link rel="stylesheet" type="text/css" href="../default.css" media="screen">
+  <link rel="stylesheet" type="text/css" href="../print.css" media="print">
+</head>
+<body>
+<div id="top">
+</div>
+<div id="middle">
+
+<table id="content" cellpadding="0" cellspacing="0">
+  <tbody>
+
+    <tr>
+      <td id="header" colspan="2" valign="top">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td id="logo">
+            <a href="http://prex.sourceforge.net/">
+            <img alt="Prex logo" src="../img/logo.gif" border="0"
+            style="width: 250px; height: 54px;"></a>
+          </td>
+          <td id="brief" align="right" valign="bottom">
+            An Open Source, Royalty-free,<br>
+	    Real-time Operating System
+          </td>
+        </tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr>
+      <td id="directory" style="vertical-align: top;">
+      <a href="http://prex.sourceforge.net/">Prex Home</a> >
+      <a href="index.html">Document Index</a> >
+      CmdBox User's Guide
+    </tr>
+    <tr><td class="pad" colspan="2" style="vertical-align: top;"></td></tr>
+
+    <tr>
+      <td id="doc" style="vertical-align: top;">
+      <h1>CmdBox User's</h1>
+
+<i>Version 0.8, 2008/08/27</i>
+
+<h3>Table of Contents</h3>
+<ul>
+<li><a href="#intro">Introduction</a></li>
+
+<li><a href="#cfg">Configuring CmdBox</a></li>
+
+<li><a href="#usage">Command Usage</a>
+  <ul>
+  <li><a href="#cal">cal</a></li>
+  <li><a href="#cat">cat</a></li>
+  <li><a href="#clear">clear</a></li>
+  <li><a href="#cp">cp</a></li>
+  <li><a href="#date">date</a></li>
+  <li><a href="#dmesg">dmesg</a></li>
+  <li><a href="#echo">echo</a></li>
+  <li><a href="#free">free</a></li>
+  <li><a href="#head">head</a></li>
+  <li><a href="#hostname">hostname</a></li>
+  <li><a href="#kill">kill</a></li>
+  <li><a href="#ls">ls</a></li>
+  <li><a href="#mkdir">mkdir</a></li>
+  <li><a href="#mount">mount</a></li>
+  <li><a href="#mv">mv</a></li>
+  <li><a href="#nice">nice</a></li>
+  <li><a href="#ps">ps</a></li>
+  <li><a href="#pwd">pwd</a></li>
+  <li><a href="#reboot">reboot</a></li>
+  <li><a href="#rm">rm</a></li>
+  <li><a href="#rmdir">rmdir</a></li>
+  <li><a href="#sh">sh</a></li>
+  <li><a href="#shutdown">shutdown</a></li>
+  <li><a href="#sleep">sleep</a></li>
+  <li><a href="#sync">sync</a></li>
+  <li><a href="#test">test</a></li>
+  <li><a href="#touch">touch</a></li>
+  <li><a href="#umount">umount</a></li>
+  <li><a href="#uname">uname</a></li>
+</ul>
+
+</ul>
+<br>
+
+
+
+<h2 id="intro">Introduction</h2>
+<p>
+CmdBox is a small application which includes tiny versions of many UNIX utilities -
+A.K.A. the Swiss Army Knife of Prex.
+</p>
+<p>
+The CmdBox utility can execute the specific command with the following syntax.
+</p>
+<pre>
+CmdBox [command] [arguments...]
+</pre>
+
+<h2 id="cfg">Configuring CmdBox</h2>
+<p>
+You can select the available commands included in CmdBox utility. This can be done by changing
+CONFIG_CMD_XXX lines in the configuration file - <i>/conf/etc/cmdbox.conf</i>.
+You must change this file before running the configure script to compile the Prex source tree.
+</p>
+
+<p>
+Note: If CONFIG_CMD_XXX is selected as 'n', such command is compiled as
+a stand-alone UNIX application.
+</p>
+
+<pre>
+#
+# CmdBox configuration file.
+#
+
+CONFIG_CMDBOX=y
+CONFIG_CMD_CAL=n
+CONFIG_CMD_CAT=y
+CONFIG_CMD_CLEAR=y
+CONFIG_CMD_CP=y
+CONFIG_CMD_DATE=y
+CONFIG_CMD_DMESG=y
+CONFIG_CMD_ECHO=y
+CONFIG_CMD_FREE=y
+CONFIG_CMD_HEAD=y
+CONFIG_CMD_HOSTNAME=y
+CONFIG_CMD_KILL=y
+CONFIG_CMD_LS=y
+...
+</pre>
+
+
+<p>
+The 'help' command will display the list of supported built-in commands.
+</p>
+
+<pre class="terminal">
+[prex:/]# help
+usage: cmdbox [command] [arguments]...
+builtin commands:
+    help, cat, clear, cp, date, dmesg, echo, free, head, hostname,
+    kill, ls, mkdir, mount, mv, nice, ps, pwd, reboot, rm,
+    rmdir, sh, shutdown, sleep, sync, test, touch, umount,
+    uname
+use `-?` to find out more about each command.
+[prex:/]#
+</pre>
+
+
+<h2 id="usage">Command Usage</h2>
+
+<p>
+Most of CmdBox commands support the "-?" argument to provide an usage description
+of their command.
+</p>
+<br>
+<hr size="1">
+
+
+<h3 id="cal">NAME</h3>
+<b>cal</b> -- displays a calendar
+
+<h3>SYNOPSIS</h3>
+<pre>
+cal [-jy] [[month] year]
+</pre>
+<h3>DESCRIPTION</h3>
+<p>
+The cal utility displays a simple calendar in traditional format.
+If arguments are not specified, the current month is displayed.
+</p>
+<p>
+The options are as follows:
+</p>
+<dl>
+<dt>-j</dt>
+<dd>
+Display Julian days (days one-based, numbered from January 1).
+</dd>
+<dt>-y</dt>
+<dd>
+Display a calendar for the specified year.
+</dd>
+</dl>
+<br>
+<hr size="1">
+
+
+<h3 id="cat">NAME</h3>
+<b>cat</b> -- concatenate and print files
+
+<h3>SYNOPSIS</h3>
+<pre>
+cat [-u] [-] [file ...]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The cat utility reads files sequentially, writing them to the standard
+output.  The file operands are processed in command-line order.  If file
+is a single dash (`-') or absent, cat reads from the standard input.
+</p>
+<p>
+The options are as follows:
+</p>
+<dl>
+<dt>-u</dt>
+<dd>
+Disable output buffering.
+</dd>
+</dl>
+
+<h3>EXIT STATUS</h3>
+<p>
+The cat utility exits 0 on success, and >0 if an error occurs.
+</p>
+<br>
+<hr size="1">
+
+
+
+<h3 id="clear">NAME</h3>
+<b>clear</b> -- clear the terminal screen
+
+<h3>SYNOPSIS</h3>
+<pre>
+clear
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The clear utility clears the terminal screen if this is possible.
+</p>
+<br>
+<hr size="1">
+
+
+
+<h3 id="cp">NAME</h3>
+<b>cp</b> -- copy files
+
+<h3>SYNOPSIS</h3>
+<pre>
+cp [-i] src target
+cp [-i] src1 ... srcN directory
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+In the first synopsis form, the cp utility copies the contents of the
+<i>src</i> to the <i>target</i>.
+ In the second synopsis form, the contents of each named <i>srcN</i> is copied to the destination
+<i>directory</i>.	The names of the files themselves are not changed.  If
+     cp detects an attempt to copy a file to itself, the copy will fail.
+</p>
+<p>
+The options are as follows:
+</p>
+<dl>
+<dt>-i</dt>
+<dd>
+Cause cp to write a prompt to the standard error output before
+copying a file that would overwrite an existing file.  If the
+response from the standard input begins with the character `y' or
+`Y', the file copy is attempted.
+</dd>
+</dl>
+<br>
+<hr size="1">
+
+
+
+
+
+<h3 id="date">NAME</h3>
+<b>date</b> -- display date and time
+
+<h3>SYNOPSIS</h3>
+<pre>
+date
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The date utility displays the current date and time.
+</p>
+<p>
+<i>NOTE: There is no function to change date or time.</i>
+</p>
+<br>
+<hr size="1">
+
+
+
+
+
+
+<h3 id="dmesg">NAME</h3>
+<b>dmesg</b> -- display the system message buffer
+
+<h3>SYNOPSIS</h3>
+<pre>
+dmesg
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The dmesg utility displays the contents of the system message buffer.
+</p>
+<br>
+<hr size="1">
+
+
+
+
+
+<h3 id="echo">NAME</h3>
+<b>echo</b> -- write arguments to the standard output
+
+<h3>SYNOPSIS</h3>
+<pre>
+echo [-n] [string ...]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The echo utility writes any specified operands, separated by single blank
+(` ') characters and followed by a newline (`\n') character, to the standard output.
+</p>
+<p>
+     The following option is available:
+</p>
+<dl>
+<dt>-n</dt>
+<dd>
+ Do not print the trailing newline character.
+</dd>
+</dl>
+
+<h3>EXIT STATUS</h3>
+<p>
+The echo utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+<h3 id="free">NAME</h3>
+<b>free</b> -- display information about free and used memory on the system
+
+<h3>SYNOPSIS</h3>
+<pre>
+free
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The free utility displays the total amount of free and used physical memory.
+</p>
+<br>
+<hr size="1">
+
+
+
+
+
+<h3 id="head">NAME</h3>
+<b>head</b> -- display first lines of a file
+
+<h3>SYNOPSIS</h3>
+<pre>
+head [-n lines] [file ...]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+This filter displays the first count lines or bytes of each of the specified files, or of the standard input if no files are specified.  If count
+is omitted it defaults to 10.
+</p>
+<p>
+If more than a single file is specified, each file is preceded by a
+header consisting of the string ``==> XXX <=='' where ``XXX'' is the name
+of the file.
+</p>
+
+<h3>EXIT STATUS</h3>
+<p>
+The head utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+<h3 id="hostname">NAME</h3>
+<b>hostname</b> --  print name of current host system
+
+<h3>SYNOPSIS</h3>
+<pre>
+hostname
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The hostname utility prints the name of the current host.
+</p>
+<p>
+<i>NOTE: There is no function to change the host name.</i>
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+<h3 id="kill">NAME</h3>
+<b>kill</b> -- terminate or signal a process
+
+<h3>SYNOPSIS</h3>
+<pre>
+kill [-s signal_name] pid ...
+kill -l [exit_status]
+kill -signal_name pid ...
+kill -signal_number pid ...
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The kill utility sends a signal to the processes specified by the pid operands.
+</p>
+<p>
+Only the super-user may send signals to other users' processes.
+</p>
+<p>
+The options are as follows:
+</p>
+
+<dl>
+<dt>
+-s signal_name
+</dt>
+<dd>
+A symbolic signal name specifying the signal to be sent instead
+of the default TERM.
+</dd>
+<dt>
+-l [exit_status]
+</dt>
+<dd>
+If no operand is given, list the signal names; otherwise, write
+the signal name corresponding to exit_status.
+</dd>
+<dt>
+-signal_name
+</dt>
+<dd>
+A symbolic signal name specifying the signal to be sent instead
+of the default TERM.
+</dd>
+<dt>
+-signal_number
+</dt>
+<dd>
+A non-negative decimal integer, specifying the signal to be sent
+instead of the default TERM.
+</dd>
+</dl>
+<p>
+The following PIDs have special meanings:
+</p>
+-1 ... 
+If superuser, broadcast the signal to all processes; otherwise
+broadcast to all processes belonging to the user.
+
+<h3>EXIT STATUS</h3>
+<p>
+The kill utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+<h3 id="ls">NAME</h3>
+<b>ls</b> -- list directory contents
+
+<h3>SYNOPSIS</h3>
+<pre>
+ls [-1CFAal] [file ...]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+For each operand that names a file of a type other than directory, ls
+displays its name as well as any requested, associated information.  For
+each operand that names a file of type directory, ls displays the names
+of files contained within that directory, as well as any requested, associated information.
+</p>
+<p>
+If no operands are given, the contents of the current directory are displayed. 
+</p>
+<p>
+The following options are available:
+</p>
+<dl>
+<dt>-A</dt>
+<dd>
+Include directory entries whose names begin with a dot (`.')
+except for . and ...
+</dd>
+
+<dt>-C</dt>
+<dd>
+Force multi-column output; this is the default when output is to
+a terminal.
+</dd>
+
+<dt>-F</dt>
+<dd>
+Display a slash (`/') immediately after each pathname that is a
+	     directory, an asterisk (`*') after each that is executable, an at
+	     sign (`@') after each symbolic link, an equals sign (`=') after
+	     each socket, a percent sign (`%') after each whiteout, and a ver-
+	     tical bar (`|') after each that is a FIFO.
+</dd>
+
+<dt>-a</dt>
+<dd>
+Include directory entries whose names begin with a dot (`.').
+</dd>
+
+<dt>-l</dt>
+<dd>
+List files in the long format, as described in the The Long Format subsection below.
+</dd>
+
+<dt>-1</dt>
+<dd>
+Force output to be one entry per line.
+This is the default when output is not to a terminal.
+</dd>
+</dl>
+
+<h3>EXIT STATUS</h3>
+<p>
+The ls utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+<h3 id="mkdir">NAME</h3>
+<b>mkdir</b> -- make directories
+
+<h3>SYNOPSIS</h3>
+<pre>
+mkdir [-p] directory ...
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The mkdir utility creates the directories named as operands.
+</p>
+<p>
+The following option is available:
+</p>
+<dl>
+<dt>-p</dt>
+<dd>
+Create intermediate directories as required.  If this option is
+not specified, the full path prefix of each operand must already
+exist.  On the other hand, with this option specified, no error
+will be reported if a directory given as an operand already exists.
+</dd>
+</dl>
+
+<h3>EXIT STATUS</h3>
+<p>
+The mkdir utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+<h3 id="mount">NAME</h3>
+<b>mount</b> -- mount file systems
+
+<h3>SYNOPSIS</h3>
+<pre>
+mount [dev] [dir] [fs]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The mount utility mount a special device named <i>dev</i> on to the
+file system tree at the point <i>dir</i>.
+</p>
+
+<h3>EXIT STATUS</h3>
+<p>
+The mount utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+<h3 id="mv">NAME</h3>
+<b>mv</b> -- move files
+
+<h3>SYNOPSIS</h3>
+<pre>
+mv source target
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The mv utility renames the file named by the <i>source</i>
+operand to the destination path named by the <i>target</i> operand.
+It assumes the last operand does not name an already existing directory.
+</p>
+
+<h3>EXIT STATUS</h3>
+<p>
+The mv utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+
+<h3 id="nice">NAME</h3>
+<b>nice</b> -- execute a utility at an altered scheduling priority
+
+<h3>SYNOPSIS</h3>
+<pre>
+nice [ -n increment ] utility [ argument ...]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The nice utility runs utility at an altered scheduling priority, by
+incrementing its ``nice'' value by the specified increment, or a default
+value of 10.  The lower the nice value of a process, the higher its
+scheduling priority.
+</p>
+<p>
+The superuser may specify a negative increment in order to run a utility
+with a higher scheduling priority.
+
+</p>
+
+<h3>EXIT STATUS</h3>
+<p>
+If utility is invoked, the exit status of nice is the exit status of utility.
+
+An exit status of 126 indicates utility was found, but could not be executed.
+An exit status of 127 indicates utility could not be found.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+<h3 id="ps">NAME</h3>
+<b>ps</b> -- process status
+
+<h3>SYNOPSIS</h3>
+<pre>
+ps [-lx]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The ps utility displays a header line, followed by lines containing
+information about all of your processes that have controlling terminals.
+</p>
+
+<dl>
+<dt>-l</dt>
+<dd>
+Display information associated with the following keywords: uid,
+pid, ppid, pri, stat, pol, time, wchan, state, time, and command.
+
+</dd>
+
+<dt>-x</dt>
+<dd>
+When displaying processes matched by other options, include processes which do not have a controlling terminal.
+</dd>
+
+</dl>
+<br>
+<hr size="1">
+
+
+
+
+<h3 id="pwd">NAME</h3>
+<b>pwd</b> -- return working directory name
+
+<h3>SYNOPSIS</h3>
+<pre>
+pwd
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The pwd utility writes the absolute pathname of the current working
+     directory to the standard output.
+</p>
+
+<h3>EXIT STATUS</h3>
+<p>
+The pwd utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+<h3 id="reboot">NAME</h3>
+<b>reboot</b> -- restarting the system
+
+<h3>SYNOPSIS</h3>
+<pre>
+reboot
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+reboot utilities flush the file system cache to disk, send
+all running processes a SIGTERM (and subsequently a SIGKILL) and
+restart the system.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+<h3 id="rm">NAME</h3>
+<b>rm</b> -- remove directory entries
+
+<h3>SYNOPSIS</h3>
+<pre>
+rm file...
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The rm utility attempts to remove the non-directory type files specified
+     on the command line.
+</p>
+
+<h3>EXIT STATUS</h3>
+<p>
+The rm utility exits 0 if all of the named files or file hierarchies were
+removed. If an error occurs, rm exits with a value >0.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+<h3 id="rmdir">NAME</h3>
+<b>rmdir</b> -- remove directories
+
+<h3>SYNOPSIS</h3>
+<pre>
+rmdir dirname...
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The rmdir utility removes the directory entry specified by each directory
+argument, provided it is empty.
+</p>
+
+<h3>EXIT STATUS</h3>
+<p>
+The rmdir utility exits 0 if all of the directories are
+removed. If an error occurs, rmdir exits with a value >0.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+<h3 id="sh">NAME</h3>
+<b>sh</b> -- command interpreter (shell)
+
+<h3>SYNOPSIS</h3>
+<pre>
+sh
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The sh utility is the standard command interpreter for the system.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+<h3 id="shutdown">NAME</h3>
+<b>shutdown</b> -- close down the system
+
+<h3>SYNOPSIS</h3>
+<pre>
+shutdown
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The shutdown utility provides an automated shutdown procedure for
+user when the system is shutting down.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+<h3 id="sleep">NAME</h3>
+<b>sleep</b> -- suspend execution for an interval of time
+
+<h3>SYNOPSIS</h3>
+<pre>
+sleep seconds
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The sleep command suspends execution for a minimum of seconds.
+</p>
+<p>
+If the sleep command receives a signal, it takes the standard action.
+</p>
+
+
+<h3>EXIT STATUS</h3>
+<p>
+The sleep utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+<br>
+<hr size="1">
+
+
+
+
+
+<h3 id="sync">NAME</h3>
+<b>sync</b> -- force completion of pending disk writes (flush cache)
+
+<h3>SYNOPSIS</h3>
+<pre>
+sync
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The sync utility can be called to ensure that all disk writes have been
+completed before the processor is halted in a way not suitably done by
+reboot.
+</p>
+<br>
+<hr size="1">
+
+
+
+
+
+<h3 id="test">NAME</h3>
+<b>test</b> -- condition evaluation utility
+
+<h3>SYNOPSIS</h3>
+<pre>
+test expression
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The test utility evaluates the expression and, if it evaluates to true,
+returns a zero (true) exit status; otherwise it returns 1 (false).  If
+there is no expression, test also returns 1 (false).
+</p>
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+<h3 id="touch">NAME</h3>
+<b>touch</b> -- create a file
+
+<h3>SYNOPSIS</h3>
+<pre>
+touch file
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The touch utility creates the file if it does not exist.
+</p>
+<p>
+<i>NOTE: There is no function to change the modification time of
+the existing file.</i>
+</p>
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+<h3 id="umount">NAME</h3>
+<b>umount</b> -- unmount file systems
+
+<h3>SYNOPSIS</h3>
+<pre>
+umount [dev] [dir] [fs]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+Not supported for now...
+</p>
+<br>
+<hr size="1">
+
+
+
+
+
+
+
+
+
+<h3 id="uname">NAME</h3>
+<b>uname</b> -- display information about the system
+
+<h3>SYNOPSIS</h3>
+<pre>
+uname [-amnpsrv]
+</pre>
+
+<h3>DESCRIPTION</h3>
+<p>
+The uname command writes the name of the operating system implementation
+to standard output.  When options are specified, strings representing one
+or more system characteristics are written to standard output.
+</p>
+<p>
+    The options are as follows:
+</p>
+
+<dl>
+<dt>-a</dt>
+<dd>
+Behave as though the options -m, -n, -r, -s, and -v were specified.
+</dd>
+
+<dt>-m</dt>
+<dd>
+Write the type of the current hardware platform to standard output.
+</dd>
+
+<dt>-n</dt>
+<dd>
+Write the name of the system to standard output.
+</dd>
+
+<dt>-s</dt>
+<dd>
+Write the name of the operating system implementation to standard output.
+</dd>
+
+<dt>-r</dt>
+<dd>
+Write the current release level of the operating system to standard output.
+</dd>
+
+<dt>-v</dt>
+<dd>
+Write the version level of this release of the operating system to standard output.
+</dd>
+
+</dl>
+
+<h3>EXIT STATUS</h3>
+<p>
+The uname utility exits 0 on success, and >0 if an error occurs.
+</p>
+
+
+
+<br>
+<hr size="1">
+
+
+
+
+
+
+      </td>
+    </tr>
+    <tr>
+      <td id="footer" colspan="2" style="vertical-align: top;">
+        <a href="http://sourceforge.net">
+        <img src="http://sourceforge.net/sflogo.php?group_id=132028&amp;type=1"
+        alt="SourceForge.net Logo" border="0" height="31" width="88"></a><br>
+        Copyright&copy; 2008 Kohsuke Ohtani
+      </td>
+    </tr>
+
+  </tbody>
+</table>
+
+</div>
+<div id="bottom"></div>
+
+</body>
+</html>
