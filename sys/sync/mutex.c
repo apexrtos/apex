@@ -34,10 +34,9 @@
 /*
  * A mutex is used to protect un-sharable resources. A thread
  * can use mutex_lock() to ensure that global resource is not
- * accessed by other thread. The mutex is effective only the
- * threads belonging to the same task.
+ * accessed by other thread.
  *
- * Prex will change the thread priority to prevent priority inversion.
+ * APEX will change the thread priority to prevent priority inversion.
  *
  * <Priority inheritance>
  *   The priority is changed at the following conditions.
@@ -68,370 +67,288 @@
  *      priority is not adjusted.
  */
 
-#include <kernel.h>
-#include <event.h>
-#include <sched.h>
-#include <kmem.h>
-#include <thread.h>
-#include <task.h>
 #include <sync.h>
 
-/* max mutex count to inherit priority */
-#define MAXINHERIT	10
+#include <access.h>
+#include <assert.h>
+#include <debug.h>
+#include <errno.h>
+#include <kernel.h>
+#include <prio.h>
+#include <sch.h>
+#include <stdalign.h>
+#include <stdatomic.h>
+#include <thread.h>
 
-/* forward declarations */
-static int	prio_inherit(thread_t th);
-static void	prio_uninherit(thread_t th);
+#define MUTEX_MAGIC    0x4d75783f      /* 'Mux?' */
+
+struct mutex_private {
+	int magic;		/* magic number */
+	atomic_intptr_t owner;	/* owner thread locking this mutex */
+	unsigned count;		/* counter for recursive lock */
+	struct event event;	/* event */
+	struct list link;	/* linkage on locked mutex list */
+	int prio;		/* highest prio in waiting threads */
+};
+
+static_assert(sizeof(struct mutex_private) == sizeof(struct mutex), "");
+static_assert(alignof(struct mutex_private) == alignof(struct mutex), "");
 
 /*
- * Initialize a mutex.
+ * mutex_valid - check mutex validity.
+ */
+bool
+mutex_valid(const struct mutex *m)
+{
+	const struct mutex_private *mp = (struct mutex_private*)m->storage;
+
+	return k_address(m) && mp->magic == MUTEX_MAGIC;
+}
+
+/*
+ * mutex_init - Initialize a mutex.
+ */
+void
+mutex_init(struct mutex *m)
+{
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
+
+	mp->magic = MUTEX_MAGIC;
+	event_init(&mp->event, "mutex", ev_LOCK);
+	atomic_store_explicit(&mp->owner, 0, memory_order_relaxed);
+	/* No need to initialise link, prio or count */
+}
+
+/*
+ * mutex_lock - Lock a mutex.
  *
- * If an initialized mutex is reinitialized, undefined
- * behavior results. Technically, we can not detect such
- * error condition here because we can not touch the passed
- * object in kernel.
- */
-int
-mutex_init(mutex_t *mtx)
-{
-	mutex_t m;
-
-	if ((m = kmem_alloc(sizeof(struct mutex))) == NULL)
-		return ENOMEM;
-
-	event_init(&m->event, "mutex");
-	m->task = cur_task();
-	m->owner = NULL;
-	m->prio = MIN_PRIO;
-	m->magic = MUTEX_MAGIC;
-
-	if (umem_copyout(&m, mtx, sizeof(m))) {
-		kmem_free(m);
-		return EFAULT;
-	}
-	return 0;
-}
-
-/*
- * Destroy the specified mutex.
- * The mutex must be unlock state, otherwise it fails with EBUSY.
- */
-int
-mutex_destroy(mutex_t *mtx)
-{
-	mutex_t m;
-	int err = 0;
-
-	sched_lock();
-	if (umem_copyin(mtx, &m, sizeof(mtx))) {
-		err = EFAULT;
-		goto out;
-	}
-	if (!mutex_valid(m)) {
-		err = EINVAL;
-		goto out;
-	}
-	if (m->owner || event_waiting(&m->event)) {
-		err = EBUSY;
-		goto out;
-	}
-
-	m->magic = 0;
-	kmem_free(m);
- out:
-	sched_unlock();
-	ASSERT(err == 0);
-	return err;
-}
-
-/*
- * Copy mutex from user space.
- * If it is not initialized, create new mutex.
- */
-static int
-mutex_copyin(mutex_t *umtx, mutex_t *kmtx)
-{
-	mutex_t m;
-	int err;
-
-	if (umem_copyin(umtx, &m, sizeof(umtx)))
-		return EFAULT;
-
-	if (m == MUTEX_INITIALIZER) {
-		/*
-		 * Allocate new mutex, and retreive its id
-		 * from the user space.
-		 */
-		if ((err = mutex_init(umtx)))
-			return err;
-		umem_copyin(umtx, &m, sizeof(umtx));
-	} else {
-		if (!mutex_valid(m))
-			return EINVAL;
-	}
-	*kmtx = m;
-	return 0;
-}
-
-/*
- * Lock a mutex.
- *
- * A current thread is blocked if the mutex has already been
+ * The current thread is blocked if the mutex has already been
  * locked. If current thread receives any exception while
- * waiting mutex, this routine returns with EINTR in order to
- * invoke exception handler. But, POSIX thread assumes this
- * function does NOT return with EINTR.  So, system call stub
- * routine in library must call this again if it gets EINTR.
+ * waiting mutex, this routine returns EINTR.
  */
-int
-mutex_lock(mutex_t *mtx)
+static int __attribute__((noinline))
+mutex_lock_slowpath(struct mutex *m)
 {
-	mutex_t m;
-	int rc, err;
+	if (!mutex_valid(m))
+		return DERR(-EINVAL);
 
-	sched_lock();
-	if ((err = mutex_copyin(mtx, &m)))
-		goto out;
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
-	if (m->owner == cur_thread) {
-		/*
-		 * Recursive lock
-		 */
-		m->locks++;
-		ASSERT(m->locks != 0);
-	} else {
-		/*
-		 * Check whether a target mutex is locked.
-		 * If the mutex is not locked, this routine
-		 * returns immediately.
-		 */
-		if (m->owner == NULL)
-			m->prio = cur_thread->prio;
-		else {
-			/*
-			 * Wait for a mutex.
-			 */
-			cur_thread->wait_mutex = m;
-			if ((err = prio_inherit(cur_thread))) {
-				cur_thread->wait_mutex = NULL;
-				goto out;
-			}
-			rc = sched_sleep(&m->event);
-			cur_thread->wait_mutex = NULL;
-			if (rc == SLP_INTR) {
-				err = EINTR;
-				goto out;
-			}
-		}
-		m->locks = 1;
+	sch_lock();
+
+	/* check if we already hold the mutex */
+	if (mutex_owner(m) == thread_cur()) {
+		atomic_fetch_or_explicit(
+		    &mp->owner,
+		    MUTEX_RECURSIVE,
+		    memory_order_relaxed
+		);
+		++mp->count;
+		sch_unlock();
+		return 0;
 	}
-	m->owner = cur_thread;
-	list_insert(&cur_thread->mutexes, &m->link);
- out:
-	sched_unlock();
-	return err;
-}
 
-/*
- * Try to lock a mutex without blocking.
- */
-int
-mutex_trylock(mutex_t *mtx)
-{
-	mutex_t m;
-	int err;
-
-	sched_lock();
-	if ((err = mutex_copyin(mtx, &m)))
-		goto out;
-	if (m->owner == cur_thread)
-		m->locks++;
-	else {
-		if (m->owner != NULL)
-			err = EBUSY;
-		else {
-			m->locks = 1;
-			m->owner = cur_thread;
-			list_insert(&cur_thread->mutexes, &m->link);
-		}
+	/* mutex was freed since atomic test */
+	intptr_t expected = 0;
+	if (atomic_compare_exchange_strong_explicit(
+	    &mp->owner,
+	    &expected,
+	    (intptr_t)thread_cur(),
+	    memory_order_acquire,
+	    memory_order_relaxed)) {
+		mp->count = 1;
+		sch_unlock();
+		return 0;
 	}
- out:
-	sched_unlock();
-	return err;
-}
-
-/*
- * Unlock a mutex.
- * Caller must be a current mutex owner.
- */
-int
-mutex_unlock(mutex_t *mtx)
-{
-	mutex_t m;
-	int err;
-
-	sched_lock();
-	if ((err = mutex_copyin(mtx, &m)))
-		goto out;
-	if (m->owner != cur_thread || m->locks <= 0) {
-		err = EPERM;
-		goto out;
-	}
-	if (--m->locks == 0) {
-		list_remove(&m->link);
-		prio_uninherit(cur_thread);
-		/*
-		 * Change the mutex owner, and make the next
-		 * owner runnable if it exists.
-		 */
-		m->owner = sched_wakeone(&m->event);
-		if (m->owner)
-			m->owner->wait_mutex = NULL;
-
-		m->prio = m->owner ? m->owner->prio : MIN_PRIO;
-	}
- out:
-	sched_unlock();
-	ASSERT(err == 0);
-	return err;
-}
-
-/*
- * Clean up mutex.
- *
- * This is called with scheduling locked when thread is
- * terminated. If a thread is terminated with mutex hold, all
- * waiting threads keeps waiting forever. So, all mutex locked by
- * terminated thread must be unlocked. Even if the terminated
- * thread is waiting some mutex, the inherited priority of other
- * mutex owner is not adjusted.
- */
-void
-mutex_cleanup(thread_t th)
-{
-	list_t head;
-	mutex_t m;
-	thread_t owner;
 
 	/*
-	 * Purge all mutexes held by the thread.
+	 * If we are the first waiter we need to add m to the owner's lock list
+	 * and initialise the mutex priority.
 	 */
-	head = &th->mutexes;
-	while (!list_empty(head)) {
-		/*
-		 * Release locked mutex.
-		 */
-		m = list_entry(list_first(head), struct mutex, link);
-		m->locks = 0;
-		list_remove(&m->link);
-		/*
-		 * Change the mutex owner if other thread
-		 * is waiting for it.
-		 */
-		owner = sched_wakeone(&m->event);
-		if (owner) {
-			owner->wait_mutex = NULL;
-			m->locks = 1;
-			list_insert(&owner->mutexes, &m->link);
-		}
-		m->owner = owner;
+	if (!event_waiting(&mp->event)) {
+		mp->prio = mutex_owner(m)->prio;
+		list_insert(&mutex_owner(m)->mutexes, &mp->link);
 	}
+
+	atomic_fetch_or_explicit(
+	    &mp->owner,
+	    MUTEX_WAITERS,
+	    memory_order_relaxed
+	);
+
+	/* set wait_mutex and inherit priority */
+	thread_cur()->wait_mutex = m;
+	prio_inherit(thread_cur());
+
+	/* wait for unlock */
+	int err = 0;
+	switch (sch_sleep(&mp->event)) {
+	case 0:
+		/* mutex_unlock will set us as the owner */
+		assert(mutex_owner(m) == thread_cur());
+		assert(thread_cur()->wait_mutex == NULL);
+		break;
+	case SLP_INTR:
+#if defined(CONFIG_DEBUG)
+		--thread_cur()->mutex_locks;
+#endif
+		thread_cur()->wait_mutex = NULL;
+		err = -EINTR;
+		break;
+	default:
+		panic("mutex: bad sleep result");
+	}
+
+	sch_unlock();
+	return err;
+}
+
+int
+mutex_lock(struct mutex *m)
+{
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
+
+#if defined(CONFIG_DEBUG)
+	++thread_cur()->mutex_locks;
+#endif
+
+	intptr_t expected = 0;
+	if (atomic_compare_exchange_strong_explicit(
+	    &mp->owner,
+	    &expected,
+	    (intptr_t)thread_cur(),
+	    memory_order_acquire,
+	    memory_order_relaxed)) {
+		mp->count = 1;
+		return 0;
+	}
+
+	return mutex_lock_slowpath(m);
 }
 
 /*
- * This is called with scheduling locked before thread priority
- * is changed.
+ * mutex_unlock - Unlock a mutex.
  */
-void
-mutex_setprio(thread_t th, int prio)
+static int __attribute__((noinline))
+mutex_unlock_slowpath(struct mutex *m)
 {
-	if (th->wait_mutex && prio < th->prio)
-		prio_inherit(th);
-}
+	if (!mutex_valid(m))
+		return DERR(-EINVAL);
 
-/*
- * Inherit priority.
- *
- * To prevent priority inversion, we must ensure the higher
- * priority thread does not wait other lower priority thread. So,
- * raise the priority of mutex owner which blocks the "waiter"
- * thread. If such mutex owner is also waiting for other mutex,
- * that mutex is also processed. Returns EDEALK if it finds
- * deadlock condition.
- */
-static int
-prio_inherit(thread_t waiter)
-{
-	mutex_t m = waiter->wait_mutex;
-	thread_t owner;
-	int count = 0;
+	/* can't unlock if we don't hold */
+	if (mutex_owner(m) != thread_cur())
+		return DERR(-EINVAL);
 
-	do {
-		owner = m->owner;
-		/*
-		 * If the owner of relative mutex has already
-		 * been waiting for the "waiter" thread, it
-		 * causes a deadlock.
-		 */
-		if (owner == waiter) {
-			DPRINTF(("Deadlock! mutex=%x owner=%x waiter=%x\n",
-				 m, owner, waiter));
-			return EDEADLK;
-		}
-		/*
-		 * If the priority of the mutex owner is lower
-		 * than "waiter" thread's, we rise the mutex
-		 * owner's priority.
-		 */
-		if (owner->prio > waiter->prio) {
-			sched_setprio(owner, owner->baseprio, waiter->prio);
-			m->prio = waiter->prio;
-		}
-		/*
-		 * If the mutex owner is waiting for another
-		 * mutex, that mutex is also processed.
-		 */
-		m = (mutex_t)owner->wait_mutex;
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
-		/* Fail safe... */
-		ASSERT(count < MAXINHERIT);
-		if (count >= MAXINHERIT)
-			break;
+	/* check recursive lock */
+	if (--mp->count != 0) {
+		return 0;
+	}
 
-	} while (m != NULL);
+	sch_lock();
+
+	if (!(atomic_load_explicit(
+	    &mp->owner,
+	    memory_order_relaxed) & MUTEX_WAITERS)) {
+		atomic_store_explicit(&mp->owner, 0, memory_order_release);
+		sch_unlock();
+		return 0;
+	}
+
+	/* remove from lock list and reset priority */
+	list_remove(&mp->link);
+	prio_reset(thread_cur());
+
+	/* wake up one waiter and set new owner */
+	atomic_store_explicit(
+	    &mp->owner,
+	    (intptr_t)sch_wakeone(&mp->event),
+	    memory_order_relaxed
+	);
+	mp->count = 1;
+	assert(atomic_load_explicit(&mp->owner, memory_order_relaxed));
+
+	if (event_waiting(&mp->event)) {
+		mp->prio = mutex_owner(m)->prio;
+		list_insert(&mutex_owner(m)->mutexes, &mp->link);
+		atomic_fetch_or_explicit(&mp->owner, MUTEX_WAITERS, memory_order_relaxed);
+	}
+	mutex_owner(m)->wait_mutex = NULL;
+
+	sch_unlock();
 	return 0;
 }
 
-/*
- * Un-inherit priority
- *
- * The priority of specified thread is reset to the base
- * priority.  If specified thread locks other mutex and higher
- * priority thread is waiting for it, the priority is kept to
- * that level.
- */
-static void
-prio_uninherit(thread_t th)
+int
+mutex_unlock(struct mutex *m)
 {
-	int top_prio;
-	list_t head, n;
-	mutex_t m;
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
-	/* Check if the priority is inherited. */
-	if (th->prio == th->baseprio)
-		return;
+#if defined(CONFIG_DEBUG)
+	--thread_cur()->mutex_locks;
+#endif
 
-	top_prio = th->baseprio;
-	/*
-	 * Find the highest priority thread that is waiting
-	 * for the thread. This is done by checking all mutexes
-	 * that the thread locks.
-	 */
-	head = &th->mutexes;
-	for (n = list_first(head); n != head; n = list_next(n)) {
-		m = list_entry(n, struct mutex, link);
-		if (m->prio < top_prio)
-			top_prio = m->prio;
-	}
-	sched_setprio(th, th->baseprio, top_prio);
+	intptr_t expected = (intptr_t)thread_cur();
+	const intptr_t zero = 0;
+	if (atomic_compare_exchange_strong_explicit(
+	    &mp->owner,
+	    &expected,
+	    zero,
+	    memory_order_release,
+	    memory_order_relaxed))
+		return 0;
+
+	return mutex_unlock_slowpath(m);
+}
+
+/*
+ * mutex_owner - get owner of mutex
+ */
+struct thread*
+mutex_owner(const struct mutex *m)
+{
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	return (struct thread *)(atomic_load_explicit(
+	    &mp->owner,
+	    memory_order_relaxed) & MUTEX_TID_MASK);
+}
+
+/*
+ * mutex_prio - get priority of mutex
+ */
+int
+mutex_prio(const struct mutex *m)
+{
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	return mp->prio;
+}
+
+/*
+ * mutex_setprio - set priority of mutex
+ */
+void
+mutex_setprio(struct mutex *m, int prio)
+{
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	mp->prio = prio;
+}
+
+/*
+ * mutex_count - get lock count of mutex
+ */
+unsigned
+mutex_count(const struct mutex *m)
+{
+	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	return mp->count;
+}
+
+/*
+ * mutex_entry - get mutex struct from list entry
+ */
+struct mutex*
+mutex_entry(struct list *l)
+{
+	return (struct mutex*)list_entry(l, struct mutex_private, link);
 }

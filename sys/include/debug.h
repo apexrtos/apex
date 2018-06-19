@@ -1,73 +1,55 @@
-/*-
- * Copyright (c) 2005-2006, Kohsuke Ohtani
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the author nor the names of any co-contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+#ifndef debug_h
+#define debug_h
 
-#ifndef _DEBUG_H
-#define _DEBUG_H
+#include <conf/config.h>
+#include <stddef.h>
+#include <stdnoreturn.h>
+#include <syslog.h>
 
-#include <sys/cdefs.h>
+struct thread;
 
-#define LOGBUF_SIZE	2048	/* size of log buffer */ 
-#define DBGMSG_SIZE	128	/* Size of one kernel message */
-
-#ifdef DEBUG
-#define DPRINTF(a)	printf a
-#define ASSERT(exp)	do { if (!(exp)) \
-			     assert(__FILE__, __LINE__, #exp); } while (0)
+#if defined(CONFIG_DEBUG)
+#define dbg(...) syslog_printf(LOG_DEBUG, __VA_ARGS__)
 #else
-#define DPRINTF(a)	do {} while (0)
-#define ASSERT(exp)	do {} while (0)
-#define panic(x)	machine_reset()
+#define dbg(...)
 #endif
 
-/*
- * Command for sys_debug()
- */
-#define DCMD_DUMP	0
-#define DCMD_LOGSIZE	1
-#define DCMD_GETLOG	2
-
-/*
- * Items for debug_dump()
- */
-#define DUMP_THREAD	1
-#define DUMP_TASK	2
-#define DUMP_VM		3
-
-#ifdef DEBUG
-__BEGIN_DECLS
-void	printf(const char *, ...);
-void	panic(const char *);
-int	debug_dump(int);
-void	debug_attach(void (*)(char *));
-void	assert(const char *, int, const char *);
-int	debug_getlog(char *);
-__END_DECLS
+#if defined(CONFIG_INFO)
+#define info(...) syslog_printf(LOG_INFO, __VA_ARGS__)
+#else
+#define info(...)
 #endif
 
-#endif /* !_DEBUG_H */
+#define notice(...) syslog_printf(LOG_NOTICE, __VA_ARGS__)
+#define warning(...) syslog_printf(LOG_WARNING, __VA_ARGS__)
+#define error(...) syslog_printf(LOG_ERR, __VA_ARGS__)
+#define critical(...) syslog_printf(LOG_CRIT, __VA_ARGS__)
+#define alert(...) syslog_printf(LOG_ALERT, __VA_ARGS__)
+#define emergency(...) syslog_printf(LOG_EMERG, __VA_ARGS__)
+
+#define DERR(err) ({ \
+	dbg("%u:("#err")\n", __LINE__); \
+	err; \
+})
+
+#if defined(__cplusplus)
+#define noreturn [[noreturn]]
+extern "C" {
+#endif
+
+noreturn void	panic(const char *);
+void		backtrace();
+void		backtrace_thread(struct thread *);
+void		syslog_printf(int, const char *, ...)
+			__attribute__((format (printf, 2, 3)));
+void		syslog_output(void (*)(void));
+int		syslog_format(char *, size_t);
+void		syslog_panic(void);
+int		sc_syslog(int, char *, int);
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#undef noreturn
+#endif
+
+#endif /* !debug_h */

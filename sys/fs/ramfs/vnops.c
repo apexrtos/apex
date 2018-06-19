@@ -1,0 +1,431 @@
+/*
+ * Copyright (c) 2006-2007, Kohsuke Ohtani
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the author nor the names of any co-contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
+ */
+
+/*
+ * rmafs_vnops.c - vnode operations for RAM file system.
+ */
+
+#include "ramfs.h"
+
+#include <dirent.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <fs/file.h>
+#include <fs/util.h>
+#include <fs/vnode.h>
+#include <kernel.h>
+#include <kmem.h>
+#include <limits.h>
+#include <page.h>
+#include <string.h>
+#include <sys/stat.h>
+
+/*
+ * TODO: ramfs cleanup
+ * - use hash map?
+ * - use kernel list.h instead of self-rolled
+ * - don't duplicate tests guaranteed by vfs
+ */
+
+static ssize_t ramfs_read_iov(struct file *, const struct iovec *, size_t);
+static ssize_t ramfs_write_iov(struct file *, const struct iovec *, size_t);
+static int ramfs_readdir(struct file *, struct dirent *, size_t);
+static int ramfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
+static int ramfs_mknod(struct vnode *, const char *, size_t, int, mode_t);
+static int ramfs_unlink(struct vnode *, struct vnode *);
+static int ramfs_rename(struct vnode *, struct vnode *, struct vnode *, struct vnode *, const char *, size_t);
+static int ramfs_truncate(struct vnode *);
+
+/*
+ * vnode operations
+ */
+const struct vnops ramfs_vnops = {
+	.vop_open = ((vnop_open_fn)vop_nullop),
+	.vop_close = ((vnop_close_fn)vop_nullop),
+	.vop_read = ramfs_read_iov,
+	.vop_write = ramfs_write_iov,
+	.vop_seek = ((vnop_seek_fn)vop_nullop),
+	.vop_ioctl = ((vnop_ioctl_fn)vop_einval),
+	.vop_fsync = ((vnop_fsync_fn)vop_nullop),
+	.vop_readdir = ramfs_readdir,
+	.vop_lookup = ramfs_lookup,
+	.vop_mknod = ramfs_mknod,
+	.vop_unlink = ramfs_unlink,
+	.vop_rename = ramfs_rename,
+	.vop_getattr = ((vnop_getattr_fn)vop_nullop),
+	.vop_setattr = ((vnop_setattr_fn)vop_nullop),
+	.vop_inactive = ((vnop_inactive_fn)vop_nullop),
+	.vop_truncate = ramfs_truncate,
+};
+
+struct ramfs_node *
+ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
+{
+	char *rn_name;
+	struct ramfs_node *np;
+
+	if (!(np = kmem_alloc(sizeof(struct ramfs_node), MEM_NORMAL)))
+		return NULL;
+	if (!(rn_name = kmem_alloc(name_len + 1, MEM_NORMAL))) {
+		kmem_free(np);
+		return NULL;
+	}
+
+	memcpy(rn_name, name, name_len);
+	rn_name[name_len] = 0;
+	*np = (struct ramfs_node) {
+		.rn_namelen = name_len,
+		.rn_name = rn_name,
+		.rn_mode = mode,
+	};
+
+	return np;
+}
+
+void
+ramfs_free_node(struct ramfs_node *np)
+{
+
+	kmem_free(np->rn_name);
+	kmem_free(np);
+}
+
+static struct ramfs_node *
+ramfs_add_node(struct ramfs_node *dnp, const char *name, size_t name_len, mode_t mode)
+{
+	struct ramfs_node *np, *prev;
+
+	if (!(np = ramfs_allocate_node(name, name_len, mode)))
+		return NULL;
+
+	/* Link to the directory list */
+	if (dnp->rn_child == NULL) {
+		dnp->rn_child = np;
+	} else {
+		prev = dnp->rn_child;
+		while (prev->rn_next != NULL)
+			prev = prev->rn_next;
+		prev->rn_next = np;
+	}
+	return np;
+}
+
+static int
+ramfs_remove_node(struct ramfs_node *dnp, struct ramfs_node *np)
+{
+	struct ramfs_node *prev;
+
+	if (dnp->rn_child == NULL)
+		return -ENOENT;
+
+	/* Unlink from the directory list */
+	if (dnp->rn_child == np) {
+		dnp->rn_child = np->rn_next;
+	} else {
+		for (prev = dnp->rn_child; prev->rn_next != np;
+		     prev = prev->rn_next) {
+			if (prev->rn_next == NULL)
+				return -ENOENT;
+		}
+		prev->rn_next = np->rn_next;
+	}
+	ramfs_free_node(np);
+	return 0;
+}
+
+static int
+ramfs_rename_node(struct ramfs_node *np, const char *name, size_t name_len)
+{
+	char *tmp;
+
+	if (name_len <= np->rn_namelen) {
+		/* Reuse current name buffer */
+		strlcpy(np->rn_name, name, np->rn_namelen + 1);
+	} else {
+		/* Expand name buffer */
+		if (!(tmp = kmem_alloc(name_len + 1, MEM_NORMAL)))
+			return -ENOMEM;
+		strlcpy(tmp, name, name_len + 1);
+		kmem_free(np->rn_name);
+		np->rn_name = tmp;
+	}
+	np->rn_namelen = name_len;
+	return 0;
+}
+
+static int
+ramfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode *vp)
+{
+	struct ramfs_node *np;
+	struct ramfs_node *dnp = dvp->v_data;
+	int found;
+
+	if (*name == '\0')
+		return -ENOENT;
+
+	found = 0;
+	for (np = dnp->rn_child; np != NULL; np = np->rn_next) {
+		if (np->rn_namelen == name_len &&
+		    memcmp(name, np->rn_name, name_len) == 0) {
+			found = 1;
+			break;
+		}
+	}
+	if (found == 0)
+		return -ENOENT;
+	vp->v_data = np;
+	vp->v_mode = np->rn_mode;
+	vp->v_size = np->rn_size;
+
+	return 0;
+}
+
+/* Unlink a node */
+static int
+ramfs_unlink(struct vnode *dvp, struct vnode *vp)
+{
+	struct ramfs_node *np;
+
+	rfsdbg("unlink %s in %s\n", vp->v_path, dvp->v_path);
+
+	np = vp->v_data;
+
+	if (np->rn_child)
+		return -ENOTEMPTY;
+
+	if (np->rn_buf != NULL) {
+		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize);
+		np->rn_buf = NULL; /* incase remove_node fails */
+		np->rn_bufsize = 0;
+	}
+	vp->v_size = 0;
+	return ramfs_remove_node(dvp->v_data, np);
+}
+
+/* Truncate file */
+static int
+ramfs_truncate(struct vnode *vp)
+{
+	struct ramfs_node *np = vp->v_data;
+
+	rfsdbg("truncate %s\n", vp->v_path);
+	if (np->rn_buf != NULL) {
+		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize);
+		np->rn_buf = NULL;
+		np->rn_bufsize = 0;
+	}
+	vp->v_size = 0;
+	return 0;
+}
+
+/*
+ * Create file system node
+ */
+static int
+ramfs_mknod(struct vnode *dvp, const char *name, size_t name_len, int flags, mode_t mode)
+{
+	struct ramfs_node *dnp = dvp->v_data;
+	struct ramfs_node *np;
+
+	rfsdbg("create (%zu):%s in %s\n", name_len, name, dvp->v_path);
+
+	if (!(np = ramfs_add_node(dnp, name, name_len, mode)))
+		return -ENOMEM;
+
+	return 0;
+}
+
+static ssize_t
+ramfs_read(struct file *fp, void *buf, size_t size)
+{
+	struct vnode *vp = fp->f_vnode;
+	struct ramfs_node *np = fp->f_vnode->v_data;
+	off_t off;
+
+	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
+		return -EINVAL;
+
+	off = fp->f_offset;
+	if (off >= vp->v_size)
+		return 0;
+
+	if (vp->v_size - off < size)
+		size = vp->v_size - off;
+
+	memcpy(buf, np->rn_buf + off, size);
+
+	fp->f_offset += size;
+	return size;
+}
+
+static ssize_t
+ramfs_read_iov(struct file *fp, const struct iovec *iov, size_t count)
+{
+	return for_each_iov(fp, iov, count, ramfs_read);
+}
+
+static ssize_t
+ramfs_write(struct file *fp, void *buf, size_t size)
+{
+	off_t file_pos, end_pos;
+	size_t new_size;
+	struct ramfs_node *np = fp->f_vnode->v_data;
+	struct vnode *vp = fp->f_vnode;
+	void *new_buf;
+
+	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
+		return -EINVAL;
+
+	/* Check if the file position exceeds the end of file. */
+	end_pos = vp->v_size;
+	file_pos = (fp->f_flags & O_APPEND) ? end_pos : fp->f_offset;
+	if (file_pos + size > (size_t)end_pos) {
+		/* Expand the file size before writing to it */
+		end_pos = file_pos + size;
+		if (end_pos > np->rn_bufsize) {
+			/*
+			 * We allocate the data buffer in page boundary.
+			 * So that we can reduce the memory allocation unless
+			 * the file size exceeds next page boundary.
+			 * This will prevent the memory fragmentation by
+			 * many kmem_alloc/kmem_free calls.
+			 */
+			new_size = PAGE_ALIGN(end_pos);
+			phys *const p = page_alloc(new_size, MEM_NORMAL, PAGE_ALLOC_FIXED);
+			if (!p)
+				return -EIO;
+			new_buf = phys_to_virt(p);
+			if (np->rn_size != 0) {
+				memcpy(new_buf, np->rn_buf, vp->v_size);
+				page_free(virt_to_phys(np->rn_buf), np->rn_bufsize);
+			}
+			if (vp->v_size < (size_t)file_pos) /* sparse file */
+				memset((char *)new_buf + vp->v_size, 0,
+				       file_pos - vp->v_size);
+			np->rn_buf = new_buf;
+			np->rn_bufsize = new_size;
+		}
+		np->rn_size = end_pos;
+		vp->v_size = end_pos;
+	}
+	memcpy(np->rn_buf + file_pos, buf, size);
+	fp->f_offset += size;
+	return size;
+}
+
+static ssize_t
+ramfs_write_iov(struct file *fp, const struct iovec *iov, size_t count)
+{
+	return for_each_iov(fp, iov, count, ramfs_write);
+}
+
+static int
+ramfs_rename(struct vnode *dvp1, struct vnode *vp1, struct vnode *dvp2,
+    struct vnode *vp2, const char *name, size_t name_len)
+{
+	struct ramfs_node *np, *old_np;
+	int err;
+
+	if (vp2) {
+		/* Remove destination file, first */
+		err = ramfs_remove_node(dvp2->v_data, vp2->v_data);
+		if (err)
+			return err;
+	}
+	/* Same directory ? */
+	if (dvp1 == dvp2) {
+		/* Change the name of existing file */
+		err = ramfs_rename_node(vp1->v_data, name, name_len);
+		if (err)
+			return err;
+	} else {
+		/* Create new file or directory */
+		old_np = vp1->v_data;
+		if (!(np = ramfs_add_node(dvp2->v_data, name, name_len, vp1->v_mode)))
+			return -ENOMEM;
+
+		if (S_ISREG(vp1->v_mode)) {
+			/* Copy file data */
+			np->rn_buf = old_np->rn_buf;
+			np->rn_size = old_np->rn_size;
+			np->rn_bufsize = old_np->rn_bufsize;
+		}
+		/* Remove source file */
+		ramfs_remove_node(dvp1->v_data, vp1->v_data);
+	}
+	return 0;
+}
+
+/*
+ * @vp: vnode of the directory.
+ */
+static int
+ramfs_readdir(struct file *fp, struct dirent *buf, size_t len)
+{
+	size_t remain = len;
+	struct ramfs_node *dnp = fp->f_vnode->v_data;
+	struct ramfs_node *np;
+
+	if (fp->f_offset == 0) {
+		if (dirbuf_add(&buf, &remain, 0, fp->f_offset, DT_DIR, "."))
+			goto out;
+		++fp->f_offset;
+	}
+
+	if (fp->f_offset == 1) {
+		if (dirbuf_add(&buf, &remain, 0, fp->f_offset, DT_DIR, ".."))
+			goto out;
+		++fp->f_offset;
+	}
+
+	np = dnp->rn_child;
+	if (np == NULL)
+		goto out;
+
+	for (off_t i = 0; i != (fp->f_offset - 2); i++) {
+		np = np->rn_next;
+		if (np == NULL)
+			goto out;
+	}
+
+	while (np != NULL) {
+		if (dirbuf_add(&buf, &remain, 0, fp->f_offset,
+		    IFTODT(np->rn_mode), np->rn_name))
+			goto out;
+		++fp->f_offset;
+		np = np->rn_next;
+	}
+
+out:
+	if (remain != len)
+		return len - remain;
+
+	return -ENOENT;
+}
+

@@ -1,0 +1,13 @@
+#
+# Options for ARM Cortex-A15
+#
+
+arch arm
+subarch v7a
+makeoption CFLAGS += -mcpu=cortex-a15
+makeoption CFLAGS += -masm-syntax-unified
+makeoption CFLAGS += -z max-page-size=4
+makeoption ASFLAGS += -mcpu=cortex-a15
+makeoption APEX_CFLAGS :=
+makeoption USER_CFLAGS += -static
+option MMU

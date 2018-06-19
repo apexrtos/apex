@@ -1,11 +1,8 @@
 #! /bin/sh
-#
-# Prex configuration script
-#
 
 quit()
 {
-    cat >&2 <<ERRORMSG
+	cat >&2 <<ERRORMSG
 
 ERROR: $@
 ERRORMSG
@@ -18,51 +15,27 @@ usage()
 		echo "configure: $*"
 	fi
 	cat <<USAGE
-
 Usage: configure [options]
 
  General options:
-    --target=TARGET         Target system
-    --profile=PROFILE       Target profile
-    --cross-compile=PREFIX  Prefix for cros-compile tools
-    --no-debug              Disable all debug code
-
+    --project=PROJECT	    Project configuration
+    --machine=MACHINE	    Machine configuration (optional)
+    --cpu=CPU		    CPU configuration (optional)
+    --cross-compile=PREFIX  Prefix for cross-compile tools (optional)
+    --srcdir=RELATIVE	    Relative path to project source directory (optional)
+    --nodebug		    Globally define NDEBUG
+    --quiet		    Be quiet
 USAGE
 	exit 1
 }
 
-setdefaults()
-{
-	[ -d conf ] ||
-		quit "configure must be run from the top source level"
-
-	target=""
-	profile=""
-	cross=""
-	srcdir=`pwd`
-}
-
-checkpath()
-{
-	CONFIG_IN=$srcdir/conf/$arch/config.$platform$profile
-	CONFIG_FILES=$srcdir/conf/etc/config.files
-	MAKEFILE_IN=$srcdir/conf/$arch/Makefile.$platform$profile
-	CMDBOX_IN=$srcdir/conf/etc/config.cmdbox
-	CONFIG_MK=$srcdir/conf/config.mk
-	CONFIG_H=$srcdir/conf/config.h
-	CONFIG_LD=$srcdir/conf/config.ld
-
-	[ -f $CONFIG_IN ] ||
-		quit "can not find $CONFIG_IN"
-}
-
-parseargs()
+parse_args()
 {
 	while [ $# != 0 ]; do
 		case $1 in
 		--*=*)
-			option=`expr "x$1" : 'x\([^=]*\)='`
-			optarg=`expr "x$1" : 'x[^=]*=\(.*\)'`
+			option=$(expr "x$1" : 'x\([^=]*\)=')
+			optarg=$(expr "x$1" : 'x[^=]*=\(.*\)')
 			;;
 		--*)
 			option=$1
@@ -76,17 +49,26 @@ parseargs()
 		--help)
 			usage
 			;;
-		--target)
-			target=$optarg
+		--srcdir)
+			srcdir=$(cd "$apexdir/$optarg" && pwd)
 			;;
-		--profile)
-			profile="-$optarg"
+		--project)
+			project=$optarg
+			;;
+		--machine)
+			machine=$optarg
+			;;
+		--cpu)
+			cpu=$optarg
 			;;
 		--cross-compile)
 			cross=$optarg
 			;;
-		--no-debug)
-			nodebug=1
+		--nodebug)
+			nodebug="y"
+			;;
+		--quiet)
+			print="true ||"
 			;;
 		*)
 			usage "unrecognized option $1"
@@ -96,182 +78,283 @@ parseargs()
 	done
 }
 
-gettarget()
+find_config()
 {
-	if [ "x$target" = x ] ; then
-		echo "Warning: '--target' option was not specified"
-		echo "The target system was set to 'i386-pc'"
-		target="i386-pc"
+	# $1: result variable
+	# $2: config type (project, cpu, machine)
+	# $3: config name
+	f=$3
+	[ -f "$f" ] ||
+		f=$srcdir/$3
+	[ -f "$f" ] ||
+		f=$srcdir/$2/$3
+	[ -f "$f" ] ||
+		f=$srcdir/conf/$2/$3
+	[ -f "$f" ] ||
+		f=$srcdir/$2/$3/conf/default
+	[ -f "$f" ] ||
+		f=$apexdir/$3
+	[ -f "$f" ] ||
+		f=$apexdir/$2/$3
+	[ -f "$f" ] ||
+		f=$apexdir/$2/$3/conf/default
+	[ -f "$f" ] ||
+		quit "can not find configuration file $3"
+	eval "$1"="$f"
+}
+
+parse_config()
+{
+	while read -r line; do
+		# Strip comments
+		line=$(expr "x$line" : 'x\([^#]*\)')
+
+		read -r cmd rest <<-END_OF_COMMAND
+			$line
+		END_OF_COMMAND
+
+		case $cmd in
+		option)
+			param=$(expr "x$rest" : 'x\([^=[:space:]]*\)')
+			value=$(expr "x$rest" : 'x[^=[:space:]]*=*[[:space:]]*\(.*\)')
+			if [ "x$value" = x ] ; then
+				echo "CONFIG_$param := y" >> "$CONFIG_MK"
+				echo "#define CONFIG_$param 1" >> "$CONFIG_H"
+			else
+				echo "CONFIG_$param := $value" >> "$CONFIG_MK"
+				case $value in
+				\(*\))
+					# Leave bracketed expressions alone
+					echo "#define CONFIG_$param $value" >> "$CONFIG_H"
+					;;
+				.|*.*.*|e*|*e|*e*e*|x*|*x|*x*x*|*[!0-9.ex]*)
+					# Quote anything that isn't obviously a number
+					echo "#define CONFIG_$param \"$value\"" >> "$CONFIG_H"
+					;;
+				*)
+					# Don't quote numbers
+					echo "#define CONFIG_$param $value" >> "$CONFIG_H"
+					;;
+				esac
+			fi
+			;;
+		makeoption)
+			echo "CONFIG_$rest" >> "$CONFIG_MK"
+			;;
+		memory)
+			param=$(expr "x$rest" : 'x\([^=[:space:]]*\)')
+			value=$(expr "x$rest" : 'x[^=[:space:]]*=*[[:space:]]*\(.*\)')
+			if [ -z "${param##*_BASE}" ]; then
+				echo "CONFIG_${param}_VIRT = $value;" >> "$CONFIG_LD"
+				echo "CONFIG_${param}_PHYS = ($value - CONFIG_PAGE_OFFSET);" >> "$CONFIG_LD"
+				echo "#define CONFIG_${param}_VIRT $value" >> "$CONFIG_H"
+				echo "#define CONFIG_${param}_PHYS ($value - CONFIG_PAGE_OFFSET)" >> "$CONFIG_H"
+			else
+				echo "CONFIG_${param} = $value;" >> "$CONFIG_LD"
+				echo "#define CONFIG_${param} $value" >> "$CONFIG_H"
+			fi
+			;;
+		imagefile)
+			# Automatically build image files as required
+			[ ! -f "$srcdir/$rest" ] &&
+				echo "MK += $rest.mk" >> "$CONFIG_MK"
+			echo "CONFIG_IMAGEFILES += $rest" >> "$CONFIG_MK"
+			bootimg=y
+			;;
+		driver)
+			echo "CONFIG_DRIVERS += $rest" >> "$CONFIG_MK"
+			;;
+		filesystem)
+			echo "CONFIG_FS += $rest" >> "$CONFIG_MK"
+			;;
+		include)
+			find_config I "" "$rest"
+			parse_config "$I"
+			INCLUDE_IN="$INCLUDE_IN $I"
+			;;
+		machine)
+			[ "x$machine" != x ] &&
+				quit "machine already specified"
+			machine=$rest
+			;;
+		cpu)
+			[ "x$cpu" != x ] &&
+				quit "cpu already specified"
+			cpu=$rest
+			;;
+		arch)
+			[ "x$arch" != x ] &&
+				quit "arch already specified"
+			arch=$rest
+			;;
+		subarch)
+			[ "x$subarch" != x ] &&
+				quit "subarch already specified"
+			subarch=$rest
+			;;
+		cross-compile)
+			[ "x$cross" != x ] &&
+				quit "cross-compile already specified"
+			cross=$rest
+			;;
+		nodebug)
+			nodebug=y
+			;;
+		mk)
+			echo "MK += $rest" >> "$CONFIG_MK"
+			;;
+		build)
+			echo "MK += $rest.mk" >> "$CONFIG_MK"
+			echo "CONFIG_DEFAULT_TGTS += $rest" >> "$CONFIG_MK"
+			;;
+		"")
+			;;
+		*)
+			quit "bad command \"$line\""
+			;;
+		esac
+	done < "$1"
+}
+
+main()
+{
+	# Set default options
+	a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; apexdir=$(cd "$a" && pwd)
+	srcdir="$apexdir"
+	print=echo
+	builddir=$(pwd)
+
+	# Process input arguments
+	parse_args "$@"
+
+	# Make sure we are not attempting to configure in $srcdir
+	[ "$srcdir" = "$builddir" ] &&
+		quit "in-tree build not supported"
+
+	CONFIG_MK="conf/config.mk"
+	CONFIG_H="conf/config.h"
+	CONFIG_LD="conf/config.ld"
+
+	mkdir -p "$builddir/conf" ||
+		quit "can not create $builddir/conf"
+
+	{
+		echo "#"
+		echo "# config.mk - Automatically generated file. Do not edit."
+		echo "#"
+		echo
+	} > "$CONFIG_MK"
+
+	{
+		echo "/*"
+		echo " * config.h - Automatically generated file. Do not edit."
+		echo " */"
+		echo
+	} > "$CONFIG_H"
+
+	{
+		echo "/*"
+		echo " * config.ld - Automatically generated file. Do not edit."
+		echo " */"
+		echo
+	} > "$CONFIG_LD"
+
+	$print "Processing configuration files..."
+	$print
+
+	# Project configuration is mandatory
+	[ "x$project" = x ] &&
+		quit "'--project' option not specified"
+	find_config PROJECT_IN project "$project"
+	$print "Project: $project"
+	parse_config "$PROJECT_IN"
+
+	# Machine configuration is mandatory
+	[ "x$machine" = x ] &&
+		quit "no machine specified"
+	find_config MACHINE_IN machine "$machine"
+	machine=${machine%%/conf*}
+	$print "Machine: $machine"
+	parse_config "$MACHINE_IN"
+
+	# Optional cpu configuration
+	if [ "x$cpu" != x ]; then
+		find_config CPU_IN cpu "$cpu"
+		$print "CPU:     $cpu"
+		parse_config "$CPU_IN"
 	fi
 
-	arch=`expr "x$target" : 'x\([^=]*\)-'`
-	platform=`expr "x$target" : 'x[^=]*-\(.*\)'`
-
-	case "$arch" in
-	i386|arm|ppc|sh|mips)
+	# Verify architecture is sane
+	case $arch in
+	arm|i386|powerpc)
+		;;
+	"")
+		quit "Architecture not specified"
 		;;
 	*)
 		quit "Unkown target architecture: $arch"
 		;;
 	esac
 
-	host_name=`uname -s`
-	case $host_name in
-	CYGWIN*)
-		case $arch in
-		i386)    cross="i386-elf-" ;;
-		arm)     cross="arm-elf-" ;;
-		ppc)     cross="powerpc-eabi-" ;;
-		sh)      cross="sh-elf-" ;;
-		mips)    cross="mips-elf-" ;;
-		esac
-		;;
-	esac
-	cc="${cross}gcc"
-}
-
-setgccoption()
-{
-	if $cc $1 -S -xc /dev/null -o /dev/null > /dev/null 2>&1; then
-		echo "CONFIG_CFLAGS+= $1" >> $CONFIG_MK
+	# Guess cross compiler if it wasn't explicitly specified
+	if [ "x$cross" = x ]; then
+		cross=$arch-linux-musleabi
+		$print
+		$print "Guessing cross compiler prefix $cross"
 	fi
-}
 
-setparm()
-{
-	echo "$1=$2"
-	echo "$1=$2" >> $CONFIG_MK
-	if [ "$2" = "n" ] ; then
-		echo "#undef $1" >> $CONFIG_H
-	else
-		echo "#define $1 $2" >> $CONFIG_H
-	fi
-}
+	# Set general configuration options
+	{
+		echo "CONFIG_SRCDIR := $srcdir"
+		echo "CONFIG_APEXDIR := $apexdir"
+		echo "CONFIG_BUILDDIR := $builddir"
+		echo "CONFIG_PROJECT := $project"
+		echo "CONFIG_MACHINE := $machine"
+		echo "CONFIG_CPU := $cpu"
+		echo "CONFIG_ARCH := $arch"
+		echo "CONFIG_CROSS_COMPILE := $cross-"
+		[ "x$subarch" != x ] &&
+			echo "CONFIG_SUBARCH := $subarch"
+		[ "x$nodebug" != x ] &&
+			echo "CONFIG_DEFS += -DNDEBUG"
+		[ "x$bootimg" != x ] &&
+			echo "MK += bootimg.mk"
+	} >> "$CONFIG_MK"
 
-options()
-{
-	param=`expr "x$1" : 'x\([^= ]*\)'`
-	value=`expr "x$1" : 'x[^=]*=\([A-Za-z0-9]*\)'`
-	if [ "x$value" = x ] ; then
-		echo "CONFIG_$param=y"
-		echo "CONFIG_$param=y" >> $CONFIG_MK
-		echo "#define CONFIG_$param y" >> $CONFIG_H
-	else
-		echo "CONFIG_$param=$value"
-		echo "CONFIG_$param=$value" >> $CONFIG_MK
-		echo "#define CONFIG_$param $value" >> $CONFIG_H
-	fi
-}
+	{
+		echo "#define CONFIG_PROJECT \"$project\""
+		echo "#define CONFIG_MACHINE \"$machine\""
+		echo "#define CONFIG_CPU \"$cpu\""
+		echo "#define CONFIG_ARCH \"$arch\""
+		[ "x$subarch" != x ] &&
+			echo "#define CONFIG_SUBARCH \"$subarch\""
+	} >> "$CONFIG_H"
 
-memory()
-{
-	echo "$1=$2"
-	echo "$1=$2" >> $CONFIG_MK
-	echo "$1 = $2 ;" >> $CONFIG_LD
-	echo "#define $1 $2" >> $CONFIG_H
-}
+	# Write makefile
+	cat > "$builddir/Makefile" <<MAKEFILE
+#
+# Automatically generated file. Do not edit.
+#
+include $CONFIG_MK
+ifeq (\$(filter \$(CONFIG_SRCDIR),\$(.INCLUDE_DIRS)),)
+    all: $CONFIG_MK
+    $CONFIG_MK: $0 $PROJECT_IN $MACHINE_IN $CPU_IN $INCLUDE_IN
+	\$(error config changed: please run 'configure')
+    Makefile $0 $PROJECT_IN $MACHINE_IN $CPU_IN $INCLUDE_IN: ;
+    .PHONY: force
+    %: force
+    ifeq (\$(CONFIG_SRCDIR),\$(CONFIG_APEXDIR))
+	\$(MAKE) \$(addprefix -I,\$(CONFIG_SRCDIR)) _MFLAGS="\$(MFLAGS)" -rR --warn-undefined-variables \$(MAKECMDGOALS)
+    else
+	\$(MAKE) \$(addprefix -I,\$(CONFIG_SRCDIR) \$(CONFIG_APEXDIR)) _MFLAGS="\$(MFLAGS)" -rR --warn-undefined-variables \$(MAKECMDGOALS)
+    endif
+else
+    include mk/main.mk
+endif
+MAKEFILE
 
-parseconfig()
-{
-	while read line; do
-		read cmd rest <<-END_OF_COMMAND
-			$line
-		END_OF_COMMAND
-
-		case "$cmd" in
-		options)
-			options $rest
-			;;
-		makeoptions)
-			echo "$rest" >> $CONFIG_MK
-			;;
-		memory)
-			memory $rest
-			;;
-		device)
-			# T.B.D. make device table..
-			;;
-		esac
-	done < $1
-	echo "" >> $CONFIG_MK
-	echo "" >> $CONFIG_H
-}
-
-parsefiles()
-{
-	while read line; do
-		read cmd rest <<-END_OF_COMMAND
-			$line
-		END_OF_COMMAND
-
-		case "$cmd" in
-		drivers)
-			echo "DRIVER+= $rest" >> $CONFIG_MK
-			;;
-		boottasks)
-			echo "BOOTTASKS+= $rest" >> $CONFIG_MK
-			;;
-		bootfiles)
-			echo "BOOTFILES+= $rest" >> $CONFIG_MK
-			;;
-		esac
-	done < $1
-	echo "" >> $CONFIG_MK
-}
-
-main()
-{
-	#
-	# Process input arguments
-	#
-	setdefaults
-	parseargs "$@"
-	gettarget
-	checkpath
-
-	echo "Processing configuration files..."
-	echo ""
-
-	echo "#" > $CONFIG_MK
-	echo "# Automatically generated file. Don't edit" >> $CONFIG_MK
-	echo "#" >> $CONFIG_MK
-
-	echo "/*" > $CONFIG_H
-	echo " * Automatically generated file. Don't edit" >> $CONFIG_H
-	echo " */" >> $CONFIG_H
-
-	echo "/*" > $CONFIG_LD
-	echo " * Automatically generated file. Don't edit" >> $CONFIG_LD
-	echo " */" >> $CONFIG_LD
-
-	#
-	# Generate configuration parameters
-	#
-	echo "#define AUTODETECT 0" >> $CONFIG_H
-	echo "AUTODETECT = 0 ;" >> $CONFIG_LD
-	parseconfig $CONFIG_IN
-	parseconfig $CMDBOX_IN
-	parsefiles $CONFIG_FILES
-
-	#
-	# Setup build settings
-	#
-	echo "SRCDIR=$srcdir" >> $CONFIG_MK
-	echo "ARCH=$arch" >> $CONFIG_MK
-	echo "PLATFORM=$platform" >> $CONFIG_MK
-	echo "PROFILE=$platform$profile" >> $CONFIG_MK
-	[ "x$cross" != x ] && echo "CROSS_COMPILE=$cross" >> $CONFIG_MK
-	[ "x$nodebug" != x ] && echo "NDEBUG=1" >> $CONFIG_MK
-	echo "" >> $CONFIG_MK
-
-	#
-	# Check gcc options
-	#
-	setgccoption "-fno-stack-protector"
-
-	echo ""
-	echo "Prex is now hopefully configured for your setup."
-	echo "Now you must run a make."
+	$print
+	$print "APEX is configured. Now run 'make'."
 }
 
 main "$@"

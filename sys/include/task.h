@@ -27,53 +27,97 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _TASK_H
-#define _TASK_H
+#ifndef task_h
+#define task_h
 
-#include <sys/cdefs.h>
-#include <prex/capability.h>	/* for cap_t */
+#include <ksigaction.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <sync.h>
 #include <timer.h>
 
 /*
  * Task struct
  */
 struct task {
-	int		magic;		/* magic number */
-	char		name[MAXTASKNAME]; /* task name */
-	struct list	link;		/* link for all tasks in system */
-	struct list	objects;	/* objects owned by this task */
-	struct list	threads;	/* threads in this task */
-	vm_map_t	map;		/* address space description */
-	int		suscnt;		/* suspend counter */
-	cap_t		capability;	/* security permission flag */
-	struct timer	alarm;		/* alarm timer */
-	void (*handler)(int);		/* pointer to exception handler */
-	task_t		parent;		/* parent task */
+	int		magic;		    /* magic number */
+	char		name[12];	    /* task name */
+	struct list	link;		    /* link for all tasks in system */
+	struct list	threads;	    /* threads in this task */
+	struct as      *as;		    /* address space description */
+	int		suscnt;		    /* suspend counter */
+	unsigned	capability;	    /* security permission flag */
+	struct task    *parent;		    /* parent task */
+	struct list	futexes;	    /* futexes in use by this task */
+	struct itimer	itimer_prof;	    /* interval timer ITIMER_PROF */
+	struct itimer	itimer_virtual;	    /* interval timer ITIMER_VIRTUAL */
+	struct timer	itimer_real;	    /* interval timer ITIMER_REAL */
+
+	/* Signal Management */
+	k_sigset_t	    sig_pending;	/* pending signals */
+	struct k_sigaction  sig_action[NSIG];	/* signal handlers */
+
+	/* Process Management */
+	pid_t		pgid;		    /* process group id */
+	pid_t		sid;		    /* session id */
+	int	        state;		    /* process state */
+	int	        exitcode;	    /* process exit code */
+	struct event	child_event;	    /* child exited event */
+	int		termsig;	    /* signal to parent on terminate */
+	struct thread  *vfork;		    /* vfork thread to wake */
+
+	/* File System State */
+	struct mutex	fs_lock;	    /* lock for file system data */
+	uintptr_t	file[32];	    /* array of file pointers */
+	struct file    *cwdfp;		    /* directory for cwd */
+	mode_t		umask;		    /* current file creation mask */
 };
 
-#define cur_task()	  (cur_thread->task)
-#define task_valid(tsk)	  (kern_area(tsk) && ((tsk)->magic == TASK_MAGIC))
+/* process status */
+#define PS_RUN		1		    /* running */
+#define PS_ZOMB		2		    /* terminated but not waited for */
+#define PS_STOP		3		    /* stopped */
 
 /* vm option for task_create(). */
-#define VM_NEW		0	/* Create new memory map */
-#define VM_SHARE	1	/* Share parent's memory map */
-#define VM_COPY		2	/* Duplicate parent's memory map */
+#define VM_NEW		0		    /* create new memory map */
+#define VM_SHARE	1		    /* share parent's memory map */
+#define VM_COPY		2		    /* duplicate parent's memory map */
 
+/* capabilities */
+#define CAP_SETPCAP	0x00000001  /* setting capability */
+#define CAP_TASK	0x00000002  /* controlling another task's execution */
+#define CAP_MEMORY	0x00000004  /* touching another task's memory */
+#define CAP_KILL	0x00000008  /* raising exception to another task */
+#define CAP_SEMAPHORE	0x00000010  /* accessing another task's semaphore */
+#define CAP_NICE	0x00000020  /* changing scheduling parameter */
+#define CAP_IPC		0x00000040  /* accessing another task's IPC object */
+#define CAP_DEVIO	0x00000080  /* device I/O operation */
+#define CAP_POWER	0x00000100  /* power control including shutdown */
+#define CAP_TIME	0x00000200  /* setting system time */
+#define CAP_RAWIO	0x00000400  /* direct I/O access */
+#define CAP_DEBUG	0x00000800  /* debugging requests */
+#define CAP_ADMIN	0x00010000  /* mount,umount,sethostname,setdomainname,etc */
 
-__BEGIN_DECLS
-int	 task_create(task_t, int, task_t *);
-int	 task_terminate(task_t);
-task_t	 task_self(void);
-int	 task_suspend(task_t);
-int	 task_resume(task_t);
-int	 task_name(task_t, const char *);
-int	 task_getcap(task_t, cap_t *);
-int	 task_setcap(task_t, cap_t *);
-int	 task_capable(cap_t);
-int	 task_access(task_t);
-void	 task_bootstrap(void);
-void	 task_dump(void);
-void	 task_init(void);
-__END_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#endif /* !_TASK_H */
+struct task    *task_cur(void);
+struct task    *task_find(pid_t);
+pid_t		task_pid(struct task *);
+bool		task_valid(struct task *);
+int		task_create(struct task *, int, struct task **);
+int		task_destroy(struct task *);
+int	        task_suspend(struct task *);
+int	        task_resume(struct task *);
+int	        task_name(struct task *, const char *);
+bool	        task_capable(unsigned);
+bool	        task_access(struct task *);
+void		task_dump(void);
+void		task_init(void);
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
+
+#endif /* !task_h */

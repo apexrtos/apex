@@ -27,21 +27,14 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _VERSION_H
-#define _VERSION_H
+#ifndef version_h
+#define version_h
 
-#include <sys/cdefs.h>
+#include <conf/config.h>
 
-#define MAJORVERSION	0
-#define MINORVERSION	8
-#define PATCHLEVEL	1
+#define VERSION_MAJOR	0
+#define VERSION_MINOR	1
+#define VERSION_PATCH	0
+#define VERSION_STRING	"0.1.0"
 
-#define __s(x) __STRING(x)
-
-#define VERSION	__s(MAJORVERSION) "." __s(MINORVERSION) "." __s(PATCHLEVEL)
-#define MACHINE	__s(__ARCH__) "-" __s(__PLATFORM__)
-
-#define BANNER	"Prex version " VERSION " for " MACHINE \
-		" ("__DATE__ ")\n"
-
-#endif /* !_VERSION_H */
+#endif /* !version_h */

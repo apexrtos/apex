@@ -27,55 +27,49 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _TIMER_H
-#define _TIMER_H
+#ifndef timer_h
+#define timer_h
 
-#include <sys/cdefs.h>
 #include <event.h>
+#include <list.h>
+#include <types.h>
+
+struct itimerval;
+struct timespec;
+struct timeval;
 
 struct timer {
 	struct list	link;		/* linkage on timer chain */
 	int		active;		/* true if active */
-	u_long		expire;		/* expire time (ticks) */
-	u_long		interval;	/* time interval */
+	uint64_t	expire;		/* expire time (nsec) */
+	uint64_t	interval;	/* time interval (nsec) */
 	struct event	event;		/* event for this timer */
-	void (*func)(void *);		/* function to call */
-	void		*arg;		/* function argument */
+	void	      (*func)(void *);	/* function to call */
+	void	       *arg;		/* function argument */
 };
 
+struct itimer {
+	uint64_t remain;		/* remaining time, 0 if disabled */
+	uint64_t interval;		/* reload interval, 0 if disabled */
+};
+
+uint64_t    ts_to_ns(const struct timespec *);
+void	    ns_to_ts(uint64_t, struct timespec *);
+uint64_t    tv_to_ns(const struct timeval *);
+void	    ns_to_tv(uint64_t, struct timeval *);
+
+void	    timer_callout(struct timer *, uint64_t, uint64_t, void (*)(void *), void *);
+void	    timer_redirect(struct timer *, void (*)(void *), void *);
+void	    timer_stop(struct timer *);
+uint64_t    timer_delay(uint64_t);
+void	    timer_tick(int);
+uint64_t    timer_monotonic(void);
+void	    timer_init(void);
+
 /*
- * Macro to compare two timer counts.
- * time_after() returns true if a is after b.
+ * Syscalls
  */
-#define time_after(a,b)		(((long)(b) - (long)(a)) < 0)
-#define time_before(a,b)	time_after(b,a)
+int	    sc_getitimer(int, struct itimerval *);
+int	    sc_setitimer(int, const struct itimerval *, struct itimerval *);
 
-#define time_after_eq(a,b)	(((long)(a) - (long)(b)) >= 0)
-#define time_before_eq(a,b)	time_after_eq(b,a)
-
-/*
- * Macro to convert milliseconds and tick.
- */
-#define msec_to_tick(ms)	(((ms) >= 0x20000) ? \
-				 ((ms) / 1000UL) * HZ : ((ms) * HZ) / 1000UL)
-
-#define tick_to_msec(tick)	(((tick) * 1000) / HZ)
-
-
-__BEGIN_DECLS
-void	 timer_callout(struct timer *, u_long, void (*)(void *), void *);
-void	 timer_stop(struct timer *);
-u_long	 timer_delay(u_long);
-int	 timer_sleep(u_long, u_long *);
-int	 timer_alarm(u_long, u_long *);
-int	 timer_periodic(struct thread *, u_long, u_long);
-int	 timer_waitperiod(void);
-void	 timer_cleanup(struct thread *);
-int	 timer_hook(void (*)(int));
-void	 timer_tick(void);
-u_long	 timer_count(void);
-void	 timer_info(struct info_timer *);
-void	 timer_init(void);
-__END_DECLS
-
-#endif /* !_TIMER_H */
+#endif /* !timer_h */

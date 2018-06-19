@@ -27,24 +27,36 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _EVENT_H
-#define _EVENT_H
+#ifndef event_h
+#define event_h
 
-#include <sys/cdefs.h>
 #include <queue.h>
 
 /*
  * Event for sleep/wakeup
  */
 struct event {
-	struct queue	sleepq;		/* queue for waiting thread */
-	char		*name;		/* pointer to event name string */
+	struct queue sleepq;		/* queue for waiting thread */
+	enum {
+		ev_IO,
+		ev_MSG,
+		ev_LOCK,
+		ev_SEM,
+		ev_COND,
+		ev_SLEEP,
+		ev_EXCEPTION
+	} type;
+	char *name;			/* pointer to event name string */
 };
 
 /* Macro to initialize event dynamically */
-#define event_init(event, evt_name) \
-    do { queue_init(&(event)->sleepq); (event)->name = evt_name; } while (0)
+#define event_init(event, evt_name, evt_type) \
+	do { \
+		queue_init(&(event)->sleepq); \
+		(event)->name = evt_name; \
+		(event)->type = evt_type; \
+	} while (0)
 
 #define event_waiting(event)   (!queue_empty(&(event)->sleepq))
 
-#endif /* !_EVENT_H */
+#endif /* !event_h */

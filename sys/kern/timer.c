@@ -31,24 +31,28 @@
  * timer.c - kernel timer services.
  */
 
-#include <kernel.h>
-#include <task.h>
-#include <event.h>
 #include <timer.h>
-#include <irq.h>
-#include <sched.h>
-#include <thread.h>
-#include <kmem.h>
-#include <exception.h>
 
-static volatile u_long	lbolt;		/* ticks elapsed since bootup */
+#include <access.h>
+#include <arch.h>
+#include <assert.h>
+#include <debug.h>
+#include <errno.h>
+#include <irq.h>
+#include <sch.h>
+#include <sig.h>
+#include <stdlib.h>	    /* remove when lldiv is no longer required */
+#include <sys/mman.h>
+#include <sys/time.h>
+#include <task.h>
+#include <thread.h>
+
+static volatile uint64_t monotonic;	/* nanoseconds elapsed since bootup */
 
 static struct event	timer_event;	/* event to wakeup a timer thread */
 static struct event	delay_event;	/* event for the thread delay */
 static struct list	timer_list;	/* list of active timers */
 static struct list	expire_list;	/* list of expired timers */
-
-static void (*volatile tick_hook)(int); /* hook routine for timer tick */
 
 /*
  * Macro to get a timer element for the next expiration.
@@ -57,15 +61,14 @@ static void (*volatile tick_hook)(int); /* hook routine for timer tick */
 	(list_entry(list_first(&timer_list), struct timer, link))
 
 /*
- * Get remaining ticks to the expiration time.
+ * Get remaining nanoseconds to the expiration time.
  * Return 0 if time already passed.
  */
-static u_long
-time_remain(u_long expire)
+static uint64_t
+time_remain(uint64_t expire)
 {
-
-	if (time_before(lbolt, expire))
-		return expire - lbolt;
+	if (expire < monotonic)
+		return expire - monotonic;
 	return 0;
 }
 
@@ -74,12 +77,12 @@ time_remain(u_long expire)
  * Requires interrupts to be disabled by the caller.
  */
 static void
-timer_add(struct timer *tmr, u_long ticks)
+timer_add(struct timer *tmr, uint64_t nsec)
 {
-	list_t head, n;
+	struct list *head, *n;
 	struct timer *t;
 
-	tmr->expire = lbolt + ticks;
+	tmr->expire = monotonic + nsec;
 
 	/*
 	 * We sort the timer list by time. So, we can
@@ -89,10 +92,64 @@ timer_add(struct timer *tmr, u_long ticks)
 	head = &timer_list;
 	for (n = list_first(head); n != head; n = list_next(n)) {
 		t = list_entry(n, struct timer, link);
-		if (time_before(tmr->expire, t->expire))
+		if (tmr->expire < t->expire)
 			break;
 	}
 	list_insert(list_prev(n), &tmr->link);
+}
+
+/*
+ * Convert from timespec to nanoseconds
+ */
+uint64_t
+ts_to_ns(const struct timespec *ts)
+{
+	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
+}
+
+/*
+ * Convert from nanoseconds to timespec
+ */
+void
+ns_to_ts(uint64_t ns, struct timespec *ts)
+{
+	/* REVISIT: this crap shouldn't be required, but:
+	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
+#if UINTPTR_MAX == 0xffffffff
+	const lldiv_t res = lldiv(ns, 1000000000);
+	ts->tv_sec = res.quot;
+	ts->tv_nsec = res.rem;
+#else
+	ts->tv_sec = ns / 1000000000ULL;
+	ts->tv_nsec = ns % 1000000000ULL;
+#endif
+}
+
+/*
+ * Convert from timeval to nanoseconds
+ */
+uint64_t
+tv_to_ns(const struct timeval *tv)
+{
+	return tv->tv_sec * 1000000000ULL + tv->tv_usec * 1000ULL;
+}
+
+/*
+ * Convert from nanoseconds to timeval
+ */
+void
+ns_to_tv(uint64_t ns, struct timeval *tv)
+{
+	/* REVISIT: this crap shouldn't be required, but:
+	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
+#if UINTPTR_MAX == 0xffffffff
+	const lldiv_t res = lldiv(ns, 1000000000);
+	tv->tv_sec = res.quot;
+	tv->tv_usec = (uint32_t)res.rem / 1000;
+#else
+	tv->tv_sec = ns / 1000000000;
+	tv->tv_usec = (uint32_t)(ns % 1000000000) / 1000;
+#endif
 }
 
 /*
@@ -101,257 +158,75 @@ timer_add(struct timer *tmr, u_long ticks)
  * timer_callout()/timer_stop() from ISR at interrupt level.
  */
 void
-timer_callout(struct timer *tmr, u_long msec,
+timer_callout(struct timer *tmr, uint64_t nsec, uint64_t interval,
 	      void (*func)(void *), void *arg)
 {
-	u_long ticks;
+	assert(tmr);
 
-	ASSERT(tmr);
+	if (nsec == 0)
+		nsec = 1;
 
-	ticks = msec_to_tick(msec);
-	if (ticks == 0)
-		ticks = 1;
-
-	irq_lock();
+	const int s = irq_disable();
 	if (tmr->active)
 		list_remove(&tmr->link);
 	tmr->func = func;
 	tmr->arg = arg;
 	tmr->active = 1;
-	tmr->interval = 0;
-	timer_add(tmr, ticks);
-	irq_unlock();
+	tmr->interval = interval;
+	timer_add(tmr, nsec);
+	irq_restore(s);
 }
 
+/*
+ * if timer is active adjust callback function
+ */
+void
+timer_redirect(struct timer *tmr, void (func)(void *), void *arg)
+{
+	const int s = irq_disable();
+	if (tmr->active) {
+		tmr->func = func;
+		tmr->arg = arg;
+	}
+	irq_restore(s);
+}
+
+/*
+ * stop timer
+ */
 void
 timer_stop(struct timer *tmr)
 {
-	ASSERT(tmr);
+	assert(tmr);
 
-	irq_lock();
+	const int s = irq_disable();
 	if (tmr->active) {
 		list_remove(&tmr->link);
 		tmr->active = 0;
 	}
-	irq_unlock();
+	irq_restore(s);
 }
 
 /*
  * timer_delay - delay thread execution.
  *
  * The caller thread is blocked for the specified time.
- * Returns 0 on success, or the remaining time (msec) on failure.
+ * Returns 0 on success, or the remaining time (nsec) on failure.
  * This service is not available at interrupt level.
  */
-u_long
-timer_delay(u_long msec)
+uint64_t
+timer_delay(uint64_t nsec)
 {
 	struct timer *tmr;
 	u_long remain = 0;
 	int rc;
 
-	ASSERT(irq_level == 0);
-
-	rc = sched_tsleep(&delay_event, msec);
+	rc = sch_nanosleep(&delay_event, nsec);
 	if (rc != SLP_TIMEOUT) {
-		tmr = &cur_thread->timeout;
-		remain = tick_to_msec(time_remain(tmr->expire));
+		tmr = &thread_cur()->timeout;
+		remain = time_remain(tmr->expire);
 	}
 	return remain;
-}
-
-/*
- * timer_sleep - sleep system call.
- *
- * Stop execution of the current thread for the indicated amount
- * of time.  If the sleep is interrupted, the remaining time
- * is set in "remain".  Returns EINTR if sleep is canceled by
- * some reasons.
- */
-int
-timer_sleep(u_long msec, u_long *remain)
-{
-	u_long left;
-	int err = 0;
-
-	left = timer_delay(msec);
-
-	if (remain != NULL)
-		err = umem_copyout(&left, remain, sizeof(left));
-	if (err == 0 && left > 0)
-		err = EINTR;
-	return err;
-}
-
-/*
- * Alarm timer expired:
- * Send an alarm exception to the target task.
- */
-static void
-alarm_expire(void *arg)
-{
-
-	exception_post((task_t)arg, SIGALRM);
-}
-
-/*
- * timer_alarm - alarm system call.
- *
- * SIGALRM exception is sent to the caller task when specified
- * delay time is passed. If passed time is 0, stop the current
- * running timer.
- */
-int
-timer_alarm(u_long msec, u_long *remain)
-{
-	struct timer *tmr;
-	task_t self = cur_task();
-	u_long left = 0;
-	int err = 0;
-
-	irq_lock();
-	tmr = &self->alarm;
-	if (tmr->active) {
-		/*
-		 * Save the remaining time to return
-		 * before we update the timer value.
-		 */
-		left = tick_to_msec(time_remain(tmr->expire));
-	}
-	if (msec == 0)
-		timer_stop(tmr);
-	else
-		timer_callout(tmr, msec, &alarm_expire, self);
-
-	irq_unlock();
-
-	if (remain != NULL)
-		err = umem_copyout(&left, remain, sizeof(left));
-	return err;
-}
-
-/*
- * timer_periodic - set periodic timer for the specified thread.
- *
- * The periodic thread will wait the timer period by calling
- * timer_waitperiod(). The unit of start/period is milli-seconds.
- */
-int
-timer_periodic(thread_t th, u_long start, u_long period)
-{
-	struct timer *tmr;
-	int err = 0;
-
-	ASSERT(irq_level == 0);
-
-	if (start != 0 && period == 0)
-		return EINVAL;
-
-	sched_lock();
-	if (!thread_valid(th)) {
-		sched_unlock();
-		return ESRCH;
-	}
-	if (th->task != cur_task()) {
-		sched_unlock();
-		return EPERM;
-	}
-	tmr = th->periodic;
-	if (start == 0) {
-		if (tmr != NULL && tmr->active)
-			timer_stop(tmr);
-		else
-			err = EINVAL;
-	} else {
-		if (tmr == NULL) {
-			/*
-			 * Allocate a timer element at first call.
-			 * We don't put this data in the thread
-			 * structure because only a few threads
-			 * will use the periodic timer function.
-			 */
-			tmr = kmem_alloc(sizeof(tmr));
-			if (tmr == NULL) {
-				sched_unlock();
-				return ENOMEM;
-			}
-			event_init(&tmr->event, "periodic");
-			tmr->active = 1;
-			th->periodic = tmr;
-		}
-		/*
-		 * Program an interval timer.
-		 */
-		irq_lock();
-		tmr->interval = msec_to_tick(period);
-		if (tmr->interval == 0)
-			tmr->interval = 1;
-		timer_add(tmr, msec_to_tick(start));
-		irq_unlock();
-	}
-	sched_unlock();
-	return err;
-}
-
-
-/*
- * timer_waitperiod - wait next period of the periodic timer.
- *
- * Since this routine can exit by any exceptions, the control
- * may return at non-period time. So, the caller must retry
- * immediately if the error status is EINTR. This will be
- * automatically done by the library stub routine.
- */
-int
-timer_waitperiod(void)
-{
-	struct timer *tmr;
-	int rc, err = 0;
-
-	ASSERT(irq_level == 0);
-
-	if ((tmr = cur_thread->periodic) == NULL)
-		return EINVAL;
-
-	if (time_before(lbolt, tmr->expire)) {
-		/*
-		 * Sleep until timer_tick() routine
-		 * wakes us up.
-		 */
-		rc = sched_sleep(&tmr->event);
-		if (rc != SLP_SUCCESS)
-			err = EINTR;
-	}
-	return err;
-}
-
-/*
- * Clean up our resource for the thread termination.
- */
-void
-timer_cleanup(thread_t th)
-{
-
-	if (th->periodic != NULL) {
-		timer_stop(th->periodic);
-		kmem_free(th->periodic);
-	}
-}
-
-/*
- * Install a timer hook routine.
- * We allow only one hook routine in system.
- */
-int
-timer_hook(void (*func)(int))
-{
-
-	if (tick_hook != NULL)
-		return -1;
-	irq_lock();
-	tick_hook = func;
-	irq_unlock();
-	return 0;
 }
 
 /*
@@ -367,7 +242,7 @@ timer_thread(void *arg)
 
 	for (;;) {
 		/* Wait until next timer expiration. */
-		sched_sleep(&timer_event);
+		sch_sleep(&timer_event);
 
 		while (!list_empty(&expire_list)) {
 			/*
@@ -377,7 +252,7 @@ timer_thread(void *arg)
 					 struct timer, link);
 			list_remove(&tmr->link);
 			tmr->active = 0;
-			sched_lock();
+			sch_lock();
 			interrupt_enable();
 			(*tmr->func)(tmr->arg);
 
@@ -385,7 +260,7 @@ timer_thread(void *arg)
 			 * Unlock scheduler here in order to give
 			 * chance to higher priority threads to run.
 			 */
-			sched_unlock();
+			sch_unlock();
 			interrupt_disable();
 		}
 	}
@@ -393,24 +268,50 @@ timer_thread(void *arg)
 }
 
 /*
+ * run_itimer - decrement elapsed time from itimer, signal if time expired,
+ * reload if configured to do so.
+ */
+static void
+run_itimer(struct itimer *it, uint32_t ns, int sig)
+{
+	/* disabled */
+	if (!it->remain)
+		return;
+
+	/* not yet expired */
+	if (ns < it->remain) {
+		it->remain -= ns;
+		return;
+	}
+
+	/* expired */
+	it->remain = it->interval - (ns - it->remain);
+	if (it->remain > it->interval)
+		it->remain = 1;	    /* overflow */
+	sig_task(task_cur(), sig);
+}
+
+/*
  * Timer tick handler
  *
- * timer_tick() is called straight from the real time
- * clock interrupt.  All interrupts are still disabled
- * at the entry of this routine.
+ * timer_tick() is called straight from the real time clock interrupt.
  */
 void
-timer_tick(void)
+timer_tick(int ticks)
 {
 	struct timer *tmr;
-	u_long ticks;
-	int idle, wakeup = 0;
+	int wakeup = 0;
+	struct task *t = task_cur();
 
 	/*
-	 * Bump time in ticks.
-	 * Note that it is allowed to wrap.
+	 * Convert elapsed time to nanoseconds
 	 */
-	lbolt++;
+	const uint32_t ns = ticks * 1000000000 / CONFIG_HZ;
+
+	/*
+	 * Bump time.
+	 */
+	monotonic += ns;
 
 	/*
 	 * Handle all of the timer elements that have expired.
@@ -420,7 +321,7 @@ timer_tick(void)
 		 * Check timer expiration.
 		 */
 		tmr = timer_next();
-		if (time_before(lbolt, tmr->expire))
+		if (monotonic < tmr->expire)
 			break;
 		/*
 		 * Remove an expired timer from the list and wakup
@@ -433,11 +334,11 @@ timer_tick(void)
 			/*
 			 * Periodic timer
 			 */
-			ticks = time_remain(tmr->expire + tmr->interval);
-			if (ticks == 0)
-				ticks = 1;
-			timer_add(tmr, ticks);
-			sched_wakeup(&tmr->event);
+			uint64_t rem = time_remain(tmr->expire + tmr->interval);
+			if (rem == 0)
+				rem = 1;
+			timer_add(tmr, rem);
+			sch_wakeup(&tmr->event, SLP_SUCCESS);
 		} else {
 			/*
 			 * One-shot timer
@@ -447,32 +348,25 @@ timer_tick(void)
 		}
 	}
 	if (wakeup)
-		sched_wakeup(&timer_event);
+		sch_wakeup(&timer_event, SLP_SUCCESS);
 
-	sched_tick();
+	/* itimer_prof decrements any time the process is running */
+	run_itimer(&t->itimer_prof, ns, SIGPROF);
 
-	/*
-	 * Call a hook routine for power management
-	 * or profiling work.
-	 */
-	if (tick_hook != NULL) {
-		idle = (cur_thread->prio == PRIO_IDLE) ? 1 : 0;
-		(*tick_hook)(idle);
-	}
+	/* itimer_virtual decrements only when the process is in userspace */
+	if (interrupt_from_userspace())
+		run_itimer(&t->itimer_virtual, ns, SIGVTALRM);
+
+	sch_elapse(ns);
 }
 
-u_long
-timer_count(void)
+/*
+ * Return monotonic time
+ */
+uint64_t
+timer_monotonic(void)
 {
-
-	return lbolt;
-}
-
-void
-timer_info(struct info_timer *info)
-{
-
-	info->hz = HZ;
+	return monotonic;
 }
 
 /*
@@ -481,13 +375,108 @@ timer_info(struct info_timer *info)
 void
 timer_init(void)
 {
+	struct thread *th;
 
 	list_init(&timer_list);
 	list_init(&expire_list);
-	event_init(&timer_event, "timer");
-	event_init(&delay_event, "delay");
+	event_init(&timer_event, "timer", ev_SLEEP);
+	event_init(&delay_event, "delay", ev_SLEEP);
 
 	/* Start timer thread */
-	if (kthread_create(&timer_thread, NULL, PRIO_TIMER) == NULL)
+	th = kthread_create(&timer_thread, NULL, PRI_TIMER, "timer", MEM_FAST);
+	if (th == NULL)
 		panic("timer_init");
+}
+
+/*
+ * sc_getitimer - get the value of an interval timer
+ */
+int
+sc_getitimer(int timer, struct itimerval *o)
+{
+	if (!u_access_ok(o, sizeof *o, PROT_WRITE))
+		return DERR(-EFAULT);
+	if (timer < 0 || timer > ITIMER_PROF)
+		return DERR(-EINVAL);
+
+	struct task *t = task_cur();
+	const int s = irq_disable();
+
+	switch (timer) {
+	case ITIMER_PROF:
+		ns_to_tv(t->itimer_prof.remain, &o->it_value);
+		ns_to_tv(t->itimer_prof.interval, &o->it_interval);
+		break;
+	case ITIMER_VIRTUAL:
+		ns_to_tv(t->itimer_virtual.remain, &o->it_value);
+		ns_to_tv(t->itimer_virtual.interval, &o->it_interval);
+		break;
+	case ITIMER_REAL:
+		ns_to_tv(time_remain(t->itimer_real.expire), &o->it_value);
+		ns_to_tv(t->itimer_real.interval, &o->it_interval);
+		break;
+	}
+
+	irq_restore(s);
+
+	return 0;
+}
+
+/*
+ * sc_setitimer - set the value of an interval timer
+ */
+int
+sc_setitimer(int timer, const struct itimerval *n, struct itimerval *o)
+{
+	if (!u_address(n) || (o && !u_access_ok(o, sizeof *o, PROT_WRITE)))
+		return DERR(-EFAULT);
+	if (timer < 0 || timer > ITIMER_PROF)
+		return DERR(-EINVAL);
+
+	void alarm(void *tv)
+	{
+		sig_task((struct task *)tv, SIGALRM);
+	}
+
+	struct itimerval old;
+	struct task *t = task_cur();
+	const int s = irq_disable();
+
+	switch (timer) {
+	case ITIMER_PROF:
+		if (o) {
+			ns_to_tv(t->itimer_prof.remain, &old.it_value);
+			ns_to_tv(t->itimer_prof.interval, &old.it_interval);
+		}
+		t->itimer_prof.remain = tv_to_ns(&n->it_value);
+		t->itimer_prof.interval = tv_to_ns(&n->it_interval);
+		break;
+	case ITIMER_VIRTUAL:
+		if (o) {
+			ns_to_tv(t->itimer_virtual.remain, &old.it_value);
+			ns_to_tv(t->itimer_virtual.interval, &old.it_interval);
+		}
+		t->itimer_virtual.remain = tv_to_ns(&n->it_value);
+		t->itimer_virtual.interval = tv_to_ns(&n->it_interval);
+		break;
+	case ITIMER_REAL:
+		if (o) {
+			ns_to_tv(time_remain(t->itimer_real.expire), &old.it_value);
+			ns_to_tv(t->itimer_real.interval, &old.it_interval);
+		}
+		const u_long ns = tv_to_ns(&n->it_value);
+		if (!ns)
+			timer_stop(&t->itimer_real);
+		else
+			timer_callout(&t->itimer_real, ns,
+			    tv_to_ns(&n->it_interval), alarm, t);
+		break;
+	}
+
+	irq_restore(s);
+
+	if (o)
+		*o = old;
+
+	return 0;
 }

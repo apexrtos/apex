@@ -1,0 +1,5 @@
+#
+# Build in thumb mode
+#
+include machine/qemu/arm/virt/conf/default
+include cpu/arm/thumb

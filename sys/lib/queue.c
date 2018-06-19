@@ -33,11 +33,13 @@
 
 #include <queue.h>
 
+#include <stddef.h>
+
 /*
  * Insert element at tail of queue
  */
 void
-enqueue(queue_t head, queue_t item)
+enqueue(struct queue *head, struct queue *item)
 {
 	item->next = head;
 	item->prev = head->prev;
@@ -48,13 +50,13 @@ enqueue(queue_t head, queue_t item)
 /*
  * Remove and return element of head of queue
  */
-queue_t
-dequeue(queue_t head)
+struct queue *
+dequeue(struct queue *head)
 {
-	queue_t item;
+	struct queue *item;
 
 	if (head->next == head)
-		return ((queue_t)0);
+		return NULL;
 	item = head->next;
 	item->next->prev = head;
 	head->next = item->next;
@@ -65,7 +67,7 @@ dequeue(queue_t head)
  * Insert element after specified element
  */
 void
-queue_insert(queue_t prev, queue_t item)
+queue_insert(struct queue *prev, struct queue *item)
 {
 	item->prev = prev;
 	item->next = prev->next;
@@ -77,7 +79,7 @@ queue_insert(queue_t prev, queue_t item)
  * Remove specified element from queue
  */
 void
-queue_remove(queue_t item)
+queue_remove(struct queue *item)
 {
 	item->prev->next = item->next;
 	item->next->prev = item->prev;

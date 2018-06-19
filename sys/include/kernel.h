@@ -27,65 +27,89 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _KERNEL_H
-#define _KERNEL_H
+#ifndef kernel_h
+#define kernel_h
 
-#include <sys/cdefs.h>
-#include <sys/param.h>
-#include <sys/list.h>
-#include <sys/errno.h>
-#include <prex/bootinfo.h>
-#include <machine/stdarg.h>
-#include <arch.h>
-#include <platform.h>
-#include <debug.h>
-
-typedef struct object	*object_t;
-typedef struct task	*task_t;
-typedef struct thread	*thread_t;
-typedef struct device	*device_t;
-typedef struct mutex	*mutex_t;
-typedef struct cond	*cond_t;
-typedef struct sem	*sem_t;
-typedef struct vm_map	*vm_map_t;
-typedef struct irq	*irq_t;
-
-typedef void (*sysfn_t)(void);
-typedef void (*dkifn_t)(void);
-
-
-#include <prex/sysinfo.h>
-
-/*
- * Magic numbers
- */
-#define OBJECT_MAGIC	0x4f626a3f	/* 'Obj?' */
-#define TASK_MAGIC	0x54736b3f	/* 'Tsk?' */
-#define THREAD_MAGIC	0x5468723f	/* 'Thr?' */
-#define DEVICE_MAGIC	0x4465763f	/* 'Dev?' */
-#define MUTEX_MAGIC	0x4d75783f	/* 'Mux?' */
-#define COND_MAGIC	0x436f6e3f	/* 'Con?' */
-#define SEM_MAGIC	0x53656d3f	/* 'Sem?' */
+#include <assert.h>
+#include <conf/config.h>
+#include <types.h>
 
 /*
  * Global variables in the kernel
  */
-extern struct thread	*cur_thread;	/* pointer to the current thread */
 extern struct task	kern_task;	/* kernel task */
-extern struct bootinfo	*bootinfo;	/* pointer to boot information */
-extern volatile int	irq_level;	/* current interrupt level */
-extern const dkifn_t	driver_service[];
-extern const sysfn_t	syscall_table[];
-extern const u_int	nr_syscalls;
+extern struct bootinfo	bootinfo;	/* boot information */
 
+/*
+ * Address translation
+ */
+static inline void *
+phys_to_virt(phys *pa)
+{
+#if defined(CONFIG_MMU)
+	assert((uintptr_t)pa < CONFIG_PAGE_OFFSET);
+#endif
+	return (void *)((uintptr_t)pa + CONFIG_PAGE_OFFSET);
+}
 
-__BEGIN_DECLS
-size_t	 strlcpy(char *, const char *, size_t);
-int	 strncmp(const char *, const char *, size_t);
-size_t	 strnlen(const char *, size_t);
-void	*memcpy(void *, const void *, size_t);
-void	*memset(void *, int, size_t);
-int	 vsprintf(char *, const char *, va_list);
-__BEGIN_DECLS
+static inline phys *
+virt_to_phys(void *va)
+{
+#if defined(CONFIG_MMU)
+	assert((uintptr_t)va >= CONFIG_PAGE_OFFSET);
+#endif
+	return (phys *)((uintptr_t)va - CONFIG_PAGE_OFFSET);
+}
 
-#endif /* !_KERNEL_H */
+/*
+ * Memory page
+ */
+#define PAGE_MASK	(CONFIG_PAGE_SIZE-1)
+#define PAGE_ALIGN(n)	((__typeof__(n))(((((uintptr_t)(n)) + PAGE_MASK) & (uintptr_t)~PAGE_MASK)))
+#define PAGE_TRUNC(n)	((__typeof__(n))((((uintptr_t)(n)) & (uintptr_t)~PAGE_MASK)))
+
+/*
+ * Round p (pointer or byte index) up to a correctly-aligned value for all
+ * data types (int, long, ...).   The result is uintptr_t and must be cast to
+ * any desired pointer type.
+ */
+#if UINTPTR_MAX == 0xffffffff
+#define ALIGNBYTES	3
+#else
+#define ALIGNBYTES	7
+#endif
+#define	ALIGN(p)	((__typeof__(p))(((uintptr_t)(p) + ALIGNBYTES) & ~ALIGNBYTES))
+#define ALIGNn(p, n)	((__typeof__(p))(((uintptr_t)(p) + ((n) - 1)) & (-n)))
+#define	TRUNC(p)	((__typeof__(p))(((uintptr_t)(p)) & ~ALIGNBYTES))
+#define	TRUNCn(p, n)	((__typeof__(p))(((uintptr_t)(p)) & -(n)))
+
+/* GCC is awesome. */
+#define ARRAY_SIZE(arr) \
+    (sizeof(arr) / sizeof((arr)[0]) + sizeof(typeof(int[1 - 2 * \
+    !!__builtin_types_compatible_p(typeof(arr), typeof(&arr[0]))])) * 0)
+
+/* useful macros to provide information to optimiser */
+#define likely(x) __builtin_expect((!!(x)),1)
+#define unlikely(x) __builtin_expect((!!(x)),0)
+
+/* helpful macro to create a weak alias (from musl) */
+#define weak_alias(old, new) \
+	extern "C" __typeof(old) new __attribute__((weak, alias(#old)))
+
+/*
+ * Calculate integer logarithm of an integer
+ */
+static inline unsigned
+floor_log2(unsigned long n)
+{
+	assert(n != 0);
+	return sizeof(n) * 8 - __builtin_clzl(n) - 1;
+}
+
+static inline unsigned
+ceil_log2(unsigned long n)
+{
+	return floor_log2(n) + (n & (n - 1) ? 1 : 0);
+}
+
+#endif /* !kernel_h */

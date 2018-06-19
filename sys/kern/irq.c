@@ -45,8 +45,7 @@
  *  Then, ISR should do minimum I/O operation and return control
  *  as quickly as possible. ISR will run within a context of the
  *  thread running when interrupt occurs. So, only few kernel
- *  services are available within ISR. We can use irq_level value
- *  to detect the illegal call from ISR code.
+ *  services are available within ISR.
  *
  * - Interrupt Service Thread (IST)
  *
@@ -59,19 +58,35 @@
  *  be reentrant because it is not interrupted by same IST itself.
  */
 
-#include <kernel.h>
-#include <event.h>
-#include <kmem.h>
-#include <sched.h>
-#include <thread.h>
 #include <irq.h>
 
-/* forward declarations */
-static void	irq_thread(void *);
+#include <arch.h>
+#include <assert.h>
+#include <debug.h>
+#include <kmem.h>
+#include <sch.h>
+#include <sections.h>
+#include <stddef.h>
+#include <string.h>
+#include <thread.h>
 
-static struct irq	*irq_table[NIRQS];	/* IRQ descriptor table */
-static volatile int	nr_irq_locks;		/* lock counter */
-static volatile int	saved_irq_state;	/* state saved by irq_lock() */
+struct irq {
+	int		vector;		    /* vector number */
+	int	      (*isr)(int, void *);  /* pointer to isr */
+	void	      (*ist)(int, void *);  /* pointer to ist */
+	int		isrreq;		    /* number of isr request */
+	int		istreq;		    /* number of ist request */
+	void	       *data;		    /* handler data */
+	struct thread  *thread;		    /* thread id of ist */
+	struct event	istevt;		    /* event for ist */
+};
+
+/* forward declarations */
+static void
+irq_thread(void *);
+
+/* IRQ descriptor table */
+static struct irq *irq_table[CONFIG_IRQS] __mem_fast_bss;
 
 /*
  * irq_attach - attach ISR and IST to the specified interrupt.
@@ -80,46 +95,49 @@ static volatile int	saved_irq_state;	/* state saved by irq_lock() */
  * attached irq will be unmasked (enabled) in this routine.
  * TODO: Interrupt sharing is not supported, for now.
  */
-irq_t
-irq_attach(int vector, int prio, int shared, int (*isr)(int), void (*ist)(int))
+struct irq *
+irq_attach(int vector, int prio, int shared, int (*isr)(int, void *),
+    void (*ist)(int, void *), void *data)
 {
 	struct irq *irq;
 	int mode;
 
-	ASSERT(irq_level == 0);
-	ASSERT(isr != NULL);
+	assert(isr != NULL);
+	assert(vector < CONFIG_IRQS);
 
-	sched_lock();
-	if ((irq = kmem_alloc(sizeof(*irq))) == NULL) {
-		sched_unlock();
+	sch_lock();
+	if ((irq = kmem_alloc(sizeof(*irq), MEM_FAST)) == NULL) {
+		sch_unlock();
 		return NULL;
 	}
 	memset(irq, 0, sizeof(*irq));
 	irq->vector = vector;
 	irq->isr = isr;
 	irq->ist = ist;
+	irq->data = data;
 
 	if (ist != NULL) {
 		/*
 		 * Create a new thread for IST.
 		 */
-		irq->thread = kthread_create(&irq_thread, irq, ISTPRIO(prio));
+		irq->thread = kthread_create(&irq_thread, irq,
+		    interrupt_to_ist_priority(prio), "ist", MEM_FAST);
 		if (irq->thread == NULL) {
 			kmem_free(irq);
-			sched_unlock();
+			sch_unlock();
 			return NULL;
 		}
-		event_init(&irq->istevt, "interrupt");
+		event_init(&irq->istevt, "interrupt", ev_SLEEP);
 	}
 	irq_table[vector] = irq;
-	irq_lock();
+	const int s = irq_disable();
 	mode = shared ? IMODE_LEVEL : IMODE_EDGE;
 	interrupt_setup(vector, mode);
 	interrupt_unmask(vector, prio);
-	irq_unlock();
+	interrupt_restore(s);
 
-	sched_unlock();
-	DPRINTF(("IRQ%d attached priority=%d\n", vector, prio));
+	sch_unlock();
+	dbg("IRQ%d attached priority=%d\n", vector, prio);
 	return irq;
 }
 
@@ -129,15 +147,14 @@ irq_attach(int vector, int prio, int shared, int (*isr)(int), void (*ist)(int))
  * attaches to it, anymore.
  */
 void
-irq_detach(irq_t irq)
+irq_detach(struct irq *irq)
 {
-	ASSERT(irq_level == 0);
-	ASSERT(irq);
-	ASSERT(irq->vector < NIRQS);
+	assert(irq);
+	assert(irq->vector < CONFIG_IRQS);
 
-	irq_lock();
+	const int s = irq_disable();
 	interrupt_mask(irq->vector);
-	irq_unlock();
+	irq_restore(s);
 
 	irq_table[irq->vector] = NULL;
 	if (irq->thread != NULL)
@@ -147,39 +164,29 @@ irq_detach(irq_t irq)
 }
 
 /*
- * Lock IRQ.
+ * Disable IRQ.
  *
  * All H/W interrupts are masked off.
- * Caller is no need to save the interrupt state before
- * irq_lock() because it is automatically restored in
- * irq_unlock() when no one is locking the IRQ anymore.
+ * Current interrupt state is returned and must be passed to irq_restore.
  */
-void
-irq_lock(void)
+int
+irq_disable(void)
 {
 	int s;
-
 	interrupt_save(&s);
 	interrupt_disable();
-	if (++nr_irq_locks == 1)
-		saved_irq_state = s;
-
-	ASSERT(nr_irq_locks != 0);
+	return s;
 }
 
 /*
- * Unlock IRQ.
+ * Restore IRQ.
  *
- * If lock count becomes 0, the interrupt is restored to
- * original state at first irq_lock() call.
+ * Resture interrupt state to original state before irq_disable call.
  */
 void
-irq_unlock(void)
+irq_restore(int s)
 {
-	ASSERT(nr_irq_locks > 0);
-
-	if (--nr_irq_locks == 0)
-		interrupt_restore(saved_irq_state);
+	interrupt_restore(s);
 }
 
 /*
@@ -190,7 +197,8 @@ static void
 irq_thread(void *arg)
 {
 	int vec;
-	void (*func)(int);
+	void (*func)(int, void *);
+	void *data;
 	struct irq *irq;
 
 	interrupt_enable();
@@ -198,6 +206,7 @@ irq_thread(void *arg)
 	irq = (struct irq *)arg;
 	func = irq->ist;
 	vec = irq->vector;
+	data = irq->data;
 
 	for (;;) {
 		interrupt_disable();
@@ -210,18 +219,30 @@ irq_thread(void *arg)
 			 * requests even if the interrupt is fired
 			 * here.
 			 */
-			sched_sleep(&irq->istevt);
+			sch_sleep(&irq->istevt);
 		}
 		irq->istreq--;
-		ASSERT(irq->istreq >= 0);
+		assert(irq->istreq >= 0);
 		interrupt_enable();
 
 		/*
 		 * Call IST
 		 */
-		(*func)(vec);
+		(*func)(vec, data);
 	}
 	/* NOTREACHED */
+}
+
+void
+irq_dump(void)
+{
+	info("irq count\n");
+	for (size_t vector = 0; vector < ARRAY_SIZE(irq_table); vector++) {
+		const struct irq *irq = irq_table[vector];
+		if (!irq || irq->isrreq == 0)
+			continue;
+		info("%3d %d\n", vector, irq->isrreq);
+	}
 }
 
 /*
@@ -241,28 +262,28 @@ irq_handler(int vector)
 	irq = irq_table[vector];
 	if (irq == NULL)
 		return;		/* Ignore stray interrupt */
-	ASSERT(irq->isr);
+	assert(irq->isr);
 
 	/*
 	 * Call ISR
 	 */
-	rc = (*irq->isr)(vector);
+	irq->isrreq++;
+	rc = (*irq->isr)(vector, irq->data);
 
 	if (rc == INT_CONTINUE) {
 		/*
 		 * Kick IST
 		 */
-		ASSERT(irq->ist);
+		assert(irq->ist);
 		irq->istreq++;
-		sched_wakeup(&irq->istevt);
-		ASSERT(irq->istreq != 0);
+		sch_wakeup(&irq->istevt, SLP_SUCCESS);
+		assert(irq->istreq != 0);
 	}
 }
 
 void
 irq_init(void)
 {
-
 	/* Start interrupt processing. */
 	interrupt_init();
 	interrupt_enable();

@@ -1,0 +1,22 @@
+#
+# Options for ARM Cortex-M7
+#
+
+arch arm
+subarch v7m
+makeoption CFLAGS += -mcpu=cortex-m7
+makeoption CFLAGS += -masm-syntax-unified
+makeoption ASFLAGS += -mcpu=cortex-m7
+makeoption APEX_CFLAGS += -mslow-flash-data
+makeoption USER_CFLAGS += -static
+makeoption USER_CFLAGS += -pie -fPIE
+makeoption USER_CFLAGS += -fvisibility=hidden
+makeoption USER_CFLAGS += -Xlinker --exclude-libs=ALL
+makeoption USER_CFLAGS += -z max-page-size=0x1000
+include cpu/arm/thumb
+
+# Cortex-M7 has optional MPU. Set option MPU if available.
+# Cortex-M7 has optional cache. Set option CACHE if available.
+
+# musl & gcc can't build a gcc/musl/linux multilib toolchain yet
+cross-compile armv7m-linux-musleabi

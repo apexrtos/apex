@@ -27,20 +27,42 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _DEVICE_H
-#define _DEVICE_H
+#ifndef device_h
+#define device_h
 
-#include <sys/cdefs.h>
+#include <list.h>
+#include <stdbool.h>
+#include <sys/types.h>
+
+struct file;
+struct iovec;
+
+
+/*
+ * Driver structure
+ */
+struct driver {
+	const char     *name;		/* Name of device driver */
+	int	      (*init)(void);	/* Initialisation routine */
+};
+
+/*
+ * Device flags
+ */
+#define DF_CHR		0x00000001      /* character device */
+#define DF_BLK		0x00000002      /* block device */
+#define DF_RDONLY	0x00000004      /* read only device */
+#define DF_REM		0x00000008      /* removable device */
 
 /*
  * Device I/O table
  */
 struct devio {
-	int	(*open)	(device_t, int);
-	int	(*close)(device_t);
-	int	(*read)	(device_t, char *, size_t *, int);
-	int	(*write)(device_t, char *, size_t *, int);
-	int	(*ioctl)(device_t, u_long, void *);
+	int	(*open)(struct file *);
+	int	(*close)(struct file *);
+	ssize_t	(*read)(struct file *, const struct iovec *, size_t);
+	ssize_t	(*write)(struct file *, const struct iovec *, size_t);
+	int	(*ioctl)(struct file *, u_long, void *);
 	int	(*event)(int);
 };
 
@@ -48,27 +70,21 @@ struct devio {
  * Device structure
  */
 struct device {
-	int		magic;		/* magic number */
-	int		refcnt;		/* reference count */
-	int		flags;		/* device characteristics */
-	struct list	link;		/* linkage on device list */
-	struct devio	*devio;		/* device i/o table */
-	char		name[MAXDEVNAME]; /* name of device */
+	int		    magic;	/* magic number */
+	int		    refcnt;	/* reference count */
+	int		    flags;	/* device characteristics */
+	struct list	    link;	/* linkage on device list */
+	const struct devio *devio;	/* device i/o table */
+	void		   *info;	/* device specific info */
+	char		    name[12];	/* name of device */
 };
 
-#define device_valid(dev) (kern_area(dev) && ((dev)->magic == DEVICE_MAGIC))
+bool		device_valid(struct device *);
+struct device  *device_lookup(const char *name);
+struct device  *device_create(const struct devio *, const char *, int, void *);
+int		device_destroy(struct device *);
+int		device_broadcast(int, int);
+int		device_info(u_long, int *, char *);
+void		device_init(void);
 
-__BEGIN_DECLS
-device_t device_create(struct devio *, const char *, int);
-int	 device_destroy(device_t);
-int	 device_broadcast(int, int);
-int	 device_open(const char *, int, device_t *);
-int	 device_close(device_t);
-int	 device_read(device_t, void *, size_t *, int);
-int	 device_write(device_t, void *, size_t *, int);
-int	 device_ioctl(device_t, u_long, void *);
-int	 device_info(struct info_device *);
-void	 device_init(void);
-__BEGIN_DECLS
-
-#endif /* !_DEVICE_H */
+#endif /* !device_h */

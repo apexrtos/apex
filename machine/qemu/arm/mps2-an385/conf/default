@@ -1,0 +1,53 @@
+#
+# Kernel
+#
+memory PAGE_OFFSET	0x00000000
+option USTACK_SIZE	0x10000	    # User stack size (multiple of PAGE_SIZE)
+option KSTACK_SIZE	4048	    # Kernel stack size
+option TIME_SLICE_MS	50	    # milliseconds
+option HZ		1000
+option PAGE_SIZE	0x1000
+option IRQS		32	    # External interrupts
+option NVIC_PRIO_BITS	8
+
+#
+# Memory layout
+#
+memory RAM_SIZE		0x1000000
+memory ROM_SIZE		0x400000
+memory BOOTSTACK_SIZE	0x1000
+memory LOADER_RAM_SIZE	0x1000
+memory ROM_BASE		0x00000000
+memory RAM_BASE		0x21000000
+memory BOOTSTACK_BASE	CONFIG_RAM_BASE_VIRT
+memory KERNEL_BASE	(CONFIG_BOOTSTACK_BASE_VIRT + CONFIG_BOOTSTACK_SIZE)
+memory LOADER_RAM_BASE	(CONFIG_RAM_BASE_VIRT + CONFIG_RAM_SIZE - CONFIG_LOADER_RAM_SIZE)
+memory KERNEL_MAX_SIZE	(CONFIG_LOADER_RAM_BASE_VIRT - CONFIG_KERNEL_BASE_VIRT)
+
+#
+# Device drivers
+#
+driver sys/dev/null		# NULL device
+driver sys/dev/tty		# Text terminal
+driver sys/dev/zero		# Zero device
+driver sys/dev/arm/mps2-uart	# MPS2 UART
+
+#
+# Interrupt priorities
+#
+option IPL_UART		(IPL_MIN)
+
+#
+# CPU
+#
+cpu arm/cortex-m3
+
+#
+# QEMU command line
+#
+option QEMU_CMD qemu-system-arm -nographic -machine mps2-an385 -kernel
+
+#
+# Pretty machine name
+#
+option MACHINE_NAME QEMU ARM MPS2 with AN385 FPGA image for Cortex-M3

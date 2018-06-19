@@ -27,20 +27,17 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _ARCH_H
-#define _ARCH_H
+#ifndef arch_h
+#define arch_h
 
-#include <sys/cdefs.h>
-#include <context.h>
-#include <mmu.h>
+#include <elf.h>
+#include <signal.h>
+#include <stdnoreturn.h>
+#include <types.h>
 
-/* Types for context_set */
-#define CTX_KSTACK	0	/* set kernel mode stack address */
-#define CTX_KENTRY	1	/* set kernel mode entry address */
-#define CTX_KARG	2	/* set kernel mode argument */
-#define CTX_USTACK	3	/* set user mode stack address */
-#define CTX_UENTRY	4	/* set user mode entry addres */
-#define CTX_UARG	5	/* set user mode argument */
+struct context;
+struct thread;
+struct pgd;
 
 /* Interrupt mode for interrupt_setup() */
 #define IMODE_EDGE	0	/* edge trigger */
@@ -50,75 +47,86 @@
 #define PG_UNMAP	0	/* no page */
 #define PG_READ		1	/* user - read only */
 #define PG_WRITE	2	/* user - read/write */
-#define PG_SYSTEM	3	/* system */
-#define PG_IOMEM	4	/* system - no cache */
+#define PG_EXEC		3	/* user - execute */
+#define PG_SYSTEM	4	/* system - kernel r/w/x */
+#define PG_IOMEM	5	/* system - no cache */
+#define PG_FLASH	6	/* system - write whrough cache */
+#define PG_FLASH_XIP	7	/* system - kernel rwx, write through */
 
 /*
  * Virtual/physical address mapping
  */
-struct mmumap
-{
-	vaddr_t	virt;		/* virtual address */
-	paddr_t	phys;		/* physical address */
-	size_t	size;		/* size */
-	int	type;		/* mapping type */
+struct mmumap {
+	void	       *vaddr;	/* virtual address */
+	phys	       *paddr;	/* physical address */
+	size_t		size;	/* size */
+	int		type;	/* mapping type */
 };
 
-#define AUTOSIZE	-1
-
-/* virtual memory mapping type */
-#define VMT_RAM		PG_SYSTEM
-#define VMT_ROM		PG_SYSTEM
-#define VMT_DMA		PG_SYSTEM
-#define VMT_IO		PG_IOMEM
-
-#ifdef CONFIG_MMU
-#define kern_area(a)	((vaddr_t)(a) >= (vaddr_t)PAGE_OFFSET)
-#define user_area(a)	((vaddr_t)(a) <  (vaddr_t)UMEM_MAX)
-#else
-#define kern_area(a)	1
-#define user_area(a)	1
+#if defined(__cplusplus)
+#define noreturn [[noreturn]]
+extern "C" {
 #endif
 
-/* Address translation */
-#define phys_to_virt(pa)	(void *)((paddr_t)(pa) + PAGE_OFFSET)
-#define virt_to_phys(va)	(void *)((vaddr_t)(va) - PAGE_OFFSET)
+void		context_init_idle(struct context *, void *kstack_top);
+void		context_init_kthread(struct context *, void *kstack_top,
+				     void (*entry)(void *), void *arg);
+void		context_init_uthread(struct context *, void *kstack_top,
+				     void *ustack_top, void (*entry)(void),
+				     long retval);
+void		context_alloc_siginfo(struct context *, siginfo_t **,
+				      ucontext_t **);
+void		context_init_ucontext(struct context *, const k_sigset_t *,
+				      ucontext_t *);
+void		context_set_signal(struct context *, const k_sigset_t *,
+				   void (*handler)(int), void (*restorer)(void),
+				   int, const siginfo_t *, const ucontext_t *,
+				   int);
+void		context_set_tls(struct context *, void *);
+bool		context_in_signal(struct context *);
+void		context_switch(struct thread *, struct thread *);
+int		context_restore(struct context *, k_sigset_t *);
+int		context_siginfo_restore(struct context *, k_sigset_t *);
+void		context_cleanup(struct context *);
+void		interrupt_enable(void);
+void		interrupt_disable(void);
+void		interrupt_save(int *);
+void		interrupt_restore(int);
+void		interrupt_mask(int);
+void		interrupt_unmask(int, int);
+void		interrupt_setup(int, int);
+void		interrupt_init(void);
+int		interrupt_to_ist_priority(int);
+bool		interrupt_from_userspace(void);
+void		clock_init(void);
+void		early_console_init(void);
+void		early_console_print(const char *, size_t);
+void		machine_memory_init(void);
+void		machine_init(void);
+void		machine_ready(void);
+void		machine_idle(void);
+void		machine_reset(void);
+void		machine_poweroff(void);
+void		machine_suspend(void);
+noreturn void	machine_panic(void);
+void		arch_backtrace(struct thread *);
+bool		arch_check_elfhdr(const Elf32_Ehdr *);
+unsigned	arch_elf_hwcap(void);
+void	       *arch_stack_align(void *);
 
-/* State for machine_setpower */
-#define POW_SUSPEND	1
-#define POW_OFF		2
+/* for nommu targets mmu_* functions are provided by mem/nommu.cpp */
+void		mmu_init(struct mmumap *);
+struct pgd     *mmu_newmap(pid_t);
+void		mmu_delmap(struct pgd *);
+int		mmu_map(struct pgd *, phys *, void *, size_t, int);
+void		mmu_premap(void *, void *);
+void		mmu_switch(struct pgd *);
+void		mmu_preload(void *, void *, void *);
+phys	       *mmu_extract(struct pgd *, void *, size_t, int);
 
-__BEGIN_DECLS
-void	 context_set(context_t, int, vaddr_t);
-void	 context_switch(context_t, context_t);
-void	 context_save(context_t);
-void	 context_restore(context_t);
-void	 interrupt_enable(void);
-void	 interrupt_disable(void);
-void	 interrupt_save(int *);
-void	 interrupt_restore(int);
-void	 interrupt_mask(int);
-void	 interrupt_unmask(int, int);
-void	 interrupt_setup(int, int);
-void	 interrupt_init(void);
-void	 mmu_init(struct mmumap *);
-pgd_t	 mmu_newmap(void);
-void	 mmu_delmap(pgd_t);
-int	 mmu_map(pgd_t, void *, void *, size_t, int);
-void	 mmu_premap(void *, void *);
-void	 mmu_switch(pgd_t);
-void	*mmu_extract(pgd_t, void *, size_t);
-void	 clock_init(void);
-int	 umem_copyin(const void *, void *, size_t);
-int	 umem_copyout(const void *, void *, size_t);
-int	 umem_strnlen(const char *, size_t, size_t *);
-void	 diag_init(void);
-void	 diag_print(char *);
-void	 machine_init(void);
-void	 machine_idle(void);
-void	 machine_reset(void);
-void	 machine_setpower(int);
-void	 syscall_ret(void);
-__END_DECLS
+#if defined(__cplusplus)
+} /* extern "C" */
+#undef noreturn
+#endif
 
-#endif /* !_ARCH_H */
+#endif /* !arch_h */

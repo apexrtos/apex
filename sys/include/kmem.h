@@ -27,16 +27,25 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _KMEM_H
-#define _KMEM_H
+#ifndef kmem_h
+#define kmem_h
 
-#include <sys/cdefs.h>
+#include <types.h>
 
-__BEGIN_DECLS
-void	*kmem_alloc(size_t);
-void	 kmem_free(void *);
-void	*kmem_map(void *, size_t);
-void	 kmem_init(void);
-__END_DECLS
+struct task;
 
-#endif /* !_KMEM_H */
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+void   *kmem_alloc(size_t, enum MEM_TYPE);
+void	kmem_free(void *);
+void	kmem_init(void);
+void	kmem_check(void);
+void	kmem_dump(void);
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
+
+#endif /* !kmem_h */

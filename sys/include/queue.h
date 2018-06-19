@@ -27,16 +27,13 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _QUEUE_H
-#define _QUEUE_H
-
-#include <sys/cdefs.h>
+#ifndef queue_h
+#define queue_h
 
 struct queue {
 	struct queue *next;
 	struct queue *prev;
 };
-typedef struct queue *queue_t;
 
 #define queue_init(head)	((head)->next = (head)->prev = (head))
 #define queue_empty(head)	((head)->next == (head))
@@ -50,11 +47,9 @@ typedef struct queue *queue_t;
 #define queue_entry(q, type, member) \
     ((type *)((char *)(q) - (unsigned long)(&((type *)0)->member)))
 
-__BEGIN_DECLS
-void	 enqueue(queue_t, queue_t);
-queue_t	 dequeue(queue_t);
-void	 queue_insert(queue_t, queue_t);
-void	 queue_remove(queue_t);
-__END_DECLS
+void		enqueue(struct queue *, struct queue *);
+struct queue   *dequeue(struct queue *);
+void		queue_insert(struct queue *, struct queue *);
+void		queue_remove(struct queue *);
 
-#endif /* !_QUEUE_H */
+#endif /* !queue_h */

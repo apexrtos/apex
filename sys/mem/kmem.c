@@ -53,11 +53,15 @@
  * free block has a magic ID.
  */
 
+#include <kmem.h>
+
+#include <access.h>
+#include <assert.h>
+#include <debug.h>
 #include <kernel.h>
 #include <page.h>
-#include <sched.h>
-#include <vm.h>
-#include <kmem.h>
+#include <sync.h>
+#include <task.h>
 
 /*
  * Block header
@@ -66,10 +70,10 @@
  * In addition, all free blocks within same page are also linked.
  */
 struct block_hdr {
-	u_short	magic;			/* magic number */
-	u_short	size;			/* size of this block */
-	struct	list link;		/* link to the free list */
-	struct	block_hdr *pg_next;	/* next block in same page */
+	uint16_t	    magic;	/* magic number */
+	uint16_t	    size;	/* size of this block */
+	struct list	    link;	/* link to the free list */
+	struct block_hdr   *pg_next;	/* next block in same page */
 };
 
 /*
@@ -81,34 +85,40 @@ struct block_hdr {
  * that page can be removed from kernel page.
  */
 struct page_hdr {
-	u_short	magic;			/* magic number */
-	u_short	nallocs;		/* number of allocated blocks */
-	struct	block_hdr first_blk;	/* first block in this page */
+	uint32_t	    magic;	/* magic number */
+	uint32_t	    nallocs;	/* number of allocated blocks */
+	struct list	    link;	/* link to page list */
+	struct block_hdr    first_blk;	/* first block in this page */
 };
 
 #define ALIGN_SIZE	16
 #define ALIGN_MASK	(ALIGN_SIZE - 1)
-#define ALLOC_ALIGN(n)	(((vaddr_t)(n) + ALIGN_MASK) & (vaddr_t)~ALIGN_MASK)
+#define ALLOC_ALIGN(n)	(((uintptr_t)(n) + ALIGN_MASK) & (uintptr_t)~ALIGN_MASK)
 
-#define BLOCK_MAGIC	0xdead
-#define PAGE_MAGIC	0xbeef
+#define ALLOC_MAGIC	0xcafe		/* alloc magic offset by memory type */
+#define FREE_MAGIC	0xdead
+#define PAGE_MAGIC	0xabcdbeef	/* page magic offset by memory type */
+
+#define ALLOC_MAGIC_OK(x) ((x)->magic >= ALLOC_MAGIC && (x)->magic < ALLOC_MAGIC + MEM_ALLOC)
+#define FREE_MAGIC_OK(x) ((x)->magic == FREE_MAGIC)
+#define PAGE_MAGIC_OK(x) ((x)->magic >= PAGE_MAGIC && (x)->magic < PAGE_MAGIC + MEM_ALLOC)
 
 #define BLKHDR_SIZE	(sizeof(struct block_hdr))
 #define PGHDR_SIZE	(sizeof(struct page_hdr))
-#define MAX_ALLOC_SIZE	(size_t)(PAGE_SIZE - PGHDR_SIZE)
+#define MAX_ALLOC_SIZE	(size_t)(CONFIG_PAGE_SIZE - PGHDR_SIZE)
 
 #define MIN_BLOCK_SIZE	(BLKHDR_SIZE + 16)
-#define MAX_BLOCK_SIZE	(u_short)(PAGE_SIZE - (PGHDR_SIZE - BLKHDR_SIZE))
+#define MAX_BLOCK_SIZE	(uint16_t)(CONFIG_PAGE_SIZE - (PGHDR_SIZE - BLKHDR_SIZE))
 
 /* macro to point the page header from specific address */
 #define PAGE_TOP(n)	(struct page_hdr *) \
-			    ((vaddr_t)(n) & (vaddr_t)~(PAGE_SIZE - 1))
+			    ((uintptr_t)(n) & (uintptr_t)~(CONFIG_PAGE_SIZE - 1))
 
 /* index of free block list */
 #define BLKIDX(b)	((u_int)((b)->size) >> 4)
 
 /* number of free block list */
-#define NR_BLOCK_LIST	(PAGE_SIZE / ALIGN_SIZE)
+#define NR_BLOCK_LIST	(CONFIG_PAGE_SIZE / ALIGN_SIZE)
 
 /**
  * Array of the head block of free block list.
@@ -135,7 +145,9 @@ struct page_hdr {
  * the block size is not fit. This is not suitable for the
  * embedded system with low foot print.
  */
-static struct list free_blocks[NR_BLOCK_LIST];
+static struct list free_blocks[MEM_ALLOC][NR_BLOCK_LIST];
+static struct list kmem_pages[MEM_ALLOC];
+static struct mutex kmem_mutex;
 
 /*
  * Find the free block for the specified size.
@@ -147,19 +159,21 @@ static struct list free_blocks[NR_BLOCK_LIST];
  * specified size.
  */
 static struct block_hdr *
-block_find(size_t size)
+block_find(size_t size, unsigned type)
 {
 	int i;
-	list_t n;
+	struct list *n;
+
+	assert(type < MEM_ALLOC);
 
 	for (i = (int)((u_int)size >> 4); i < NR_BLOCK_LIST; i++) {
-		if (!list_empty(&free_blocks[i]))
+		if (!list_empty(&free_blocks[type][i]))
 			break;
 	}
 	if (i >= NR_BLOCK_LIST)
 		return NULL;
 
-	n = list_first(&free_blocks[i]);
+	n = list_first(&free_blocks[type][i]);
 	return list_entry(n, struct block_hdr, link);
 }
 
@@ -169,16 +183,17 @@ block_find(size_t size)
  * This function does not fill the allocated block by 0 for performance.
  * kmem_alloc() returns NULL on failure.
  */
-void *
-kmem_alloc(size_t size)
+static void *
+kmem_alloc_internal(size_t size, enum MEM_TYPE type)
 {
 	struct block_hdr *blk, *newblk;
 	struct page_hdr *pg;
 	void *p;
 
-	ASSERT(irq_level == 0);
+	assert(type < MEM_ALLOC);
 
-	sched_lock();		/* Lock scheduler */
+	mutex_lock(&kmem_mutex);
+	kmem_check();
 	/*
 	 * First, the free block of enough size is searched
 	 * from the page already used. If it does not exist,
@@ -186,31 +201,33 @@ kmem_alloc(size_t size)
 	 */
 	size = (size_t)ALLOC_ALIGN(size + BLKHDR_SIZE);
 
-	ASSERT(size && size <= MAX_ALLOC_SIZE);
+	assert(size && size <= MAX_ALLOC_SIZE);
 
-	blk = block_find(size);
+	blk = block_find(size, type);
 	if (blk) {
 		/* Block found */
 		list_remove(&blk->link); /* Remove from free list */
 		pg = PAGE_TOP(blk);	 /* Get the page address */
 	} else {
 		/* No block found. Allocate new page */
-		if ((pg = page_alloc(PAGE_SIZE)) == NULL) {
-			sched_unlock();
+		phys *const pp = page_alloc_order(0, type, PAGE_ALLOC_FIXED);
+		if (!pp) {
+			mutex_unlock(&kmem_mutex);
 			return NULL;
 		}
-		pg = (struct page_hdr *)phys_to_virt(pg);
+		pg = (struct page_hdr *)phys_to_virt(pp);
 		pg->nallocs = 0;
-		pg->magic = PAGE_MAGIC;
+		pg->magic = PAGE_MAGIC + type;
+		list_insert(&kmem_pages[type], &pg->link);
 
 		/* Setup first block */
 		blk = &(pg->first_blk);
-		blk->magic = BLOCK_MAGIC;
+		blk->magic = FREE_MAGIC;
 		blk->size = MAX_BLOCK_SIZE;
 		blk->pg_next = NULL;
 	}
 	/* Sanity check */
-	if (pg->magic != PAGE_MAGIC || blk->magic != BLOCK_MAGIC)
+	if (!PAGE_MAGIC_OK(pg) || !FREE_MAGIC_OK(blk))
 		panic("kmem_alloc: overrun");
 	/*
 	 * If the found block is large enough, split it.
@@ -218,21 +235,41 @@ kmem_alloc(size_t size)
 	if (blk->size - size >= MIN_BLOCK_SIZE) {
 		/* Make new block */
 		newblk = (struct block_hdr *)((char *)blk + size);
-		newblk->magic = BLOCK_MAGIC;
-		newblk->size = (u_short)(blk->size - size);
-		list_insert(&free_blocks[BLKIDX(newblk)], &newblk->link);
+		newblk->magic = FREE_MAGIC;
+		newblk->size = (uint16_t)(blk->size - size);
+		list_insert(&free_blocks[type][BLKIDX(newblk)], &newblk->link);
 
 		/* Update page list */
 		newblk->pg_next = blk->pg_next;
 		blk->pg_next = newblk;
 
-		blk->size = (u_short)size;
+		blk->size = (uint16_t)size;
 	}
+	blk->magic = ALLOC_MAGIC + type;
 	/* Increment allocation count of this page */
 	pg->nallocs++;
 	p = (char *)blk + BLKHDR_SIZE;
-	sched_unlock();
+	mutex_unlock(&kmem_mutex);
 	return p;
+}
+
+void *
+kmem_alloc(size_t size, unsigned type)
+{
+	void *p;
+	unsigned t = type;
+
+	do {
+		if ((p = kmem_alloc_internal(size, t)))
+			return p;
+		if (++t == MEM_ALLOC)
+			t = 0;
+	} while (t != type);
+
+	dbg("kmem_alloc: out of memory allocating %d\n", size);
+	kmem_dump();
+
+	return NULL;
 }
 
 /*
@@ -251,23 +288,26 @@ kmem_free(void *ptr)
 	struct block_hdr *blk;
 	struct page_hdr *pg;
 
-	ASSERT(irq_level == 0);
-	ASSERT(ptr);
+	if (!ptr)
+		return;
 
-	/* Lock scheduler */
-	sched_lock();
+	mutex_lock(&kmem_mutex);
+	kmem_check();
 
 	/* Get the block header */
 	blk = (struct block_hdr *)((char *)ptr - BLKHDR_SIZE);
-	if (blk->magic != BLOCK_MAGIC)
+	if (!ALLOC_MAGIC_OK(blk))
 		panic("kmem_free: invalid address");
+
+	unsigned type = blk->magic - ALLOC_MAGIC;
 
 	/*
 	 * Return the block to free list. Since kernel code will
 	 * request fixed size of memory block, we don't merge the
 	 * blocks to use it as cache.
 	 */
-	list_insert(&free_blocks[BLKIDX(blk)], &blk->link);
+	blk->magic = FREE_MAGIC;
+	list_insert(&free_blocks[type][BLKIDX(blk)], &blk->link);
 
 	/* Decrement allocation count of this page */
 	pg = PAGE_TOP(blk);
@@ -278,33 +318,118 @@ kmem_free(void *ptr)
 		 */
 		for (blk = &(pg->first_blk); blk != NULL; blk = blk->pg_next) {
 			list_remove(&blk->link); /* Remove from free list */
+			blk->magic = 0;
 		}
+		list_remove(&pg->link);
 		pg->magic = 0;
-		page_free(virt_to_phys(pg), PAGE_SIZE);
+		page_free(virt_to_phys(pg), CONFIG_PAGE_SIZE);
 	}
-	sched_unlock();
+	mutex_unlock(&kmem_mutex);
 }
 
 /*
- * Map specified virtual address to the kernel address
- * Returns kernel address on success, or NULL if no mapped memory.
+ * Validate kmem
  */
-void *
-kmem_map(void *addr, size_t size)
+void
+kmem_check(void)
 {
-	void *phys;
+#ifdef CONFIG_KMEM_CHECK
+	struct list *head, *n;
+	struct page_hdr *pg;
+	struct block_hdr *blk;
 
-	phys = vm_translate(addr, size);
-	if (phys == NULL)
-		return NULL;
-	return phys_to_virt(phys);
+	mutex_lock(&kmem_mutex);
+	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
+		head = &kmem_pages[type];
+		for (n = list_first(head); n != head; n = list_next(n)) {
+			pg = list_entry(n, struct page_hdr, link);
+			assert(k_address(pg));
+			assert(PAGE_MAGIC_OK(pg));
+
+			for (blk = &(pg->first_blk); blk != NULL; blk = blk->pg_next) {
+				assert((void *)blk > (void *)pg);
+				assert((void *)blk < ((void *)pg + MAX_BLOCK_SIZE));
+				assert(ALLOC_MAGIC_OK(blk) || FREE_MAGIC_OK(blk));
+			}
+		}
+	}
+	mutex_unlock(&kmem_mutex);
+#endif
+}
+
+void
+kmem_dump(void)
+{
+	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
+		struct list *head, *n;
+		int i, cnt;
+
+		info("\nKernel memory dump (%d):\n", type);
+
+		info("\n free blocks:\n");
+		info(" block size count\n");
+		info(" ---------- --------\n");
+
+		for (i = 0; i < NR_BLOCK_LIST; i++) {
+			cnt = 0;
+			head = &free_blocks[type][i];
+			for (n = list_first(head); n != head; n = list_next(n))
+				cnt++;
+			if (cnt > 0)
+				info("       %4d %8d\n", i << 4, cnt);
+		}
+#if 0
+		info("\n all blocks:\n");
+
+		head = &kmem_pages[type];
+		for (n = list_first(head); n != head; n = list_next(n)) {
+			struct page_hdr *pg = list_entry(n, struct page_hdr, link);
+
+			info("page %p allocs %d\n", pg, pg->nallocs);
+			if (!kern_area(pg)) {
+				info(" *** page not in kern_area\n");
+				continue;
+			}
+			if (!PAGE_MAGIC_OK(pg)) {
+				info(" *** bad page magic %x\n", pg->magic);
+				continue;
+			}
+
+			info("blocks:\n");
+
+			for (struct block_hdr *blk = &(pg->first_blk); blk != NULL;
+			    blk = blk->pg_next) {
+				if ((void *)blk <= (void *)pg) {
+					info(" *** block starts before page %p\n", blk);
+					continue;
+				}
+				if (((void *)blk >= ((void *)pg + MAX_BLOCK_SIZE))) {
+					info(" *** block starts after page %p %p\n", blk, pg + MAX_BLOCK_SIZE);
+					continue;
+				}
+				if (!ALLOC_MAGIC_OK(blk) && !FREE_MAGIC_OK(blk)) {
+					info(" *** bad magic %p %x\n", blk, blk->magic);
+					continue;
+				}
+				char type;
+				if (ALLOC_MAGIC_OK(blk))
+					type = 'a';
+				else
+					type = 'f';
+				info(" %c %p %d\n", type, blk, blk->size);
+			}
+		}
+#endif
+	}
 }
 
 void
 kmem_init(void)
 {
-	int i;
-
-	for (i = 0; i < NR_BLOCK_LIST; i++)
-		list_init(&free_blocks[i]);
+	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
+		list_init(&kmem_pages[type]);
+		for (int i = 0; i < NR_BLOCK_LIST; i++)
+			list_init(&free_blocks[type][i]);
+	}
+	mutex_init(&kmem_mutex);
 }

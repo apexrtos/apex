@@ -31,158 +31,173 @@
  * cond.c - condition variable object
  */
 
-#include <kernel.h>
-#include <sched.h>
-#include <kmem.h>
-#include <thread.h>
 #include <sync.h>
 
+#include <access.h>
+#include <assert.h>
+#include <debug.h>
+#include <errno.h>
+#include <kernel.h>
+#include <sch.h>
+#include <stdalign.h>
+#include <stddef.h>
+#include <thread.h>
+#include <timer.h>
+
+#define COND_MAGIC     0x436f6e3f      /* 'Con?' */
+
+struct cond_private {
+	int magic;		/* magic number */
+	struct mutex *mutex;	/* mutex associated with this condition */
+	unsigned wait;		/* # waiting threads */
+	unsigned signal;	/* # of signals */
+	struct event event;	/* event */
+};
+
+static_assert(sizeof(struct cond_private) == sizeof(struct cond), "");
+static_assert(alignof(struct cond_private) == alignof(struct cond), "");
+
 /*
- * Create and initialize a condition variable (CV).
+ * cond_valid - check cond validity.
+ */
+bool
+cond_valid(const struct cond *c)
+{
+	const struct cond_private *cp = (struct cond_private*)c->storage;
+
+	return k_address(c) && cp->magic == COND_MAGIC;
+}
+
+/*
+ * cond_init - Create and initialize a condition variable.
  *
  * If an initialized condition variable is reinitialized,
  * undefined behavior results.
  */
-int
-cond_init(cond_t *cond)
+void
+cond_init(struct cond *c)
 {
-	cond_t c;
+	struct cond_private *cp = (struct cond_private*)c->storage;
 
-	if ((c = kmem_alloc(sizeof(struct cond))) == NULL)
-		return ENOMEM;
-
-	event_init(&c->event, "condition");
-	c->task = cur_task();
-	c->magic = COND_MAGIC;
-
-	if (umem_copyout(&c, cond, sizeof(c))) {
-		kmem_free(c);
-		return EFAULT;
-	}
-	return 0;
+	cp->magic = COND_MAGIC;
+	cp->mutex = NULL;
+	cp->wait = 0;
+	cp->signal = 0;
+	event_init(&cp->event, "condition", ev_COND);
 }
 
 /*
- * cond_copyin - copy a condition variable from user space.
- *
- * It also checks if the passed CV is valid.
- */
-static int
-cond_copyin(cond_t *ucond, cond_t *kcond)
-{
-	cond_t c;
-
-	if (umem_copyin(ucond, &c, sizeof(ucond)))
-		return EFAULT;
-	if (!cond_valid(c))
-		return EINVAL;
-	*kcond = c;
-	return 0;
-}
-
-/*
- * Destroy a condition variable.
- *
- * If there are any blocked thread waiting for the specified
- * CV, it returns EBUSY.
+ * cond_wait - Wait on a condition for ever.
  */
 int
-cond_destroy(cond_t *cond)
+cond_wait(struct cond *c, struct mutex *m)
 {
-	cond_t c;
-	int err;
-
-	sched_lock();
-	if ((err = cond_copyin(cond, &c))) {
-		sched_unlock();
-		return err;
-	}
-	if (event_waiting(&c->event)) {
-		sched_unlock();
-		return EBUSY;
-	}
-	c->magic = 0;
-	kmem_free(c);
-	sched_unlock();
-	return 0;
+	return cond_timedwait(c, m, 0);
 }
 
 /*
- * Wait on a condition.
+ * cond_timedwait - Wait on a condition for a specified time.
  *
  * If the thread receives any exception while waiting CV, this
- * routine returns immediately with EINTR in order to invoke
- * exception handler. However, an application assumes this call
- * does NOT return with an error. So, the stub routine in a
- * system call library must call cond_wait() again if it gets
- * EINTR as error.
+ * routine returns immediately with EINTR.
  */
 int
-cond_wait(cond_t *cond, mutex_t *mtx)
+cond_timedwait(struct cond *c, struct mutex *m, uint64_t nsec)
 {
-	cond_t c;
-	int err, rc;
+	if (!cond_valid(c))
+		return DERR(-EINVAL);
 
-	if (umem_copyin(cond, &c, sizeof(cond)))
-		return EFAULT;
+	struct cond_private *cp = (struct cond_private*)c->storage;
 
-	sched_lock();
-	if (c == COND_INITIALIZER) {
-		if ((err = cond_init(cond))) {
-			sched_unlock();
-			return err;
-		}
-		umem_copyin(cond, &c, sizeof(cond));
-	} else {
-		if (!cond_valid(c)) {
-			sched_unlock();
-			return EINVAL;
-		}
-	}
-	if ((err = mutex_unlock(mtx))) {
-		sched_unlock();
-		return err;
+	/* can't wait with recursively locked mutex */
+	if (mutex_count(m) > 1)
+		return DERR(-EDEADLK);
+
+	int rc, err = 0;
+
+	sch_lock();
+
+	/* multiple threads can't wait with different mutexes */
+	if ((cp->mutex != NULL) && (cp->mutex != m)) {
+		sch_unlock();
+		return DERR(-EINVAL);
 	}
 
-	rc = sched_sleep(&c->event);
-	if (rc == SLP_INTR)
-		err = EINTR;
-	sched_unlock();
+	/* unlock mutex and store */
+	mutex_unlock(m);
+	cp->mutex = m;
 
-	if (err == 0)
-		err = mutex_lock(mtx);
+	/* wait for signal */
+	++cp->wait;
+	rc = sch_nanosleep(&cp->event, nsec);
+	--cp->wait;
+
+	/* reacquire mutex */
+	if ((err = mutex_lock(m)))
+		goto out;
+
+	/* received signal */
+	if (cp->signal) {
+		--cp->signal;
+		goto out;
+	}
+
+	switch (rc) {
+	case SLP_TIMEOUT:
+		err = -ETIMEDOUT;
+		break;
+	case SLP_INTR:
+		err = -EINTR;
+		break;
+	default:
+		panic("cond: bad sleep result");
+	}
+
+out:
+	sch_unlock();
 	return err;
 }
 
 /*
- * Unblock one thread that is blocked on the specified CV.
+ * cond_signal - Unblock one thread that is blocked on the specified CV.
  * The thread which has highest priority will be unblocked.
  */
 int
-cond_signal(cond_t *cond)
+cond_signal(struct cond *c)
 {
-	cond_t c;
-	int err;
+	if (!cond_valid(c))
+		return DERR(-EINVAL);
 
-	sched_lock();
-	if ((err = cond_copyin(cond, &c)) == 0)
-		sched_wakeone(&c->event);
-	sched_unlock();
-	return err;
+	struct cond_private *cp = (struct cond_private*)c->storage;
+
+	sch_lock();
+	if (cp->signal < cp->wait) {
+		++cp->signal;
+		sch_wakeone(&cp->event);
+	}
+	sch_unlock();
+
+	return 0;
 }
 
 /*
- * Unblock all threads that are blocked on the specified CV.
+ * cond_broadcast - Unblock all threads that are blocked on the specified CV.
  */
 int
-cond_broadcast(cond_t *cond)
+cond_broadcast(struct cond *c)
 {
-	cond_t c;
-	int err;
+	if (!cond_valid(c))
+		return DERR(-EINVAL);
 
-	sched_lock();
-	if ((err = cond_copyin(cond, &c)) == 0)
-		sched_wakeup(&c->event);
-	sched_unlock();
-	return err;
+	struct cond_private *cp = (struct cond_private*)c->storage;
+
+	sch_lock();
+	if (cp->signal < cp->wait) {
+		cp->signal = cp->wait;
+		sch_wakeup(&cp->event, SLP_SUCCESS);
+	}
+	sch_unlock();
+
+	return 0;
 }
+

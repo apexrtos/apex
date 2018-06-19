@@ -27,53 +27,65 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _THREAD_H
-#define _THREAD_H
+#ifndef thread_h
+#define thread_h
 
-#include <sys/cdefs.h>
-#include <queue.h>
-#include <event.h>
+#include <conf/config.h>
+#include <context.h>
+#include <stdbool.h>
+#include <stdnoreturn.h>
 #include <timer.h>
-#include <arch.h>
 
 struct mutex;
+struct task;
 
 /*
  * Description of a thread.
  */
 struct thread {
 	int		magic;		/* magic number */
-	task_t		task;		/* pointer to owner task */
-	struct list 	task_link;	/* link for threads in same task */
-	struct queue 	link;		/* linkage on scheduling queue */
+	char		name[12];	/* thread name */
+	struct task    *task;		/* pointer to owner task */
+	struct list	task_link;	/* link for threads in same task */
+	struct queue	link;		/* linkage on scheduling queue */
 	int		state;		/* thread state */
 	int		policy;		/* scheduling policy */
 	int		prio;		/* current priority */
 	int		baseprio;	/* base priority */
-	int		timeleft;	/* remaining ticks to run */
-	u_int		time;		/* total running time */
-	int		resched;	/* true if rescheduling is needed */
+	int		timeleft;	/* remaining nanoseconds to run */
+	uint64_t	time;		/* total running time (nanoseconds) */
+	int		resched;	/* != 0 if rescheduling is needed */
 	int		locks;		/* schedule lock counter */
 	int		suscnt;		/* suspend counter */
-	struct event	*slpevt;	/* sleep event */
+	struct event   *slpevt;		/* sleep event */
 	int		slpret;		/* sleep result code */
-	struct timer 	timeout;	/* thread timer */
-	struct timer	*periodic;	/* pointer to periodic timer */
-	uint32_t 	excbits;	/* bitmap of pending exceptions */
-	struct queue 	ipc_link;	/* linkage on IPC queue */
-	void		*msgaddr;	/* kernel address of IPC message */
-	size_t		msgsize;	/* size of IPC message */
-	thread_t	sender;		/* thread that sends IPC message */
-	thread_t	receiver;	/* thread that receives IPC message */
-	object_t 	sendobj;	/* IPC object sending to */
-	object_t 	recvobj;	/* IPC object receiving from */
-	struct list 	mutexes;	/* mutexes locked by this thread */
-	struct mutex 	*wait_mutex;	/* mutex pointer currently waiting */
-	void		*kstack;	/* base address of kernel stack */
-	struct context 	ctx;		/* machine specific context */
+	struct timer	timeout;	/* thread timer */
+	k_sigset_t	sig_pending;	/* bitmap of pending signals */
+	k_sigset_t	sig_blocked;	/* bitmap of blocked signals */
+	struct list	mutexes;	/* mutexes locked by this thread */
+	struct mutex   *wait_mutex;	/* mutex pointer currently waiting */
+	struct list	futexes;	/* waiting futexes held */
+	struct futex   *wait_futex;	/* futex pointer currently waiting */
+	void           *kstack;		/* base address of kernel stack */
+	int	       *clear_child_tid;/* clear & futex_wake this on exit */
+	struct context	ctx;		/* machine specific context */
+	int		errno_storage;	/* error number */
+#if defined(CONFIG_DEBUG)
+	int		mutex_locks;	/* mutex lock counter */
+#endif
 };
 
-#define thread_valid(th) (kern_area(th) && ((th)->magic == THREAD_MAGIC))
+/*
+ * Thread priorities
+ */
+#define PRI_TIMER	15	/* priority for timer thread */
+#define PRI_IST_MAX	16	/* max priority for interrupt threads */
+#define PRI_IST_MIN	32	/* min priority for interrupt threads */
+#define PRI_DPC		33	/* priority for Deferred Procedure Call */
+#define PRI_SIGNAL	63	/* priority for signal delivery */
+#define PRI_DEFAULT	200	/* default user priority */
+#define PRI_IDLE	255	/* priority for idle thread */
+#define PRI_MIN		255	/* minimum priority */
 
 /*
  * Thread state
@@ -84,29 +96,6 @@ struct thread {
 #define TH_EXIT		0x04	/* terminated */
 
 /*
- * Sleep result
- */
-#define SLP_SUCCESS	0	/* success */
-#define SLP_BREAK	1	/* break due to some reasons */
-#define SLP_TIMEOUT	2	/* timeout */
-#define SLP_INVAL	3	/* target event becomes invalid */
-#define SLP_INTR	4	/* interrupted by exception */
-
-/*
- * Priorities
- * Probably should not be altered too much.
- */
-#define PRIO_TIMER	15	/* priority for timer thread */
-#define PRIO_IST	16	/* top priority for interrupt threads */
-#define PRIO_DPC	33	/* priority for Deferred Procedure Call */
-#define PRIO_IDLE	255	/* priority for idle thread */
-#define PRIO_USER	PRIO_DFLT	/* default priority for user thread */
-
-#define MAX_PRIO	0
-#define MIN_PRIO	255
-#define NPRIO		256	/* number of thread priority */
-
-/*
  * Scheduling operations for thread_schedparam().
  */
 #define OP_GETPRIO	0	/* get scheduling priority */
@@ -114,22 +103,43 @@ struct thread {
 #define OP_GETPOLICY	2	/* get scheduling policy */
 #define OP_SETPOLICY	3	/* set scheduling policy */
 
-__BEGIN_DECLS
-int	 thread_create(task_t, thread_t *);
-int	 thread_terminate(thread_t);
-int	 thread_load(thread_t, void (*)(void), void *);
-thread_t thread_self(void);
-void	 thread_yield(void);
-int	 thread_suspend(thread_t);
-int	 thread_resume(thread_t);
-int	 thread_schedparam(thread_t, int, int *);
-void	 thread_idle(void);
-int	 thread_info(struct info_thread *);
-void	 thread_dump(void);
-void	 thread_init(void);
-/* for kernel thread */
-thread_t kthread_create(void (*)(void *), void *, int);
-void	 kthread_terminate(thread_t);
-__END_DECLS
+#if defined(__cplusplus)
+#define noreturn [[noreturn]]
+extern "C" {
+#endif
 
-#endif /* !_THREAD_H */
+/*
+ * Normal threads
+ */
+struct thread  *thread_cur(void);
+bool		thread_valid(struct thread *);
+int	        thread_createfor(struct task *, struct thread **, void *,
+				 unsigned, void (*)(void), long,
+				 const char *const[], const char *const[],
+				 const char *const[], const unsigned[]);
+int	        thread_name(struct thread *, const char *);
+int		thread_id(struct thread *);
+struct thread  *thread_find(int);
+int	        thread_terminate(struct thread *);
+void		thread_yield(void);
+int		thread_suspend(struct thread *);
+int		thread_resume(struct thread *);
+int		thread_schedparam(struct thread *, int, int *);
+int		thread_interrupt(struct thread *);
+noreturn void	thread_idle(void);
+void	        thread_dump(void);
+void	        thread_check(void);
+void	        thread_init(void);
+
+/*
+ * Kernel threads
+ */
+struct thread  *kthread_create(void (*)(void *), void *, int, const char *,
+			       unsigned);
+void		kthread_terminate(struct thread *);
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
+
+#endif /* !thread_h */

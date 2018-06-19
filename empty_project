@@ -1,0 +1,42 @@
+#
+# Compiler
+#
+makeoption CFLAGS += -g
+makeoption CFLAGS += -pipe
+makeoption CFLAGS += -Wall
+makeoption CFLAGS += -O2
+makeoption CFLAGS += -flto=jobserver -fuse-linker-plugin
+makeoption CFLAGS += -Xlinker --gc-sections
+makeoption SSTRIP := y
+
+#
+# Debugging
+#
+option SYSLOG_SIZE 4096
+option DEBUG		    # Print debug messages and turn on debug checks
+option INFO		    # Print informative messages
+option EARLY_CONSOLE	    # Enable early console for debug output
+option BOOT_CONSOLE	    # Enable boot console for debug output
+option CONSOLE		    # Enable console
+option KSTACK_CHECK	    # Kernel stack checking
+option KMEM_CHECK	    # Kernel memory checking
+option THREAD_CHECK	    # Kernel thread checking
+option CONSOLE_LOGLEVEL	    (LOG_DEBUG)
+
+#
+# Operating system version
+#
+#
+option UNAME_VERSION	    (__TIMESTAMP__)
+#
+# Boot configuration
+#
+option BOOTFS dummy	    # doesn't exist
+option BOOTDEV /dev/dummy   # doesn't exist
+option INITCMD /init	    # doesn't exist
+
+#
+# Explicitly build kernel and bootloader as they aren't part of an image
+#
+build sys/apex
+build boot/boot

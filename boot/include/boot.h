@@ -27,57 +27,56 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _BOOT_H
-#define _BOOT_H
+#ifndef boot_h
+#define boot_h
 
 #include <conf/config.h>
-#include <sys/cdefs.h>
-#include <sys/param.h>
-#include <sys/cdefs.h>
-#include <sys/types.h>
-#include <sys/elf.h>
-#include <machine/stdarg.h>
-#include <prex/bootinfo.h>
+#include <machine.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/include/bootinfo.h>
 
-#include <elf.h>
-#include <arch.h>
-#include <platform.h>
-#include <syspage.h>
-#include <bootlib.h>
-
-/* #define DEBUG_BOOTINFO 1 */
-/* #define DEBUG_ELF      1 */
-
-#ifdef DEBUG
-#define DPRINTF(a) printf a
+#if defined(CONFIG_DEBUG)
+#define dbg(...) debug_printf(__VA_ARGS__)
 #else
-#define DPRINTF(a)
+#define dbg(...)
 #endif
 
-#ifdef DEBUG_ELF
-#define ELFDBG(a) DPRINTF(a)
+#if defined(CONFIG_INFO)
+#define info(...) debug_printf(__VA_ARGS__)
 #else
-#define ELFDBG(a)
+#define info(...)
 #endif
 
-/* Address translation */
-#define phys_to_virt(pa)	(void *)((paddr_t)(pa) + PAGE_OFFSET)
-#define virt_to_phys(va)	(void *)((vaddr_t)(va) - PAGE_OFFSET)
+#define panic(msg) ({ \
+	debug_puts("Panic: " msg); \
+	machine_panic(); \
+})
 
-extern paddr_t load_base;
-extern paddr_t load_start;
-extern int nr_img;
-extern struct bootinfo *const bootinfo;
+extern struct bootinfo *bootinfo;
+extern void (*kernel_entry)(struct bootinfo*);
 
-__BEGIN_DECLS
-#ifdef DEBUG
-void	printf(const char *fmt, ...);
-#endif
-void	panic(const char *msg);
-void	setup_image(void);
-int	elf_load(char *img, struct module *mod);
-void	start_kernel(paddr_t entry);
-void	loader_main(void);
-__END_DECLS
+int load_a(void);
+int load_xip(void *end_addr);
+int load_elf(const char *img);
+void debug_puts(const char *);
+void debug_printf(const char *, ...)
+	__attribute__((format (printf, 1, 2)));
 
-#endif /* !_BOOT_H */
+/*
+ * Address translation
+ */
+static inline void*
+phys_to_virt(const void *pa)
+{
+	return (void*)((uintptr_t)pa + CONFIG_PAGE_OFFSET);
+}
+
+static inline void*
+virt_to_phys(const void *va)
+{
+	return (void*)((uintptr_t)va - CONFIG_PAGE_OFFSET);
+}
+
+#endif /* !boot_h */
+

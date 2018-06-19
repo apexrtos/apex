@@ -1,43 +1,49 @@
-/*-
- * Copyright (c) 2005, Kohsuke Ohtani
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the author nor the names of any co-contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- */
+#ifndef page_h
+#define page_h
 
-#ifndef _PAGE_H
-#define _PAGE_H
+#include <types.h>
 
-#include <sys/cdefs.h>
+struct bootinfo;
 
-__BEGIN_DECLS
-void	*page_alloc(size_t);
-void	 page_free(void *, size_t);
-int	 page_reserve(void *, size_t);
-void	 page_info(struct info_memory *);
-void	 page_init(void);
-__END_DECLS
+enum PAGE_ALLOC_TYPE {
+	PAGE_ALLOC_FIXED,	/* Page must remain fixed in memory */
+	PAGE_ALLOC_MAPPED,	/* Page is part of a vm mapping */
+};
 
-#endif /* !_PAGE_H */
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+phys   *page_alloc_order(size_t order, enum MEM_TYPE, enum PAGE_ALLOC_TYPE);
+phys   *page_alloc(size_t, enum MEM_TYPE, enum PAGE_ALLOC_TYPE);
+phys   *page_reserve(phys *, size_t);
+int	page_free(phys *, size_t);
+void	page_init(const struct bootinfo *);
+void	page_dump(void);
+
+#if defined(__cplusplus)
+} /* extern "C" */
+
+#include <memory>
+
+namespace std {
+
+template<>
+struct default_delete<phys> {
+	default_delete(size_t size)
+	: size_{size}
+	{}
+
+	void operator()(phys* p) const
+	{
+		page_free(p, size_);
+	}
+private:
+	size_t size_;
+};
+
+} /* namespace std */
+
+#endif
+
+#endif /* !page_h */

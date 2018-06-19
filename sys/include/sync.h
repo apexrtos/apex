@@ -27,71 +27,70 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _SYNC_H
-#define _SYNC_H
+#ifndef sync_h
+#define sync_h
 
-#include <sys/cdefs.h>
-#include <event.h>
-#include <task.h>
+#include <types.h>
 
-struct sem {
-	int		magic;		/* magic number */
-	task_t		task;		/* owner task */
-	struct event	event;		/* event */
-	u_int		value;		/* current value */
+struct list;
+struct thread;
+
+#define MUTEX_WAITERS	0x00000001
+#define MUTEX_RECURSIVE	0x00000002
+#define MUTEX_TID_MASK	0xFFFFFFFC
+
+struct cond {
+	union {
+		char storage[32];
+		unsigned align;
+	};
 };
 
 struct mutex {
-	int		magic;		/* magic number */
-	task_t		task;		/* owner task */
-	struct event	event;		/* event */
-	struct list	link;		/* linkage on locked mutex list */
-	thread_t	owner;		/* owner thread locking this mutex */
-	int		prio;		/* highest prio in waiting threads */
-	int		locks;		/* counter for recursive lock */
+	union {
+		char storage[40];
+		unsigned align;
+	};
 };
 
-struct cond {
-	int		magic;		/* magic number */
-	task_t		task;		/* owner task */
-	struct event	event;		/* event */
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+bool	       mutex_valid(const struct mutex *);
+void	       mutex_init(struct mutex *);
+int	       mutex_lock(struct mutex *);
+int	       mutex_unlock(struct mutex *);
+struct thread *mutex_owner(const struct mutex *);
+int	       mutex_prio(const struct mutex *);
+void	       mutex_setprio(struct mutex *, int);
+unsigned       mutex_count(const struct mutex *);
+struct mutex  *mutex_entry(struct list*);
+
+bool	       cond_valid(const struct cond *);
+void	       cond_init(struct cond *);
+int	       cond_wait(struct cond *, struct mutex *);
+int	       cond_timedwait(struct cond *, struct mutex *, uint64_t);
+int	       cond_signal(struct cond *);
+int	       cond_broadcast(struct cond *);
+
+#if defined(__cplusplus)
+} /* extern "C" */
+
+namespace a {
+
+class mutex {
+public:
+	mutex() { mutex_init(&m_); }
+	int lock() { return mutex_lock(&m_); }
+	int unlock() { return mutex_unlock(&m_); }
+
+private:
+	::mutex m_;
 };
 
-#define sem_valid(s)	(kern_area(s) && ((s)->magic == SEM_MAGIC))
+} /* namespace a */
 
-#define mutex_valid(m)	(kern_area(m) && \
-			 ((m)->magic == MUTEX_MAGIC) && \
-			 ((m)->task == cur_task()))
+#endif /* __cplusplus */
 
-#define cond_valid(c)	(kern_area(c) && \
-			 ((c)->magic == COND_MAGIC) && \
-			 ((c)->task == cur_task()))
-
-/* maximum value for semaphore. */
-#define MAXSEMVAL		((u_int)((~0u) >> 1))
-
-#define MUTEX_INITIALIZER	(mutex_t)0x4d496e69	/* 'MIni' */
-#define COND_INITIALIZER	(cond_t)0x43496e69	/* 'CIni' */
-
-__BEGIN_DECLS
-int	 sem_init(sem_t *, u_int);
-int	 sem_destroy(sem_t *);
-int	 sem_wait(sem_t *, u_long);
-int	 sem_trywait(sem_t *);
-int	 sem_post(sem_t *);
-int	 sem_getvalue(sem_t *, u_int *);
-int	 mutex_init(mutex_t *);
-int	 mutex_destroy(mutex_t *);
-int	 mutex_lock(mutex_t *);
-int	 mutex_trylock(mutex_t *);
-int	 mutex_unlock(mutex_t *);
-void	 mutex_cleanup(thread_t);
-void	 mutex_setprio(thread_t, int);
-int	 cond_init(cond_t *);
-int	 cond_destroy(cond_t *);
-int	 cond_wait(cond_t *, mutex_t *);
-int	 cond_signal(cond_t *);
-int	 cond_broadcast(cond_t *);
-__END_DECLS
-
-#endif /* !_SYNC_H */
+#endif /* sync_h */

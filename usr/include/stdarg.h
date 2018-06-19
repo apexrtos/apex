@@ -1,2 +1,0 @@
-#include <machine/stdarg.h>
-

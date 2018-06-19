@@ -31,20 +31,84 @@
  * task.c - task management routines
  */
 
+#include <task.h>
+
+#include <access.h>
+#include <arch.h>
+#include <assert.h>
+#include <debug.h>
+#include <errno.h>
+#include <fs.h>
+#include <futex.h>
 #include <kernel.h>
 #include <kmem.h>
-#include <sched.h>
+#include <proc.h>
+#include <sch.h>
+#include <stdalign.h>
+#include <string.h>
+#include <sys/mman.h>
 #include <thread.h>
-#include <ipc.h>
 #include <vm.h>
-#include <page.h>
-#include <task.h>
+
+#define TASK_MAGIC     0x54736b3f      /* 'Tsk?' */
 
 /*
  * Kernel task.
  * kern_task acts as a list head of all tasks in the system.
  */
-struct task	kern_task;
+struct task kern_task;
+struct task *init_task;
+
+/*
+ * task_cur - return current active task.
+ */
+struct task *
+task_cur(void)
+{
+	return thread_cur()->task;
+}
+
+/*
+ * task_find - convert process id to task pointer
+ */
+struct task *
+task_find(pid_t pid)
+{
+	if (pid == 0)
+		return task_cur();
+	if (pid == 1)
+		return init_task;
+	const unsigned shift = floor_log2(alignof(struct task));
+	struct task *t = phys_to_virt((phys*)(pid << shift));
+	if (!k_access_ok(t, sizeof *t, PROT_WRITE))
+		return 0;
+	if (!task_valid(t))
+		return 0;
+	return t;
+}
+
+/*
+ * task_pid - convert task pointer to process id
+ */
+pid_t
+task_pid(struct task *t)
+{
+	if (t == &kern_task)
+		return 0;
+	if (t == init_task)
+		return 1;
+	const unsigned shift = floor_log2(alignof(struct task));
+	return (pid_t)virt_to_phys(t) >> shift;
+}
+
+/*
+ * task_valid - test task validity.
+ */
+bool
+task_valid(struct task *t)
+{
+	return k_address(t) && t->magic == TASK_MAGIC;
+}
 
 /**
  * task_create - create a new task.
@@ -73,30 +137,19 @@ struct task	kern_task;
  * Note: The child task initially contains no threads.
  */
 int
-task_create(task_t parent, int vm_option, task_t *child)
+task_create(struct task *parent, int vm_option, struct task **child)
 {
 	struct task *task;
-	vm_map_t map = NULL;
 	int err = 0;
 
-	switch (vm_option) {
-	case VM_NEW:
-	case VM_SHARE:
-#ifdef CONFIG_MMU
-	case VM_COPY:
-#endif
-		break;
-	default:
-		return EINVAL;
-	}
-	sched_lock();
+	sch_lock();
 	if (!task_valid(parent)) {
-		err = ESRCH;
+		err = DERR(-ESRCH);
 		goto out;
 	}
-	if (cur_task() != &kern_task) {
+	if (task_cur() != &kern_task) {
 		if (!task_access(parent)) {
-			err = EPERM;
+			err = DERR(-EPERM);
 			goto out;
 		}
 		/*
@@ -104,15 +157,14 @@ task_create(task_t parent, int vm_option, task_t *child)
 		 * parent's memory space. So, the child task
 		 * can identify whether it is a child.
 		 */
-		task = 0;
-		if (umem_copyout(&task, child, sizeof(task))) {
-			err = EFAULT;
-			goto out;
-		}
+		*child = 0;
 	}
 
-	if ((task = kmem_alloc(sizeof(*task))) == NULL) {
-		err = ENOMEM;
+	/*
+	 * Allocate task
+	 */
+	if ((task = kmem_alloc(sizeof(*task), MEM_NORMAL)) == NULL) {
+		err = DERR(-ENOMEM);
 		goto out;
 	}
 	memset(task, 0, sizeof(*task));
@@ -122,134 +174,96 @@ task_create(task_t parent, int vm_option, task_t *child)
 	 */
 	switch (vm_option) {
 	case VM_NEW:
-		map = vm_create();
+		if (!(task->as = as_create(task_pid(task))))
+			err = DERR(-ENOMEM);
 		break;
 	case VM_SHARE:
-		vm_reference(parent->map);
-		map = parent->map;
+		as_reference(parent->as);
+		task->as = parent->as;
 		break;
 	case VM_COPY:
-		map = vm_fork(parent->map);
+		if ((task->as = as_copy(parent->as, task_pid(task))) >= (struct as*)-4096U)
+			err = (int)task->as;
 		break;
 	default:
-		/* DO NOTHING */
+		err = DERR(-EINVAL);
 		break;
 	}
-	if (map == NULL) {
+	if (err < 0) {
 		kmem_free(task);
-		err = ENOMEM;
 		goto out;
 	}
 
 	/*
 	 * Fill initial task data.
 	 */
-	task->map = map;
-	task->handler = parent->handler;
 	task->capability = parent->capability;
 	task->parent = parent;
 	task->magic = TASK_MAGIC;
-	list_init(&task->objects);
 	list_init(&task->threads);
+	list_init(&task->futexes);
 	list_insert(&kern_task.link, &task->link);
+	task->pgid = parent->pgid;
+	task->sid = parent->sid;
+	task->state = PS_RUN;
+	mutex_init(&task->fs_lock);
+	event_init(&task->child_event, "child", ev_SLEEP);
 
-	if (cur_task() == &kern_task)
-		*child = task;
-	else
-		err = umem_copyout(&task, child, sizeof(task));
+	/*
+	 * Register init task
+	 */
+	if (parent == &kern_task)
+		init_task = task;
+
+	*child = task;
  out:
-	sched_unlock();
+	sch_unlock();
 	return err;
 }
 
 /*
- * Terminate the specified task.
+ * Destroy the specified task.
+ *
+ * NOTE: this function is for special cleanup use only and is not the normal
+ * way for a task to quit. See proc_exit for that.
+ *
+ * This function only releases resources allocated by task_create.
  */
 int
-task_terminate(task_t task)
+task_destroy(struct task *task)
 {
-	int err = 0;
-	list_t head, n;
-	thread_t th;
-	object_t obj;
+	assert(task != task_cur());
 
-	sched_lock();
-	if (!task_valid(task)) {
-		sched_unlock();
-		return ESRCH;
-	}
-	if (!task_access(task)) {
-		sched_unlock();
-		return EPERM;
-	}
+	sch_lock();
 
-	/* Invalidate the task. */
+	assert(list_empty(&task->threads));
+
+	as_destroy(task->as);
 	task->magic = 0;
-
-	/*
-	 * Terminate all threads except a current thread.
-	 */
-	head = &task->threads;
-	for (n = list_first(head); n != head; n = list_next(n)) {
-		th = list_entry(n, struct thread, task_link);
-		if (th != cur_thread)
-			thread_terminate(th);
-	}
-	/*
-	 * Delete all objects owned by the target task.
-	 */
-	head = &task->objects;
-	for (n = list_first(head); n != head; n = list_next(n)) {
-		/*
-		 * A current task may not have permission to
-		 * delete target objects. So, we set the owner
-		 * of the object to the current task before
-		 * deleting it.
-		 */
-		obj = list_entry(n, struct object, task_link);
-		obj->owner = cur_task();
-		object_destroy(obj);
-	}
-	/*
-	 * Release all other task related resources.
-	 */
-	timer_stop(&task->alarm);
-	vm_terminate(task->map);
 	list_remove(&task->link);
 	kmem_free(task);
 
-	if (task == cur_task()) {
-		cur_thread->task = NULL;
-		thread_terminate(cur_thread);
-	}
-	sched_unlock();
-	return err;
-}
-
-task_t
-task_self(void)
-{
-
-	return cur_task();
+	sch_unlock();
+	return 0;
 }
 
 /*
  * Suspend a task.
  */
 int
-task_suspend(task_t task)
+task_suspend(struct task *task)
 {
-	list_t head, n;
-	thread_t th;
+	struct list *head, *n;
+	struct thread *th;
 
-	sched_lock();
+	sch_lock();
 	if (!task_valid(task)) {
-		sched_unlock();
-		return ESRCH;
+		sch_unlock();
+		return DERR(-ESRCH);
 	}
 	if (!task_access(task)) {
-		sched_unlock();
-		return EPERM;
+		sch_unlock();
+		return DERR(-EPERM);
 	}
 
 	if (++task->suscnt == 1) {
@@ -262,7 +276,7 @@ task_suspend(task_t task)
 			thread_suspend(th);
 		}
 	}
-	sched_unlock();
+	sch_unlock();
 	return 0;
 }
 
@@ -273,27 +287,24 @@ task_suspend(task_t task)
  * thread suspend count and task suspend count become 0.
  */
 int
-task_resume(task_t task)
+task_resume(struct task *task)
 {
-	list_t head, n;
-	thread_t th;
+	struct list *head, *n;
+	struct thread *th;
 	int err = 0;
 
-	ASSERT(task != cur_task());
+	assert(task != task_cur());
 
-	sched_lock();
+	sch_lock();
 	if (!task_valid(task)) {
-		err = ESRCH;
+		err = DERR(-ESRCH);
 		goto out;
 	}
 	if (!task_access(task)) {
-		err = EPERM;
+		err = DERR(-EPERM);
 		goto out;
 	}
-	if (task->suscnt == 0) {
-		err = EINVAL;
-		goto out;
-	}
+	assert(task->suscnt > 0);
 	if (--task->suscnt == 0) {
 		/*
 		 * Resume all threads in the target task.
@@ -305,7 +316,7 @@ task_resume(task_t task)
 		}
 	}
  out:
-	sched_unlock();
+	sch_unlock();
 	return err;
 }
 
@@ -316,160 +327,64 @@ task_resume(task_t task)
  * the task name can be changed at anytime by exec().
  */
 int
-task_name(task_t task, const char *name)
+task_name(struct task *task, const char *name)
 {
-	size_t len;
 	int err = 0;
 
-	sched_lock();
+	sch_lock();
 	if (!task_valid(task)) {
-		err = ESRCH;
+		err = DERR(-ESRCH);
 		goto out;
 	}
 	if (!task_access(task)) {
-		err = EPERM;
+		err = DERR(-EPERM);
 		goto out;
 	}
-	if (cur_task() == &kern_task) {
-		strlcpy(task->name, name, MAXTASKNAME);
-	} else {
-		if (umem_strnlen(name, MAXTASKNAME, &len))
-			err = EFAULT;
-		else if (len >= MAXTASKNAME)
-			err = ENAMETOOLONG;
-		else
-			err = umem_copyin(name, task->name, len + 1);
+	for (const char *p = name; *p; ++p) {
+		if (*p == '/')
+			name = p + 1;
 	}
+	strlcpy(task->name, name, ARRAY_SIZE(task->name));
  out:
-	sched_unlock();
+	sch_unlock();
 	return err;
-}
-
-/*
- * Get the capability of the specified task.
- */
-int
-task_getcap(task_t task, cap_t *cap)
-{
-	cap_t curcap;
-
-	sched_lock();
-	if (!task_valid(task)) {
-		sched_unlock();
-		return ESRCH;
-	}
-	curcap = task->capability;
-	sched_unlock();
-
-	return umem_copyout(&curcap, cap, sizeof(curcap));
-}
-
-/*
- * Set the capability of the specified task.
- */
-int
-task_setcap(task_t task, cap_t *cap)
-{
-	cap_t newcap;
-
-	if (!task_capable(CAP_SETPCAP))
-		return EPERM;
-
-	sched_lock();
-	if (!task_valid(task)) {
-		sched_unlock();
-		return ESRCH;
-	}
-	if (umem_copyin(cap, &newcap, sizeof(newcap))) {
-		sched_unlock();
-		return EFAULT;
-	}
-	task->capability = newcap;
-	sched_unlock();
-	return 0;
 }
 
 /*
  * Check if the current task has specified capability.
  */
-int
-task_capable(cap_t cap)
+bool
+task_capable(unsigned cap)
 {
-	task_t task = cur_task();
-
-	return (int)(task->capability & cap);
+	return task_cur()->capability & cap;
 }
 
 /*
  * Check if the current task can access the specified task.
  * Return true on success, or false on error.
  */
-int
-task_access(task_t task)
+bool
+task_access(struct task *task)
 {
+	/* Do not access the kernel task. */
+	if (task == &kern_task)
+		return false;
 
-	if (task == &kern_task) {
-		/* Do not access the kernel task. */
-		return 0;
-	} else {
-		if (task == cur_task() ||
-		    task->parent == cur_task() ||
-		    task_capable(CAP_TASK))
-			return 1;
-	}
-	return 0;
+	return task == task_cur() ||
+	    task->parent == task_cur() ||
+	    task_capable(CAP_TASK);
 }
 
-/*
- * Create and setup boot tasks.
- */
-void
-task_bootstrap(void)
-{
-	struct module *mod;
-	task_t task;
-	thread_t th;
-	void *stack, *sp;
-	int i;
-
-	mod = &bootinfo->tasks[0];
-	for (i = 0; i < bootinfo->nr_tasks; i++) {
-		/*
-		 * Create a new task.
-		 */
-		if (task_create(&kern_task, VM_NEW, &task))
-			break;
-		task_name(task, mod->name);
-		if (vm_load(task->map, mod, &stack))
-			break;
-
-		/*
-		 * Create and start a new thread.
-		 */
-		if (thread_create(task, &th))
-			break;
-		sp = (char *)stack + USTACK_SIZE - (sizeof(int) * 3);
-		if (thread_load(th, (void (*)(void))mod->entry, sp))
-			break;
-		thread_resume(th);
-
-		mod++;
-	}
-	if (i != bootinfo->nr_tasks)
-		panic("Unable to load boot task");
-}
-
-#ifdef DEBUG
 void
 task_dump(void)
 {
-	list_t i, j;
-	task_t task;
+	struct list *i, *j;
+	struct task *task;
 	int nthreads;
 
-	printf("\nTask dump:\n");
-	printf(" mod task      nthrds susp exc hdlr cap      name\n");
-	printf(" --- --------- ------ ---- -------- -------- ------------\n");
+	info("\nTask dump:\n");
+	info(" mod task        nthrds susp cap      state parent     pid      name\n");
+	info(" --- ----------- ------ ---- -------- ----- ---------- -------- ------------\n");
 	i = &kern_task.link;
 	do {
 		task = list_entry(i, struct task, link);
@@ -480,16 +395,16 @@ task_dump(void)
 			j = list_next(j);
 		} while (j != &task->threads);
 
-		printf(" %s %08x%c    %3d %4d %08x %08x %s\n",
+		info(" %s %p%c    %3d %4d %08x %5d %10p %8d %s\n",
 		       (task == &kern_task) ? "Knl" : "Usr", task,
-		       (task == cur_task()) ? '*' : ' ', nthreads,
-		       task->suscnt, task->handler, task->capability,
+		       (task == task_cur()) ? '*' : ' ', nthreads,
+		       task->suscnt, task->capability,
+		       task->state, task->parent, task_pid(task),
 		       task->name != NULL ? task->name : "no name");
 
 		i = list_next(i);
 	} while (i != &kern_task.link);
 }
-#endif
 
 /*
  * We assume that the VM mapping of a kernel task has
@@ -501,10 +416,13 @@ task_init(void)
 	/*
 	 * Create a kernel task as the first task.
 	 */
-	strlcpy(kern_task.name, "kernel", MAXTASKNAME);
+	strlcpy(kern_task.name, "kernel", ARRAY_SIZE(kern_task.name));
 	list_init(&kern_task.link);
-	list_init(&kern_task.objects);
 	list_init(&kern_task.threads);
 	kern_task.capability = 0xffffffff;
 	kern_task.magic = TASK_MAGIC;
+	kern_task.state = PS_RUN;
+	kern_task.as = as_create(0);
+	mutex_init(&kern_task.fs_lock);
+	event_init(&kern_task.child_event, "child", ev_SLEEP);
 }
