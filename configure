@@ -169,8 +169,8 @@ parse_config()
 			;;
 		include)
 			find_config I "" "$rest"
-			parse_config "$I"
 			INCLUDE_IN="$INCLUDE_IN $I"
+			parse_config "$I"
 			;;
 		machine)
 			[ "x$machine" != x ] &&
