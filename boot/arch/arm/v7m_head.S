@@ -54,7 +54,7 @@ _start:
 	mov r11, A_SCS
 
 	/* initialise cache */
-#if defined(CONFIG_CACHE)
+#if defined(CONFIG_CACHE) && !defined(CONFIG_NO_CACHE_INIT)
 	/* originally from ARM Cortex-M7 Devices Generic User Guide Issue B */
 	/* data cache */
 	mov r0, 0	    /* select level 1 data cache */
