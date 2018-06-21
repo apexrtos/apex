@@ -120,6 +120,7 @@ define fn_process_sources
     $(tgt)_CC := $$(CROSS_COMPILE)gcc
     $(tgt)_CXX := $$(CROSS_COMPILE)g++
     $(tgt)_CPP := $$(CROSS_COMPILE)cpp
+    $(tgt)_LD := $$(CROSS_COMPILE)ld
     $(tgt)_AS := $$(CROSS_COMPILE)as
     $(tgt)_AR := $$(CROSS_COMPILE)gcc-ar
     $(tgt)_RANLIB := $$(CROSS_COMPILE)gcc-ranlib
