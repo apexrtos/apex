@@ -18,14 +18,6 @@ SECTIONS {
 		*(.rodata*)
 	} >rom
 
-	.got : {
-		/* libc.a may be position independent */
-		*(.got.plt)
-		*(.igot.plt)
-		*(.got)
-		*(.igot)
-	} >rom
-
 	.data : {
 		*(.data*)
 	} >ram AT>rom

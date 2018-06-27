@@ -25,14 +25,6 @@ SECTIONS {
 		*(.rodata*)
 	} >ram : kernel
 
-	.got : {
-		/* libc.a may be position independent */
-		*(.got.plt)
-		*(.igot.plt)
-		*(.got)
-		*(.igot)
-	} >ram :kernel
-
 	.drivers : {
 		__drivers = .;
 		KEEP(*(SORT(.drivers*)))
