@@ -47,8 +47,8 @@ void (*kernel_entry)(struct bootinfo*);
 void
 bootinfo_dump(void)
 {
-	const char *strtype[] = { "", "NORMAL", "FAST", "ROM", "MEMHOLE",
-	    "KERNEL", "BOOTDISK", "RESERVED" };
+	const char *strtype[] = { "", "NORMAL", "FAST", "MEMHOLE", "KERNEL",
+	    "BOOTDISK", "RESERVED" };
 
 	dbg("[Boot Information]\n");
 	dbg("nr_rams=%d\n", bootinfo->nr_rams);
