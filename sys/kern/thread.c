@@ -648,7 +648,9 @@ thread_dump(void)
 void
 thread_init(void)
 {
-	idle_thread.kstack = (void *)CONFIG_BOOTSTACK_BASE_VIRT;
+	extern char __stack_start[1], __stack_size[1];
+
+	idle_thread.kstack = __stack_start;
 	idle_thread.magic = THREAD_MAGIC;
 	list_init(&idle_thread.mutexes);
 	list_init(&idle_thread.futexes);
@@ -658,8 +660,7 @@ thread_init(void)
 	idle_thread.prio = PRI_IDLE;
 	idle_thread.baseprio = PRI_IDLE;
 	strcpy(idle_thread.name, "idle");
-	context_init_idle(&idle_thread.ctx,
-	    (void *)(CONFIG_BOOTSTACK_BASE_VIRT + CONFIG_BOOTSTACK_SIZE));
+	context_init_idle(&idle_thread.ctx, __stack_start + (int)__stack_size);
 	list_insert(&kern_task.threads, &idle_thread.task_link);
 #if defined(CONFIG_KSTACK_CHECK)
 	size_t free = ((void *)__builtin_frame_address(0) -

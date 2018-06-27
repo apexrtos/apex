@@ -15,7 +15,7 @@
 .text
 .global vectors
 vectors:
-	.word (CONFIG_BOOTSTACK_BASE_PHYS + CONFIG_BOOTSTACK_SIZE)
+	.word __stack_top
 	.word _start
 	.word boot_isr_NMI
 	.word boot_isr_HardFault

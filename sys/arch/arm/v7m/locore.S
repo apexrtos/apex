@@ -44,17 +44,18 @@ vectors:
  * Assumes the following state:
  *   CPU is in Thumb, Thread, Privileged mode
  *   Interrupts are disabled and all interrupt sources are disabled
- *   The stack pointer is somewhere in BOOTSTACK
- *   Clocks and caches are apropriately configured
+ *   The stack pointer is unknown
+ *   Clocks and caches are appropriately configured
  *   r0 contains the address of bootinfo
  */
 .text
 .thumb_func
 .global _start
 _start:
-	/* setup a temporary vector table for the transition to handler mode
-	   using the top of bootstack */
-	ldr r1, =CONFIG_BOOTSTACK_BASE_PHYS
+	/* setup a temporary vector table for the transition to handler mode */
+	ldr r1, =__stack_start	/* use stack for temporary table */
+	add r1, r1, 127		/* align to 128-byte boundary */
+	bic r1, r1, 127
 	adr r2, 1f + 1		/* address of SVC handler */
 	str r2, [r1, 11 * 4]	/* store to temporary vector table */
 	dsb			/* make sure vector is stored */
@@ -99,12 +100,12 @@ _start:
 	#error Enable CP10 and CP11 access in CPACR
 #endif
 
+	/* setup stack pointer */
+	ldr sp, =__stack_top
+	mov lr, 0xffffffff
+
 	/* copy bootinfo to final location */
 	bl copy_bootinfo
-
-	/* reset stack pointer */
-	ldr sp, =(CONFIG_BOOTSTACK_BASE_PHYS + CONFIG_BOOTSTACK_SIZE)
-	mov lr, 0xffffffff
 
 	/* jump to kernel */
 	b kernel_main

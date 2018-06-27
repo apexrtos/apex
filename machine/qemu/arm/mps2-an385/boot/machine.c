@@ -58,12 +58,7 @@ void machine_setup(void)
 	bootinfo->ram[0].size = CONFIG_RAM_SIZE;
 	bootinfo->ram[0].type = MT_NORMAL;
 
-	/* Reserve boot stack */
-	bootinfo->ram[1].base = (void*)CONFIG_BOOTSTACK_BASE_PHYS;
-	bootinfo->ram[1].size = CONFIG_BOOTSTACK_SIZE;
-	bootinfo->ram[1].type = MT_RESERVED;
-
-	bootinfo->nr_rams = 2;
+	bootinfo->nr_rams = 1;
 }
 
 /*

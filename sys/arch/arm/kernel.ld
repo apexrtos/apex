@@ -56,6 +56,14 @@ SECTIONS {
 		*(COMMON)
 	} >ram : kernel
 
+	.stack : ALIGN(8) {
+		. += CONFIG_KSTACK_SIZE;
+	} >ram : kernel
+
+	__stack_start = ADDR(.stack);
+	__stack_size = SIZEOF(.stack);
+	__stack_top = ADDR(.stack) + SIZEOF(.stack);
+
 	/* Discard .ARM.exidx and .ARM.attributes */
 	/DISCARD/ : { *(.ARM.*) }
 }

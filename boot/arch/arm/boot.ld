@@ -35,10 +35,15 @@ SECTIONS {
 		*(COMMON)
 	} >ram
 
+	.stack : ALIGN(8) {
+		. += 0x1000;
+	} >ram
+
 	__data_rom = LOADADDR(.data);
 	__data_ram = ADDR(.data);
 	__data_size = SIZEOF(.data);
 	__bss_start = ADDR(.bss);
 	__bss_size = SIZEOF(.bss);
+	__stack_top = ADDR(.stack) + SIZEOF(.stack);
 	__loader_end = LOADADDR(.data) + SIZEOF(.data);
 }
