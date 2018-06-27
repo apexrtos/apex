@@ -13,7 +13,7 @@
 #ifdef __thumb__
 .thumb_func
 #endif
-.globl crt_init
+.global crt_init
 crt_init:
 	/* copy data */
 	ldr r0, =__data_ram
