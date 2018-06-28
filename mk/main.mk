@@ -483,3 +483,7 @@ all: $(default_tgts)
 .PHONY: clean
 clean:
 
+# Convenience to run under qemu
+.PHONY: run
+run: apeximg
+	$(CONFIG_QEMU_CMD) $<
