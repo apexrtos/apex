@@ -95,3 +95,11 @@ void machine_clock_init(void)
 {
 	/* QEMU doesn't require clock initialisation */
 }
+
+/*
+ * Initialise memory
+ */
+void machine_memory_init(void)
+{
+	/* QEMU doesn't require memory initialisation */
+}

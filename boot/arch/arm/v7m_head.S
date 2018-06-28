@@ -94,6 +94,9 @@ _start:
 	dsb
 	isb
 
+	/* initialise memory */
+	bl machine_memory_init
+
 	/* jump to crt_init */
 	b crt_init
 .ltorg
