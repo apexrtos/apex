@@ -1,7 +1,6 @@
 #include "mps2-uart.h"
 
 #include <dev/tty/tty.h>
-#include <driver.h>
 #include <irq.h>
 #include <kmem.h>
 
@@ -155,25 +154,13 @@ oproc(struct tty *tp)
 	irq_restore(s);
 }
 
-static void
-create(unsigned long base, int rx_int, int tx_int,
-    int overflow_int, const char *name)
-{
-	auto tp = tty_create(name, tproc, oproc, (void*)base);
-	irq_attach(rx_int, CONFIG_IPL_UART, 0, rx_isr, NULL, tp);
-	irq_attach(tx_int, CONFIG_IPL_UART, 0, tx_isr, NULL, tp);
-}
-
 /*
  * Initialize
  */
-static int
-init(void)
+void
+mps2_uart_init(const mps2_uart_desc *d)
 {
-	create(0x40004000, 0, 1, 12, "ttyS0");
-	create(0x40005000, 2, 3, 12, "ttyS1");
-	create(0x40006000, 4, 5, 12, "ttyS2");
-	return 0;
+	auto tp = tty_create(d->name, tproc, oproc, (void*)d->base);
+	irq_attach(d->rx_int, d->ipl, 0, rx_isr, NULL, tp);
+	irq_attach(d->tx_int, d->ipl, 0, tx_isr, NULL, tp);
 }
-
-REGISTER_DRIVER("ARM MPS2 UART", 4, &init);

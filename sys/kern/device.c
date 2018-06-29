@@ -111,6 +111,8 @@ device_create(const struct devio *io, const char *name, int flags, void *info)
 	struct device *dev;
 	size_t len;
 
+	dbg("Create /dev/%s\n", name);
+
 	len = strlen(name);
 	if (len == 0 || len >= ARRAY_SIZE(dev->name))	/* Invalid name? */
 		return 0;
@@ -225,34 +227,11 @@ device_info(u_long index, int *flags, char *name)
 }
 
 /*
- * Initialize static device drivers.
- */
-static void
-driver_init(void)
-{
-	struct driver *drv;
-	extern struct driver __drivers, __drivers_end;
-
-	info("Initialise static drivers\n");
-
-	/*
-	 * Call init routine for all device drivers with init order.
-	 * Smaller value will be run first.
-	 */
-	for (drv = &__drivers; drv != &__drivers_end; ++drv) {
-		info("- %s\n", drv->name);
-		if (drv->init)
-			drv->init();
-	}
-}
-
-/*
  * Initialize device driver module.
  */
 void
 device_init(void)
 {
 	list_init(&device_list);
-	driver_init();
 }
 

@@ -26,15 +26,7 @@ memory KERNEL_MAX_SIZE	(CONFIG_LOADER_RAM_BASE_VIRT - CONFIG_KERNEL_BASE_VIRT)
 #
 # Device drivers
 #
-driver sys/dev/null		# NULL device
-driver sys/dev/tty		# Text terminal
-driver sys/dev/zero		# Zero device
-driver sys/dev/arm/mps2-uart	# MPS2 UART
-
-#
-# Interrupt priorities
-#
-option IPL_UART		(IPL_MIN)
+driver sys/dev/arm/mps2-uart
 
 #
 # CPU

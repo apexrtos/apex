@@ -77,6 +77,9 @@ include sys/fs/ramfs/include.mk
 ifneq ($(origin CONFIG_DRIVERS),undefined)
     include $(addsuffix /include.mk,$(CONFIG_DRIVERS))
 endif
+include sys/dev/null/include.mk
+include sys/dev/zero/include.mk
+include sys/dev/tty/include.mk
 
 # Architecture specific kernel sources
 ARCHDIR := arch/$(CONFIG_ARCH)

@@ -27,14 +27,11 @@
  * SUCH DAMAGE.
  */
 
-/*
- * null.c - null device
- */
-
-#include <driver.h>
+#include "null.h"
 
 #include <assert.h>
 #include <debug.h>
+#include <device.h>
 #include <fs/file.h>
 #include <stddef.h>
 #include <sys/uio.h>
@@ -74,13 +71,10 @@ static struct devio null_io = {
 /*
  * Initialize
  */
-static int
+void
 null_init(void)
 {
 	/* Create device object */
 	struct device *d = device_create(&null_io, "null", DF_CHR, NULL);
 	assert(d);
-	return 0;
 }
-
-REGISTER_DRIVER("Null Device", 2, &null_init);

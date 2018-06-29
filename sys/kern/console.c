@@ -5,7 +5,7 @@
 #include "console.h"
 
 #include <debug.h>
-#include <driver.h>
+#include <device.h>
 #include <fcntl.h>
 #include <fs.h>
 #include <sch.h>

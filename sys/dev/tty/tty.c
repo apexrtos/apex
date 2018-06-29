@@ -36,9 +36,6 @@
 
 /* Modified for Prex by Kohsuke Ohtani. */
 
-/*
- * tty.c - TTY device
- */
 #include "tty.h"
 
 #include <debug.h>

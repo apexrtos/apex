@@ -103,6 +103,7 @@ void		early_console_init(void);
 void		early_console_print(const char *, size_t);
 void		machine_memory_init(void);
 void		machine_init(void);
+void		machine_driver_init(void);
 void		machine_ready(void);
 void		machine_idle(void);
 void		machine_reset(void);

@@ -27,13 +27,10 @@
  * SUCH DAMAGE.
  */
 
-/*
- * zero.c - zero device
- */
-
-#include <driver.h>
+#include "zero.h"
 
 #include <assert.h>
+#include <device.h>
 #include <fs.h>
 #include <fs/util.h>
 #include <string.h>
@@ -82,13 +79,10 @@ static struct devio zero_io = {
 /*
  * Initialize
  */
-static int
+void
 zero_init(void)
 {
 	/* Create device object */
 	struct device *d = device_create(&zero_io, "zero", DF_CHR, NULL);
 	assert(d);
-	return 0;
 }
-
-REGISTER_DRIVER("Zero Device", 2, &zero_init);

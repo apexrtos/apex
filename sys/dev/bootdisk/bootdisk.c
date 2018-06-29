@@ -1,12 +1,9 @@
-/*
- * bootdisk.c - Boot disk driver
- */
-
-#include <driver.h>
+#include "bootdisk.h"
 
 #include <assert.h>
 #include <bootinfo.h>
 #include <debug.h>
+#include <device.h>
 #include <errno.h>
 #include <fs.h>
 #include <fs/file.h>
@@ -72,7 +69,7 @@ static struct devio io = {
 /*
  * Initialize
  */
-static int
+void
 bootdisk_init(void)
 {
 	int d = 0;
@@ -97,8 +94,4 @@ bootdisk_init(void)
 
 		++d;
 	}
-
-	return 0;
 }
-
-REGISTER_DRIVER("Boot Disk", 6, &bootdisk_init);

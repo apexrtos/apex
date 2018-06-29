@@ -31,6 +31,8 @@
 #include <assert.h>
 #include <console.h>
 #include <debug.h>
+#include <dev/null/null.h>
+#include <dev/zero/zero.h>
 #include <device.h>
 #include <elf_load.h>
 #include <exec.h>
@@ -98,11 +100,14 @@ kernel_main(void)
 	timer_init();
 
 	/*
-	 * Enable interrupt and initialize devices.
+	 * Enable interrupt and initialise drivers.
 	 */
 	irq_init();
 	clock_init();
 	device_init();
+	null_init();
+	zero_init();
+	machine_driver_init();
 	fs_init();
 
 	/*

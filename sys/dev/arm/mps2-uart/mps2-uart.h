@@ -15,8 +15,18 @@
 extern "C" {
 #endif
 
+struct mps2_uart_desc {
+	const char *name;
+	unsigned long base;
+	int ipl;
+	int rx_int;
+	int tx_int;
+	int overflow_int;
+};
+
 void mps2_uart_early_init(unsigned long base, tcflag_t);
 void mps2_uart_early_print(unsigned long base, const char *, size_t);
+void mps2_uart_init(const struct mps2_uart_desc *);
 
 #ifdef __cplusplus
 } /* extern "C" */

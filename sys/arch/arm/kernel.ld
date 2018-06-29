@@ -25,12 +25,6 @@ SECTIONS {
 		*(.rodata*)
 	} >ram : kernel
 
-	.drivers : {
-		__drivers = .;
-		KEEP(*(SORT(.drivers*)))
-		__drivers_end = .;
-	} >ram : kernel
-
 	.filesystems : {
 		__filesystems = .;
 		KEEP(*(.filesystems))
