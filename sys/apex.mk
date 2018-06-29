@@ -16,6 +16,7 @@ LDSCRIPT := arch/$(CONFIG_ARCH)/kernel.ld
 
 INCLUDE := \
     include \
+    $(CONFIG_APEXDIR) \
     $(CONFIG_BUILDDIR) \
     arch/$(CONFIG_ARCH)/include \
     . \
