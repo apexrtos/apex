@@ -109,6 +109,9 @@ exc_PendSV(void)
  */
 asm(
 ".thumb_func\n"
+#if defined(CONFIG_FPU)
+".fpu vfp\n"
+#endif
 ".global context_switch\n"
 "context_switch:\n"
 	/* Check active vector */
@@ -125,7 +128,7 @@ asm(
 ".global exc_NMI\n"
 "exc_NMI:\n"
 #if defined(CONFIG_FPU)
-#error push non volatile FPU registers
+	"vpush {s16-s31}\n"
 #endif
 	"push {r4, r5, r6, r7, r8, r9, r10, r11, lr}\n"
 	"ldr r2, [ip, "S(A_SHCSR)"-"S(A_SCS)"]\n"
@@ -143,7 +146,7 @@ asm(
 	"str r2, [ip, "S(A_SHCSR)"-"S(A_SCS)"]\n"
 	"pop {r4, r5, r6, r7, r8, r9, r10, r11, lr}\n"
 #if defined(CONFIG_FPU)
-#error pop non volatile FPU registers
+	"vpop {s16-s31}\n"
 #endif
 	"bx lr\n"
 

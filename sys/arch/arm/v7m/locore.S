@@ -97,7 +97,8 @@ _start:
 
 	/* enable access to FPU */
 #ifdef CONFIG_FPU
-	#error Enable CP10 and CP11 access in CPACR
+	mov r1, 0xf00000		/* CP10, CP11 full access */
+	str r1, [r2, A_CPACR-A_SCS]
 #endif
 
 	/* setup stack pointer */
