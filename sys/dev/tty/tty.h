@@ -41,6 +41,7 @@
 #include <stddef.h>
 
 struct tty;
+typedef unsigned int tcflag_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +57,7 @@ bool			tty_oq_empty(struct tty *);
 size_t			tty_oq_dmalen(struct tty *);
 void			tty_oq_done(struct tty *);
 void			tty_input(struct tty *, int c);
+long			tty_speed(tcflag_t);
 
 #ifdef __cplusplus
 } /* extern "C" */
