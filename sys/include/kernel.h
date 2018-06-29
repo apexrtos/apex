@@ -112,4 +112,16 @@ ceil_log2(unsigned long n)
 	return floor_log2(n) + (n & (n - 1) ? 1 : 0);
 }
 
+/*
+ * Integer division to closest integer
+ */
+static inline long
+div_closest(long n, long d)
+{
+	if ((n > 0) == (d > 0))
+		return (n + d / 2) / d;
+	else
+		return (n - d / 2) / d;
+}
+
 #endif /* !kernel_h */
