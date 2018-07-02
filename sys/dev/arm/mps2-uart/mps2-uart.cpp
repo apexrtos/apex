@@ -47,11 +47,11 @@ struct mps2_uart {
  * Early initialisation of UART for kernel debugging
  */
 void
-mps2_uart_early_init(unsigned long base, tcflag_t oflag)
+mps2_uart_early_init(unsigned long base, tcflag_t cflag)
 {
 	volatile struct mps2_uart *const u = (struct mps2_uart*)base;
 
-	/* TODO: process oflag */
+	/* TODO: process cflag */
 	u->BAUDDIV = 16;	    /* QEMU doesn't care as long as >= 16 */
 	u->CTRL.TX_ENABLE = 1;
 }
