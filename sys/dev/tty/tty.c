@@ -746,10 +746,8 @@ tty_create(const char *name, int (*tproc)(struct tty *),
 
 	tp->t_termios.c_iflag = TTYDEF_IFLAG;
 	tp->t_termios.c_oflag = TTYDEF_OFLAG;
-	tp->t_termios.c_cflag = TTYDEF_CFLAG;
+	tp->t_termios.c_cflag = TTYDEF_CFLAG | TTYDEF_SPEED;
 	tp->t_termios.c_lflag = TTYDEF_LFLAG;
-	tp->t_termios.__c_ispeed = TTYDEF_SPEED;
-	tp->t_termios.__c_ospeed = TTYDEF_SPEED;
 	tp->t_termios.c_cc[VINTR] = CINTR;
 	tp->t_termios.c_cc[VQUIT] = CQUIT;
 	tp->t_termios.c_cc[VERASE] = CERASE;
