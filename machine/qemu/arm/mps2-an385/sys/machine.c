@@ -85,7 +85,7 @@ void
 early_console_init(void)
 {
 	/* QEMU doesn't care about baud rate */
-	mps2_uart_early_init(UART0, B115200 | CS8);
+	mps2_uart_early_init(UART0, CONFIG_CONSOLE_CFLAG);
 }
 
 void
