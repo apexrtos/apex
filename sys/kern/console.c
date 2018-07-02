@@ -8,8 +8,10 @@
 #include <device.h>
 #include <fcntl.h>
 #include <fs.h>
+#include <ioctl.h>
 #include <sch.h>
 #include <stddef.h>
+#include <termios.h>
 
 static int fd;
 
@@ -61,6 +63,8 @@ console_start(void)
 int
 console_init(void)
 {
+	int err;
+
 	static struct devio io = {
 		.read = console_read,
 		.write = console_write,
@@ -72,7 +76,13 @@ console_init(void)
 	if (fd < 0)
 		return fd;
 
-	/* TODO: configure UART */
+	/* Configure console baud rate, etc. */
+	struct termios tio;
+	if ((err = kioctl(fd, TCGETS, &tio)) < 0)
+		return err;
+	tio.c_cflag = CONFIG_CONSOLE_CFLAG;
+	if ((err = kioctl(fd, TCSETS, &tio)) < 0)
+		return err;
 
 	device_create(&io, "console", DF_CHR, NULL);
 	syslog_output(console_start);
