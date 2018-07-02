@@ -11,7 +11,7 @@ CFLAGS += -z max-page-size=32
 CFLAGS += $(CONFIG_APEX_CFLAGS)
 CXXFLAGS += $(CFLAGS) -fno-exceptions -fno-rtti -std=gnu++17
 DEFS += -DKERNEL -D_GNU_SOURCE
-LIBS := ../libc/libc.a -lgcc
+LIBS := ../libc++/libc++.a ../libc/libc.a -lgcc
 LDSCRIPT := arch/$(CONFIG_ARCH)/kernel.ld
 
 INCLUDE := \
@@ -93,3 +93,4 @@ include $(MACHINEDIR)/include.mk
 $(APEX_SUBDIR)sys/lib/errno_EXTRA_CFLAGS := -fno-lto
 $(APEX_SUBDIR)sys/lib/raise_EXTRA_CFLAGS := -fno-lto
 MK := ../libc/libc.mk
+MK := ../libc++/libc++.mk
