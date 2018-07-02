@@ -95,37 +95,37 @@ as_mprotect(struct as *as, void *addr, size_t len, int prot)
 /*
  * access.h
  */
-extern "C" bool
+bool
 u_access_ok(const void *u_addr, size_t len, int access)
 {
 	return true;
 }
 
-extern "C" bool
+bool
 k_access_ok(const void *k_addr, size_t len, int access)
 {
 	return true;
 }
 
-extern "C" bool
+bool
 u_fault()
 {
 	return false;
 }
 
-extern "C" void
+void
 u_fault_clear()
 {
 
 }
 
-extern "C" bool
+bool
 u_address(const void *p)
 {
 	return true;
 }
 
-extern "C" bool
+bool
 k_address(const void *p)
 {
 	return true;

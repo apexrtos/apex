@@ -134,7 +134,7 @@ seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
 /*
  * mmapfor - map memory into task address space
  */
-extern "C" void *
+void *
 mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
     MEM_TYPE type)
 {
@@ -169,7 +169,7 @@ mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
 /*
  * munmapfor - unmap memory in address space
  */
-extern "C" int
+int
 munmapfor(as *a, void *const vaddr, const size_t ulen)
 {
 	int err = 0;
@@ -241,7 +241,7 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 /*
  * mprotectfor
  */
-extern "C" int
+int
 mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 {
 	int err = 0;
@@ -354,7 +354,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 /*
  * vm_set_brk - initialise program break
  */
-extern "C" void
+void
 vm_init_brk(as *a, void *brk)
 {
 	assert(!a->brk);
@@ -365,7 +365,7 @@ vm_init_brk(as *a, void *brk)
 /*
  * vm_readv
  */
-extern "C" ssize_t
+ssize_t
 vm_readv(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 {
 	return do_vm_io(a, liov, lc, riov, rc, as_read);
@@ -374,7 +374,7 @@ vm_readv(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 /*
  * vm_writev
  */
-extern "C" ssize_t
+ssize_t
 vm_writev(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 {
 	return do_vm_io(a, liov, lc, riov, rc, as_write);
@@ -383,7 +383,7 @@ vm_writev(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 /*
  * vm_read
  */
-extern "C" ssize_t
+ssize_t
 vm_read(as *a, void *lbuf, const void *rbuf, size_t len)
 {
 	const iovec liov = { lbuf, len };
@@ -394,7 +394,7 @@ vm_read(as *a, void *lbuf, const void *rbuf, size_t len)
 /*
  * vm_write
  */
-extern "C" ssize_t
+ssize_t
 vm_write(as *a, const void *lbuf, void *rbuf, size_t len)
 {
 	const iovec liov = { (void*)lbuf, len };
@@ -405,7 +405,7 @@ vm_write(as *a, const void *lbuf, void *rbuf, size_t len)
 /*
  * sc_mmap2
  */
-extern "C" void*
+void*
 sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 {
 	return mmapfor(task_cur()->as, addr, len, prot, flags, fd,
@@ -415,7 +415,7 @@ sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 /*
  * sc_munmap
  */
-extern "C" int
+int
 sc_munmap(void *addr, size_t len)
 {
 	return munmapfor(task_cur()->as, addr, len);
@@ -424,7 +424,7 @@ sc_munmap(void *addr, size_t len)
 /*
  * sc_mprotect
  */
-extern "C" int
+int
 sc_mprotect(void *addr, size_t len, int prot)
 {
 	return mprotectfor(task_cur()->as, addr, len, prot);
@@ -433,7 +433,7 @@ sc_mprotect(void *addr, size_t len, int prot)
 /*
  * sc_brk
  */
-extern "C" void *
+void *
 sc_brk(void *addr)
 {
 	auto a = task_cur()->as;
@@ -464,7 +464,7 @@ sc_brk(void *addr)
 /*
  * vm_init
  */
-extern "C" void
+void
 vm_init()
 {
 
@@ -473,7 +473,7 @@ vm_init()
 /*
  * vm_dump
  */
-extern "C" void
+void
 vm_dump()
 {
 	dbg("*** VM Dump ***\n");
@@ -489,7 +489,7 @@ vm_dump()
 /*
  * as_init
  */
-extern "C" as *
+as *
 as_create(pid_t pid)
 {
 	std::unique_ptr<as> a((as*)kmem_alloc(sizeof(as), MEM_NORMAL));
@@ -516,7 +516,7 @@ as_create(pid_t pid)
 /*
  * as_copy
  */
-extern "C" as *
+as *
 as_copy(as *a, pid_t pid)
 {
 	/* REVISIT: implement */

@@ -23,7 +23,7 @@
 
 // #define TRACE_EXEC
 
-extern "C" int
+int
 exec_into(struct task *t, const char *path, const char *const argv[],
     const char *const envp[])
 {
@@ -144,7 +144,7 @@ validate_args(const char *const args[])
 	return 0;
 }
 
-extern "C" int
+int
 sc_execve(const char *path, const char *const argv[], const char *const envp[])
 {
 	std::lock_guard l(global_sch_lock);

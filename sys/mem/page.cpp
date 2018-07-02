@@ -347,7 +347,7 @@ page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at)
  * 'len' is rounded up to next page sized boundary.
  * returns 0 on failure, physical address otherwise.
  */
-extern "C" phys *
+phys *
 page_alloc(size_t len, MEM_TYPE mt, const PAGE_ALLOC_TYPE at)
 {
 	if (len == 0)
@@ -420,7 +420,7 @@ page_reserve(phys *addr, size_t len, const PG_STATE st)
  * 'addr' and 'len' are rounded to the nearest page boundaries.
  * returns 0 on failure, physical address otherwise.
  */
-extern "C" phys *
+phys *
 page_reserve(phys *addr, size_t len)
 {
 	auto *r = find_region(addr, len);
@@ -457,7 +457,7 @@ page_free(region &r, const size_t page, const size_t o)
  *
  * returns 0 on success, -ve error code on failure
  */
-extern "C" int
+int
 page_free(phys *addr, size_t len)
 {
 	if (len == 0)

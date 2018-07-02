@@ -5,7 +5,7 @@
 #include <limits>
 #include <string.h>
 
-extern "C" ssize_t
+ssize_t
 u_strnlen(const char *u_str, const size_t maxlen)
 {
 	if (maxlen > std::numeric_limits<ssize_t>::max())
@@ -16,7 +16,7 @@ u_strnlen(const char *u_str, const size_t maxlen)
 	return r;
 }
 
-extern "C" ssize_t
+ssize_t
 u_arraylen(const void **u_arr, const size_t maxlen)
 {
 	if (maxlen > std::numeric_limits<ssize_t>::max())
@@ -28,7 +28,7 @@ u_arraylen(const void **u_arr, const size_t maxlen)
 	return i;
 }
 
-extern "C" bool
+bool
 u_strcheck(const char *u_str, const size_t maxlen)
 {
 	ssize_t len;

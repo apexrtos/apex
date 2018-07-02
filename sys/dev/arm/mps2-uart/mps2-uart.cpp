@@ -46,7 +46,7 @@ struct mps2_uart {
 /*
  * Early initialisation of UART for kernel debugging
  */
-extern "C" void
+void
 mps2_uart_early_init(unsigned long base, tcflag_t oflag)
 {
 	volatile struct mps2_uart *const u = (struct mps2_uart*)base;
@@ -59,7 +59,7 @@ mps2_uart_early_init(unsigned long base, tcflag_t oflag)
 /*
  * Early printing for kernel debugging
  */
-extern "C" void
+void
 mps2_uart_early_print(unsigned long base, const char *s, size_t len)
 {
 	volatile struct mps2_uart *const u = (struct mps2_uart*)base;
