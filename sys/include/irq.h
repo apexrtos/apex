@@ -47,8 +47,8 @@ struct irq;
 extern "C" {
 #endif
 
-struct irq *irq_attach(int, int, int, int (*)(int, void *),
-		       void (*)(int, void *), void *);
+struct irq *irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
+		       void (*ist)(int, void *), void *data);
 void	    irq_detach(struct irq *);
 int	    irq_disable(void);
 void	    irq_restore(int);

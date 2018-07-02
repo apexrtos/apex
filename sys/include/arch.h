@@ -39,10 +39,6 @@ struct context;
 struct thread;
 struct pgd;
 
-/* Interrupt mode for interrupt_setup() */
-#define IMODE_EDGE	0	/* edge trigger */
-#define IMODE_LEVEL	1	/* level trigger */
-
 /* page types for mmu_map */
 #define PG_UNMAP	0	/* no page */
 #define PG_READ		1	/* user - read only */

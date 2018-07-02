@@ -96,11 +96,10 @@ static struct irq *irq_table[CONFIG_IRQS] __mem_fast_bss;
  * TODO: Interrupt sharing is not supported, for now.
  */
 struct irq *
-irq_attach(int vector, int prio, int shared, int (*isr)(int, void *),
+irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
     void (*ist)(int, void *), void *data)
 {
 	struct irq *irq;
-	int mode;
 
 	assert(isr != NULL);
 	assert(vector < CONFIG_IRQS);
@@ -131,7 +130,6 @@ irq_attach(int vector, int prio, int shared, int (*isr)(int, void *),
 	}
 	irq_table[vector] = irq;
 	const int s = irq_disable();
-	mode = shared ? IMODE_LEVEL : IMODE_EDGE;
 	interrupt_setup(vector, mode);
 	interrupt_unmask(vector, prio);
 	interrupt_restore(s);

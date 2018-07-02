@@ -52,13 +52,13 @@ interrupt_unmask(int vector, int level)
 void
 interrupt_setup(int vector, int mode)
 {
-	/* REVISIT: edge vs level? */
+	/* nothing to do */
 }
 
 void
 interrupt_init(void)
 {
-	/* Nothing to do? */
+	/* nothing to do */
 }
 
 int
