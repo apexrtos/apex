@@ -1,6 +1,8 @@
 #ifndef arm_v7m_cpu_h
 #define arm_v7m_cpu_h
 
+#include <conf/config.h>
+
 /*
  * CONTROL register
  */

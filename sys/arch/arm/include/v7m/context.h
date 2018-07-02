@@ -1,7 +1,7 @@
 #ifndef arm_v7m_context_h
 #define arm_v7m_context_h
 
-#ifndef __ASSEMBLY__
+#include <conf/config.h>
 #include <stdint.h>
 
 /*
@@ -165,7 +165,5 @@ struct context {
 	struct kern_regs	kregs;		/* kernel mode registers */
 	void		       *saved_psp;	/* psp before signal */
 };
-
-#endif /* !__ASSEMBLY__ */
 
 #endif /* !arm_v7m_context_h */
