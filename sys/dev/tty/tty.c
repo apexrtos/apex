@@ -513,6 +513,7 @@ tty_output(struct tty *tp, int c)
 static int
 tty_open(struct file *f)
 {
+	int err;
 	struct tty *tp = f->f_data;
 	struct task *t = task_cur();
 
@@ -520,7 +521,8 @@ tty_open(struct file *f)
 		tp->t_pgid = task_pid(t);
 
 	if ((tp->t_open++ == 0) && tp->t_tproc)
-		tp->t_tproc(tp);
+		if ((err = tp->t_tproc(tp)) < 0)
+			return err;
 
 	return 0;
 }
