@@ -34,6 +34,7 @@ arch_elf_hwcap(void)
 void *
 arch_stack_align(void *sp)
 {
-	return (void*)((intptr_t)sp & -8);
+	/* userspace expects 16-byte aligned stack */
+	return (void*)((intptr_t)sp & -16);
 }
 
