@@ -72,7 +72,7 @@ static struct devio io = {
 void
 bootdisk_init(void)
 {
-	int d = 0;
+	int n = 0;
 	char name[] = "bootdiskX";
 
 	for (size_t i = 0; i < bootinfo.nr_rams; ++i) {
@@ -86,12 +86,12 @@ bootdisk_init(void)
 			.len = ram->size,
 		};
 
-		dbg("Bootdisk %d at %p (%uK bytes)\n", d, i->p, i->len / 1024);
+		dbg("Bootdisk %d at %p (%uK bytes)\n", n, i->p, i->len / 1024);
 
-		name[8] = '0' + d;
+		name[8] = '0' + n;
 		struct device *d = device_create(&io, name, DF_BLK, i);
 		assert(d);
 
-		++d;
+		++n;
 	}
 }
