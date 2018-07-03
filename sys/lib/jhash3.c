@@ -15,6 +15,7 @@
 #include <jhash3.h>
 
 #include <endian.h>
+#include <string.h>
 
 #define jhash_rot(x,k) (((x)<<(k)) | ((x)>>(32-(k))))
 
@@ -35,6 +36,19 @@
 	a ^= c; a -= jhash_rot(c,4);  \
 	b ^= a; b -= jhash_rot(a,14); \
 	c ^= b; c -= jhash_rot(b,24); \
+}
+
+/*
+ * read 32 bits from possibly unaligned location.
+ *
+ * gcc generates very good code for this.
+ */
+static inline uint32_t
+r32(const void *p)
+{
+	uint32_t v;
+	memcpy(&v, p, 4);
+	return v;
 }
 
 /*
@@ -87,13 +101,13 @@ uint32_t jhash(const void *key, size_t length, uint32_t initval)
 	a = b = c = 0xdeadbeef + ((uint32_t)length) + initval;
 
 	/* read 32-bit chunks */
-	const uint32_t *k = (const uint32_t *)key;
+	const __attribute__((may_alias)) uint32_t *k = key;
 
 	/* all but last block: reads and affect 32 bits of (a,b,c) */
 	while (length > 12) {
-		a += k[0];
-		b += k[1];
-		c += k[2];
+		a += r32(k + 0);
+		b += r32(k + 1);
+		c += r32(k + 2);
 		jhash_mix(a,b,c);
 		length -= 12;
 		k += 3;
@@ -108,38 +122,36 @@ uint32_t jhash(const void *key, size_t length, uint32_t initval)
 	 * does it on word boundaries, so is OK with this.  But VALGRIND will
 	 * still catch it and complain.  The masking trick does make the hash
 	 * noticably faster for short strings (like English words).
-	 *
-	 * REVISIT: yeah, but what if the array isn't aligned?
 	 */
 	if (BYTE_ORDER == LITTLE_ENDIAN) {
 		switch (length) {
-		case 12:    c += k[2];		    b += k[1];		    a += k[0];		    break;
-		case 11:    c += k[2] & 0xffffff;   b += k[1];		    a += k[0];		    break;
-		case 10:    c += k[2] & 0xffff;	    b += k[1];		    a += k[0];		    break;
-		case 9:	    c += k[2] & 0xff;	    b += k[1];		    a += k[0];		    break;
-		case 8:				    b += k[1];		    a += k[0];		    break;
-		case 7:				    b += k[1] & 0xffffff;   a += k[0];		    break;
-		case 6:				    b += k[1] & 0xffff;	    a += k[0];		    break;
-		case 5:				    b += k[1] & 0xff;	    a += k[0];		    break;
-		case 4:							    a += k[0];		    break;
-		case 3:							    a += k[0] & 0xffffff;   break;
-		case 2:							    a += k[0] & 0xffff;	    break;
-		case 1:							    a += k[0] & 0xff;	    break;
+		case 12:    c += r32(k + 2);		    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 11:    c += r32(k + 2) & 0xffffff;	    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 10:    c += r32(k + 2) & 0xffff;	    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 9:	    c += r32(k + 2) & 0xff;	    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 8:					    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 7:					    b += r32(k + 1) & 0xffffff;	    a += r32(k + 0);		    break;
+		case 6:					    b += r32(k + 1) & 0xffff;	    a += r32(k + 0);		    break;
+		case 5:					    b += r32(k + 1) & 0xff;	    a += r32(k + 0);		    break;
+		case 4:									    a += r32(k + 0);		    break;
+		case 3:									    a += r32(k + 0) & 0xffffff;	    break;
+		case 2:									    a += r32(k + 0) & 0xffff;	    break;
+		case 1:									    a += r32(k + 0) & 0xff;	    break;
 		}
 	} else {
 		switch (length) {
-		case 12:    c += k[2];		    b += k[1];		    a += k[0];		    break;
-		case 11:    c += k[2] & 0xffffff00; b += k[1];		    a += k[0];		    break;
-		case 10:    c += k[2] & 0xffff0000; b += k[1];		    a += k[0];		    break;
-		case 9:	    c += k[2] & 0xff000000; b += k[1];		    a += k[0];		    break;
-		case 8:				    b += k[1];		    a += k[0];		    break;
-		case 7:				    b += k[1] & 0xffffff00; a += k[0];		    break;
-		case 6:				    b += k[1] & 0xffff0000; a += k[0];		    break;
-		case 5:				    b += k[1] & 0xff000000; a += k[0];		    break;
-		case 4:							    a += k[0];		    break;
-		case 3:							    a += k[0] & 0xffffff00; break;
-		case 2:							    a += k[0] & 0xffff0000; break;
-		case 1:							    a += k[0] & 0xff000000; break;
+		case 12:    c += r32(k + 2);		    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 11:    c += r32(k + 2) & 0xffffff00;   b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 10:    c += r32(k + 2) & 0xffff0000;   b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 9:	    c += r32(k + 2) & 0xff000000;   b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 8:					    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 7:					    b += r32(k + 1) & 0xffffff00;   a += r32(k + 0);		    break;
+		case 6:					    b += r32(k + 1) & 0xffff0000;   a += r32(k + 0);		    break;
+		case 5:					    b += r32(k + 1) & 0xff000000;   a += r32(k + 0);		    break;
+		case 4:									    a += r32(k + 0);		    break;
+		case 3:									    a += r32(k + 0) & 0xffffff00;   break;
+		case 2:									    a += r32(k + 0) & 0xffff0000;   break;
+		case 1:									    a += r32(k + 0) & 0xff000000;   break;
 		}
 	}
 
@@ -162,22 +174,22 @@ uint32_t jhash_string(const char *key, uint32_t initval)
 	a = b = c = 0xdeadbeef + initval;
 
 	/* read 32-bit chunks */
-	const uint32_t *k = (const uint32_t *)key;
+	const __attribute__((may_alias)) uint32_t *k = (uint32_t *)key;
 
 	/* all but last block: reads and affect 32 bits of (a,b,c) */
 	int z0, z1, z2;
 	while (1) {
-		if ((z0 = jhash_haszero(k[0]))) break;
-		if ((z1 = jhash_haszero(k[1]))) break;
-		if ((z2 = jhash_haszero(k[2]))) break;
+		if ((z0 = jhash_haszero(r32(k + 0)))) break;
+		if ((z1 = jhash_haszero(r32(k + 1)))) break;
+		if ((z2 = jhash_haszero(r32(k + 2)))) break;
 		if (BYTE_ORDER == LITTLE_ENDIAN) {
-			if (!(k[3] & 0xff)) break;
+			if (!(r32(k + 3) & 0xff)) break;
 		} else {
-			if (!(k[3] & 0xff000000)) break;
+			if (!(r32(k + 3) & 0xff000000)) break;
 		}
-		a += k[0];
-		b += k[1];
-		c += k[2];
+		a += r32(k + 0);
+		b += r32(k + 1);
+		c += r32(k + 2);
 		jhash_mix(a,b,c);
 		k += 3;
 	}
@@ -186,41 +198,41 @@ uint32_t jhash_string(const char *key, uint32_t initval)
 	size_t length;
 	if (BYTE_ORDER == LITTLE_ENDIAN) {
 		if (z0) {
-			if (!(k[0] & 0x000000ff)) { length = 0; goto out; }
-			if (!(k[0] & 0x0000ff00)) { length = 1; goto out; }
-			if (!(k[0] & 0x00ff0000)) { length = 2;	goto out; }
+			if (!(r32(k + 0) & 0x000000ff)) { length = 0; goto out; }
+			if (!(r32(k + 0) & 0x0000ff00)) { length = 1; goto out; }
+			if (!(r32(k + 0) & 0x00ff0000)) { length = 2;	goto out; }
 			length = 3; goto out;
 		}
 		if (z1) {
-			if (!(k[1] & 0x000000ff)) { length = 4; goto out; }
-			if (!(k[1] & 0x0000ff00)) { length = 5; goto out; }
-			if (!(k[1] & 0x00ff0000)) { length = 6;	goto out; }
+			if (!(r32(k + 1) & 0x000000ff)) { length = 4; goto out; }
+			if (!(r32(k + 1) & 0x0000ff00)) { length = 5; goto out; }
+			if (!(r32(k + 1) & 0x00ff0000)) { length = 6;	goto out; }
 			length = 7; goto out;
 		}
 		if (z2) {
-			if (!(k[2] & 0x000000ff)) { length = 8; goto out; }
-			if (!(k[2] & 0x0000ff00)) { length = 9; goto out; }
-			if (!(k[2] & 0x00ff0000)) { length = 10;goto out; }
+			if (!(r32(k + 2) & 0x000000ff)) { length = 8; goto out; }
+			if (!(r32(k + 2) & 0x0000ff00)) { length = 9; goto out; }
+			if (!(r32(k + 2) & 0x00ff0000)) { length = 10;goto out; }
 			length = 11; goto out;
 		}
 		length = 12;
 	} else {
 		if (z0) {
-			if (!(k[0] & 0xff000000)) { length = 0; goto out; }
-			if (!(k[0] & 0x00ff0000)) { length = 1; goto out; }
-			if (!(k[0] & 0x0000ff00)) { length = 2;	goto out; }
+			if (!(r32(k + 0) & 0xff000000)) { length = 0; goto out; }
+			if (!(r32(k + 0) & 0x00ff0000)) { length = 1; goto out; }
+			if (!(r32(k + 0) & 0x0000ff00)) { length = 2;	goto out; }
 			length = 3; goto out;
 		}
 		if (z1) {
-			if (!(k[1] & 0xff000000)) { length = 4; goto out; }
-			if (!(k[1] & 0x00ff0000)) { length = 5; goto out; }
-			if (!(k[1] & 0x0000ff00)) { length = 6;	goto out; }
+			if (!(r32(k + 1) & 0xff000000)) { length = 4; goto out; }
+			if (!(r32(k + 1) & 0x00ff0000)) { length = 5; goto out; }
+			if (!(r32(k + 1) & 0x0000ff00)) { length = 6;	goto out; }
 			length = 7; goto out;
 		}
 		if (z2) {
-			if (!(k[2] & 0xff000000)) { length = 8; goto out; }
-			if (!(k[2] & 0x00ff0000)) { length = 9; goto out; }
-			if (!(k[2] & 0x0000ff00)) { length = 10;goto out; }
+			if (!(r32(k + 2) & 0xff000000)) { length = 8; goto out; }
+			if (!(r32(k + 2) & 0x00ff0000)) { length = 9; goto out; }
+			if (!(r32(k + 2) & 0x0000ff00)) { length = 10;goto out; }
 			length = 11; goto out;
 		}
 		length = 12;
@@ -237,38 +249,36 @@ out:
 	 * does it on word boundaries, so is OK with this.  But VALGRIND will
 	 * still catch it and complain.  The masking trick does make the hash
 	 * noticably faster for short strings (like English words).
-	 *
-	 * REVISIT: yeah, but who says the fucking array is aligned.
 	 */
 	if (BYTE_ORDER == LITTLE_ENDIAN) {
 		switch (length) {
-		case 12:    c += k[2];		    b += k[1];		    a += k[0];		    break;
-		case 11:    c += k[2] & 0xffffff;   b += k[1];		    a += k[0];		    break;
-		case 10:    c += k[2] & 0xffff;	    b += k[1];		    a += k[0];		    break;
-		case 9:	    c += k[2] & 0xff;	    b += k[1];		    a += k[0];		    break;
-		case 8:				    b += k[1];		    a += k[0];		    break;
-		case 7:				    b += k[1] & 0xffffff;   a += k[0];		    break;
-		case 6:				    b += k[1] & 0xffff;	    a += k[0];		    break;
-		case 5:				    b += k[1] & 0xff;	    a += k[0];		    break;
-		case 4:							    a += k[0];		    break;
-		case 3:							    a += k[0] & 0xffffff;   break;
-		case 2:							    a += k[0] & 0xffff;	    break;
-		case 1:							    a += k[0] & 0xff;	    break;
+		case 12:    c += r32(k + 2);		    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 11:    c += r32(k + 2) & 0xffffff;   b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 10:    c += r32(k + 2) & 0xffff;	    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 9:	    c += r32(k + 2) & 0xff;	    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 8:				    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 7:				    b += r32(k + 1) & 0xffffff;   a += r32(k + 0);		    break;
+		case 6:				    b += r32(k + 1) & 0xffff;	    a += r32(k + 0);		    break;
+		case 5:				    b += r32(k + 1) & 0xff;	    a += r32(k + 0);		    break;
+		case 4:							    a += r32(k + 0);		    break;
+		case 3:							    a += r32(k + 0) & 0xffffff;   break;
+		case 2:							    a += r32(k + 0) & 0xffff;	    break;
+		case 1:							    a += r32(k + 0) & 0xff;	    break;
 		}
 	} else {
 		switch (length) {
-		case 12:    c += k[2];		    b += k[1];		    a += k[0];		    break;
-		case 11:    c += k[2] & 0xffffff00; b += k[1];		    a += k[0];		    break;
-		case 10:    c += k[2] & 0xffff0000; b += k[1];		    a += k[0];		    break;
-		case 9:	    c += k[2] & 0xff000000; b += k[1];		    a += k[0];		    break;
-		case 8:				    b += k[1];		    a += k[0];		    break;
-		case 7:				    b += k[1] & 0xffffff00; a += k[0];		    break;
-		case 6:				    b += k[1] & 0xffff0000; a += k[0];		    break;
-		case 5:				    b += k[1] & 0xff000000; a += k[0];		    break;
-		case 4:							    a += k[0];		    break;
-		case 3:							    a += k[0] & 0xffffff00; break;
-		case 2:							    a += k[0] & 0xffff0000; break;
-		case 1:							    a += k[0] & 0xff000000; break;
+		case 12:    c += r32(k + 2);		    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 11:    c += r32(k + 2) & 0xffffff00; b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 10:    c += r32(k + 2) & 0xffff0000; b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 9:	    c += r32(k + 2) & 0xff000000; b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 8:				    b += r32(k + 1);		    a += r32(k + 0);		    break;
+		case 7:				    b += r32(k + 1) & 0xffffff00; a += r32(k + 0);		    break;
+		case 6:				    b += r32(k + 1) & 0xffff0000; a += r32(k + 0);		    break;
+		case 5:				    b += r32(k + 1) & 0xff000000; a += r32(k + 0);		    break;
+		case 4:							    a += r32(k + 0);		    break;
+		case 3:							    a += r32(k + 0) & 0xffffff00; break;
+		case 2:							    a += r32(k + 0) & 0xffff0000; break;
+		case 1:							    a += r32(k + 0) & 0xff000000; break;
 		}
 	}
 
