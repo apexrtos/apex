@@ -12,7 +12,6 @@ CFLAGS += $(CONFIG_APEX_CFLAGS)
 CXXFLAGS += $(CFLAGS) -fno-exceptions -fno-rtti -std=gnu++17
 DEFS += -DKERNEL -D_GNU_SOURCE
 LIBS := ../libc++/libc++.a ../libc/libc.a -lgcc
-LDSCRIPT := arch/$(CONFIG_ARCH)/kernel.ld
 
 INCLUDE := \
     include \
