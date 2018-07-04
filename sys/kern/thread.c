@@ -45,6 +45,7 @@
 #include <prio.h>
 #include <sch.h>
 #include <sched.h>
+#include <sections.h>
 #include <stdalign.h>
 #include <stddef.h>
 #include <stdnoreturn.h>
@@ -67,7 +68,7 @@
 /* forward declarations */
 static void do_terminate(struct thread *);
 
-struct thread idle_thread;
+__fast_bss struct thread idle_thread;
 
 /*
  * Allocate a new thread and attach a kernel stack to it.

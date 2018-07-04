@@ -98,6 +98,7 @@
 #include <stddef.h>
 #include <thread.h>
 #include <types.h>
+#include <sections.h>
 
 /*
  * Scheduling quantum (nanoseconds for context switch)
@@ -117,7 +118,7 @@ static struct event	dpc_event;	/* event for DPC */
 
 /* currently active thread */
 extern struct thread idle_thread;
-struct thread	       *active_thread = &idle_thread;
+__fast_data struct thread *active_thread = &idle_thread;
 
 /*
  * Return priority of highest-priority runnable thread.
@@ -542,7 +543,7 @@ sch_resume(struct thread *th)
  * Check quantum expiration, and mark a rescheduling flag.
  * We don't need locking in here.
  */
-void
+__fast_text void
 sch_elapse(uint32_t nsec)
 {
 	/* Profile running time. */

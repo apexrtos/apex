@@ -19,10 +19,12 @@ SECTIONS {
 	.text : {
 		*(.vectors)
 		*(.text*)
+		*(.fast_text)
 	} >ram : kernel
 
 	.rodata : {
 		*(.rodata*)
+		*(.fast_rodata)
 	} >ram : kernel
 
 	.filesystems : {

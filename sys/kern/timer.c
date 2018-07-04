@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <irq.h>
 #include <sch.h>
+#include <sections.h>
 #include <sig.h>
 #include <stdlib.h>	    /* remove when lldiv is no longer required */
 #include <sys/mman.h>
@@ -47,7 +48,7 @@
 #include <task.h>
 #include <thread.h>
 
-static volatile uint64_t monotonic;	/* nanoseconds elapsed since bootup */
+static volatile uint64_t monotonic __fast_bss;	/* nanoseconds elapsed since bootup */
 
 static struct event	timer_event;	/* event to wakeup a timer thread */
 static struct event	delay_event;	/* event for the thread delay */
@@ -271,7 +272,7 @@ timer_thread(void *arg)
  * run_itimer - decrement elapsed time from itimer, signal if time expired,
  * reload if configured to do so.
  */
-static void
+__fast_text static void
 run_itimer(struct itimer *it, uint32_t ns, int sig)
 {
 	/* disabled */
@@ -296,7 +297,7 @@ run_itimer(struct itimer *it, uint32_t ns, int sig)
  *
  * timer_tick() is called straight from the real time clock interrupt.
  */
-void
+__fast_text void
 timer_tick(int ticks)
 {
 	struct timer *tmr;

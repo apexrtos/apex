@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <irq.h>
 #include <sch.h>
+#include <sections.h>
 #include <sig.h>
 #include <syscall_table.h>
 #include <task.h>
@@ -85,7 +86,7 @@ static_assert(sizeof(struct exception_frame) == EFRAME_SIZE, "");
  *
  * Runs (via tail-chain) after an exception from userspace finishes
  */
-void
+__fast_text void
 exc_PendSV(void)
 {
 	assert(thread_cur()->locks == 1);
@@ -214,7 +215,7 @@ exc_BusFault(void)
 /*
  * exc_UsageFault
  */
-__attribute__((naked)) void
+__fast_text __attribute__((naked)) void
 exc_UsageFault(void)
 {
 	asm(
@@ -358,7 +359,7 @@ syscall_trace(long r0, long r1, long r2, long r3, long r4, long r5, long r6, lon
  * Arguments are in r0 -> r5
  * System call number is in r7
  */
-__attribute__((naked)) void
+__fast_text __attribute__((naked)) void
 exc_SVCall(void)
 {
 	asm(
@@ -483,7 +484,7 @@ exc_DebugMonitor(void)
  *
  * System timer exception
  */
-void
+__fast_text void
 exc_SysTick(void)
 {
 	EXCEPTION_ENTRY();
@@ -496,7 +497,7 @@ exc_SysTick(void)
  *
  * Nested vectored interrupt controller exception
  */
-void
+__fast_text void
 exc_NVIC(void)
 {
 	EXCEPTION_ENTRY();

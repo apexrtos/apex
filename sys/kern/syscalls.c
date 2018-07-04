@@ -13,6 +13,7 @@
 #include <proc.h>
 #include <sch.h>
 #include <sched.h>
+#include <sections.h>
 #include <sig.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -163,7 +164,8 @@ sc_clock_gettime(clockid_t id, struct timespec *ts)
  *
  * We make use of the MMU/MPU to trap and stub bad accesses to userspace.
  */
-__attribute__((used)) const void *const syscall_table[SYSCALL_TABLE_SIZE] = {
+__fast_rodata __attribute__((used)) const void *const
+syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_access] = sc_access,
 	[SYS_brk] = sc_brk,
 	[SYS_chdir] = sc_chdir,

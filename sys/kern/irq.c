@@ -86,7 +86,7 @@ static void
 irq_thread(void *);
 
 /* IRQ descriptor table */
-static struct irq *irq_table[CONFIG_IRQS] __mem_fast_bss;
+static struct irq *irq_table[CONFIG_IRQS] __fast_bss;
 
 /*
  * irq_attach - attach ISR and IST to the specified interrupt.
@@ -251,7 +251,7 @@ irq_dump(void)
  * the code in the architecture dependent layer. We
  * assumes the scheduler is already locked by caller.
  */
-void
+__fast_text void
 irq_handler(int vector)
 {
 	struct irq *irq;
