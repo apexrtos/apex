@@ -605,7 +605,7 @@ sch_stop(struct thread *th)
  * times, the caller has the responsible to unlock the same
  * number of locks.
  */
-void
+inline void
 sch_lock(void)
 {
 	active_thread->locks++;
@@ -643,7 +643,7 @@ sch_unlock_slowpath(int s)
 	}
 }
 
-void
+inline void
 sch_unlock(void)
 {
 	assert(active_thread->locks > 0);
