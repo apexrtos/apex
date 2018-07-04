@@ -17,7 +17,7 @@ MEMORY {
 
 SECTIONS {
 	.text : {
-		*locore.o(.text)
+		*(.vectors)
 		*(.text*)
 	} >ram : kernel
 

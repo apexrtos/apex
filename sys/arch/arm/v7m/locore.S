@@ -13,7 +13,7 @@
  * Interrupt Vector Table
  * Alignment is guaranteed by link script
  */
-.text
+.section .vectors
 .global vectors
 vectors:
 	.word 0				/* SP_main */
@@ -72,7 +72,7 @@ _start:
 
 	/* set real vector table address */
 1:	cpsid	i
-	adr r1, vectors
+	ldr r1, =vectors
 	str r1, [r2, A_VTOR-A_SCS]
 
 	/* set thread mode to unprivileged */
