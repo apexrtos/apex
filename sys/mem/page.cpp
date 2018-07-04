@@ -667,7 +667,8 @@ page_init(const struct bootinfo *bi)
 			break;
 		case MT_KERNEL:
 			if (!page_reserve((phys*)m->base, m->size, PG_SYSTEM))
-				panic("bad bootinfo");
+				dbg("page_init: failed to reserve %p -> %p\n",
+				    m->base, m->base + m->size);
 			break;
 		case MT_BOOTDISK:
 			s.bootdisk_size = m->size;
