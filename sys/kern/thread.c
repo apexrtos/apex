@@ -281,7 +281,7 @@ int
 thread_id(struct thread *t)
 {
 	const unsigned shift = floor_log2(alignof(struct thread));
-	return (int)virt_to_phys(t) >> shift;
+	return (unsigned long)virt_to_phys(t) >> shift;
 }
 
 /*

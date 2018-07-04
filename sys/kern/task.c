@@ -98,7 +98,7 @@ task_pid(struct task *t)
 	if (t == init_task)
 		return 1;
 	const unsigned shift = floor_log2(alignof(struct task));
-	return (pid_t)virt_to_phys(t) >> shift;
+	return (unsigned long)virt_to_phys(t) >> shift;
 }
 
 /*
