@@ -97,6 +97,14 @@ void machine_clock_init(void)
 }
 
 /*
+ * Initialise stack
+ */
+void machine_early_memory_init(void)
+{
+	/* QEMU doesn't require stack initialisation */
+}
+
+/*
  * Initialise memory
  */
 void machine_memory_init(void)

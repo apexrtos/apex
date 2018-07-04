@@ -48,6 +48,9 @@ _start:
 	/* disable interrupts */
 	cpsid	i
 
+	/* stack must be available after machine_early_memory_init returns */
+	bl machine_early_memory_init
+
 	/* initialise clocks */
 	bl machine_clock_init
 
