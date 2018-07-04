@@ -14,9 +14,6 @@ load_executable(const char *img)
 	ehdr = (Elf32_Ehdr *)img;
 	phdr = (Elf32_Phdr *)(img + ehdr->e_phoff);
 
-	void *load_begin = (void*)-1;
-	void *load_end = 0;
-
 	for (int i = 0; i < (int)ehdr->e_phnum; i++, phdr++) {
 		edbg("\n[PHDR %d]\n", i);
 		edbg("p_type=%x\n", phdr->p_type);
@@ -58,18 +55,13 @@ load_executable(const char *img)
 			memset((void *)virt_to_phys(offset), 0, size);
 		}
 
-		if ((void*)phdr->p_vaddr < load_begin)
-			load_begin = (void*)phdr->p_vaddr;
-		if ((void*)(phdr->p_vaddr + phdr->p_memsz) > load_end)
-			load_end = (void*)(phdr->p_vaddr + phdr->p_memsz);
+		/* reserve memory */
+		bootinfo->ram[bootinfo->nr_rams++] = (struct boot_mem){
+			.base = virt_to_phys((void*)phdr->p_vaddr),
+			.size = phdr->p_memsz,
+			.type = MT_KERNEL,
+		};
 	}
-
-	/* reserve memory */
-	int i = bootinfo->nr_rams;
-	bootinfo->ram[i].base = virt_to_phys(load_begin);
-	bootinfo->ram[i].size = load_end - load_begin;
-	bootinfo->ram[i].type = MT_KERNEL;
-	bootinfo->nr_rams++;
 
 	edbg("\n");
 
