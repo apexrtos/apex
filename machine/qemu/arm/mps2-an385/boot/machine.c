@@ -41,7 +41,9 @@ struct cmsdk_uart {
 	uint32_t BAUDDIV;
 };
 
+#if defined(CONFIG_BOOT_CONSOLE)
 static volatile struct cmsdk_uart *const UART = (struct cmsdk_uart*)0x40004000;
+#endif
 
 /*
  * Setup machine state
