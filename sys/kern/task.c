@@ -202,12 +202,12 @@ task_create(struct task *parent, int vm_option, struct task **child)
 	task->magic = TASK_MAGIC;
 	list_init(&task->threads);
 	list_init(&task->futexes);
-	list_insert(&kern_task.link, &task->link);
 	task->pgid = parent->pgid;
 	task->sid = parent->sid;
 	task->state = PS_RUN;
 	mutex_init(&task->fs_lock);
 	event_init(&task->child_event, "child", ev_SLEEP);
+	list_insert(&kern_task.link, &task->link);
 
 	/*
 	 * Register init task
