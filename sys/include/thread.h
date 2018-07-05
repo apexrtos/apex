@@ -95,14 +95,6 @@ struct thread {
 #define TH_SUSPEND	0x02	/* suspend count is not 0 */
 #define TH_EXIT		0x04	/* terminated */
 
-/*
- * Scheduling operations for thread_schedparam().
- */
-#define OP_GETPRIO	0	/* get scheduling priority */
-#define OP_SETPRIO	1	/* set scheduling priority */
-#define OP_GETPOLICY	2	/* get scheduling policy */
-#define OP_SETPOLICY	3	/* set scheduling policy */
-
 #if defined(__cplusplus)
 #define noreturn [[noreturn]]
 extern "C" {
@@ -124,7 +116,6 @@ int	        thread_terminate(struct thread *);
 void		thread_yield(void);
 int		thread_suspend(struct thread *);
 int		thread_resume(struct thread *);
-int		thread_schedparam(struct thread *, int, int *);
 int		thread_interrupt(struct thread *);
 noreturn void	thread_idle(void);
 void	        thread_dump(void);
