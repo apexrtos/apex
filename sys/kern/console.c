@@ -86,6 +86,7 @@ console_init(void)
 
 	device_create(&io, "console", DF_CHR, NULL);
 	syslog_output(console_start);
+	console_start();
 
 	return 0;
 }
