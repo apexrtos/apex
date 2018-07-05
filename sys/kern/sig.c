@@ -651,13 +651,15 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 
 	sch_lock();
 
-	if (uoldact && !u_address(uoldact)) {
-		ret = DERR(-EFAULT);
-		goto out;
+	if (uoldact) {
+		if (!u_address(uoldact)) {
+			ret = DERR(-EFAULT);
+			goto out;
+		}
+		/* EFAULT generated on syscall return if necessary */
+		memcpy(uoldact, &task_cur()->sig_action[sig - 1],
+		    sizeof(struct k_sigaction));
 	}
-
-	/* EFAULT generated on syscall return if necessary */
-	memcpy(uoldact, &task_cur()->sig_action[sig - 1], sizeof(struct k_sigaction));
 
 	if (!uact)
 		goto out;
