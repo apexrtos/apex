@@ -186,9 +186,9 @@ again:
 				/*
 				 * Free child resources
 				 */
+				list_remove(&task->link);
 				as_destroy(task->as);
 				task->magic = 0;
-				list_remove(&task->link);
 				kmem_free(task);
 				break;
 			}
