@@ -206,7 +206,7 @@ irq_thread(void *arg)
 	vec = irq->vector;
 	data = irq->data;
 
-	for (;;) {
+	while (!sch_exit()) {
 		interrupt_disable();
 		if (irq->istreq <= 0) {
 			/*

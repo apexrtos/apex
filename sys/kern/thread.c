@@ -46,6 +46,7 @@
 #include <sch.h>
 #include <sched.h>
 #include <sections.h>
+#include <sig.h>
 #include <stdalign.h>
 #include <stddef.h>
 #include <stdnoreturn.h>
@@ -97,14 +98,6 @@ thread_alloc(unsigned type)
 	KSTACK_CHECK_INIT(th);
 #endif
 	return th;
-}
-
-static void
-thread_free(struct thread *th)
-{
-	th->magic = 0;
-	kmem_free(th->kstack);
-	kmem_free(th);
 }
 
 /*
@@ -198,58 +191,37 @@ thread_terminate(struct thread *th)
 }
 
 /*
+ * Free thread memory
+ */
+void
+thread_free(struct thread *th)
+{
+	assert(th->state & TH_ZOMBIE);
+
+	th->magic = 0;
+	context_cleanup(&th->ctx);
+	kmem_free(th->kstack);
+	kmem_free(th);
+}
+
+/*
  * Terminate thread-- the internal version of thread_terminate.
  */
 static void
 do_terminate(struct thread *th)
 {
-	static struct thread *zombie;
-
 	/*
 	 * Clean up thread state.
 	 */
-	context_cleanup(&th->ctx);
-	list_remove(&th->task_link);
 	sch_stop(th);
-	th->magic = 0;
+	sig_thread(th, 0);		/* signal 0 is special */
+	list_remove(&th->task_link);
 
 	if (th->clear_child_tid) {
 		const int zero = 0;
 		as_write(th->task->as, &zero, th->clear_child_tid, sizeof zero);
 		futex(th->task, th->clear_child_tid, FUTEX_PRIVATE | FUTEX_WAKE,
 		    1, 0, 0);
-	}
-
-	/*
-	 * We can not release the context of the "current"
-	 * thread because our thread switching always
-	 * requires the current context. So, the resource
-	 * deallocation is deferred until another thread
-	 * calls thread_terminate().
-	 */
-	if (zombie && zombie != thread_cur()) {
-		/*
-		 * Deallocate a zombie thread which was killed
-		 * in previous request.
-		 */
-#if defined(CONFIG_DEBUG)
-		assert(!zombie->mutex_locks);
-#endif
-		thread_free(zombie);
-		zombie = NULL;
-	}
-	if (th == thread_cur()) {
-		/*
-		 * If the current thread is being terminated,
-		 * enter zombie state and wait for somebody
-		 * to be killed us.
-		 */
-		zombie = th;
-	} else {
-#if defined(CONFIG_DEBUG)
-		assert(!th->mutex_locks);
-#endif
-		thread_free(th);
 	}
 }
 
@@ -556,7 +528,6 @@ thread_init(void)
 	list_init(&idle_thread.mutexes);
 	list_init(&idle_thread.futexes);
 	idle_thread.task = &kern_task;
-	idle_thread.state = TH_RUN;
 	idle_thread.policy = SCHED_FIFO;
 	idle_thread.prio = PRI_IDLE;
 	idle_thread.baseprio = PRI_IDLE;

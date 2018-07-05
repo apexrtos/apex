@@ -211,4 +211,5 @@ boot_thread(void *arg)
 #endif
 	run_init();
 	kthread_terminate(thread_cur());
+	sch_exit();
 }

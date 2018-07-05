@@ -294,29 +294,33 @@ out:
  * Signal a specific thread
  *
  * Can be called under interrupt
+ *
+ * Signal 0 is a special signal sent to kill a thread
  */
 void
 sig_thread(struct thread *th, int sig)
 {
 	trace("sig_thread th:%p sig:%d\n", th, sig);
 
-	assert(sig > 0 && sig <= NSIG);
+	assert(sig >= 0 && sig <= NSIG);
 
 	int ret;
 	k_sigset_t unblocked;
 
 	sch_lock();
 
-	ret = process_signal(th->task, sig);
-	if (ret < 0) {
-		/* Error */
-		goto out;
-	}
-	if (ret > 0) {
-		/* Ignore signal */
-		ret = 0;
-		goto out;
-	}
+	if (sig) {
+		ret = process_signal(th->task, sig);
+		if (ret < 0) {
+			/* Error */
+			goto out;
+		}
+		if (ret > 0) {
+			/* Ignore signal */
+			ret = 0;
+			goto out;
+		}
+	} else sig = SIGKILL; /* special signal to kill thread */
 
 	/*
 	 * Mark signal as pending on thread
@@ -391,12 +395,6 @@ sig_deliver(int rval)
 	assert(!th->mutex_locks);
 #endif
 
-	/*
-	 * Thread has been terminated
-	 */
-	if (!th->magic)
-		return rval;
-
 	sch_lock();
 
 	k_sigset_t pending = th->sig_pending;
@@ -405,6 +403,12 @@ sig_deliver(int rval)
 	 * Any pending signals?
 	 */
 	if (ksigisemptyset(&pending))
+		goto out;
+
+	/*
+	 * Thread is terminating
+	 */
+	if (sch_exit())
 		goto out;
 
 	/*

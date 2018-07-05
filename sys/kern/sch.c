@@ -53,7 +53,6 @@
  *
  * Each thread has one of the following state.
  *
- *  - TH_RUN     Running or ready to run
  *  - TH_SLEEP   Sleep for some event
  *  - TH_SUSPEND Suspend count is not 0
  *  - TH_EXIT    Terminated
@@ -119,6 +118,7 @@ static struct event	dpc_event;	/* event for DPC */
 /* currently active thread */
 extern struct thread idle_thread;
 __fast_data struct thread *active_thread = &idle_thread;
+__fast_bss static struct thread *prev_thread;
 
 /*
  * Return priority of highest-priority runnable thread.
@@ -196,6 +196,15 @@ runq_remove(struct thread *th)
 }
 
 /*
+ * return true if thread is in runnable state
+ */
+static bool
+thread_runnable(const struct thread *th)
+{
+	return !(th->state & (TH_SLEEP | TH_SUSPEND | TH_ZOMBIE));
+}
+
+/*
  * Process all pending woken threads.
  * Please refer to the comment of sch_wakeup().
  */
@@ -213,8 +222,9 @@ wakeq_flush(void)
 		th = queue_entry(q, struct thread, link);
 		th->slpevt = NULL;
 		th->state &= ~TH_SLEEP;
-		if (th != active_thread && th->state == TH_RUN)
-			runq_enqueue(th);
+		assert(th != active_thread);
+		assert(thread_runnable(th));
+		runq_enqueue(th);
 	}
 }
 
@@ -237,7 +247,7 @@ sch_switch(void)
 	 * Move a current thread to the run queue.
 	 */
 	prev = active_thread;
-	if (prev->state == TH_RUN) {
+	if (thread_runnable(prev)) {
 		if (prev->resched == RESCHED_PREEMPT)
 			runq_insert(prev);
 		else
@@ -251,6 +261,7 @@ sch_switch(void)
 	next = runq_dequeue();
 	if (next == prev)
 		return;
+	prev_thread = prev;
 	active_thread = next;
 
 	/*
@@ -258,6 +269,19 @@ sch_switch(void)
 	 * You are expected to understand this..
 	 */
 	context_switch(prev, next);
+
+	/*
+	 * Reap zombie threads
+	 */
+	if (prev_thread->state & TH_ZOMBIE) {
+		/*
+		 * Reaping a thread holding locks is very bad.
+		 */
+#if defined(CONFIG_DEBUG)
+		assert(!prev_thread->mutex_locks);
+#endif
+		thread_free(prev_thread);
+	}
 }
 
 /*
@@ -512,8 +536,9 @@ void
 sch_suspend(struct thread *th)
 {
 	assert(sch_locked());
+	assert(!(th->state & TH_SUSPEND));
 
-	if (th->state == TH_RUN) {
+	if (thread_runnable(th)) {
 		if (th == active_thread)
 			th->resched = RESCHED_SWITCH;
 		else
@@ -530,12 +555,11 @@ void
 sch_resume(struct thread *th)
 {
 	assert(sch_locked());
+	assert(th->state & TH_SUSPEND);
 
-	if (th->state & TH_SUSPEND) {
-		th->state &= ~TH_SUSPEND;
-		if (th->state == TH_RUN)
-			runq_enqueue(th);
-	}
+	th->state &= ~TH_SUSPEND;
+	if (thread_runnable(th))
+		runq_enqueue(th);
 }
 
 /*
@@ -568,7 +592,7 @@ sch_elapse(uint32_t nsec)
 void
 sch_start(struct thread *th)
 {
-	th->state = TH_RUN | TH_SUSPEND;
+	th->state = TH_SUSPEND;
 	th->policy = SCHED_RR;
 	th->prio = PRI_DEFAULT;
 	th->baseprio = PRI_DEFAULT;
@@ -576,21 +600,27 @@ sch_start(struct thread *th)
 }
 
 /*
- * Stop thread scheduling.
+ * Tell thread to exit
  */
 void
 sch_stop(struct thread *th)
 {
-	if (th == active_thread) {
+	th->state |= TH_EXIT;
+}
+
+/*
+ * Thread is ready to quit
+ */
+bool
+sch_exit(void)
+{
+	sch_lock();
+	if (active_thread->state & TH_EXIT) {
+		active_thread->state |= TH_ZOMBIE;
 		active_thread->resched = RESCHED_SWITCH;
-	} else {
-		if (th->state == TH_RUN)
-			runq_remove(th);
-		else if (th->state & TH_SLEEP)
-			queue_remove(&th->link);
 	}
-	timer_stop(&th->timeout);
-	th->state = TH_EXIT;
+	sch_unlock();
+	return active_thread->state & TH_EXIT;
 }
 
 /*
@@ -698,7 +728,7 @@ sch_setprio(struct thread *th, int baseprio, int prio)
 		if (prio > runq_top() && active_thread->resched == 0)
 			active_thread->resched = RESCHED_PREEMPT;
 	} else {
-		if (th->state == TH_RUN) {
+		if (thread_runnable(th)) {
 			/*
 			 * Update the thread priority and adjust
 			 * the run queue position for new priority.

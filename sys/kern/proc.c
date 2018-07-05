@@ -49,15 +49,6 @@ proc_exit(struct task *task, int status)
 		panic("init died");
 
 	/*
-	 * Terminate all threads in task
-	 */
-	head = &task->threads;
-	for (n = list_first(head); n != head; n = list_next(n)) {
-		th = list_entry(n, struct thread, task_link);
-		thread_terminate(th);
-	}
-
-	/*
 	 * Set the parent pid of all child processes to init.
 	 */
 	struct task *child;
@@ -101,6 +92,15 @@ proc_exit(struct task *task, int status)
 	 */
 	if (task->vfork)
 		thread_resume(task->vfork);
+
+	/*
+	 * Terminate all threads in task
+	 */
+	head = &task->threads;
+	for (n = list_first(head); n != head; n = list_next(n)) {
+		th = list_entry(n, struct thread, task_link);
+		thread_terminate(th);
+	}
 
 	sch_unlock();
 }
@@ -237,6 +237,8 @@ sc_tkill(int tid, int sig)
 	struct thread *th;
 	if (!(th = thread_find(tid)))
 		return DERR(-ESRCH);
+	if (sig <= 0 || sig > NSIG)
+		return DERR(-EINVAL);
 	sig_thread(th, sig);
 	return 0;
 }
@@ -252,6 +254,8 @@ sc_tgkill(pid_t pid, int tid, int sig)
 		return DERR(-ESRCH);
 	if (task_pid(th->task) != pid)
 		return DERR(-ESRCH);
+	if (sig <= 0 || sig > NSIG)
+		return DERR(-EINVAL);
 	sig_thread(th, sig);
 	return 0;
 }

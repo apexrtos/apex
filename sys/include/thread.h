@@ -90,10 +90,10 @@ struct thread {
 /*
  * Thread state
  */
-#define TH_RUN		0x00	/* running or ready to run */
 #define TH_SLEEP	0x01	/* awaiting an event */
 #define TH_SUSPEND	0x02	/* suspend count is not 0 */
-#define TH_EXIT		0x04	/* terminated */
+#define TH_EXIT		0x04	/* terminating */
+#define TH_ZOMBIE	0x08	/* dead */
 
 #if defined(__cplusplus)
 #define noreturn [[noreturn]]
@@ -113,6 +113,7 @@ int	        thread_name(struct thread *, const char *);
 int		thread_id(struct thread *);
 struct thread  *thread_find(int);
 int	        thread_terminate(struct thread *);
+void		thread_free(struct thread *);
 void		thread_yield(void);
 int		thread_suspend(struct thread *);
 int		thread_resume(struct thread *);

@@ -94,13 +94,6 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	thread_name(main, "main");
 	thread_resume(main);
 
-	/* terminate all other threads in current task */
-	struct thread *th;
-	list_for_each_entry(th, &t->threads, task_link) {
-		if (th != main)
-			thread_terminate(th);
-	}
-
 	/* notify file system */
 	fd.close();
 	fs_exec(t);
@@ -115,6 +108,13 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	if (t->vfork) {
 		thread_resume(t->vfork);
 		t->vfork = 0;
+	}
+
+	/* terminate all other threads in current task */
+	struct thread *th;
+	list_for_each_entry(th, &t->threads, task_link) {
+		if (th != main)
+			thread_terminate(th);
 	}
 
 #if defined(TRACE_EXEC)
