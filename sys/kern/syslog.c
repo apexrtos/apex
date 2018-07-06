@@ -11,7 +11,6 @@
 #include <kernel.h>
 #include <stdalign.h>
 #include <stdarg.h>
-#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/param.h>
@@ -31,8 +30,8 @@ struct ent {
 
 static char log[CONFIG_SYSLOG_SIZE] __attribute__((aligned(alignof(struct ent))));
 static uint64_t log_seq;
-static struct ent *_Atomic head = (struct ent *)log;
-static struct ent *_Atomic tail = (struct ent *)log;
+static struct ent *head = (struct ent *)log;
+static struct ent *tail = (struct ent *)log;
 
 static int conlev = CONFIG_CONSOLE_LOGLEVEL + 1;
 static const int min_conlev = LOG_WARNING + 1;
@@ -84,7 +83,7 @@ buf_linear(void)
  * advance - move pointer to next entry
  */
 static void
-advance(struct ent *_Atomic *p)
+advance(struct ent **p)
 {
 	if ((*p)->len == SIZE_MAX) {
 		*p = (struct ent *)log;
