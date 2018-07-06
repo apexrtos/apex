@@ -185,11 +185,12 @@ run_init(void)
 	/*
 	 * Run init
 	 */
-	if (exec_into(task, argv[0], argv, 0) < 0)
+	struct thread *th;
+	if ((th = exec_into(task, argv[0], argv, 0)) > (struct thread*)-4096UL)
 		panic("failed to run init");
 
 	/*
-	 * Initialise stdin, stdout, stderr, working directory
+	 * Open stdin, stdout, stderr
 	 */
 	if (openfor(task, AT_FDCWD, "/dev/console", O_RDWR) < 0)
 		dbg("failed to open /dev/console\n");
@@ -199,6 +200,8 @@ run_init(void)
 		if (dup2for(task, 0, 2) < 0)
 			panic("dup2for");
 	}
+
+	thread_resume(th);
 }
 
 static void

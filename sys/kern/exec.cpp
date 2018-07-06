@@ -23,7 +23,7 @@
 
 // #define TRACE_EXEC
 
-int
+thread *
 exec_into(struct task *t, const char *path, const char *const argv[],
     const char *const envp[])
 {
@@ -32,16 +32,16 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 
 	/* check target path */
 	if (auto r = access(path, X_OK); r < 0)
-		return r;
+		return (thread *)r;
 
 	/* open target file */
 	a::fd fd(path, O_RDONLY);
 	if (fd < 0)
-		return fd;
+		return (thread *)(int)fd;
 
 	/* handle #!<ws>command<ws>arg */
 	if (auto r = pread(fd, buf, sizeof buf, 0); r < 0)
-		return r;
+		return (thread *)r;
 	else
 		buf[r == sizeof buf ? sizeof buf - 1 : r] = 0;
 	if (buf[0] == '#' && buf[1] == '!') {
@@ -53,11 +53,11 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 		    s = strtok_r(0, ws, &sv))
 			prgv[i++] = s;
 		if (i == 3)
-			return DERR(-ENOEXEC);
+			return (thread *)DERR(-ENOEXEC);
 		path = prgv[0];
 		fd.open(path, O_RDONLY);
 		if (fd < 0)
-			return fd;
+			return (thread *)(int)fd;
 	}
 
 	/* create new address space for task */
@@ -67,7 +67,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	void (*entry)(void);
 	unsigned auxv[AUX_CNT];
 	if (auto r = elf_load(as.get(), fd, &entry, auxv); r < 0)
-		return r;
+		return (thread *)r;
 
 	/* create stack with guard page */
 #if defined(CONFIG_MMU) || defined(CONFIG_MPU)
@@ -78,21 +78,20 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	void *sp;
 	if ((sp = mmapfor(as.get(), 0, CONFIG_USTACK_SIZE + guard_size, PROT_NONE,
 	    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, MEM_NORMAL)) >= (void*)-4096U)
-		return (int)sp;
+		return (thread *)sp;
 	if (auto r = mprotectfor(as.get(), (char*)sp + guard_size, CONFIG_USTACK_SIZE,
 	    PROT_READ | PROT_WRITE); r < 0)
-		return r;
+		return (thread *)r;
 	sp = (char*)sp + CONFIG_USTACK_SIZE + guard_size;
 
 	/* create new main thread */
 	struct thread *main;
 	if (auto r = thread_createfor(t, &main, sp, MEM_NORMAL, entry, 0,
 	    prgv, argv, envp, auxv); r < 0)
-		return r;
+		return (thread *)r;
 	sig_exec(t);
 	task_name(t, path);
 	thread_name(main, "main");
-	thread_resume(main);
 
 	/* notify file system */
 	fd.close();
@@ -122,7 +121,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	as_dump(t->as);
 #endif
 
-	return 0;
+	return main;
 }
 
 static int
@@ -160,5 +159,9 @@ sc_execve(const char *path, const char *const argv[], const char *const envp[])
 	if (auto r = validate_args(envp); r < 0)
 		return r;
 
-	return exec_into(task_cur(), path, argv, envp);
+	struct thread *main;
+	if ((main = exec_into(task_cur(), path, argv, envp)) > (void*)-4096UL)
+		return (int)main;
+	thread_resume(main);
+	return 0;
 }

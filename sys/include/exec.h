@@ -2,13 +2,14 @@
 #define exec_h
 
 struct task;
+struct thread;
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-int exec_into(struct task *, const char *path, const char *const argv[],
-	      const char *const envp[]);
+struct thread* exec_into(struct task *, const char *path,
+			 const char *const argv[], const char *const envp[]);
 
 /*
  * Syscalls
