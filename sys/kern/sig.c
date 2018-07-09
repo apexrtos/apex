@@ -9,6 +9,7 @@
 #include <prio.h>
 #include <proc.h>
 #include <sch.h>
+#include <sections.h>
 #include <string.h>
 #include <task.h>
 #include <thread.h>
@@ -385,31 +386,17 @@ sig_exec(struct task *t)
  *
  * Can be called under interrupt.
  */
-__attribute__((used)) int
-sig_deliver(int rval)
+static int __attribute__((noinline))
+sig_deliver_slowpath(k_sigset_t pending, int rval)
 {
-	struct thread *th = thread_cur();
-	struct task *task = task_cur();
-
-#if defined(CONFIG_DEBUG)
-	assert(!th->mutex_locks);
-#endif
-
-	sch_lock();
-
-	k_sigset_t pending = th->sig_pending;
-
-	/*
-	 * Any pending signals?
-	 */
-	if (ksigisemptyset(&pending))
-		goto out;
-
 	/*
 	 * Thread is terminating
 	 */
 	if (sch_exit())
-		goto out;
+		return rval;
+
+	struct thread *th = thread_cur();
+	struct task *task = task_cur();
 
 	/*
 	 * Any unblocked pending signals?
@@ -417,7 +404,7 @@ sig_deliver(int rval)
 	k_sigset_t unblocked;
 	ksigandnset(&unblocked, &pending, &th->sig_blocked);
 	if (ksigisemptyset(&unblocked))
-		goto out;
+		return rval;
 
 	const int sig = ksigfirst(&unblocked);
 	const sig_handler_fn handler = sig_handler(task, sig);
@@ -448,7 +435,7 @@ sig_deliver(int rval)
 			/*
 			 * Some other pending signal, defer
 			 */
-			goto out;
+			return rval;
 		}
 	}
 
@@ -462,7 +449,7 @@ sig_deliver(int rval)
 			dbg("Signal without restorer. Bye bye.\n");
 			proc_exit(task, 0);
 			task->exitcode = sig;
-			goto out;
+			return rval;
 		}
 
 		trace("Delivering signal th:%p sig:%d\n", th, sig);
@@ -503,7 +490,7 @@ sig_deliver(int rval)
 		if (!(sig_flags(task, sig) & SA_NODEFER))
 			ksigaddset(&th->sig_blocked, sig);
 
-		goto out;
+		return rval;
 	}
 
 	/*
@@ -539,13 +526,13 @@ sig_deliver(int rval)
 		dbg("Fatal signal %d. Terminate.\n", sig);
 		proc_exit(task_cur(), 0);
 		task_cur()->exitcode = sig;
-		goto out;
+		return rval;
 	case SIGTSTP:
 	case SIGTTIN:
 	case SIGTTOU:
 		/* Default action: stop */
 		task_suspend(task);
-		goto out;
+		return rval;
 	case SIGKILL:
 	case SIGSTOP:
 		/* Always handled by process_signal */
@@ -557,8 +544,26 @@ sig_deliver(int rval)
 		assert(0);
 	}
 
-out:
+	return rval;
+}
 
+__fast_text __attribute__((used)) int
+sig_deliver(int rval)
+{
+	sch_lock();
+
+	struct thread *th = thread_cur();
+	const k_sigset_t pending = th->sig_pending;
+
+	/*
+	 * Any pending signals?
+	 */
+	if (!ksigisemptyset(&pending))
+		rval = sig_deliver_slowpath(pending, rval);
+
+	/*
+	 * Returning to userspace with a locked kernel mutex is a bug.
+	 */
 #if defined(CONFIG_DEBUG)
 	assert(!th->mutex_locks);
 #endif
