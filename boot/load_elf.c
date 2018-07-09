@@ -33,9 +33,11 @@ load_executable(const phys *img)
 			continue;
 		}
 
-		if (phdr->p_flags & PF_X &&
-		    phys_to_virt(img + phdr->p_offset) == (void*)phdr->p_vaddr) {
-			edbg("xip\n");
+		if (phys_to_virt(img + phdr->p_offset) == (void*)phdr->p_vaddr) {
+			if (phdr->p_flags & PF_W) {
+				edbg("writable region in ROM\n");
+				return -1;
+			}
 			continue;
 		}
 
