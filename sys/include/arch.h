@@ -112,7 +112,7 @@ unsigned	arch_elf_hwcap(void);
 void	       *arch_stack_align(void *);
 void		cache_coherent_exec(const void *, size_t);
 
-/* for nommu targets mmu_* functions are provided by mem/nommu.cpp */
+/* for nommu targets mmu_* functions are provided by mem/unprotected.cpp */
 void		mmu_init(struct mmumap *);
 struct pgd     *mmu_newmap(pid_t);
 void		mmu_delmap(struct pgd *);
