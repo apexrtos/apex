@@ -1,0 +1,9 @@
+#
+# CPU settings
+#
+option IRQS		160
+option NVIC_PRIO_BITS	4
+option MPU
+option CACHE
+
+include cpu/arm/cortex-m7-hf
