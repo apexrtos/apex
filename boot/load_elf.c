@@ -57,6 +57,10 @@ load_executable(const phys *img)
 			memset((void *)virt_to_phys(offset), 0, size);
 		}
 
+		if (phdr->p_flags & PF_X)
+			cache_coherent_exec(virt_to_phys((void*)phdr->p_vaddr),
+			    phdr->p_memsz);
+
 		/* reserve memory */
 		bootinfo->ram[bootinfo->nr_rams++] = (struct boot_mem){
 			.base = virt_to_phys((void*)phdr->p_vaddr),

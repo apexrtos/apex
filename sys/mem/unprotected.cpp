@@ -61,6 +61,8 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
 		return (void*)r;
 	if ((size_t)r < len)
 		memset((char*)addr + r, 0, len - r);
+	if (prot & PROT_EXEC)
+		cache_coherent_exec(addr, len);
 
 	if ((r = as_insert(as, std::move(pages), len, prot, flags,
 	    std::move(vn), off, type)) < 0)

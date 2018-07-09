@@ -110,6 +110,7 @@ void		arch_backtrace(struct thread *);
 bool		arch_check_elfhdr(const Elf32_Ehdr *);
 unsigned	arch_elf_hwcap(void);
 void	       *arch_stack_align(void *);
+void		cache_coherent_exec(const void *, size_t);
 
 /* for nommu targets mmu_* functions are provided by mem/nommu.cpp */
 void		mmu_init(struct mmumap *);

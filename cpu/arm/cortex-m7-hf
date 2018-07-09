@@ -13,6 +13,8 @@ makeoption USER_CFLAGS += -pie -fPIE
 makeoption USER_CFLAGS += -fvisibility=hidden
 makeoption USER_CFLAGS += -Xlinker --exclude-libs=ALL
 makeoption USER_CFLAGS += -z max-page-size=0x1000
+option DCACHE_LINE_SIZE 32
+option ICACHE_LINE_SIZE 32
 option FPU
 include cpu/arm/thumb
 

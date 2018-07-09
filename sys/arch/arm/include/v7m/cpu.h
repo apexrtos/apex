@@ -129,6 +129,27 @@ static_assert(sizeof(struct scb) == 0x90, "Bad scb size!");
 static volatile struct scb *const SCB = (struct scb*)0xe000ed00;
 
 /*
+ * Cache and branch predictor maintenance operations
+ */
+struct cbp {
+	uint32_t ICIALLU;
+	uint32_t : 32;
+	const void *ICIMVAU;
+	const void *DCIMVAC;
+	uint32_t DCISW;
+	const void *DCCMVAU;
+	const void *DCCMVAC;
+	uint32_t DCCSW;
+	const void *DCCIMVAC;
+	uint32_t DCCISW;
+	uint32_t BPIALL;
+	uint32_t : 32;
+	uint32_t : 32;
+};
+static_assert(sizeof(struct cbp) == 0x34, "Bad cbp size");
+static volatile struct cbp *const CBP = (struct cbp*)0xe000ef50;
+
+/*
  * SysTick
  */
 struct syst {
