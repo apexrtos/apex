@@ -32,19 +32,21 @@
 
 #include <assert.h>
 #include <conf/config.h>
-#include <types.h>
+#include <sys/include/types.h>
 
 /*
  * Global variables in the kernel
  */
+#if defined(KERNEL)
 extern struct task	kern_task;	/* kernel task */
 extern struct bootinfo	bootinfo;	/* boot information */
+#endif
 
 /*
  * Address translation
  */
 static inline void *
-phys_to_virt(phys *pa)
+phys_to_virt(const phys *pa)
 {
 #if defined(CONFIG_MMU)
 	assert((uintptr_t)pa < CONFIG_PAGE_OFFSET);
@@ -53,7 +55,7 @@ phys_to_virt(phys *pa)
 }
 
 static inline phys *
-virt_to_phys(void *va)
+virt_to_phys(const void *va)
 {
 #if defined(CONFIG_MMU)
 	assert((uintptr_t)va >= CONFIG_PAGE_OFFSET);

@@ -37,12 +37,7 @@
 #ifndef bootinfo_h
 #define bootinfo_h
 
-#if defined(KERNEL)
-#include <types.h>
-#else
-#include <stdint.h>
-typedef void phys;
-#endif
+#include <sys/include/types.h>
 
 /*
  * Physical memory

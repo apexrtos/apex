@@ -2,11 +2,13 @@
 
 #include <elf.h>
 #include <string.h>
+#include <sys/include/arch.h>
+#include <sys/include/kernel.h>
 
 #define edbg(...)
 
 static int
-load_executable(const char *img)
+load_executable(const phys *img)
 {
 	Elf32_Ehdr *ehdr;
 	Elf32_Phdr *phdr;
@@ -65,7 +67,7 @@ load_executable(const char *img)
 
 	edbg("\n");
 
-	kernel_entry = virt_to_phys((void*)ehdr->e_entry);
+	kernel_entry = (void*)virt_to_phys((void*)ehdr->e_entry);
 	return 0;
 }
 
@@ -74,7 +76,7 @@ load_executable(const char *img)
  * The boot information is filled after loading the program.
  */
 int
-load_elf(const char *img)
+load_elf(const phys *img)
 {
 	const Elf32_Ehdr *ehdr = (Elf32_Ehdr *)img;
 

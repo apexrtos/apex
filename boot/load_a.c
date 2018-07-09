@@ -14,14 +14,14 @@
 int
 load_a(void)
 {
-	extern char __loader_end;
-	const char *ar = &__loader_end;
+	extern phys __loader_end[1];
+	const phys *ar = __loader_end;
 
 	const long ar_size = be32toh(*(long*)ar);
 	ar += sizeof(long);
 
 	/* Hopefully we have an archive */
-	if (strncmp(ar, ARMAG, SARMAG)) {
+	if (strncmp((const char*)ar, ARMAG, SARMAG)) {
 		dbg("Bad boot archive at %p (%lu)\n", ar, ar_size);
 		return -1;
 	}

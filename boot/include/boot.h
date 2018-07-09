@@ -58,25 +58,10 @@ extern void (*kernel_entry)(struct bootinfo*);
 
 int load_a(void);
 int load_xip(void *end_addr);
-int load_elf(const char *img);
+int load_elf(const phys *img);
 void debug_puts(const char *);
 void debug_printf(const char *, ...)
 	__attribute__((format (printf, 1, 2)));
-
-/*
- * Address translation
- */
-static inline void*
-phys_to_virt(const void *pa)
-{
-	return (void*)((uintptr_t)pa + CONFIG_PAGE_OFFSET);
-}
-
-static inline void*
-virt_to_phys(const void *va)
-{
-	return (void*)((uintptr_t)va - CONFIG_PAGE_OFFSET);
-}
 
 #endif /* !boot_h */
 

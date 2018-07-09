@@ -33,7 +33,7 @@
 #include <elf.h>
 #include <signal.h>
 #include <stdnoreturn.h>
-#include <types.h>
+#include <sys/include/types.h>
 
 struct context;
 struct thread;
