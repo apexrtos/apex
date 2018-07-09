@@ -1,0 +1,30 @@
+define connect
+	target remote localhost:2331
+end
+
+define reset
+	mon reset
+	# Reset FlexRAM configuration as the boot ROM expects to use OCRAM as
+	# stack and is too stupid to make sure it will actually work.
+	set *0x400ac040 = 0x00200003
+end
+
+define flash
+	reset
+	mon loadbin mimxrt1050-evk_apex 0x60000000
+	reset
+end
+
+define debug_boot
+	reset
+	symbol-file apex/boot/boot.elf
+	b _start
+	c
+end
+
+define debug_kernel
+	reset
+	symbol-file apex/sys/apex.elf
+	b _start
+	c
+end
