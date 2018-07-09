@@ -35,6 +35,12 @@ vectors:
 	.word boot_isr_NVIC
 	.endr
 
+#if defined(CONFIG_CACHE)
+#define CCR_VAL (CCR_BP|CCR_IC|CCR_DC|CCR_STKALIGN)
+#else
+#define CCR_VAL (CCR_BP|CCR_STKALIGN)
+#endif
+
 /*
  * start
  */
@@ -91,8 +97,8 @@ _start:
 
 	/* enable branch predictor, instruction cache, data cache and 8 byte
 	 * stack alignment on exception */
-	movw r0, :lower16:(CCR_BP|CCR_IC|CCR_DC|CCR_STKALIGN)
-	movt r0, :upper16:(CCR_BP|CCR_IC|CCR_DC|CCR_STKALIGN)
+	movw r0, :lower16:CCR_VAL
+	movt r0, :upper16:CCR_VAL
 	str r0, [r11, A_CCR-A_SCS]
 	dsb
 	isb
