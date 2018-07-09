@@ -162,7 +162,8 @@ asm(
 static void
 dump_exception(bool from_user, struct exception_frame *e)
 {
-	emergency("%s mode exception\n", from_user ? "User" : "Kernel");
+	emergency("%s mode exception, thread %p\n",
+	    from_user ? "User" : "Kernel", thread_cur());
 	emergency(" r0 %08x r1 %08x r2 %08x   r3 %08x\n", e->r0, e->r1, e->r2, e->r3);
 	emergency("r12 %08x lr %08x ra %08x xpsr %08x\n", e->r12, e->lr, e->ra, e->xpsr);
 }
