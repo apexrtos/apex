@@ -29,7 +29,7 @@ struct ent {
 };
 
 static char log[CONFIG_SYSLOG_SIZE] __attribute__((aligned(alignof(struct ent))));
-static uint64_t log_seq;
+static uint64_t log_seq, output_seq;
 static struct ent *head = (struct ent *)log;
 static struct ent *tail = (struct ent *)log;
 
@@ -207,8 +207,6 @@ syslog_output(void (*fn)(void))
 int
 syslog_format(char *buf, const size_t len)
 {
-	static uint64_t seq;
-
 	int n, rem = len;
 	int s = irq_disable();
 
@@ -216,14 +214,14 @@ syslog_format(char *buf, const size_t len)
 		if (tail->len == SIZE_MAX)
 			continue;
 
-		if (seq != tail->seq) {
+		if (output_seq != tail->seq) {
 			n = snprintf(buf, rem, "*** lost %llu messages\n",
-			    tail->seq - seq);
+			    tail->seq - output_seq);
 			if (n < 0 || n >= rem)
 				break;
 			buf += n;
 			rem -= n;
-			seq = tail->seq;
+			output_seq = tail->seq;
 		}
 
 		if (tail->level < conlev) {
@@ -232,7 +230,7 @@ syslog_format(char *buf, const size_t len)
 			    (tail->nsec % 1000000000) / 1000,
 			    tail->msg);
 			if (n < 0 || n >= len) {
-				++seq;	    /* skip message, notify */
+				++output_seq;	    /* skip message, notify */
 				break;
 			}
 			if (n >= rem)
@@ -241,7 +239,7 @@ syslog_format(char *buf, const size_t len)
 			rem -= n;
 		}
 
-		++seq;
+		++output_seq;
 	}
 
 	irq_restore(s);
@@ -258,7 +256,13 @@ void
 syslog_panic(void)
 {
 	early_console_init();
+
+	early_console_print("\n*** syslog_panic\n", 18);
+
+	tail = (struct ent *)log;
+	output_seq = 0;
 	early_console_output();
+	log_output = early_console_output;
 }
 
 /*
