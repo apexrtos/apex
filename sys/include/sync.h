@@ -95,7 +95,7 @@ namespace a {
 class mutex {
 public:
 	mutex() { mutex_init(&m_); }
-	int lock() { return mutex_lock(&m_); }
+	int interruptible_lock() { return mutex_lock(&m_); }
 	int unlock() { return mutex_unlock(&m_); }
 
 private:
