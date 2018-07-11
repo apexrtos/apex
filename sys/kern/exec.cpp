@@ -147,21 +147,36 @@ int
 sc_execve(const char *path, const char *const argv[], const char *const envp[])
 {
 	std::lock_guard l(global_sch_lock);
+	if (auto r = as_modify_begin(task_cur()->as); r < 0)
+		return r;
 
 	/* validate arguments */
-	size_t path_len;
-	if (path_len = u_strnlen(path, PATH_MAX); path_len < 0)
-		return path_len;
-	if (path_len == PATH_MAX)
-		return DERR(-ENAMETOOLONG);
-	if (auto r = validate_args(argv); r < 0)
+	auto validate = [&]{
+		ssize_t path_len;
+		if (path_len = u_strnlen(path, PATH_MAX); path_len < 0)
+			return path_len;
+		if (path_len == PATH_MAX)
+			return DERR(-ENAMETOOLONG);
+		if (auto r = validate_args(argv); r < 0)
+			return r;
+		if (auto r = validate_args(envp); r < 0)
+			return r;
+		return 0;
+	};
+	if (auto r = validate(); r < 0) {
+		as_modify_end(task_cur()->as);
 		return r;
-	if (auto r = validate_args(envp); r < 0)
-		return r;
+	}
 
 	struct thread *main;
-	if ((main = exec_into(task_cur(), path, argv, envp)) > (void*)-4096UL)
+	if ((main = exec_into(task_cur(), path, argv, envp)) > (void*)-4096UL) {
+		as_modify_end(task_cur()->as);
 		return (int)main;
+	}
 	thread_resume(main);
+
+	/* no as_modify_end() - the address space on which the lock was taken
+	   has been destroyed by exec_into, as_destroy releases the lock */
+
 	return 0;
 }

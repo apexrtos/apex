@@ -19,9 +19,13 @@ struct as  *as_create(pid_t);
 struct as  *as_copy(struct as *, pid_t);
 void	    as_destroy(struct as *);
 void	    as_reference(struct as *);
+int	    as_transfer_begin(struct as *);
+int	    as_transfer_end(struct as *);
+int	    as_modify_begin(struct as *);
+int	    as_modify_end(struct as *);
 int	    as_read(struct as *, void *, const void *, size_t);
 int	    as_write(struct as *, const void *, void *, size_t);
-void	    as_switch(struct as*);
+void	    as_switch(struct as *);
 void	    as_dump(struct as *);
 
 #if defined(__cplusplus)
@@ -45,7 +49,11 @@ namespace std {
 
 template<>
 struct default_delete<as> {
-	void operator()(as *a) { as_destroy(a); }
+	void operator()(as *a)
+	{
+		as_modify_begin(a);
+		as_destroy(a);
+	}
 };
 
 } /* namespace std */

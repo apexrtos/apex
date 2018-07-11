@@ -238,6 +238,7 @@ task_destroy(struct task *task)
 
 	assert(list_empty(&task->threads));
 
+	as_modify_begin(task->as);
 	as_destroy(task->as);
 	task->magic = 0;
 	list_remove(&task->link);

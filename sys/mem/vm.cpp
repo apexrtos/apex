@@ -13,7 +13,6 @@
 #include <sys/uio.h>
 #include <task.h>
 #include <types.h>
-#include <sch.h>
 
 /*
  * TODO: shared mappings
@@ -35,6 +34,7 @@ struct as {
 	size_t len;	/* size of address space */
 	void *brk;	/* current program break */
 	unsigned ref;	/* reference count */
+	a::rwlock lock;	/* address space lock */
 #if defined(CONFIG_MMU)
 	struct pgd *pgd;/* page directory */
 #endif
@@ -158,7 +158,9 @@ mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
 			return (void*)DERR(-EBADF);
 	}
 
-	std::lock_guard l(global_sch_lock);
+	interruptible_write_lock l(a->lock);
+	if (err = l.lock(); err < 0)
+		return (void*)err;
 
 	if (fixed && (err = munmapfor(a, addr, len)) < 0)
 		return (void*)err;
@@ -179,7 +181,9 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 	if (!ulen)
 		return 0;
 
-	std::lock_guard l(global_sch_lock);
+	interruptible_write_lock l(a->lock);
+	if (err = l.lock(); err < 0)
+		return err;
 
 	const auto uaddr = (char*)vaddr;
 	const auto uend = uaddr + ulen;
@@ -253,7 +257,9 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 	if (!ulen)
 		return 0;
 
-	std::lock_guard l(global_sch_lock);
+	interruptible_write_lock l(a->lock);
+	if (err = l.lock(); err < 0)
+		return err;
 
 	const auto uaddr = (char*)vaddr;
 	const auto uend = uaddr + ulen;
@@ -438,10 +444,12 @@ sc_brk(void *addr)
 {
 	auto a = task_cur()->as;
 
-	std::lock_guard l(global_sch_lock);
-
 	if (!addr)
 		return a->brk;
+
+	interruptible_write_lock l(a->lock);
+	if (auto r = l.lock(); r < 0)
+		return (void*)r;
 
 	/* shrink */
 	if (addr < a->brk)
@@ -492,8 +500,8 @@ vm_dump()
 as *
 as_create(pid_t pid)
 {
-	std::unique_ptr<as> a((as*)kmem_alloc(sizeof(as), MEM_NORMAL));
-	if (!a)
+	auto a = std::make_unique<as>();
+	if (!a.get())
 		return nullptr;
 
 	list_init(&a->segs);
@@ -529,8 +537,10 @@ as_copy(as *a, pid_t pid)
 void
 as_destroy(as *a)
 {
-	if (--a->ref > 0)
+	if (--a->ref > 0) {
+		a->lock.write_unlock();
 		return;
+	}
 
 	seg *s, *tmp;
 	list_for_each_entry_safe(s, tmp, &a->segs, link) {
@@ -539,6 +549,7 @@ as_destroy(as *a)
 			vn_close(s->vn);
 		kmem_free(s);
 	}
+	a->lock.write_unlock();
 	kmem_free(a);
 }
 
@@ -549,6 +560,42 @@ void
 as_reference(as *a)
 {
 	++a->ref;
+}
+
+/*
+ * as_transfer_begin - start transfer during which address space must not change
+ */
+int
+as_transfer_begin(as *a)
+{
+	return a->lock.interruptible_read_lock();
+}
+
+/*
+ * as_transfer_end - finish transfer to address space memory
+ */
+int
+as_transfer_end(as *a)
+{
+	return a->lock.read_unlock();
+}
+
+/*
+ * as_modify_begin - start transaction which will modify address space
+ */
+int
+as_modify_begin(as *a)
+{
+	return a->lock.interruptible_write_lock();
+}
+
+/*
+ * as_modify_end - finish transaction which modified address space
+ */
+int
+as_modify_end(as *a)
+{
+	return a->lock.write_unlock();
 }
 
 /*

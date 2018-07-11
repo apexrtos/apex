@@ -186,6 +186,7 @@ run_init(void)
 	 * Run init
 	 */
 	struct thread *th;
+	as_modify_begin(task->as);
 	if ((th = exec_into(task, argv[0], argv, 0)) > (struct thread*)-4096UL)
 		panic("failed to run init");
 
