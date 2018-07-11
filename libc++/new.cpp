@@ -9,8 +9,5 @@
 void *
 operator new(const std::size_t s)
 {
-	const auto p = kmem_alloc(s, MEM_NORMAL);
-	if (!p)
-		panic("OOM");
-	return p;
+	return kmem_alloc(s, MEM_NORMAL);
 }
