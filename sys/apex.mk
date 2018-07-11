@@ -57,6 +57,7 @@ SOURCES := \
     sync/cond.c \
     sync/futex.c \
     sync/mutex.c \
+    sync/rwlock.c \
 
 # Generic unprotected memory support
 ifeq ($(origin CONFIG_MMU),undefined)

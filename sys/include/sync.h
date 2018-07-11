@@ -53,6 +53,13 @@ struct mutex {
 	};
 };
 
+struct rwlock {
+	union {
+		char storage[80];
+		unsigned align;
+	};
+};
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -74,6 +81,12 @@ int	       cond_timedwait(struct cond *, struct mutex *, uint64_t);
 int	       cond_signal(struct cond *);
 int	       cond_broadcast(struct cond *);
 
+void	       rwlock_init(struct rwlock *);
+int	       rwlock_read_lock(struct rwlock *);
+int	       rwlock_read_unlock(struct rwlock *);
+int	       rwlock_write_lock(struct rwlock *);
+int	       rwlock_write_unlock(struct rwlock *);
+
 #if defined(__cplusplus)
 } /* extern "C" */
 
@@ -87,6 +100,18 @@ public:
 
 private:
 	::mutex m_;
+};
+
+class rwlock {
+public:
+	rwlock() { rwlock_init(&m_); }
+	int interruptible_read_lock() { return rwlock_read_lock(&m_); }
+	int read_unlock() { return rwlock_read_unlock(&m_); }
+	int interruptible_write_lock() { return rwlock_write_lock(&m_); }
+	int write_unlock() { return rwlock_write_unlock(&m_); }
+
+private:
+	::rwlock m_;
 };
 
 } /* namespace a */
