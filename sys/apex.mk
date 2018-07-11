@@ -24,7 +24,7 @@ INCLUDE := \
 SOURCES := \
     fs/mount.c \
     fs/pipe.c \
-    fs/syscalls.c \
+    fs/syscalls.cpp \
     fs/util/dirbuf_add.c \
     fs/util/for_each_iov.c \
     fs/vfs.c \
@@ -42,7 +42,8 @@ SOURCES := \
     kern/proc.c \
     kern/sch.c \
     kern/sig.c \
-    kern/syscalls.c \
+    kern/syscall_table.c \
+    kern/syscalls.cpp \
     kern/syslog.c \
     kern/task.c \
     kern/thread.c \

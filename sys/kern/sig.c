@@ -11,6 +11,7 @@
 #include <sch.h>
 #include <sections.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <task.h>
 #include <thread.h>
 
@@ -586,40 +587,38 @@ sc_rt_sigprocmask(int how, const k_sigset_t *uset, k_sigset_t *uoldset,
 	if (sizeof(k_sigset_t) != size)
 		return DERR(-EINVAL);
 
-	int ret = 0;
+	int ret;
+
+	if ((ret = u_access_begin()) < 0)
+		return ret;
 
 	sch_lock();
 
 	if (uoldset) {
-		if (!u_address(uoldset)) {
+		if (!u_access_ok(uoldset, sizeof *uoldset, PROT_WRITE)) {
 			ret = DERR(-EFAULT);
 			goto out;
 		}
-		/* EFAULT generated on syscall return if necessary */
 		memcpy(uoldset, &thread_cur()->sig_blocked, sizeof(k_sigset_t));
 	}
 
-
 	if (!uset)
 		goto out;
-	if (!u_address(uset)) {
+	if (!u_access_ok(uset, sizeof *uset, PROT_READ)) {
 		ret = DERR(-EFAULT);
 		goto out;
 	}
 
 	switch (how) {
 	case SIG_BLOCK:
-		/* EFAULT generated on syscall return if necessary */
 		ksigorset(&thread_cur()->sig_blocked, &thread_cur()->sig_blocked,
 		    (k_sigset_t *)uset);
 		break;
 	case SIG_UNBLOCK:
-		/* EFAULT generated on syscall return if necessary */
 		ksigandnset(&thread_cur()->sig_blocked, &thread_cur()->sig_blocked,
 		    (k_sigset_t *)uset);
 		break;
 	case SIG_SETMASK:
-		/* EFAULT generated on syscall return if necessary */
 		memcpy(&thread_cur()->sig_blocked, uset, sizeof(k_sigset_t));
 		break;
 	default:
@@ -634,6 +633,7 @@ sc_rt_sigprocmask(int how, const k_sigset_t *uset, k_sigset_t *uoldset,
 
 out:
 	sch_unlock();
+	u_access_end();
 	return ret;
 }
 
@@ -656,28 +656,29 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 	if (sig > NSIG || sig < 1 || sig == SIGKILL || sig == SIGSTOP)
 		return DERR(-EINVAL);
 
-	int ret = 0;
+	int ret;
+
+	if ((ret = u_access_begin()) < 0)
+		return ret;
 
 	sch_lock();
 
 	if (uoldact) {
-		if (!u_address(uoldact)) {
+		if (!u_access_ok(uoldact, sizeof *uoldact, PROT_WRITE)) {
 			ret = DERR(-EFAULT);
 			goto out;
 		}
-		/* EFAULT generated on syscall return if necessary */
 		memcpy(uoldact, &task_cur()->sig_action[sig - 1],
 		    sizeof(struct k_sigaction));
 	}
 
 	if (!uact)
 		goto out;
-	if (!u_address(uact)) {
+	if (!u_access_ok(uact, sizeof *uact, PROT_READ)) {
 		ret = DERR(-EFAULT);
 		goto out;
 	}
 
-	/* EFAULT generated on syscall return if necessary */
 	struct k_sigaction kact = *uact;
 
 	trace("rt_sigaction flags %lx\n", kact.flags);
@@ -722,6 +723,7 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 
 out:
 	sch_unlock();
+	u_access_end();
 	return ret;
 }
 

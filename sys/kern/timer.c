@@ -395,10 +395,17 @@ timer_init(void)
 int
 sc_getitimer(int timer, struct itimerval *o)
 {
-	if (!u_access_ok(o, sizeof *o, PROT_WRITE))
-		return DERR(-EFAULT);
+	int err;
+
 	if (timer < 0 || timer > ITIMER_PROF)
 		return DERR(-EINVAL);
+
+	if ((err = u_access_begin()) < 0)
+		return err;
+	if (!u_access_ok(o, sizeof *o, PROT_WRITE)) {
+		u_access_end();
+		return DERR(-EFAULT);
+	}
 
 	struct task *t = task_cur();
 	const int s = irq_disable();
@@ -419,6 +426,7 @@ sc_getitimer(int timer, struct itimerval *o)
 	}
 
 	irq_restore(s);
+	u_access_end();
 
 	return 0;
 }
@@ -429,10 +437,15 @@ sc_getitimer(int timer, struct itimerval *o)
 int
 sc_setitimer(int timer, const struct itimerval *n, struct itimerval *o)
 {
-	if (!u_address(n) || (o && !u_access_ok(o, sizeof *o, PROT_WRITE)))
-		return DERR(-EFAULT);
 	if (timer < 0 || timer > ITIMER_PROF)
 		return DERR(-EINVAL);
+
+	u_access_begin();
+	if (!u_access_ok(n, sizeof *n, PROT_READ) ||
+	    (o && !u_access_ok(o, sizeof *o, PROT_WRITE))) {
+		u_access_end();
+		return DERR(-EFAULT);
+	}
 
 	void alarm(void *tv)
 	{
@@ -478,6 +491,8 @@ sc_setitimer(int timer, const struct itimerval *n, struct itimerval *o)
 
 	if (o)
 		*o = old;
+
+	u_access_end();
 
 	return 0;
 }

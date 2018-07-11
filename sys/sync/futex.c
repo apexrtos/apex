@@ -6,7 +6,9 @@
 #include <kernel.h>
 #include <kmem.h>
 #include <limits.h>
+#include <mmap.h>
 #include <sch.h>
+#include <sys/mman.h>
 #include <task.h>
 #include <thread.h>
 
@@ -51,7 +53,11 @@ futex_get(struct task *t, int *uaddr)
 static int
 futex_wait(struct task *t, int *uaddr, int val, const struct timespec *ts)
 {
-	if (*uaddr != val)
+	int err, uval;
+
+	if ((err = vm_read(t->as, &uval, uaddr, sizeof uval)) < 0)
+		return err;
+	if (uval != val)
 		return -EAGAIN;
 	if (ts && (ts->tv_sec < 0 || ts->tv_nsec > 1000000000))
 		return -EINVAL;
@@ -134,9 +140,7 @@ futex_requeue(struct task *t, int *uaddr, int val, int val2, int *uaddr2)
 int
 futex(struct task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
-	if (!u_address(uaddr))
-		return DERR(-EFAULT);
-	if ((op & FUTEX_OP_MASK) == FUTEX_REQUEUE && !u_address(uaddr2))
+	if ((op & FUTEX_OP_MASK) == FUTEX_REQUEUE && !u_addressfor(t->as, uaddr2))
 		return DERR(-EFAULT);
 
 	/* no support for realtime clock */
@@ -174,13 +178,25 @@ futex(struct task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
 int
 sc_futex(int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
+	int ret;
+
+	if ((ret = u_access_begin()) < 0)
+		return ret;
+
 	/* validate all userspace addresses */
 	switch (op & FUTEX_OP_MASK) {
 	case FUTEX_WAIT:
-		if (val2 && !u_address(val2))
-			return -EFAULT;
+		if (val2 && !u_access_ok(val2, sizeof(struct timespec), PROT_READ)) {
+			ret = DERR(-EFAULT);
+			goto out;
+		}
 		break;
 	}
 
-	return futex(task_cur(), uaddr, op, val, val2, uaddr2);
+	ret = futex(task_cur(), uaddr, op, val, val2, uaddr2);
+
+out:
+	u_access_end();
+
+	return ret;
 }

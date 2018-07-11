@@ -22,6 +22,7 @@
 #include <kmem.h>
 #include <sch.h>
 #include <sig.h>
+#include <sys/mman.h>
 #include <sys/wait.h>
 #include <task.h>
 #include <thread.h>
@@ -203,14 +204,15 @@ again:
 	if (!have_children)
 		err = -ECHILD;
 	else if (cpid) {
-		if (ustatus && !u_address(ustatus))
+		if ((err = u_access_begin()) < 0)
+			goto out;
+		if (ustatus && !u_access_ok(ustatus, sizeof *ustatus, PROT_WRITE))
 			err = DERR(-EFAULT);
 		else {
 			err = cpid;
-
-			/* EFAULT generated on syscall return if necessary */
 			*ustatus = status;
 		}
+		u_access_end();
 	} else if (options & WNOHANG) {
 		/*
 		 * No child exited, but caller has asked us not to block
@@ -225,6 +227,7 @@ again:
 		err = -EINTR;
 	}
 
+out:
 	sch_unlock();
 	return err;
 }

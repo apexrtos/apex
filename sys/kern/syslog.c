@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/param.h>
 #include <timer.h>
 
@@ -272,15 +273,21 @@ int
 sc_syslog(int type, char *buf, int len)
 {
 	static int prev_conlev = -1;
+	int err;
 
 	switch (type) {
 	case 0: /* close */
 	case 1: /* open */
 		return 0;
 	case 2: /* read */
-		if (!u_address(buf) || len < 0)
+		if ((err = u_access_begin()) < 0)
+			return err;
+		if (len < 0 || !u_access_ok(buf, len, PROT_WRITE)) {
+			u_access_end();
 			return DERR(-EINVAL);
+		}
 		/* TODO: implement */
+		u_access_end();
 		return DERR(-ENOSYS);
 	case 3: /* read all */
 		/* TODO: implement */

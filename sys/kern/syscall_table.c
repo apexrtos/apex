@@ -1,147 +1,21 @@
-#include <access.h>
-#include <arch.h>
-#include <assert.h>
+#include <syscall_table.h>
+
 #include <clone.h>
 #include <debug.h>
-#include <errno.h>
 #include <exec.h>
-#include <fcntl.h>
 #include <fs.h>
 #include <futex.h>
-#include <kernel.h>
 #include <mmap.h>
 #include <proc.h>
 #include <sch.h>
 #include <sched.h>
 #include <sections.h>
 #include <sig.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/reboot.h>
-#include <sys/uio.h>
-#include <sys/utsname.h>
+#include <signal.h>
 #include <syscall.h>
-#include <syscall_table.h>
-#include <task.h>
-#include <thread.h>
-#include <time.h>
+#include <syscalls.h>
+#include <timer.h>
 #include <unistd.h>
-#include <version.h>
-
-/*
- * Some system call wrappers
- */
-static void
-sc_exit(int status)
-{
-	thread_terminate(thread_cur());
-}
-
-static void
-sc_exit_group(int status)
-{
-	proc_exit(task_cur(), status);
-}
-
-static int
-sc_set_tid_address(void *p)
-{
-	if (!u_address(p))
-		return DERR(-EFAULT);
-	thread_cur()->clear_child_tid = p;
-	return thread_id(thread_cur());
-}
-
-static int
-sc_uname(struct utsname *u)
-{
-	if (!u_access_ok(u, sizeof(*u), PROT_WRITE))
-		return DERR(-EFAULT);
-	strcpy(u->sysname, "APEX RTOS");
-	strcpy(u->nodename, "apex");
-	strcpy(u->release, VERSION_STRING);
-	strcpy(u->version, CONFIG_UNAME_VERSION);
-	strcpy(u->machine, CONFIG_MACHINE_NAME);
-	strcpy(u->domainname, "");
-	return 0;
-}
-
-static int
-sc_reboot(int magic, int magic2, int cmd, void *arg)
-{
-	if (magic != 0xfee1dead && magic2 != 672274793)
-		return DERR(-EINVAL);
-
-	switch (cmd) {
-	case RB_AUTOBOOT:
-		info("Restarting system.\n");
-		machine_reset();
-		break;
-	case RB_HALT_SYSTEM:
-	case RB_ENABLE_CAD:
-	case RB_DISABLE_CAD:
-	case RB_KEXEC:
-		return DERR(-ENOSYS);
-	case RB_POWER_OFF:
-		info("Power down.\n");
-		machine_poweroff();
-		break;
-	case RB_SW_SUSPEND:
-		machine_suspend();
-		break;
-	default:
-		return DERR(-EINVAL);
-	}
-
-	/* Linux kills caller? */
-	proc_exit(task_cur(), 0);
-	return 0;
-}
-
-static int
-sc_nanosleep(const struct timespec *req, struct timespec *rem)
-{
-	if (!u_address(req) || (rem && !u_access_ok(rem, sizeof *rem, PROT_WRITE)))
-		return DERR(-EFAULT);
-	const uint64_t ns = ts_to_ns(req);
-	if (!ns)
-		return 0;
-	const uint64_t r = timer_delay(ns);
-	if (!r)
-		return 0;
-	if (rem)
-		ns_to_ts(r, rem);
-	return -EINTR_NORESTART;
-}
-
-static int
-sc_clock_gettime(clockid_t id, struct timespec *ts)
-{
-	if (!u_access_ok(ts, sizeof *ts, PROT_WRITE))
-		return DERR(-EFAULT);
-
-	switch (id) {
-	case CLOCK_REALTIME:
-	case CLOCK_REALTIME_COARSE:
-		/* TODO(time): real time */
-	case CLOCK_MONOTONIC:
-	case CLOCK_MONOTONIC_COARSE:
-		/* TODO(time): monotonic with adjustments */
-	case CLOCK_MONOTONIC_RAW:
-		/* TODO(time): monotonic without adjustments */
-		ns_to_ts(timer_monotonic(), ts);
-		return 0;
-	case CLOCK_BOOTTIME:
-	case CLOCK_BOOTTIME_ALARM:
-	case CLOCK_REALTIME_ALARM:
-	case CLOCK_PROCESS_CPUTIME_ID:
-	case CLOCK_THREAD_CPUTIME_ID:
-	case CLOCK_SGI_CYCLE:
-	case CLOCK_TAI:
-	default:
-		return DERR(-EINVAL);
-	}
-}
 
 /*
  * System call table
@@ -153,16 +27,25 @@ sc_clock_gettime(clockid_t id, struct timespec *ts)
  * - Otherwise, for SYS_<fn> call a wrapper with the name sc_<fn>.
  * - However, we drop 64/32 suffixes as we don't support linux legacy interfaces.
  *
+ * This means that kernel code must not call any function prefixed by sc_.
+ *
  * Pointers to read only memory can be verified using either:
  * - u_address -- checks that pointer points to userspace memory
  * - u_access_ok -- checks that the memory region is in userspace and accessible
+ * - u_strcheck -- checks that a userspace string is valid
  *
  * Pointers to writable memory must be verified using u_access_ok.
  *
- * However, note that even if access tests succeed a subsequent access could fail
- * if we context switch after the test and another thread unmaps the region.
+ * However, note that even if access tests succeed a subsequent access could
+ * fail if we context switch after the test and another thread unmaps the
+ * region. This is OK on MMU systems, but on MPU systems we can't guarantee
+ * that the memory won't be remapped by another process or the kernel. So, on
+ * NOMMU or MPU systems the address space for the task needs to be locked. This
+ * is implemented by u_access_begin/u_access_end.
  *
- * We make use of the MMU/MPU to trap and stub bad accesses to userspace.
+ * We make use of the MMU/MPU to trap and stub bad accesses to userspace. Bad
+ * writes are discarded, bad reads return 0. A fault is marked in the thread
+ * state and returned to userspace on syscall return.
  */
 __fast_rodata __attribute__((used)) const void *const
 syscall_table[SYSCALL_TABLE_SIZE] = {

@@ -1,5 +1,5 @@
 /*
- * fs/syscalls.c - all system calls related to file system operations.
+ * fs/syscalls.cpp - all system calls related to file system operations.
  */
 #include <fs.h>
 
@@ -10,8 +10,8 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <ioctl.h>
-#include <kernel.h>
 #include <limits.h>
+#include <mutex>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/mount.h>
@@ -26,25 +26,28 @@
  * then call through to filesystem routine.
  */
 static ssize_t
-do_iov(int fd, const struct iovec *uiov, int count, off_t offset,
-    ssize_t (*fn)(int fd, const struct iovec *, int, off_t), int prot)
+do_iov(int fd, const iovec *uiov, int count, off_t offset,
+    ssize_t (*fn)(int fd, const iovec *, int, off_t), int prot)
 {
-	if (!u_address(uiov))
-		return DERR(-EFAULT);
 	if ((count < 0) || (count > IOV_MAX))
 		return DERR(-EINVAL);
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_access_ok(uiov, sizeof(*uiov) * count, PROT_READ))
+		return DERR(-EFAULT);
 	ssize_t ret = 0;
 	while (1) {
-		struct iovec iov[16];
-		size_t l = 0;
-		const int c = MIN(count, ARRAY_SIZE(iov));
+		std::array<iovec, 16> iov;
+		ssize_t l = 0;
+		const auto c = std::min<size_t>(count, iov.size());
 		for (size_t i = 0; i < c; ++i) {
 			iov[i] = uiov[i];
 			l += iov[i].iov_len;
 			if (!u_access_ok(iov[i].iov_base, l, prot))
 				return DERR(-EFAULT);
 		}
-		const ssize_t r = fn(fd, iov, c, offset);
+		const ssize_t r = fn(fd, iov.data(), c, offset);
 		if (r == 0)
 			return ret;
 		if (r < 0) {
@@ -77,7 +80,10 @@ sc_access(const char *path, int mode)
 int
 sc_chdir(const char *path)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return chdir(path);
 }
@@ -97,7 +103,10 @@ sc_chown(const char *path, uid_t uid, gid_t gid)
 int
 sc_faccessat(int dirfd, const char *path, int mode, int flags)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return faccessat(dirfd, path, mode, flags);
 }
@@ -105,7 +114,10 @@ sc_faccessat(int dirfd, const char *path, int mode, int flags)
 int
 sc_fchmodat(int dirfd, const char *path, mode_t mode, int flags)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return fchmodat(dirfd, path, mode, flags);
 }
@@ -113,7 +125,10 @@ sc_fchmodat(int dirfd, const char *path, mode_t mode, int flags)
 int
 sc_fchownat(int dirfd, const char *path, uid_t uid, gid_t gid, int flags)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return fchownat(dirfd, path, uid, gid, flags);
 }
@@ -121,15 +136,31 @@ sc_fchownat(int dirfd, const char *path, uid_t uid, gid_t gid, int flags)
 int
 sc_fcntl(int fd, int cmd, void *arg)
 {
-	if (cmd == F_GETLK &&
-	    !u_access_ok(arg, sizeof(struct flock), PROT_WRITE))
-		return DERR(-EFAULT);
-	return fcntl(fd, cmd, arg);
+	switch (cmd) {
+	case F_GETLK:
+	case F_SETLK:
+	case F_SETLKW:
+		if (auto r = u_access_begin(); r < 0)
+			return r;
+		if (!u_access_ok(arg, sizeof(struct flock), PROT_WRITE))
+			return DERR(-EFAULT);
+	}
+	const auto ret = fcntl(fd, cmd, arg);
+	switch (cmd) {
+	case F_GETLK:
+	case F_SETLK:
+	case F_SETLKW:
+		u_access_end();
+	}
+	return ret;
 }
 
 int
 sc_fstat(int fd, struct stat *st)
 {
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(st, sizeof(*st), PROT_WRITE))
 		return DERR(-EFAULT);
 	return fstat(fd, st);
@@ -138,7 +169,11 @@ sc_fstat(int fd, struct stat *st)
 int
 sc_fstatat(int dirfd, const char *path, struct stat *st, int flags)
 {
-	if (!u_address(path) || !u_access_ok(st, sizeof(*st), PROT_WRITE))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX) ||
+	    !u_access_ok(st, sizeof(*st), PROT_WRITE))
 		return DERR(-EFAULT);
 	return fstatat(dirfd, path, st, flags);
 }
@@ -148,6 +183,9 @@ sc_fstatfs(int fd, size_t bufsiz, struct statfs *stf)
 {
 	if (bufsiz != sizeof(*stf))
 		return DERR(-EINVAL);
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(stf, sizeof(*stf), PROT_WRITE))
 		return DERR(-EFAULT);
 	return fstatfs(fd, stf);
@@ -156,6 +194,9 @@ sc_fstatfs(int fd, size_t bufsiz, struct statfs *stf)
 int
 sc_getcwd(char *buf, size_t len)
 {
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(buf, len, PROT_WRITE))
 		return DERR(-EFAULT);
 	char *ret;
@@ -165,6 +206,9 @@ sc_getcwd(char *buf, size_t len)
 int
 sc_getdents(int dirfd, struct dirent *buf, size_t len)
 {
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(buf, len, PROT_WRITE))
 		return DERR(-EFAULT);
 	return getdents(dirfd, buf, len);
@@ -175,15 +219,19 @@ sc_ioctl(int fd, int request, void *argp)
 {
 	switch (_IOC_DIR(request)) {
 	case _IOC_READ:
-		if (!u_access_ok(argp, _IOC_SIZE(request), PROT_WRITE))
-			return DERR(-EFAULT);
-		break;
 	case _IOC_WRITE:
-		if (!u_address(argp))
+		if (auto r = u_access_begin(); r < 0)
+			return r;
+		if (!u_access_ok(argp, _IOC_SIZE(request),
+		    _IOC_DIR(request) == _IOC_READ ? PROT_WRITE : PROT_READ))
 			return DERR(-EFAULT);
-		break;
 	}
 	return ioctl(fd, request, argp);
+	switch (_IOC_DIR(request)) {
+	case _IOC_READ:
+	case _IOC_WRITE:
+		u_access_end();
+	}
 }
 
 int
@@ -195,6 +243,9 @@ sc_lchown(const char *path, uid_t uid, gid_t gid)
 int
 sc_llseek(int fd, long off0, long off1, off_t *result, int whence)
 {
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(result, sizeof(*result), PROT_WRITE))
 		return DERR(-EFAULT);
 	const off_t r = lseek(fd, (off_t)off0 << 32 | off1, whence);
@@ -213,7 +264,10 @@ sc_mkdir(const char *path, mode_t mode)
 int
 sc_mkdirat(int dirfd, const char *path, mode_t mode)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return mkdirat(dirfd, path, mode);
 }
@@ -227,7 +281,10 @@ sc_mknod(const char *path, mode_t mode, dev_t dev)
 int
 sc_mknodat(int dirfd, const char *path, mode_t mode, dev_t dev)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return mknodat(dirfd, path, mode, dev);
 }
@@ -236,11 +293,14 @@ int
 sc_mount(const char *dev, const char *dir, const char *fs, unsigned long flags,
     const void *data)
 {
-	if (!u_address(dev) || !u_address(dir) || !u_address(fs) ||
-	    (data && !u_address(data)))
-		return DERR(-EFAULT);
 	if (!task_capable(CAP_ADMIN))
 		return DERR(-EPERM);
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(dev, PATH_MAX) || !u_strcheck(dir, PATH_MAX) ||
+	    !u_strcheck(fs, PATH_MAX) || (data && !u_address(data)))
+		return DERR(-EFAULT);
 	return mount(dev, dir, fs, flags, data);
 }
 
@@ -253,7 +313,10 @@ sc_open(const char *path, int flags, int mode)
 int
 sc_openat(int dirfd, const char *path, int flags, int mode)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return openat(dirfd, path, flags, mode);
 }
@@ -267,6 +330,9 @@ sc_pipe(int fd[2])
 int
 sc_pipe2(int fd[2], int flags)
 {
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(fd, sizeof(*fd) * 2, PROT_WRITE))
 		return DERR(-EFAULT);
 	return pipe2(fd, flags);
@@ -281,7 +347,10 @@ sc_rename(const char *from, const char *to)
 int
 sc_renameat(int fromdirfd, const char *from, int todirfd, const char *to)
 {
-	if (!u_address(from) || !u_address(to))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(from, PATH_MAX) || !u_strcheck(to, PATH_MAX))
 		return DERR(-EFAULT);
 	return renameat(fromdirfd, from, todirfd, to);
 }
@@ -289,7 +358,10 @@ sc_renameat(int fromdirfd, const char *from, int todirfd, const char *to)
 int
 sc_rmdir(const char *path)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return rmdir(path);
 }
@@ -297,7 +369,11 @@ sc_rmdir(const char *path)
 int
 sc_stat(const char *path, struct stat *st)
 {
-	if (!u_address(path) || !u_access_ok(st, sizeof(*st), PROT_WRITE))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX) ||
+	    !u_access_ok(st, sizeof(*st), PROT_WRITE))
 		return DERR(-EFAULT);
 	return stat(path, st);
 }
@@ -307,7 +383,11 @@ sc_statfs(const char *path, size_t bufsiz, struct statfs *stf)
 {
 	if (bufsiz != sizeof(*stf))
 		return DERR(-EINVAL);
-	if (!u_address(path) || !u_access_ok(stf, sizeof(*stf), PROT_WRITE))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX) ||
+	    !u_access_ok(stf, sizeof(*stf), PROT_WRITE))
 		return DERR(-EFAULT);
 	return statfs(path, stf);
 }
@@ -321,7 +401,10 @@ sc_symlink(const char *target, const char *path)
 int
 sc_symlinkat(const char *target, int dirfd, const char *path)
 {
-	if (!u_address(target) || !u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(target, PATH_MAX) || !u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return symlinkat(target, dirfd, path);
 }
@@ -329,10 +412,13 @@ sc_symlinkat(const char *target, int dirfd, const char *path)
 int
 sc_umount2(const char *dir, int flags)
 {
-	if (!u_address(dir))
-		return DERR(-EFAULT);
 	if (!task_capable(CAP_ADMIN))
 		return DERR(-EPERM);
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(dir, PATH_MAX))
+		return DERR(-EFAULT);
 	return umount2(dir, flags);
 }
 
@@ -345,7 +431,10 @@ sc_unlink(const char *path)
 int
 sc_unlinkat(int dirfd, const char *path, int flags)
 {
-	if (!u_address(path))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX))
 		return DERR(-EFAULT);
 	return unlinkat(dirfd, path, flags);
 }
@@ -354,7 +443,11 @@ int
 sc_utimensat(int dirfd, const char *path, const struct timespec times[2],
     int flags)
 {
-	if (!u_address(path) || !u_access_ok(times, sizeof(*times) * 2, PROT_WRITE))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX) ||
+	    !u_access_ok(times, sizeof(*times) * 2, PROT_WRITE))
 		return DERR(-EFAULT);
 	return utimensat(dirfd, path, times, flags);
 }
@@ -364,6 +457,9 @@ sc_pread(int fd, void *buf, size_t len, off_t offset)
 {
 	if (offset < 0)
 		return DERR(-EINVAL);
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(buf, len, PROT_WRITE))
 		return DERR(-EFAULT);
 	return pread(fd, buf, len, offset);
@@ -372,16 +468,22 @@ sc_pread(int fd, void *buf, size_t len, off_t offset)
 ssize_t
 sc_pwrite(int fd, const void *buf, size_t len, off_t offset)
 {
-	if (!u_address(buf))
-		return DERR(-EFAULT);
 	if (offset < 0)
 		return DERR(-EINVAL);
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_access_ok(buf, len, PROT_READ))
+		return DERR(-EFAULT);
 	return pwrite(fd, buf, len, offset);
 }
 
 ssize_t
 sc_read(int fd, void *buf, size_t len)
 {
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(buf, len, PROT_WRITE))
 		return DERR(-EFAULT);
 	return pread(fd, buf, len, -1);
@@ -396,7 +498,10 @@ sc_readlink(const char *path, char *buf, size_t len)
 ssize_t
 sc_readlinkat(int dirfd, const char *path, char *buf, size_t len)
 {
-	if (!u_address(path) || !u_access_ok(buf, len, PROT_WRITE))
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX) || !u_access_ok(buf, len, PROT_WRITE))
 		return DERR(-EFAULT);
 	return readlinkat(dirfd, path, buf, len);
 }
@@ -440,6 +545,9 @@ sc_pwritev(int fd, const struct iovec *iov, int count, off_t offset)
 ssize_t
 sc_write(int fd, const void *buf, size_t len)
 {
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
 	if (!u_access_ok(buf, len, PROT_READ))
 		return DERR(-EFAULT);
 	return write(fd, buf, len);
