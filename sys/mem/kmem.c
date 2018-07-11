@@ -211,7 +211,7 @@ kmem_alloc_internal(size_t size, enum MEM_TYPE type)
 	} else {
 		/* No block found. Allocate new page */
 		phys *const pp = page_alloc_order(0, type, PAGE_ALLOC_FIXED);
-		if (!pp) {
+		if (pp > (phys *)-4096UL) {
 			mutex_unlock(&kmem_mutex);
 			return NULL;
 		}

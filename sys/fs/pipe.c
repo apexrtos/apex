@@ -60,7 +60,7 @@ pipe_alloc(struct file *fp)
 		return 0;
 
 	phys *const b = page_alloc(PIPE_BUF, MEM_NORMAL, PAGE_ALLOC_FIXED);
-	if (!b)
+	if (b > (phys *)-4096UL)
 		return -ENOMEM;
 
 	struct pipe_data *p;

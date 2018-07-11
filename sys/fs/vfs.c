@@ -236,8 +236,8 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 			if (tgt_len > link_buf_size) {
 				if (tgt_len + 1 > 32) {
 					p = page_alloc(PATH_MAX, MEM_NORMAL, PAGE_ALLOC_FIXED);
-					if (!p) {
-						err = DERR(-ENOMEM);
+					if (p > (phys *)-4096UL) {
+						err = (int)p;
 						goto out;
 					}
 					link_buf = phys_to_virt(p);

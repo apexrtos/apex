@@ -52,8 +52,9 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
 	std::unique_ptr<phys> pages(fixed ? page_reserve((phys*)addr, len) :
 	    page_alloc(len, type, PAGE_ALLOC_FIXED), len);
 
-	if (!pages.get())
-		return (void*)-ENOMEM;	/* expected */
+	/* page_alloc & page_reserve return error codes on failure */
+	if (pages.get() > (phys *)-4096UL)
+		return pages.release();
 
 	addr = pages.get();
 

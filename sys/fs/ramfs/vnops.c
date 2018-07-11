@@ -318,8 +318,8 @@ ramfs_write(struct file *fp, void *buf, size_t size)
 			 */
 			new_size = PAGE_ALIGN(end_pos);
 			phys *const p = page_alloc(new_size, MEM_NORMAL, PAGE_ALLOC_FIXED);
-			if (!p)
-				return -EIO;
+			if (p > (phys *)-4096UL)
+				return (ssize_t)p;
 			new_buf = phys_to_virt(p);
 			if (np->rn_size != 0) {
 				memcpy(new_buf, np->rn_buf, vp->v_size);
