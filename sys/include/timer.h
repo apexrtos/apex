@@ -53,6 +53,10 @@ struct itimer {
 	uint64_t interval;		/* reload interval, 0 if disabled */
 };
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 uint64_t    ts_to_ns(const struct timespec *);
 void	    ns_to_ts(uint64_t, struct timespec *);
 uint64_t    tv_to_ns(const struct timeval *);
@@ -71,5 +75,9 @@ void	    timer_init(void);
  */
 int	    sc_getitimer(int, struct itimerval *);
 int	    sc_setitimer(int, const struct itimerval *, struct itimerval *);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* !timer_h */

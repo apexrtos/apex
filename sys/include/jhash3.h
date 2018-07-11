@@ -18,6 +18,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /*
  * jhash32: Hash an array of uint32_t's.
  *
@@ -50,5 +54,9 @@ uint32_t jhash_string(const char *key, uint32_t initval);
 uint32_t jhash_3words(uint32_t a, uint32_t b, uint32_t c);
 uint32_t jhash_2words(uint32_t a, uint32_t b);
 uint32_t jhash_1word(uint32_t a);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* !jhash3_h */

@@ -79,6 +79,10 @@ struct device {
 	char		    name[12];	/* name of device */
 };
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 bool		device_valid(struct device *);
 struct device  *device_lookup(const char *name);
 struct device  *device_create(const struct devio *, const char *, int, void *);
@@ -86,5 +90,9 @@ int		device_destroy(struct device *);
 int		device_broadcast(int, int);
 int		device_info(u_long, int *, char *);
 void		device_init(void);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* !device_h */

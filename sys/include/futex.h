@@ -25,9 +25,6 @@ struct thread;
 #define FUTEX_OWNER_DIED	0x40000000
 #define FUTEX_WAITERS           0x80000000
 
-int sc_futex(int *, int, int, void *, int *);
-int futex(struct task *, int *, int, int, void *, int *);
-
 struct futex {
 	phys *addr;		/* futex address */
 	struct event event;	/* event */
@@ -36,5 +33,16 @@ struct futex {
 	int prio;		/* highest prio in waiting threads */
 	struct thread *owner;	/* thread holding futex */
 };
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+int sc_futex(int *, int, int, void *, int *);
+int futex(struct task *, int *, int, int, void *, int *);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* futex_h */
