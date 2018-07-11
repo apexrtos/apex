@@ -7,6 +7,7 @@
 #include <page.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
+#include <task.h>
 #include <vm.h>
 
 /*
@@ -107,6 +108,18 @@ bool
 k_access_ok(const void *k_addr, size_t len, int access)
 {
 	return true;
+}
+
+int
+u_access_begin()
+{
+	return as_transfer_begin(task_cur()->as);
+}
+
+int
+u_access_end()
+{
+	return as_transfer_end(task_cur()->as);
 }
 
 bool
