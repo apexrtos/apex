@@ -95,13 +95,13 @@ namespace a {
 
 class sch_lock {
 public:
-	void lock() { ::sch_lock(); }
-	void unlock() { ::sch_unlock(); }
+	void lock() const { ::sch_lock(); }
+	void unlock() const { ::sch_unlock(); }
 };
 
 } /* namespace a */
 
-extern a::sch_lock global_sch_lock;
+inline constexpr a::sch_lock global_sch_lock{};
 
 #endif /* __cplusplus */
 
