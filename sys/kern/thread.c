@@ -142,7 +142,7 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
 		err = DERR(-EPERM);
 		goto out;
 	}
-	if ((sp = build_args(task->as, sp, prgv, argv, envp, auxv)) >= (void*)-4096U) {
+	if ((sp = build_args(task->as, sp, prgv, argv, envp, auxv)) > (void*)-4096UL) {
 		err = (int)sp;
 		goto out;
 	}

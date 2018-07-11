@@ -182,7 +182,7 @@ task_create(struct task *parent, int vm_option, struct task **child)
 		task->as = parent->as;
 		break;
 	case VM_COPY:
-		if ((task->as = as_copy(parent->as, task_pid(task))) >= (struct as*)-4096U)
+		if ((task->as = as_copy(parent->as, task_pid(task))) > (struct as*)-4096UL)
 			err = (int)task->as;
 		break;
 	default:
