@@ -24,6 +24,9 @@
 /*
  * do_iov - copy iov from userspace into kernel, verify all pointers are sane
  * then call through to filesystem routine.
+ *
+ * iov_base == nullptr is valid from userspace. Strip these out here and only
+ * pass valid pointers through.
  */
 static ssize_t
 do_iov(int fd, const iovec *uiov, int count, off_t offset,
@@ -41,13 +44,17 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 		std::array<iovec, 16> iov;
 		ssize_t l = 0;
 		const auto c = std::min<size_t>(count, iov.size());
+		size_t d = 0;
 		for (size_t i = 0; i < c; ++i) {
-			iov[i] = uiov[i];
-			l += iov[i].iov_len;
-			if (!u_access_ok(iov[i].iov_base, l, prot))
+			if (!uiov[i].iov_base)
+				continue;
+			if (!u_access_ok(uiov[i].iov_base, uiov[i].iov_len, prot))
 				return DERR(-EFAULT);
+			iov[d] = uiov[i];
+			l += uiov[i].iov_len;
+			++d;
 		}
-		const ssize_t r = fn(fd, iov.data(), c, offset);
+		const ssize_t r = fn(fd, iov.data(), d, offset);
 		if (r == 0)
 			return ret;
 		if (r < 0) {
