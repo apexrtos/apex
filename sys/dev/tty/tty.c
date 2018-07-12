@@ -566,9 +566,6 @@ tty_read(struct file *file, void *buf, size_t len)
 	if ((file->f_flags & O_NONBLOCK) && ttyq_empty(qp))
 		return DERR(-EAGAIN);
 
-	if (buf == NULL)
-		return DERR(-EFAULT);
-
 	/* If there is no input, wait it */
 	while (ttyq_empty(qp)) {
 		vn_unlock(file->f_vnode);
@@ -606,9 +603,6 @@ tty_write(struct file *file, void *buf, size_t len)
 	struct tty *tp = file->f_data;
 	size_t remain, count = 0;
 	const char *cbuf = buf;
-
-	if (buf == NULL)
-		return 0;
 
 	ttydbg("tty_write\n");
 

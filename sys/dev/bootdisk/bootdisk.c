@@ -43,8 +43,6 @@ bootdisk_read(struct file *f, void *buf, size_t len)
 		return DERR(-EIO);
 	if ((size_t)off + len > i->len)
 		len = i->len - off;
-	if (!buf)
-		return DERR(-EFAULT);
 
 	/* Copy data */
 	memcpy(buf, i->p + off, len);

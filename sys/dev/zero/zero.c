@@ -42,8 +42,7 @@
 static ssize_t
 zero_read(struct file *file, void *buf, size_t len)
 {
-	if (buf)
-		memset(buf, 0, len);
+	memset(buf, 0, len);
 	return len;
 }
 
