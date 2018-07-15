@@ -39,16 +39,6 @@ struct context;
 struct thread;
 struct pgd;
 
-/* page types for mmu_map */
-#define PG_UNMAP	0	/* no page */
-#define PG_READ		1	/* user - read only */
-#define PG_WRITE	2	/* user - read/write */
-#define PG_EXEC		3	/* user - execute */
-#define PG_SYSTEM	4	/* system - kernel r/w/x */
-#define PG_IOMEM	5	/* system - no cache */
-#define PG_FLASH	6	/* system - write whrough cache */
-#define PG_FLASH_XIP	7	/* system - kernel rwx, write through */
-
 /*
  * Virtual/physical address mapping
  */
@@ -56,7 +46,7 @@ struct mmumap {
 	void	       *vaddr;	/* virtual address */
 	phys	       *paddr;	/* physical address */
 	size_t		size;	/* size */
-	int		type;	/* mapping type */
+	int		flags;	/* machine specific flags */
 };
 
 #if defined(__cplusplus)
