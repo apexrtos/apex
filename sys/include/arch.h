@@ -30,20 +30,24 @@
 #ifndef arch_h
 #define arch_h
 
+#include <conf/config.h>
 #include <elf.h>
 #include <signal.h>
 #include <stdnoreturn.h>
 #include <sys/include/types.h>
 
+struct as;
 struct context;
-struct thread;
 struct pgd;
+struct thread;
 
 /*
  * Virtual/physical address mapping
  */
 struct mmumap {
+#if defined(CONFIG_MMU)
 	void	       *vaddr;	/* virtual address */
+#endif
 	phys	       *paddr;	/* physical address */
 	size_t		size;	/* size */
 	int		flags;	/* machine specific flags */
@@ -102,8 +106,8 @@ unsigned	arch_elf_hwcap(void);
 void	       *arch_stack_align(void *);
 void		cache_coherent_exec(const void *, size_t);
 
-/* for nommu targets mmu_* functions are provided by mem/unprotected.cpp */
-void		mmu_init(struct mmumap *);
+#if defined(CONFIG_MMU)
+void		mmu_init(struct mmumap *, size_t);
 struct pgd     *mmu_newmap(pid_t);
 void		mmu_delmap(struct pgd *);
 int		mmu_map(struct pgd *, phys *, void *, size_t, int);
@@ -111,6 +115,17 @@ void		mmu_premap(void *, void *);
 void		mmu_switch(struct pgd *);
 void		mmu_preload(void *, void *, void *);
 phys	       *mmu_extract(struct pgd *, void *, size_t, int);
+#endif
+
+#if defined(CONFIG_MPU)
+void		mpu_init(const struct mmumap*, size_t, int);
+void		mpu_switch(const struct as *);
+void		mpu_unmap(const void *, size_t);
+void		mpu_map(const void *, size_t, int);
+void		mpu_protect(const void *, size_t, int);
+void		mpu_fault(const void *);
+void		mpu_dump(void);
+#endif
 
 #if defined(__cplusplus)
 } /* extern "C" */
