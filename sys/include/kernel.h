@@ -126,4 +126,13 @@ div_closest(long n, long d)
 		return (n - d / 2) / d;
 }
 
+/*
+ * Determine if integer is a non-zero power of 2.
+ */
+static inline bool
+is_pow2(unsigned long v)
+{
+	return v && !(v & (v - 1));
+}
+
 #endif /* !kernel_h */
