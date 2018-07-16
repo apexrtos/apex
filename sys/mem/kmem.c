@@ -210,7 +210,7 @@ kmem_alloc_internal(size_t size, enum MEM_TYPE type)
 		pg = PAGE_TOP(blk);	 /* Get the page address */
 	} else {
 		/* No block found. Allocate new page */
-		phys *const pp = page_alloc_order(0, type, PAGE_ALLOC_FIXED);
+		phys *const pp = page_alloc_order(0, type, PAGE_ALLOC_FIXED, &kern_task);
 		if (pp > (phys *)-4096UL) {
 			mutex_unlock(&kmem_mutex);
 			return NULL;
@@ -322,7 +322,7 @@ kmem_free(void *ptr)
 		}
 		list_remove(&pg->link);
 		pg->magic = 0;
-		page_free(virt_to_phys(pg), CONFIG_PAGE_SIZE);
+		page_free(virt_to_phys(pg), CONFIG_PAGE_SIZE, &kern_task);
 	}
 	mutex_unlock(&kmem_mutex);
 }

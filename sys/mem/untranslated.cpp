@@ -4,6 +4,7 @@
 #include <cstring>
 #include <debug.h>
 #include <fs.h>
+#include <kernel.h>
 #include <mutex>
 #include <page.h>
 #include <sys/mman.h>
@@ -63,8 +64,10 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
 	int r = 0;
 	const auto fixed = flags & MAP_FIXED;
 
-	std::unique_ptr<phys> pages(fixed ? page_reserve((phys*)addr, len) :
-	    page_alloc(len, type, PAGE_ALLOC_FIXED), len);
+	std::unique_ptr<phys> pages(fixed
+	    ? page_reserve((phys*)addr, len, as)
+	    : page_alloc(len, type, PAGE_ALLOC_FIXED, as),
+	    {len, as});
 
 	/* page_alloc & page_reserve return error codes on failure */
 	if (pages.get() > (phys *)-4096UL)
@@ -109,7 +112,7 @@ as_unmap(struct as *as, void *addr, size_t len, vnode *vn, off_t off)
 		mpu_unmap(addr, len);
 #endif
 
-	return page_free((phys*)addr, len);
+	return page_free((phys*)addr, len, as);
 }
 
 /*
@@ -181,7 +184,7 @@ u_access_okfor(const struct as *a, const void *u_addr, size_t len, int access)
 bool
 k_access_ok(const void *k_addr, size_t len, int access)
 {
-	return page_valid((phys *)k_addr, len);
+	return page_valid((phys *)k_addr, len, &kern_task);
 }
 
 int
@@ -223,5 +226,5 @@ u_addressfor(const struct as *a, const void *u_addr)
 bool
 k_address(const void *k_addr)
 {
-	return page_valid((phys *)k_addr, 0);
+	return page_valid((phys *)k_addr, 0, &kern_task);
 }

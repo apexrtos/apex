@@ -47,6 +47,11 @@
 #include <sys/stat.h>
 
 /*
+ * Page ownership identifier for RAMFS
+ */
+static char ramfs_id;
+
+/*
  * TODO: ramfs cleanup
  * - use hash map?
  * - use kernel list.h instead of self-rolled
@@ -220,7 +225,7 @@ ramfs_unlink(struct vnode *dvp, struct vnode *vp)
 		return -ENOTEMPTY;
 
 	if (np->rn_buf != NULL) {
-		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize);
+		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize, &ramfs_id);
 		np->rn_buf = NULL; /* incase remove_node fails */
 		np->rn_bufsize = 0;
 	}
@@ -236,7 +241,7 @@ ramfs_truncate(struct vnode *vp)
 
 	rfsdbg("truncate %s\n", vp->v_path);
 	if (np->rn_buf != NULL) {
-		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize);
+		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize, &ramfs_id);
 		np->rn_buf = NULL;
 		np->rn_bufsize = 0;
 	}
@@ -317,13 +322,15 @@ ramfs_write(struct file *fp, void *buf, size_t size)
 			 * many kmem_alloc/kmem_free calls.
 			 */
 			new_size = PAGE_ALIGN(end_pos);
-			phys *const p = page_alloc(new_size, MEM_NORMAL, PAGE_ALLOC_FIXED);
+			phys *const p = page_alloc(new_size, MEM_NORMAL,
+			    PAGE_ALLOC_FIXED, &ramfs_id);
 			if (p > (phys *)-4096UL)
 				return (ssize_t)p;
 			new_buf = phys_to_virt(p);
 			if (np->rn_size != 0) {
 				memcpy(new_buf, np->rn_buf, vp->v_size);
-				page_free(virt_to_phys(np->rn_buf), np->rn_bufsize);
+				page_free(virt_to_phys(np->rn_buf),
+				    np->rn_bufsize, &ramfs_id);
 			}
 			if (vp->v_size < (size_t)file_pos) /* sparse file */
 				memset((char *)new_buf + vp->v_size, 0,

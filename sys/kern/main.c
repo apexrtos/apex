@@ -81,7 +81,7 @@ kernel_main(void)
 	 * Initialize memory managers.
 	 */
 	machine_memory_init();
-	page_init(&bootinfo);
+	page_init(&bootinfo, &kern_task);
 	kmem_init();
 
 	/*

@@ -35,6 +35,11 @@
 #include <unistd.h>
 
 /*
+ * Page ownership identifier for VFS
+ */
+static char vfs_id;
+
+/*
  * Flags on file member of task (low 2 bits of pointer)
  */
 #define FF_CLOEXEC 1
@@ -235,7 +240,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 			/* allocate memory for link target */
 			if (tgt_len > link_buf_size) {
 				if (tgt_len + 1 > 32) {
-					p = page_alloc(PATH_MAX, MEM_NORMAL, PAGE_ALLOC_FIXED);
+					p = page_alloc(PATH_MAX, MEM_NORMAL, PAGE_ALLOC_FIXED, &vfs_id);
 					if (p > (phys *)-4096UL) {
 						err = (int)p;
 						goto out;
@@ -363,14 +368,14 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 		*node_len = len;
 
 	if (link_buf_size > 32)
-		page_free(p, PATH_MAX);
+		page_free(p, PATH_MAX, &vfs_id);
 
 	*vpp = vp;
 	return err;
 
 out:
 	if (link_buf_size > 32)
-		page_free(p, PATH_MAX);
+		page_free(p, PATH_MAX, &vfs_id);
 
 	if (vp)
 		vput(vp);

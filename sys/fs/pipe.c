@@ -37,6 +37,11 @@ static_assert(PIPE_BUF == 4096, "");
 #define pdbg(...)
 
 /*
+ * Page ownership identifier for pipe
+ */
+static char pipe_id;
+
+/*
  * pipe_data
  */
 struct pipe_data {
@@ -59,13 +64,13 @@ pipe_alloc(struct file *fp)
 	if (vp->v_pipe)
 		return 0;
 
-	phys *const b = page_alloc(PIPE_BUF, MEM_NORMAL, PAGE_ALLOC_FIXED);
+	phys *const b = page_alloc(PIPE_BUF, MEM_NORMAL, PAGE_ALLOC_FIXED, &pipe_id);
 	if (b > (phys *)-4096UL)
 		return -ENOMEM;
 
 	struct pipe_data *p;
 	if (!(p = kmem_alloc(sizeof *p, MEM_NORMAL))) {
-		page_free(b, PIPE_BUF);
+		page_free(b, PIPE_BUF, &pipe_id);
 		return -ENOMEM;
 	}
 	cond_init(&p->cond);
@@ -88,7 +93,7 @@ pipe_free(struct file *fp)
 	struct vnode *vp = fp->f_vnode;
 	struct pipe_data *p = vp->v_pipe;
 
-	page_free(virt_to_phys(p->buf), PIPE_BUF);
+	page_free(virt_to_phys(p->buf), PIPE_BUF, &pipe_id);
 	kmem_free(p);
 }
 
