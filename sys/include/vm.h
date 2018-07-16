@@ -4,6 +4,7 @@
 #include <page.h>
 
 struct as;
+struct iovec;
 struct seg;
 
 #if defined(__cplusplus)
@@ -15,6 +16,13 @@ extern "C" {
  */
 void		    vm_init(void);
 void		    vm_dump(void);
+void		    vm_init_brk(struct as *, void *);
+ssize_t		    vm_readv(struct as *, const struct iovec *, size_t,
+			     const struct iovec *, size_t);
+ssize_t		    vm_writev(struct as *, const struct iovec *, size_t,
+			      const struct iovec *, size_t);
+ssize_t		    vm_read(struct as *, void *, const void *, size_t);
+ssize_t		    vm_write(struct as *, const void *, void *, size_t);
 struct as	   *as_create(pid_t);
 struct as	   *as_copy(struct as *, pid_t);
 void		    as_destroy(struct as *);
@@ -23,8 +31,6 @@ int		    as_transfer_begin(struct as *);
 int		    as_transfer_end(struct as *);
 int		    as_modify_begin(struct as *);
 int		    as_modify_end(struct as *);
-int		    as_read(struct as *, void *, const void *, size_t);
-int		    as_write(struct as *, const void *, void *, size_t);
 void		    as_switch(struct as *);
 void		    as_dump(struct as *);
 const struct seg   *as_find_seg(const struct as *, const void *);

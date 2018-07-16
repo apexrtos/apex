@@ -219,7 +219,7 @@ do_terminate(struct thread *th)
 
 	if (th->clear_child_tid) {
 		const int zero = 0;
-		as_write(th->task->as, &zero, th->clear_child_tid, sizeof zero);
+		vm_write(th->task->as, &zero, th->clear_child_tid, sizeof zero);
 		futex(th->task, th->clear_child_tid, FUTEX_PRIVATE | FUTEX_WAKE,
 		    1, 0, 0);
 	}

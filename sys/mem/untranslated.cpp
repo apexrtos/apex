@@ -14,10 +14,10 @@
 #include <vm.h>
 
 /*
- * as_read - read data from address space
+ * vm_read - read data from address space
  */
 int
-as_read(as *as, void *l, const void *r, size_t s)
+vm_read(as *as, void *l, const void *r, size_t s)
 {
 	interruptible_lock lck(u_access_lock);
 	if (auto r = lck.lock(); r < 0)
@@ -25,14 +25,14 @@ as_read(as *as, void *l, const void *r, size_t s)
 	if (!u_access_okfor(as, r, s, PROT_READ))
 		return DERR(-EFAULT);
 	memcpy(l, r, s);
-	return 0;
+	return s;
 }
 
 /*
- * as_write - write data to address space
+ * vm_write - write data to address space
  */
 int
-as_write(as *as, const void *l, void *r, size_t s)
+vm_write(as *as, const void *l, void *r, size_t s)
 {
 	interruptible_lock lck(u_access_lock);
 	if (auto r = lck.lock(); r < 0)
@@ -40,7 +40,7 @@ as_write(as *as, const void *l, void *r, size_t s)
 	if (!u_access_okfor(as, r, s, PROT_WRITE))
 		return DERR(-EFAULT);
 	memcpy(r, l, s);
-	return 0;
+	return s;
 }
 
 /*

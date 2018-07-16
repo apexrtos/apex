@@ -6,11 +6,11 @@
 #include <kernel.h>
 #include <kmem.h>
 #include <limits.h>
-#include <mmap.h>
 #include <sch.h>
 #include <sys/mman.h>
 #include <task.h>
 #include <thread.h>
+#include <vm.h>
 
 #define trace(...)
 

@@ -15,6 +15,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <vm.h>
 
 #if UINTPTR_MAX == 0xffffffff
 typedef Elf32_Ehdr Ehdr;

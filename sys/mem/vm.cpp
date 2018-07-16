@@ -375,7 +375,7 @@ vm_init_brk(as *a, void *brk)
 ssize_t
 vm_readv(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 {
-	return do_vm_io(a, liov, lc, riov, rc, as_read);
+	return do_vm_io(a, liov, lc, riov, rc, vm_read);
 }
 
 /*
@@ -384,29 +384,7 @@ vm_readv(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 ssize_t
 vm_writev(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 {
-	return do_vm_io(a, liov, lc, riov, rc, as_write);
-}
-
-/*
- * vm_read
- */
-ssize_t
-vm_read(as *a, void *lbuf, const void *rbuf, size_t len)
-{
-	const iovec liov = { lbuf, len };
-	const iovec riov = { (void*)rbuf, len };
-	return vm_readv(a, &liov, 1, &riov, 1);
-}
-
-/*
- * vm_write
- */
-ssize_t
-vm_write(as *a, const void *lbuf, void *rbuf, size_t len)
-{
-	const iovec liov = { (void*)lbuf, len };
-	const iovec riov = { rbuf, len };
-	return vm_writev(a, &liov, 1, &riov, 1);
+	return do_vm_io(a, liov, lc, riov, rc, vm_write);
 }
 
 /*
