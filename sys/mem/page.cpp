@@ -512,6 +512,44 @@ page_free(phys *addr, size_t len)
 }
 
 /*
+ * page_valid - check if address range refers to valid, writable pages
+ */
+bool
+page_valid(phys *addr, size_t len)
+{
+	/* no need to lock - we aren't modifying anything, and after page_init
+	   the page layout is immutable */
+
+	/* find region */
+	auto *r = find_region(addr, len);
+	if (!r)
+		return false;
+
+	/* if length is 0, address is ok, in valid region */
+	if (len == 0)
+		return true;
+
+	/* find page range */
+	const auto begin = page_num(*r, addr);
+	const auto end = page_num(*r, addr + len - 1) + 1;
+
+	/* verify that range is allocated */
+	for (auto i = begin; i != end; ++i) {
+		switch (r->pages[i].state) {
+		case PG_HOLE:
+		case PG_SYSTEM:
+			return false;
+		case PG_FREE:
+		case PG_FIXED:
+		case PG_MAPPED:
+			continue;
+		}
+	}
+
+	return true;
+}
+
+/*
  * page_init - initialise page allocator
  */
 void

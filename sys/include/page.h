@@ -18,6 +18,7 @@ phys   *page_alloc_order(size_t order, enum MEM_TYPE, enum PAGE_ALLOC_TYPE);
 phys   *page_alloc(size_t, enum MEM_TYPE, enum PAGE_ALLOC_TYPE);
 phys   *page_reserve(phys *, size_t);
 int	page_free(phys *, size_t);
+bool	page_valid(phys *, size_t);
 void	page_init(const struct bootinfo *);
 void	page_dump(void);
 
