@@ -97,6 +97,13 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	fd.close();
 	fs_exec(t);
 
+	/* terminate all other threads in current task */
+	struct thread *th;
+	list_for_each_entry(th, &t->threads, task_link) {
+		if (th != main)
+			thread_terminate(th);
+	}
+
 	/* switch to new address space */
 	if (t == task_cur())
 		as_switch(as.get());
@@ -107,13 +114,6 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	if (t->vfork) {
 		thread_resume(t->vfork);
 		t->vfork = 0;
-	}
-
-	/* terminate all other threads in current task */
-	struct thread *th;
-	list_for_each_entry(th, &t->threads, task_link) {
-		if (th != main)
-			thread_terminate(th);
 	}
 
 #if defined(TRACE_EXEC)
