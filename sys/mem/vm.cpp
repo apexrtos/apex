@@ -9,6 +9,7 @@
 #include <kmem.h>
 #include <list.h>
 #include <mutex>
+#include <sections.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
 #include <task.h>
@@ -615,6 +616,59 @@ as_dump(as *a)
 		    s->off,
 		    s->vn ? vn_name(s->vn) : "");
 	}
+}
+
+/*
+ * as_find_seg - find segment containing address
+ *
+ * REVISIT: This really needs to be as fast as possible. We should use some
+ * kind of tree rather than a linear search in the future.
+ */
+__fast_text const seg *
+as_find_seg(const as *a, const void *uaddr)
+{
+	seg *s;
+	list_for_each_entry(s, &a->segs, link) {
+		if (seg_begin(s) <= uaddr && seg_end(s) > uaddr)
+			return s;
+	}
+	return nullptr;
+}
+
+/*
+ * seg_begin - get start address of segment
+ */
+void *
+seg_begin(const seg *s)
+{
+	return s->base;
+}
+
+/*
+ * seg_end - get end address of segment
+ */
+void *
+seg_end(const seg *s)
+{
+	return (char *)s->base + s->len;
+}
+
+/*
+ * seg_size - get size of segment
+ */
+size_t
+seg_size(const seg *s)
+{
+	return s->len;
+}
+
+/*
+ * seg_prot - get protection flags for segment
+ */
+int
+seg_prot(const seg *s)
+{
+	return s->prot;
 }
 
 /*

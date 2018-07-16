@@ -13,20 +13,25 @@ extern "C" {
 /*
  * Kernel interface
  */
-void	    vm_init(void);
-void	    vm_dump(void);
-struct as  *as_create(pid_t);
-struct as  *as_copy(struct as *, pid_t);
-void	    as_destroy(struct as *);
-void	    as_reference(struct as *);
-int	    as_transfer_begin(struct as *);
-int	    as_transfer_end(struct as *);
-int	    as_modify_begin(struct as *);
-int	    as_modify_end(struct as *);
-int	    as_read(struct as *, void *, const void *, size_t);
-int	    as_write(struct as *, const void *, void *, size_t);
-void	    as_switch(struct as *);
-void	    as_dump(struct as *);
+void		    vm_init(void);
+void		    vm_dump(void);
+struct as	   *as_create(pid_t);
+struct as	   *as_copy(struct as *, pid_t);
+void		    as_destroy(struct as *);
+void		    as_reference(struct as *);
+int		    as_transfer_begin(struct as *);
+int		    as_transfer_end(struct as *);
+int		    as_modify_begin(struct as *);
+int		    as_modify_end(struct as *);
+int		    as_read(struct as *, void *, const void *, size_t);
+int		    as_write(struct as *, const void *, void *, size_t);
+void		    as_switch(struct as *);
+void		    as_dump(struct as *);
+const struct seg   *as_find_seg(const struct as *, const void *);
+void		   *seg_begin(const struct seg *);
+void		   *seg_end(const struct seg *);
+size_t		    seg_size(const struct seg *);
+int		    seg_prot(const struct seg *);
 
 #if defined(__cplusplus)
 } /* extern "C" */
@@ -38,12 +43,12 @@ struct vnode;
 /*
  * MMU interface
  */
-void   *as_map(as *, void *, size_t, int, int, std::unique_ptr<vnode>,
-	       off_t, MEM_TYPE);
-int	as_unmap(as *, void *, size_t, vnode *, off_t);
-int	as_mprotect(as *, void *, size_t, int);
-int	as_insert(as *, std::unique_ptr<phys>, size_t, int, int,
-		  std::unique_ptr<vnode>, off_t, MEM_TYPE);
+void	   *as_map(as *, void *, size_t, int, int, std::unique_ptr<vnode>,
+		   off_t, MEM_TYPE);
+int	    as_unmap(as *, void *, size_t, vnode *, off_t);
+int	    as_mprotect(as *, void *, size_t, int);
+int	    as_insert(as *, std::unique_ptr<phys>, size_t, int, int,
+		      std::unique_ptr<vnode>, off_t, MEM_TYPE);
 
 namespace std {
 
