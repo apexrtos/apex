@@ -414,7 +414,7 @@ page_reserve(phys *addr, size_t len, const PG_STATE st)
 {
 	auto *r = find_region(addr, len);
 	if (!r)
-		return (phys *)DERR(-EINVAL);
+		return (phys *)-EINVAL;
 	return page_reserve(*r, addr, len, st);
 }
 
