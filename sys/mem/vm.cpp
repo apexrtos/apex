@@ -120,7 +120,7 @@ seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
     std::unique_ptr<vnode> vn, off_t off, MEM_TYPE type)
 {
 	seg *ns;
-	if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_NORMAL)))
+	if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
 		return DERR(-ENOMEM);
 	ns->prot = prot;
 	ns->base = pages.release();
@@ -206,7 +206,7 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 		} else if (s->base < uaddr && send > uend) {
 			/* hole in segment */
 			seg *ns;
-			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_NORMAL)))
+			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
 				return DERR(-ENOMEM);
 			s->len = uaddr - (char*)s->base;
 			err = as_unmap(a, uaddr, ulen, s->vn, s->off + s->len);
@@ -279,9 +279,9 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 		} else if (s->base < uaddr && send > uend) {
 			/* hole in segment */
 			seg *ns1, *ns2;
-			if (!(ns1 = (seg*)kmem_alloc(sizeof(seg), MEM_NORMAL)))
+			if (!(ns1 = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
 				return DERR(-ENOMEM);
-			if (!(ns2 = (seg*)kmem_alloc(sizeof(seg), MEM_NORMAL))) {
+			if (!(ns2 = (seg*)kmem_alloc(sizeof(seg), MEM_FAST))) {
 				kmem_free(ns1);
 				return DERR(-ENOMEM);
 			}
@@ -313,7 +313,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 		} else if (s->base < uaddr) {
 			/* end of segment */
 			seg *ns;
-			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_NORMAL)))
+			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
 				return DERR(-ENOMEM);
 
 			const auto l = uaddr - (char*)s->base;
@@ -333,7 +333,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 		} else if (s->base < uend) {
 			/* start of segment */
 			seg *ns;
-			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_NORMAL)))
+			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
 				return DERR(-ENOMEM);
 			const auto l = uend - (char*)s->base;
 			err = as_mprotect(a, s->base, l, prot);
