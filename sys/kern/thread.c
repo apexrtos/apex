@@ -125,7 +125,7 @@ thread_valid(struct thread *th)
  * must be called to start it.
  */
 int
-thread_createfor(struct task *task, struct thread **thp, void *sp,
+thread_createfor(struct task *task, struct as *as, struct thread **thp, void *sp,
     unsigned type, void (*entry)(void), long retval, const char *const prgv[],
     const char *const argv[], const char *const envp[], const unsigned auxv[])
 {
@@ -142,7 +142,7 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
 		err = DERR(-EPERM);
 		goto out;
 	}
-	if ((sp = build_args(task->as, sp, prgv, argv, envp, auxv)) > (void*)-4096UL) {
+	if ((sp = build_args(as, sp, prgv, argv, envp, auxv)) > (void*)-4096UL) {
 		err = (int)sp;
 		goto out;
 	}

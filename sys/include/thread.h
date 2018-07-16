@@ -36,6 +36,7 @@
 #include <stdnoreturn.h>
 #include <timer.h>
 
+struct as;
 struct mutex;
 struct task;
 
@@ -105,8 +106,8 @@ extern "C" {
  */
 struct thread  *thread_cur(void);
 bool		thread_valid(struct thread *);
-int	        thread_createfor(struct task *, struct thread **, void *,
-				 unsigned, void (*)(void), long,
+int	        thread_createfor(struct task *, struct as *, struct thread **,
+				 void *, unsigned, void (*)(void), long,
 				 const char *const[], const char *const[],
 				 const char *const[], const unsigned[]);
 int	        thread_name(struct thread *, const char *);
