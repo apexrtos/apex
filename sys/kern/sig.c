@@ -693,8 +693,10 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 	 */
 	if (!(kact.flags & SA_RESTORER))
 		return DERR(-EINVAL);
-
-	if (!u_address(kact.handler) || !u_address(kact.restorer))
+	if (!u_address(kact.restorer))
+		return DERR(-EFAULT);
+	if (kact.handler != SIG_IGN && kact.handler != SIG_DFL &&
+	    !u_address(kact.handler))
 		return DERR(-EFAULT);
 
 	task_cur()->sig_action[sig - 1] = kact;
