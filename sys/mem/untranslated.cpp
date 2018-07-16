@@ -4,10 +4,12 @@
 #include <cstring>
 #include <debug.h>
 #include <fs.h>
+#include <mutex>
 #include <page.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
 #include <task.h>
+#include <thread.h>
 #include <vm.h>
 
 /*
@@ -16,16 +18,26 @@
 int
 as_read(as *as, void *l, const void *r, size_t s)
 {
+	interruptible_lock lck(u_access_lock);
+	if (auto r = lck.lock(); r < 0)
+		return r;
+	if (!u_access_okfor(as, r, s, PROT_READ))
+		return DERR(-EFAULT);
 	memcpy(l, r, s);
 	return 0;
 }
 
 /*
- * as_writev - write data to address space
+ * as_write - write data to address space
  */
 int
 as_write(as *as, const void *l, void *r, size_t s)
 {
+	interruptible_lock lck(u_access_lock);
+	if (auto r = lck.lock(); r < 0)
+		return r;
+	if (!u_access_okfor(as, r, s, PROT_WRITE))
+		return DERR(-EFAULT);
 	memcpy(r, l, s);
 	return 0;
 }
@@ -36,7 +48,9 @@ as_write(as *as, const void *l, void *r, size_t s)
 void
 as_switch(as *as)
 {
-
+#if defined(CONFIG_MPU)
+	mpu_switch(as);
+#endif
 }
 
 /*
@@ -70,6 +84,11 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
 	    std::move(vn), off, type)) < 0)
 		return (void*)r;
 
+#if defined(CONFIG_MPU)
+	if (as == task_cur()->as)
+		mpu_map(addr, len, prot);
+#endif
+
 	return addr;
 }
 
@@ -84,6 +103,12 @@ as_unmap(struct as *as, void *addr, size_t len, vnode *vn, off_t off)
 #if defined(DEBUG)
 	memset(addr, 0, len);
 #endif
+
+#if defined(CONFIG_MPU)
+	if (as == task_cur()->as)
+		mpu_unmap(addr, len);
+#endif
+
 	return page_free((phys*)addr, len);
 }
 
@@ -93,22 +118,70 @@ as_unmap(struct as *as, void *addr, size_t len, vnode *vn, off_t off)
 int
 as_mprotect(struct as *as, void *addr, size_t len, int prot)
 {
+#if defined(CONFIG_MPU)
+	if (as == task_cur()->as)
+		mpu_protect(addr, len, prot);
+#endif
+
 	return 0;
 }
 
 /*
  * access.h
  */
+ssize_t
+u_strnlen(const char *u_str, const size_t maxlen)
+{
+	const auto seg = as_find_seg(task_cur()->as, u_str);
+	if (!seg)
+		return DERR(-EFAULT);
+	const auto lim = std::min<size_t>(maxlen, (char *)seg_end(seg) - u_str);
+	const auto r = strnlen(u_str, lim);
+	if (r == maxlen)
+		return maxlen;
+	if (r == lim)
+		return DERR(-EFAULT);
+	return r;
+}
+
+ssize_t
+u_arraylen(const void **u_arr, const size_t maxlen)
+{
+	const auto seg = as_find_seg(task_cur()->as, u_arr);
+	if (!seg)
+		return DERR(-EFAULT);
+	const auto lim = std::min<size_t>(maxlen, (const void **)seg_end(seg) - u_arr);
+	size_t i;
+	for (i = 0; i < lim && u_arr[i]; ++i);
+	if (i == lim)
+		return DERR(-EFAULT);
+	return i;
+}
+
 bool
 u_access_ok(const void *u_addr, size_t len, int access)
 {
+	return u_access_okfor(task_cur()->as, u_addr, len, access);
+}
+
+bool
+u_access_okfor(const struct as *a, const void *u_addr, size_t len, int access)
+{
+	const auto seg = as_find_seg(a, u_addr);
+	if (!seg)
+		return false;
+	if ((char *)u_addr + len > seg_end(seg))
+		return false;
+	if ((access & seg_prot(seg)) != access)
+		return false;
 	return true;
 }
+
 
 bool
 k_access_ok(const void *k_addr, size_t len, int access)
 {
-	return true;
+	return page_valid((phys *)k_addr, len);
 }
 
 int
@@ -132,17 +205,23 @@ u_fault()
 void
 u_fault_clear()
 {
-
+	/* nothing to do */
 }
 
 bool
-u_address(const void *p)
+u_address(const void *u_addr)
 {
-	return true;
+	return u_addressfor(task_cur()->as, u_addr);
 }
 
 bool
-k_address(const void *p)
+u_addressfor(const struct as *a, const void *u_addr)
 {
-	return true;
+	return as_find_seg(a, u_addr);
+}
+
+bool
+k_address(const void *k_addr)
+{
+	return page_valid((phys *)k_addr, 0);
 }

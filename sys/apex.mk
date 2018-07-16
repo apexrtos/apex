@@ -61,11 +61,11 @@ SOURCES := \
     sync/mutex.c \
     sync/rwlock.c \
 
-# Generic unprotected memory support
-ifeq ($(origin CONFIG_MMU),undefined)
-ifeq ($(origin CONFIG_MPU),undefined)
-SOURCES += mem/unprotected.cpp
-endif
+# Generic memory translation support
+ifneq ($(origin CONFIG_MMU),undefined)
+SOURCES += mem/translated.cpp
+else
+SOURCES += mem/untranslated.cpp
 endif
 
 # Configured file systems. devfs and ramfs are always required.
