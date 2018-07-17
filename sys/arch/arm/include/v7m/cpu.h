@@ -89,7 +89,7 @@ struct scb {
 					uint8_t DACCVIOL : 1;
 					uint8_t : 1;
 					uint8_t MUNSTKERR : 1;
-					uint8_t MTSKERR : 1;
+					uint8_t MSTKERR : 1;
 					uint8_t MLSPERR : 1;
 					uint8_t : 1;
 					uint8_t MMARVALID : 1;
@@ -123,7 +123,12 @@ struct scb {
 			} UFSR;
 		};
 	} CFSR;
-	uint8_t todo2[0x64];
+	uint32_t HFSR;
+	uint32_t DFSR;
+	uint32_t MMFAR;
+	uint32_t BFAR;
+	uint32_t AFSR;
+	uint8_t todo2[0x50];
 };
 static_assert(sizeof(struct scb) == 0x90, "Bad scb size!");
 static volatile struct scb *const SCB = (struct scb*)0xe000ed00;
@@ -197,6 +202,156 @@ struct nvic {
 };
 static_assert(sizeof(struct nvic) == 3072, "Bad NVIC size");
 static volatile struct nvic *const NVIC = (struct nvic*)0xe000e100;
+
+/*
+ * FPU
+ */
+struct fpu {
+	uint32_t FPCCR;
+	uint32_t FPCAR;
+	uint32_t FPDSCR;
+	uint32_t MVFR0;
+	uint32_t MVFR1;
+	uint32_t MVFR2;
+};
+static_assert(sizeof(struct fpu) == 24, "Bad FPU size");
+static volatile struct fpu *const FPU = (struct fpu*)0xe000ef34;
+
+/*
+ * MPU
+ */
+union mpu_rbar {
+	uint32_t r;
+	struct {
+		uint32_t REGION : 4;
+		uint32_t VALID : 1;
+		uint32_t ADDR : 27;
+	};
+};
+
+union mpu_rasr {
+	uint32_t r;
+	struct {
+		uint32_t ENABLE : 1;
+		uint32_t SIZE : 5;
+		uint32_t : 2;
+		uint32_t SRD : 8;
+		uint32_t B : 1;
+		uint32_t C : 1;
+		uint32_t S : 1;
+		uint32_t TEX : 3;
+		uint32_t : 2;
+		enum {
+			AP_None = 0,
+			AP_Kern_RW = 1,
+			AP_Kern_RW_User_RO = 2,
+			AP_Kern_RW_User_RW = 3,
+			AP_Kern_RO = 5,
+			AP_Kern_RO_User_RO = 6,
+		} AP : 3;
+		uint32_t : 1;
+		enum {
+			XN_Execute = 0,
+			XN_No_Execute = 1,
+		} XN : 1;
+		uint32_t : 3;
+	};
+};
+
+struct mpu {
+	union mpu_type {
+		uint32_t r;
+		struct {
+			uint32_t SEPARATE : 1;
+			uint32_t : 7;
+			uint32_t DREGION : 8;
+			uint32_t IREGION : 8;
+			uint32_t : 8;
+		};
+	} TYPE;
+	union mpu_ctrl {
+		uint32_t r;
+		struct {
+			uint32_t ENABLE : 1;
+			uint32_t HFNMIENA : 1;
+			uint32_t PRIVDEFENA : 1;
+			uint32_t : 29;
+		};
+	} CTRL;
+	uint32_t RNR;
+	union mpu_rbar RBAR;
+	union mpu_rasr RASR;
+	union mpu_rbar RBAR_A1;
+	union mpu_rasr RASR_A1;
+	union mpu_rbar RBAR_A2;
+	union mpu_rasr RASR_A2;
+	union mpu_rbar RBAR_A3;
+	union mpu_rasr RASR_A3;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+};
+static_assert(sizeof(struct mpu) == 0x60, "Bad MPU size");
+static volatile struct mpu *const MPU = (struct mpu*)0xe000ed90;
+
+/*
+ * values for 'flags' argument of mpu_init
+ */
+#define MPU_ENABLE_DEFAULT_MAP 0x1
+
+/*
+ * values for RASR register
+ */
+#define RASR_KERNEL_RWX_WBWA ((union mpu_rasr){ \
+	.XN = XN_Execute, \
+	.AP = AP_Kern_RW, \
+	.TEX = 0b001, \
+	.S = 0, \
+	.C = 1, \
+	.B = 1, \
+}.r)
+#define RASR_USER_R_WBWA ((union mpu_rasr){ \
+	.XN = XN_No_Execute, \
+	.AP = AP_Kern_RW_User_RO, \
+	.TEX = 0b001, \
+	.S = 0, \
+	.C = 1, \
+	.B = 1, \
+}.r)
+#define RASR_USER_RX_WBWA ((union mpu_rasr){ \
+	.XN = XN_Execute, \
+	.AP = AP_Kern_RW_User_RO, \
+	.TEX = 0b001, \
+	.S = 0, \
+	.C = 1, \
+	.B = 1, \
+}.r)
+#define RASR_USER_RW_WBWA ((union mpu_rasr){ \
+	.XN = XN_No_Execute, \
+	.AP = AP_Kern_RW_User_RW, \
+	.TEX = 0b001, \
+	.S = 0, \
+	.C = 1, \
+	.B = 1, \
+}.r)
+#define RASR_USER_RWX_WBWA ((union mpu_rasr){ \
+	.XN = XN_Execute, \
+	.AP = AP_Kern_RW_User_RW, \
+	.TEX = 0b001, \
+	.S = 0, \
+	.C = 1, \
+	.B = 1, \
+}.r)
 
 #endif /* !__ASSEMBLY__ */
 

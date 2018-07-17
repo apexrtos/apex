@@ -6,3 +6,7 @@ SOURCES += \
     $(ARCHDIR)/$(CONFIG_SUBARCH)/interrupt.c \
     $(ARCHDIR)/$(CONFIG_SUBARCH)/locore.S \
     $(ARCHDIR)/$(CONFIG_SUBARCH)/syscall.c \
+
+ifneq ($(origin CONFIG_MPU),undefined)
+SOURCES += $(ARCHDIR)/$(CONFIG_SUBARCH)/mpu.c
+endif

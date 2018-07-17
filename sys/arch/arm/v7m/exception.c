@@ -128,6 +128,19 @@ asm(
 ".global exc_NMI\n"
 "exc_NMI:\n"
 #if defined(CONFIG_FPU)
+#if defined(CONFIG_MPU)
+	/*
+	 * Clear USER bit in FPCCR. This makes the core perform its lazy fpu
+	 * stacking using privileged accesses.
+	 *
+	 * We need to do this because we may have switched to a new task and
+	 * the mappings allowing unprivileged access to the previous userspace
+	 * stack may no longer be present.
+	 */
+	"ldr r2, [ip, "S(A_FPCCR)"-"S(A_SCS)"]\n"
+	"bic r2, 0x2\n"
+	"str r2, [ip, "S(A_FPCCR)"-"S(A_SCS)"]\n"
+#endif
 	"vpush {s16-s31}\n"
 #endif
 	"push {r4, r5, r6, r7, r8, r9, r10, r11, lr}\n"
@@ -187,17 +200,46 @@ exc_HardFault(void)
 /*
  * exc_MemManage
  */
-void
+__fast_text void
 exc_MemManage(void)
 {
+	EXCEPTION_ENTRY();
+
 	const bool from_user = (int)__builtin_return_address(0) & EXC_SPSEL;
 	struct exception_frame *e;
 	if (from_user)
 		asm("mrs %0, psp" : "=r" (e));
 	else
 		e = __builtin_frame_address(0);
+
+#if !defined(CONFIG_MPU)
 	dump_exception(from_user, e);
 	panic("MemManage");
+#else
+	if (!from_user) {
+		/* kernel faults are always fatal */
+		dump_exception(from_user, e);
+		panic("MemManage");
+	}
+
+	/* try to handle fault */
+	const union scb_cfsr cfsr = SCB->CFSR;
+	if (cfsr.MMFSR.MSTKERR || cfsr.MMFSR.MUNSTKERR)
+		mpu_fault((void *)thread_cur()->ctx.kregs.psp);
+	else if (cfsr.MMFSR.IACCVIOL)
+		mpu_fault((void *)e->ra);
+	else if (cfsr.MMFSR.MLSPERR)
+		mpu_fault((void *)FPU->FPCAR);
+	else if (cfsr.MMFSR.MMARVALID)
+		mpu_fault((void *)SCB->MMFAR);
+	else
+		panic("Bad MemManage");
+
+	/* clear fault */
+	SCB->CFSR.MMFSR.r = -1;
+#endif
+
+	EXCEPTION_EXIT();
 }
 
 /*
