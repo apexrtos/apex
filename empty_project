@@ -22,6 +22,7 @@ option KSTACK_CHECK	    # Kernel stack checking
 option KMEM_CHECK	    # Kernel memory checking
 option THREAD_CHECK	    # Kernel thread checking
 option CONSOLE_LOGLEVEL	    (LOG_DEBUG)
+option CONSOLE_CFLAG	    (B115200 | CS8 | CREAD)
 
 #
 # Operating system version
