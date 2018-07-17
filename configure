@@ -162,7 +162,34 @@ parse_config()
 			bootimg=y
 			;;
 		driver)
-			echo "CONFIG_DRIVERS += $rest" >> "$CONFIG_MK"
+			path=$(expr "$rest" : '\([^({[:space:]]*\)')
+			name=$(expr "$path" : '.*/\(.*\)')
+			name=${name:="$path"}
+			c_name=$(echo "$name" | tr '-' '_')
+			args=$(expr "$rest" : '[^{(]*\(.*\)')
+			case $args in
+			'')
+				# driver a/b/x -> x_init();
+				args="()"
+				;;
+			\(*)
+				# driver a/b/x(...) -> x_init(...);
+				;;
+			\{*)
+				# driver a/b/x{...} -> x_init(&(struct x_desc){...});
+				args="(&(struct $c_name""_desc)$args)"
+				;;
+			esac
+
+			echo "#include <$path/$name.h>" >> "$DRIVERS_H"
+			echo "$c_name""_init$args;" >> "$DRIVERS_C"
+			echo "CONFIG_DRIVER_LIST += $path" >> "$CONFIG_MK"
+			;;
+		machcfg)
+			echo "$rest;" >> "$MACHCFG_C"
+			;;
+		pincfg)
+			echo "$rest;" >> "$PINCFG_C"
 			;;
 		filesystem)
 			echo "CONFIG_FS += $rest" >> "$CONFIG_MK"
@@ -234,6 +261,10 @@ main()
 	CONFIG_MK="conf/config.mk"
 	CONFIG_H="conf/config.h"
 	CONFIG_LD="conf/config.ld"
+	DRIVERS_H="conf/drivers.h"
+	DRIVERS_C="conf/drivers.c"
+	PINCFG_C="conf/pincfg.c"
+	MACHCFG_C="conf/machcfg.c"
 
 	mkdir -p "$builddir/conf" ||
 		quit "can not create $builddir/conf"
@@ -258,6 +289,34 @@ main()
 		echo " */"
 		echo
 	} > "$CONFIG_LD"
+
+	{
+		echo "/*"
+		echo " * drivers.h - Automatically generated file. Do not edit."
+		echo " */"
+		echo
+	} > "$DRIVERS_H"
+
+	{
+		echo "/*"
+		echo " * drivers.c - Automatically generated file. Do not edit."
+		echo " */"
+		echo
+	} > "$DRIVERS_C"
+
+	{
+		echo "/*"
+		echo " * pincfg.c - Automatically generated file. Do not edit."
+		echo " */"
+		echo
+	} > "$PINCFG_C"
+
+	{
+		echo "/*"
+		echo " * machcfg.c - Automatically generated file. Do not edit."
+		echo " */"
+		echo
+	} > "$MACHCFG_C"
 
 	$print "Processing configuration files..."
 	$print
@@ -313,6 +372,7 @@ main()
 		echo "CONFIG_CPU := $cpu"
 		echo "CONFIG_ARCH := $arch"
 		echo "CONFIG_CROSS_COMPILE := $cross-"
+		echo "CONFIG_DRIVERS := \$(sort \$(CONFIG_DRIVER_LIST))"
 		[ "x$subarch" != x ] &&
 			echo "CONFIG_SUBARCH := $subarch"
 		[ "x$nodebug" != x ] &&

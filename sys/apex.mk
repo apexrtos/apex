@@ -16,10 +16,11 @@ LIBS := ../libc++/libc++.a ../libc/libc.a -lgcc
 INCLUDE := \
     include \
     $(CONFIG_APEXDIR)/libc++/include \
+    $(CONFIG_APEXDIR)/sys \
     $(CONFIG_APEXDIR) \
-    $(CONFIG_BUILDDIR) \
     arch/$(CONFIG_ARCH)/include \
-    . \
+    $(CONFIG_BUILDDIR) \
+    $(CONFIG_SRCDIR) \
 
 SOURCES := \
     fs/mount.c \
