@@ -318,7 +318,7 @@ main()
 		[ "x$nodebug" != x ] &&
 			echo "CONFIG_DEFS += -DNDEBUG"
 		[ "x$bootimg" != x ] &&
-			echo "MK += bootimg.mk"
+			echo "MK := bootimg.mk \$(MK)"
 	} >> "$CONFIG_MK"
 
 	{

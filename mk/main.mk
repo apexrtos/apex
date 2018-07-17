@@ -429,6 +429,8 @@ define fn_process_mkfile
 
             # clean
             $$(eval $$(call fn_clean_rule))
+
+            $$(tgt)_rule_exists := y
         endif
 
         # include any MK files
