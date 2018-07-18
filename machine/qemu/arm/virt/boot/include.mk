@@ -1,2 +1,0 @@
-SOURCES += \
-    $(MACHINEDIR)/machine.c
