@@ -82,6 +82,7 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_getpid] = getpid,
 	[SYS_getppid] = getppid,
 	[SYS_getsid] = getsid,
+	[SYS_gettid] = sc_gettid,
 	[SYS_getuid32] = getuid,			/* no user support */
 	[SYS_ioctl] = sc_ioctl,
 	[SYS_kill] = kill,

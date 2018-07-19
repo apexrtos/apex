@@ -138,3 +138,8 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 	}
 }
 
+int
+sc_gettid(void)
+{
+	return thread_id(thread_cur());
+}

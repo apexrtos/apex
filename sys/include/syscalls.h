@@ -20,6 +20,7 @@ int sc_uname(struct utsname *);
 int sc_reboot(unsigned long, unsigned long, int, void *);
 int sc_nanosleep(const struct timespec *, struct timespec *);
 int sc_clock_gettime(clockid_t, struct timespec *);
+int sc_gettid();
 
 #if defined(__cplusplus)
 } /* extern "C" */
