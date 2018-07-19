@@ -47,6 +47,7 @@ void (*kernel_entry)(struct bootinfo*);
 void
 bootinfo_dump(void)
 {
+#if defined(CONFIG_DEBUG)
 	const char *strtype[] = { "", "NORMAL", "FAST", "MEMHOLE", "KERNEL",
 	    "BOOTDISK", "RESERVED" };
 
@@ -62,6 +63,7 @@ bootinfo_dump(void)
 		}
 	}
 	dbg("\n");
+#endif
 }
 
 /*
