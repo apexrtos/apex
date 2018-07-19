@@ -243,6 +243,7 @@ define fn_prog_rule
     # fn_prog_rule
 
     CFLAGS += $(CONFIG_USER_CFLAGS)
+    CXXFLAGS += $(CONFIG_USER_CFLAGS)
 
     $$(eval $$(call fn_exec_rule))
 endef
@@ -254,6 +255,7 @@ define fn_lib_rule
     # fn_lib_rule
 
     CFLAGS += $(CONFIG_USER_CFLAGS)
+    CXXFLAGS += $(CONFIG_USER_CFLAGS)
 
     # include built object flags
     -include $(tgt).libflags
