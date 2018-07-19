@@ -402,7 +402,7 @@ ifeq (\$(filter \$(CONFIG_SRCDIR),\$(.INCLUDE_DIRS)),)
 	\$(error config changed: please run 'configure')
     Makefile $0 $PROJECT_IN $MACHINE_IN $CPU_IN $INCLUDE_IN: ;
     .PHONY: force
-    %: force
+    %:: force
     ifeq (\$(CONFIG_SRCDIR),\$(CONFIG_APEXDIR))
 	\$(MAKE) \$(addprefix -I,\$(CONFIG_SRCDIR)) _MFLAGS="\$(MFLAGS)" -rR --warn-undefined-variables \$(MAKECMDGOALS)
     else
