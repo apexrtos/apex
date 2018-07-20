@@ -655,8 +655,6 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 	trace("rt_sigaction sig:%d uact:%p uoldact:%p size:%zu\n",
 	    sig, uact, uoldact, size);
 
-	if (sizeof(uact->mask) != size)
-		return DERR(-EINVAL);
 	if (sig > NSIG || sig < 1)
 		return DERR(-EINVAL);
 
@@ -695,23 +693,36 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 
 	struct k_sigaction kact = *uact;
 
+	if (sizeof(kact.mask) != size) {
+		ret = DERR(-EINVAL);
+		goto out;
+	}
+
 	trace("rt_sigaction flags %lx\n", kact.flags);
 
 	/* APEX only supports limited flags */
 	if ((kact.flags & (SA_RESTORER | SA_RESTART | SA_NODEFER | SA_SIGINFO)) !=
-	    kact.flags)
-		return DERR(-ENOSYS);
+	    kact.flags) {
+		ret = DERR(-ENOSYS);
+		goto out;
+	}
 
 	/*
 	 * APEX requires userspace to specify a restore trampoline
 	 */
-	if (!(kact.flags & SA_RESTORER))
-		return DERR(-EINVAL);
-	if (!u_address(kact.restorer))
-		return DERR(-EFAULT);
+	if (!(kact.flags & SA_RESTORER)) {
+		ret = DERR(-EINVAL);
+		goto out;
+	}
+	if (!u_address(kact.restorer)) {
+		ret = DERR(-EFAULT);
+		goto out;
+	}
 	if (kact.handler != SIG_IGN && kact.handler != SIG_DFL &&
-	    !u_address(kact.handler))
-		return DERR(-EFAULT);
+	    !u_address(kact.handler)) {
+		ret = DERR(-EFAULT);
+		goto out;
+	}
 
 	task_cur()->sig_action[sig - 1] = kact;
 
