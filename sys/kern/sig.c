@@ -657,11 +657,7 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 
 	if (sizeof(uact->mask) != size)
 		return DERR(-EINVAL);
-
-	/*
-	 * SIGSTOP and SIGKILL cannot be caught or ignored
-	 */
-	if (sig > NSIG || sig < 1 || sig == SIGKILL || sig == SIGSTOP)
+	if (sig > NSIG || sig < 1)
 		return DERR(-EINVAL);
 
 	int ret;
@@ -682,6 +678,16 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 
 	if (!uact)
 		goto out;
+
+	/*
+	 * SIGSTOP and SIGKILL cannot be caught or ignored
+	 * - sigaction must succeed if uact == NULL even for invalid signals
+	 */
+	if (sig == SIGKILL || sig == SIGSTOP) {
+		ret = DERR(-EINVAL);
+		goto out;
+	}
+
 	if (!u_access_ok(uact, sizeof *uact, PROT_READ)) {
 		ret = DERR(-EFAULT);
 		goto out;
