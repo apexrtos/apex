@@ -491,6 +491,10 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		if (!(sig_flags(task, sig) & SA_NODEFER))
 			ksigaddset(&th->sig_blocked, sig);
 
+		/* SIGSTOP and SIGKILL cannot be blocked */
+		ksigdelset(&th->sig_blocked, SIGSTOP);
+		ksigdelset(&th->sig_blocked, SIGKILL);
+
 		return rval;
 	}
 
@@ -626,6 +630,10 @@ sc_rt_sigprocmask(int how, const k_sigset_t *uset, k_sigset_t *uoldset,
 		goto out;
 	}
 
+	/* SIGSTOP and SIGKILL cannot be blocked */
+	ksigdelset(&thread_cur()->sig_blocked, SIGSTOP);
+	ksigdelset(&thread_cur()->sig_blocked, SIGKILL);
+
 	/*
 	 * Some pending task signals may now be unblocked
 	 */
@@ -740,6 +748,11 @@ sc_sigreturn(void)
 
 	sch_lock();
 	ret = context_restore(&th->ctx, &th->sig_blocked);
+
+	/* SIGSTOP and SIGKILL cannot be blocked */
+	ksigdelset(&th->sig_blocked, SIGSTOP);
+	ksigdelset(&th->sig_blocked, SIGKILL);
+
 	prio_reset(th);
 	sch_unlock();
 
@@ -757,6 +770,11 @@ sc_rt_sigreturn(void)
 
 	sch_lock();
 	ret = context_siginfo_restore(&th->ctx, &th->sig_blocked);
+
+	/* SIGSTOP and SIGKILL cannot be blocked */
+	ksigdelset(&th->sig_blocked, SIGSTOP);
+	ksigdelset(&th->sig_blocked, SIGKILL);
+
 	prio_reset(th);
 	sch_unlock();
 
