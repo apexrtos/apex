@@ -12,6 +12,7 @@
 #include <sections.h>
 #include <sig.h>
 #include <signal.h>
+#include <sys/prctl.h>
 #include <syscall.h>
 #include <syscalls.h>
 #include <timer.h>
@@ -100,6 +101,7 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_openat] = sc_openat,
 	[SYS_pipe2] = sc_pipe2,
 	[SYS_pipe] = sc_pipe,
+	[SYS_prctl] = prctl,
 	[SYS_pread64] = sc_pread,
 	[SYS_preadv] = sc_preadv,
 	[SYS_pwrite64] = sc_pwrite,
