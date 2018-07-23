@@ -30,6 +30,11 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	char buf[64];
 	const char *prgv[3]{};
 
+	/* handle /proc/self/exe */
+	/* REVISIT: remove this when we support /proc */
+	if (!strcmp(path, "/proc/self/exe"))
+		path = t->path;
+
 	/* check target path */
 	if (auto r = access(path, X_OK); r < 0)
 		return (thread *)r;
