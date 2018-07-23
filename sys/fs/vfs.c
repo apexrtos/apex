@@ -197,7 +197,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 	vdbgvn("lookup_v: vp=%p path=%s vpp=%p node=%p\n",
 	    vp, path, vpp, node);
 
-	if (!*path) {
+	if (!path || !*path) {
 		err = DERR(-EINVAL);
 		goto out;
 	}
