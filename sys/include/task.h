@@ -41,7 +41,7 @@
  */
 struct task {
 	int		magic;		    /* magic number */
-	char		name[12];	    /* task name */
+	char	       *path;		    /* path to executable */
 	struct list	link;		    /* link for all tasks in system */
 	struct list	threads;	    /* threads in this task */
 	struct as      *as;		    /* address space description */
@@ -110,7 +110,7 @@ int		task_create(struct task *, int, struct task **);
 int		task_destroy(struct task *);
 int	        task_suspend(struct task *);
 int	        task_resume(struct task *);
-int	        task_name(struct task *, const char *);
+int	        task_path(struct task *, const char *);
 bool	        task_capable(unsigned);
 bool	        task_access(struct task *);
 void		task_dump(void);

@@ -90,7 +90,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	    entry, 0, prgv, argv, envp, auxv); r < 0)
 		return (thread *)r;
 	sig_exec(t);
-	task_name(t, path);
+	task_path(t, path);
 	thread_name(main, "main");
 
 	/* notify file system */

@@ -479,17 +479,19 @@ thread_check(void)
 void
 thread_dump(void)
 {
-	static const char state[][4] = \
+	static const char state[][4] =
 		{ "RUN", "SLP", "SUS", "S&S", "EXT" };
-	static const char pol[][5] = { "FIFO", "RR  " };
+	static const char pol[][5] =
+		{ "OTHR", "FIFO", "RR  ", "BTCH", "IDLE", "DDLN" };
 	struct list *i, *j;
 	struct thread *th;
 	struct task *task;
 
-	info("\nThread dump:\n");
-	info(" mod thread   name     task     stat pol  prio base time     "
+
+	info("Thread dump:\n");
+	info(" mod thread     name     task       stat pol  prio base time(ms) "
 	     "susp sleep event\n");
-	info(" --- -------- -------- -------- ---- ---- ---- ---- -------- "
+	info(" --- ---------- -------- ---------- ---- ---- ---- ---- -------- "
 	     "---- -----------\n");
 
 	i = &kern_task.link;
@@ -499,12 +501,12 @@ thread_dump(void)
 		do {
 			th = list_entry(j, struct thread, task_link);
 
-			info(" %s %p %8s %8s %s%c %s  %3d  %3d %8llu %4d %s\n",
+			info(" %s %p %8s %p %s%c %s  %3d  %3d %8llu %4d %s\n",
 			       (task == &kern_task) ? "Knl" : "Usr", th,
-			       th->name, task->name, state[th->state],
+			       th->name, task, state[th->state],
 			       (th == thread_cur()) ? '*' : ' ',
 			       pol[th->policy], th->prio, th->baseprio,
-			       th->time, th->suscnt,
+			       th->time / 1000000, th->suscnt,
 			       th->slpevt != NULL ? th->slpevt->name : "-");
 
 			j = list_next(j);

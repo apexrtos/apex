@@ -168,6 +168,7 @@ task_create(struct task *parent, int vm_option, struct task **child)
 		goto out;
 	}
 	memset(task, 0, sizeof(*task));
+	task->magic = TASK_MAGIC;
 
 	/*
 	 * Setup VM mapping.
@@ -180,17 +181,22 @@ task_create(struct task *parent, int vm_option, struct task **child)
 	case VM_SHARE:
 		as_reference(parent->as);
 		task->as = parent->as;
+		err = task_path(task, parent->path);
 		break;
 	case VM_COPY:
-		if ((task->as = as_copy(parent->as, task_pid(task))) > (struct as*)-4096UL)
+		if ((task->as = as_copy(parent->as, task_pid(task))) > (struct as*)-4096UL) {
 			err = (int)task->as;
+			task->as = 0;
+			break;
+		}
+		err = task_path(task, parent->path);
 		break;
 	default:
 		err = DERR(-EINVAL);
 		break;
 	}
 	if (err < 0) {
-		kmem_free(task);
+		task_destroy(task);
 		goto out;
 	}
 
@@ -199,7 +205,6 @@ task_create(struct task *parent, int vm_option, struct task **child)
 	 */
 	task->capability = parent->capability;
 	task->parent = parent;
-	task->magic = TASK_MAGIC;
 	list_init(&task->threads);
 	list_init(&task->futexes);
 	task->pgid = parent->pgid;
@@ -238,10 +243,13 @@ task_destroy(struct task *task)
 
 	assert(list_empty(&task->threads));
 
-	as_modify_begin(task->as);
-	as_destroy(task->as);
+	if (task->as) {
+		as_modify_begin(task->as);
+		as_destroy(task->as);
+	}
 	task->magic = 0;
 	list_remove(&task->link);
+	kmem_free(task->path);
 	kmem_free(task);
 
 	sch_unlock();
@@ -322,15 +330,18 @@ task_resume(struct task *task)
 }
 
 /*
- * Set task name.
+ * Set task executable path.
  *
  * The naming service is separated from task_create() because
  * the task name can be changed at anytime by exec().
  */
 int
-task_name(struct task *task, const char *name)
+task_path(struct task *task, const char *path)
 {
 	int err = 0;
+	char *copy = 0;
+
+	assert(path);
 
 	sch_lock();
 	if (!task_valid(task)) {
@@ -341,12 +352,17 @@ task_name(struct task *task, const char *name)
 		err = DERR(-EPERM);
 		goto out;
 	}
-	for (const char *p = name; *p; ++p) {
-		if (*p == '/')
-			name = p + 1;
+	if (strcmp(path, task->path)) {
+		if ((copy = kmem_alloc(strlen(path) + 1, MEM_NORMAL)) == NULL) {
+			err = DERR(-ENOMEM);
+			goto out;
+		}
+		strcpy(copy, path);
+		kmem_free(task->path);
+		task->path = copy;
 	}
-	strlcpy(task->name, name, ARRAY_SIZE(task->name));
- out:
+
+out:
 	sch_unlock();
 	return err;
 }
@@ -384,7 +400,7 @@ task_dump(void)
 	int nthreads;
 
 	info("\nTask dump:\n");
-	info(" mod task        nthrds susp cap      state parent     pid      name\n");
+	info(" mod task        nthrds susp cap      state parent     pid      path\n");
 	info(" --- ----------- ------ ---- -------- ----- ---------- -------- ------------\n");
 	i = &kern_task.link;
 	do {
@@ -400,8 +416,7 @@ task_dump(void)
 		       (task == &kern_task) ? "Knl" : "Usr", task,
 		       (task == task_cur()) ? '*' : ' ', nthreads,
 		       task->suscnt, task->capability,
-		       task->state, task->parent, task_pid(task),
-		       task->name != NULL ? task->name : "no name");
+		       task->state, task->parent, task_pid(task), task->path);
 
 		i = list_next(i);
 	} while (i != &kern_task.link);
@@ -417,7 +432,6 @@ task_init(void)
 	/*
 	 * Create a kernel task as the first task.
 	 */
-	strlcpy(kern_task.name, "kernel", ARRAY_SIZE(kern_task.name));
 	list_init(&kern_task.link);
 	list_init(&kern_task.threads);
 	kern_task.capability = 0xffffffff;

@@ -465,10 +465,10 @@ vm_dump()
 {
 	dbg("*** VM Dump ***\n");
 	struct task *task;
-	dbg("Address space for %s\n", kern_task.name);
+	dbg("Address space for %s\n", kern_task.path);
 	as_dump(kern_task.as);
 	list_for_each_entry(task, &kern_task.link, link) {
-		dbg("Address space for %s\n", task->name);
+		dbg("Address space for %s\n", task->path);
 		as_dump(task->as);
 	}
 }

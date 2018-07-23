@@ -2509,15 +2509,12 @@ file_dump(void)
 	struct list *i;
 	struct task *t;
 
-	info("Dump file data\n");
-	info(" task     cwd\n");
-	info(" -------- ------------------------------\n");
+	info("VFS dump:\n");
 	sch_lock();
 	i = &kern_task.link;
 	do {
 		t = list_entry(i, struct task, link);
-		info(" %s (%08x) cwd: %p\n", t->name, (int)t,
-		    t->cwdfp ? t->cwdfp->f_vnode : NULL);
+		info(" %s (%08x) cwd: %p\n", t->path, (int)t, t->cwdfp);
 		info("   fd fp_flags fd_flags count   offset    vnode\n");
 		info("  --- -------- -------- ----- -------- --------\n");
 		for (size_t j = 0; j < ARRAY_SIZE(t->file); ++j) {
