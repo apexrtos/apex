@@ -192,7 +192,7 @@ pipe_read(struct file *fp, void *buf, size_t size)
 
 			/* wait for write or close */
 			pdbg("read: no data, wait\n");
-			err = cond_wait(&p->cond, &vp->v_lock);
+			err = cond_wait_interruptible(&p->cond, &vp->v_lock);
 			if (err)
 				break;
 			continue; /* validate data available */
@@ -252,7 +252,7 @@ pipe_write(struct file *fp, void *buf, size_t size)
 
 			/* wait for read or close */
 			pdbg("write: full, wait\n");
-			err = cond_wait(&p->cond, &vp->v_lock);
+			err = cond_wait_interruptible(&p->cond, &vp->v_lock);
 			if (err)
 				break;
 			continue; /* calculate free again */

@@ -87,22 +87,22 @@ cond_init(struct cond *c)
 }
 
 /*
- * cond_wait - Wait on a condition for ever.
+ * cond_wait_interruptible - Wait on a condition for ever.
  */
 int
-cond_wait(struct cond *c, struct mutex *m)
+cond_wait_interruptible(struct cond *c, struct mutex *m)
 {
-	return cond_timedwait(c, m, 0);
+	return cond_timedwait_interruptible(c, m, 0);
 }
 
 /*
- * cond_timedwait - Wait on a condition for a specified time.
+ * cond_timedwait_interruptible - Wait on a condition for a specified time.
  *
  * If the thread receives any exception while waiting CV, this
  * routine returns immediately with EINTR.
  */
 int
-cond_timedwait(struct cond *c, struct mutex *m, uint64_t nsec)
+cond_timedwait_interruptible(struct cond *c, struct mutex *m, uint64_t nsec)
 {
 	if (!cond_valid(c))
 		return DERR(-EINVAL);
@@ -133,7 +133,7 @@ cond_timedwait(struct cond *c, struct mutex *m, uint64_t nsec)
 	--cp->wait;
 
 	/* reacquire mutex */
-	if ((err = mutex_lock(m)))
+	if ((err = mutex_lock_interruptible(m)))
 		goto out;
 
 	/* received signal */

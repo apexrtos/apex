@@ -66,6 +66,7 @@ extern "C" {
 
 bool	       mutex_valid(const struct mutex *);
 void	       mutex_init(struct mutex *);
+int	       mutex_lock_interruptible(struct mutex *);
 int	       mutex_lock(struct mutex *);
 int	       mutex_unlock(struct mutex *);
 struct thread *mutex_owner(const struct mutex *);
@@ -76,15 +77,15 @@ struct mutex  *mutex_entry(struct list*);
 
 bool	       cond_valid(const struct cond *);
 void	       cond_init(struct cond *);
-int	       cond_wait(struct cond *, struct mutex *);
-int	       cond_timedwait(struct cond *, struct mutex *, uint64_t);
+int	       cond_wait_interruptible(struct cond *, struct mutex *);
+int	       cond_timedwait_interruptible(struct cond *, struct mutex *, uint64_t);
 int	       cond_signal(struct cond *);
 int	       cond_broadcast(struct cond *);
 
 void	       rwlock_init(struct rwlock *);
-int	       rwlock_read_lock(struct rwlock *);
+int	       rwlock_read_lock_interruptible(struct rwlock *);
 int	       rwlock_read_unlock(struct rwlock *);
-int	       rwlock_write_lock(struct rwlock *);
+int	       rwlock_write_lock_interruptible(struct rwlock *);
 int	       rwlock_write_unlock(struct rwlock *);
 
 #if defined(__cplusplus)
@@ -95,7 +96,8 @@ namespace a {
 class mutex {
 public:
 	mutex() { mutex_init(&m_); }
-	int interruptible_lock() { return mutex_lock(&m_); }
+	int interruptible_lock() { return mutex_lock_interruptible(&m_); }
+	int lock() { return mutex_lock(&m_); }
 	int unlock() { return mutex_unlock(&m_); }
 
 private:
@@ -105,9 +107,9 @@ private:
 class rwlock {
 public:
 	rwlock() { rwlock_init(&m_); }
-	int interruptible_read_lock() { return rwlock_read_lock(&m_); }
+	int interruptible_read_lock() { return rwlock_read_lock_interruptible(&m_); }
 	int read_unlock() { return rwlock_read_unlock(&m_); }
-	int interruptible_write_lock() { return rwlock_write_lock(&m_); }
+	int interruptible_write_lock() { return rwlock_write_lock_interruptible(&m_); }
 	int write_unlock() { return rwlock_write_unlock(&m_); }
 
 private:

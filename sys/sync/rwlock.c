@@ -47,10 +47,10 @@ rwlock_init(struct rwlock *o)
 }
 
 /*
- * rwlock_read_lock
+ * rwlock_read_lock_interruptible
  */
 int
-rwlock_read_lock(struct rwlock *o)
+rwlock_read_lock_interruptible(struct rwlock *o)
 {
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
@@ -59,12 +59,12 @@ rwlock_read_lock(struct rwlock *o)
 	if (p->writer == thread_cur())
 		return 0;
 
-	if ((err = mutex_lock(&p->mutex)) < 0)
+	if ((err = mutex_lock_interruptible(&p->mutex)) < 0)
 		return err;
 
 	/* state < 0 while writing */
 	while (p->state < 0) {
-		if ((err = cond_wait(&p->cond, &p->mutex)) < 0) {
+		if ((err = cond_wait_interruptible(&p->cond, &p->mutex)) < 0) {
 			mutex_unlock(&p->mutex);
 			return err;
 		}
@@ -102,21 +102,21 @@ rwlock_read_unlock(struct rwlock *o)
 }
 
 /*
- * rwlock_write_lock
+ * rwlock_write_lock_interruptible
  */
 int
-rwlock_write_lock(struct rwlock *o)
+rwlock_write_lock_interruptible(struct rwlock *o)
 {
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	if ((err = mutex_lock(&p->mutex)) < 0)
+	if ((err = mutex_lock_interruptible(&p->mutex)) < 0)
 		return err;
 
 	if (p->writer != thread_cur()) {
 		/* state == 0, no writers or readers */
 		while (p->state) {
-			if ((err = cond_wait(&p->cond, &p->mutex)) < 0) {
+			if ((err = cond_wait_interruptible(&p->cond, &p->mutex)) < 0) {
 				mutex_unlock(&p->mutex);
 				return err;
 			}

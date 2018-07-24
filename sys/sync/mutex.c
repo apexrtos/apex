@@ -76,6 +76,7 @@
 #include <kernel.h>
 #include <prio.h>
 #include <sch.h>
+#include <sig.h>
 #include <stdalign.h>
 #include <stdatomic.h>
 #include <thread.h>
@@ -204,7 +205,7 @@ mutex_lock_slowpath(struct mutex *m)
 }
 
 int
-mutex_lock(struct mutex *m)
+mutex_lock_interruptible(struct mutex *m)
 {
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
@@ -224,6 +225,15 @@ mutex_lock(struct mutex *m)
 	}
 
 	return mutex_lock_slowpath(m);
+}
+
+int
+mutex_lock(struct mutex *m)
+{
+	const k_sigset_t sig_mask = sig_block_all();
+	const int ret = mutex_lock_interruptible(m);
+	sig_restore(&sig_mask);
+	return ret;
 }
 
 /*
