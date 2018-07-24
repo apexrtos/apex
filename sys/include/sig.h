@@ -20,12 +20,12 @@ extern "C" {
  */
 int	    sig_task(struct task *, int);
 void	    sig_thread(struct thread *, int);
+bool	    sig_unblocked_pending(struct thread *);
 k_sigset_t  sig_block_all(void);
 void	    sig_restore(const k_sigset_t *);
 void	    sig_exec(struct task *);
 void	    sig_wait(void);
 int	    sig_deliver(int);
-bool	    ksigisemptyset(const k_sigset_t *);
 
 /*
  * Syscalls

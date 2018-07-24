@@ -80,7 +80,7 @@ ksigfirst(const k_sigset_t *ss)
 	}
 }
 
-bool
+static bool
 ksigisemptyset(const k_sigset_t *ss)
 {
 	const unsigned long *s = ss->__bits;
@@ -319,7 +319,6 @@ sig_thread(struct thread *th, int sig)
 	assert(sig >= 0 && sig <= NSIG);
 
 	int ret;
-	k_sigset_t unblocked;
 
 	sch_lock();
 
@@ -341,10 +340,9 @@ sig_thread(struct thread *th, int sig)
 	 */
 	const int s = irq_disable();
 	ksigaddset(&th->sig_pending, sig);
-	ksigandnset(&unblocked, &th->sig_pending, &th->sig_blocked);
 	irq_restore(s);
 
-	if (!ksigisemptyset(&unblocked)) {
+	if (sig_unblocked_pending(th)) {
 		/*
 		 * Wake up thread at high priority to handle signal
 		 */
@@ -355,6 +353,14 @@ sig_thread(struct thread *th, int sig)
 
 out:
 	sch_unlock();
+}
+
+bool
+sig_unblocked_pending(struct thread *th)
+{
+	k_sigset_t unblocked;
+	ksigandnset(&unblocked, &th->sig_pending, &th->sig_blocked);
+	return !ksigisemptyset(&unblocked);
 }
 
 /*
@@ -379,10 +385,7 @@ sig_restore(const k_sigset_t *old)
 	struct thread *th = thread_cur();
 	sch_lock();
 	thread_cur()->sig_blocked = *old;
-
-	k_sigset_t unblocked;
-	ksigandnset(&unblocked, &th->sig_pending, &th->sig_blocked);
-	if (!ksigisemptyset(&unblocked)) {
+	if (sig_unblocked_pending(th)) {
 		/*
 		 * Wake up thread at high priority to handle signal
 		 */

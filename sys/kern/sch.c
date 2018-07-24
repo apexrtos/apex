@@ -337,7 +337,7 @@ sch_nanosleep(struct event *evt, uint64_t nsec)
 
 	sch_lock();
 
-	if (!ksigisemptyset(&active_thread->sig_pending))
+	if (sig_unblocked_pending(active_thread))
 		active_thread->slpret = SLP_INTR;
 
 	if (active_thread->slpret != 0)
