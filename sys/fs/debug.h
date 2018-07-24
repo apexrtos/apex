@@ -7,6 +7,5 @@
 #define vdbg(...)
 #define vdbgsys(...)
 #define vdbgvn(...)
-#define vdbgbio(...)
 
 #endif /* fs_debug_h */

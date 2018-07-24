@@ -323,11 +323,6 @@ umount2(const char *path, int flags)
 	vput(mp->m_root);
 	assert(!mp->m_count);
 
-#ifdef CONFIG_BIO
-	/* flush all buffers */
-	binval(mp->m_devfd);
-#endif
-
 	if (mp->m_devfd >= 0)
 		kclose(mp->m_devfd);
 	kmem_free(mp);
@@ -350,10 +345,6 @@ sync(void)
 	list_for_each_entry(mp, &mount_list, m_link)
 		VFS_SYNC(mp);
 	mutex_unlock(&mount_mutex);
-
-#ifdef CONFIG_BIO
-	bio_sync();
-#endif
 }
 
 /*
