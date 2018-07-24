@@ -335,25 +335,31 @@ sig_thread(struct thread *th, int sig)
 			ret = 0;
 			goto out;
 		}
-	} else sig = SIGKILL; /* special signal to kill thread */
+	}
 
 	/*
 	 * Mark signal as pending on thread
 	 */
 	const int s = irq_disable();
-	ksigaddset(&th->sig_pending, sig);
+	ksigaddset(&th->sig_pending, sig ?: SIGKILL);
 	irq_restore(s);
 
-	if (sig_unblocked_pending(th)) {
-		/*
-		 * Wake up thread at high priority to handle signal
-		 */
+	const bool unblocked_pending = sig_unblocked_pending(th);
+
+	/*
+	 * Interrupt thread to handle unblocked pending signal
+	 */
+	if (unblocked_pending)
 		sch_interrupt(th);
-		if (th->prio > PRI_SIGNAL) {
-			sch_setprio(th, th->baseprio, PRI_SIGNAL);
-			prio_inherit(th);
-		}
-	}
+
+	/*
+	 * Run thread at high priority to handle signal or kill request
+	 */
+	if (!sig && (th->baseprio > PRI_SIGNAL))
+		sch_setprio(th, PRI_SIGNAL, PRI_SIGNAL);
+	else if (unblocked_pending && (th->prio > PRI_SIGNAL))
+		sch_setprio(th, th->baseprio, PRI_SIGNAL);
+	prio_inherit(th);
 
 out:
 	sch_unlock();
