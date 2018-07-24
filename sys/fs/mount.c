@@ -397,7 +397,8 @@ mount_dump(void)
 	struct mount *mp;
 
 	mutex_lock(&mount_mutex);
-	info("Dump mount data\n");
+	info("mount dump\n");
+	info("==========\n");
 	info(" devfd count root    \n");
 	info(" ----- ----- --------\n");
 	list_for_each_entry(mp, &mount_list, m_link)

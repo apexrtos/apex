@@ -719,18 +719,6 @@ fs_kinit(void)
 }
 
 /*
- * fs_dump - Dump internal data.
- */
-void
-fs_dump(void)
-{
-	dbg("\nFS dump:\n");
-	file_dump();
-	vnode_dump();
-	mount_dump();
-}
-
-/*
  * fs_shutdown - Prepare for shutdown
  */
 void
@@ -2508,7 +2496,8 @@ file_dump(void)
 	struct list *i;
 	struct task *t;
 
-	info("VFS dump:\n");
+	info("file dump\n");
+	info("=========\n");
 	sch_lock();
 	i = &kern_task.link;
 	do {

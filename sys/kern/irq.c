@@ -234,12 +234,15 @@ irq_thread(void *arg)
 void
 irq_dump(void)
 {
-	info("irq count\n");
+	info("irq dump\n");
+	info("========\n");
+	info(" irq count\n");
+	info(" --- ----------\n");
 	for (size_t vector = 0; vector < ARRAY_SIZE(irq_table); vector++) {
 		const struct irq *irq = irq_table[vector];
 		if (!irq || irq->isrreq == 0)
 			continue;
-		info("%3d %d\n", vector, irq->isrreq);
+		info(" %3d %10d\n", vector, irq->isrreq);
 	}
 }
 

@@ -386,7 +386,8 @@ vnode_dump(void)
 	struct vnode *vp;
 
 	mutex_lock(&vnode_mutex);
-	info("Dump vnode\n");
+	info("vnode dump\n");
+	info("==========\n");
 	info(" vnode      parent     mount      type refcnt blkno    data       name\n");
 	info(" ---------- ---------- ---------- ---- ------ -------- ---------- ----------\n");
 

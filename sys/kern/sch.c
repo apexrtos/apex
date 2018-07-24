@@ -858,22 +858,18 @@ dpc_thread(void *unused_arg)
 }
 
 void
-sch_dump(unsigned int tbl)
+sch_dump(void)
 {
-	info("\nSched dump @ %u:", tbl);
-	info("\nTHREAD      TH       PRI WAIT");
+	info("scheduler dump\n");
+	info("==============\n");
+	info(" thread      th         pri\n");
+	info(" ----------- ---------- ---\n");
 	struct queue *q = queue_first(&runq);
 	while (!queue_end(&runq, q)) {
 		struct thread *th = queue_entry(q, struct thread, link);
-
-		info("\n%11s %p %3d",
-		    th->name[0] ? th->name : "no name",
-		    th,
-		    th->prio
-		);
+		info(" %11s %p %3d\n", th->name, th, th->prio);
 		q = queue_next(q);
 	}
-	info("\nEnd run queue\n\n");
 }
 
 /*

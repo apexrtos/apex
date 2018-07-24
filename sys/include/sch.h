@@ -85,7 +85,7 @@ void		sch_setprio(struct thread *, int, int);
 int		sch_getpolicy(struct thread *);
 int		sch_setpolicy(struct thread *, int);
 void	        sch_dpc(struct dpc *, void (*)(void *), void *);
-void	        sch_dump(unsigned int);
+void	        sch_dump(void);
 void	        sch_init(void);
 
 #if defined(__cplusplus)

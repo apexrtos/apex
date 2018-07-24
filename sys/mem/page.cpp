@@ -749,12 +749,13 @@ page_init(const struct bootinfo *bi, void *owner)
  */
 void page_dump(void)
 {
-	info("Memory Pages\n");
+	info("page dump\n");
+	info("=========\n");
 	for (size_t i = 0; i < s.nr_regions; ++i) {
 #if defined(CONFIG_INFO)
 		const region &r = s.regions[i];
 #endif
-		info("%p -> %p\n", r.begin, r.end);
+		info(" %p -> %p\n", r.begin, r.end);
 		info("  type      %s\n", to_string(r.type));
 		info("  base      %p\n", r.base);
 		info("  size      %zu\n", r.size);

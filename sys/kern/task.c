@@ -395,13 +395,15 @@ task_access(struct task *task)
 void
 task_dump(void)
 {
+	static const char state[][6] = { "INVAL", "  RUN", " ZOMB", " STOP" };
 	struct list *i, *j;
 	struct task *task;
 	int nthreads;
 
-	info("\nTask dump:\n");
-	info(" mod task        nthrds susp cap      state parent     pid      path\n");
-	info(" --- ----------- ------ ---- -------- ----- ---------- -------- ------------\n");
+	info("task dump\n");
+	info("=========\n");
+	info(" task        nthrds susp cap      state parent     pid      path\n");
+	info(" ----------- ------ ---- -------- ----- ---------- -------- ------------\n");
 	i = &kern_task.link;
 	do {
 		task = list_entry(i, struct task, link);
@@ -412,11 +414,11 @@ task_dump(void)
 			j = list_next(j);
 		} while (j != &task->threads);
 
-		info(" %s %p%c    %3d %4d %08x %5d %10p %8d %s\n",
-		       (task == &kern_task) ? "Knl" : "Usr", task,
-		       (task == task_cur()) ? '*' : ' ', nthreads,
+		info(" %p%c    %3d %4d %08x %s %10p %8d %s\n",
+		       task, (task == task_cur()) ? '*' : ' ', nthreads,
 		       task->suscnt, task->capability,
-		       task->state, task->parent, task_pid(task), task->path);
+		       state[task->state], task->parent, task_pid(task),
+		       task->path ?: "kernel");
 
 		i = list_next(i);
 	} while (i != &kern_task.link);

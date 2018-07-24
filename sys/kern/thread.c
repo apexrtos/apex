@@ -479,17 +479,18 @@ void
 thread_dump(void)
 {
 	static const char pol[][5] =
-		{ "OTHR", "FIFO", "RR  ", "BTCH", "IDLE", "DDLN" };
+		{ "OTHR", "FIFO", "  RR", "BTCH", "IDLE", "DDLN" };
 	struct list *i;
 	struct thread *th;
 	struct task *task;
 
 
-	info("Thread dump:\n");
-	info(" mod thread     name     task       stat  pol  prio base time(ms) "
-	     "susp sleep event\n");
-	info(" --- ---------- -------- ---------- ----- ---- ---- ---- -------- "
-	     "---- -----------\n");
+	info("thread dump\n");
+	info("===========\n");
+	info(" thread      name     task       stat pol  prio base time(ms) "
+	     "susp sleep event task path\n");
+	info(" ----------- -------- ---------- ---- ---- ---- ---- -------- "
+	     "---- ----------- ------------\n");
 
 	sch_lock();
 	i = &kern_task.link;
@@ -497,17 +498,17 @@ thread_dump(void)
 		task = list_entry(i, struct task, link);
 
 		list_for_each_entry(th, &task->threads, task_link) {
-			info(" %s %p %8s %p %c%c%c%c%c %s %4d %4d %8llu %4d %s\n",
-			    (task == &kern_task) ? "Knl" : "Usr", th,
+			info(" %p%c %8s %p %c%c%c%c %s %4d %4d %8llu %4d %11s %s\n",
+			    th, (th == thread_cur()) ? '*' : ' ',
 			    th->name, task,
 			    th->state & TH_SLEEP ? 'S' : ' ',
 			    th->state & TH_SUSPEND ? 'U' : ' ',
 			    th->state & TH_EXIT ? 'E' : ' ',
 			    th->state & TH_ZOMBIE ? 'Z' : ' ',
-			    (th == thread_cur()) ? '*' : ' ',
 			    pol[th->policy], th->prio, th->baseprio,
 			    th->time / 1000000, th->suscnt,
-			    th->slpevt != NULL ? th->slpevt->name : "-");
+			    th->slpevt != NULL ? th->slpevt->name : "-",
+			    task->path ?: "kernel");
 		}
 		i = list_next(i);
 	} while (i != &kern_task.link);

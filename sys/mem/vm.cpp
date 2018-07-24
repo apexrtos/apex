@@ -463,12 +463,14 @@ vm_init()
 void
 vm_dump()
 {
-	dbg("*** VM Dump ***\n");
-	struct task *task;
-	dbg("Address space for %s\n", kern_task.path);
+	info("vm dump\n");
+	info("=======\n");
+	info(" Address space for kernel\n");
 	as_dump(kern_task.as);
+
+	struct task *task;
 	list_for_each_entry(task, &kern_task.link, link) {
-		dbg("Address space for %s\n", task->path);
+		dbg(" Address space for %s\n", task->path);
 		as_dump(task->as);
 	}
 }

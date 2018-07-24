@@ -20,7 +20,6 @@ extern "C" {
  */
 void	fs_init(void);
 void	fs_kinit(void);
-void	fs_dump(void);
 void	fs_shutdown(void);
 
 /*

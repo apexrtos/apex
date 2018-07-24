@@ -266,7 +266,6 @@ kmem_alloc(size_t size, unsigned type)
 	} while (t != type);
 
 	dbg("kmem_alloc: out of memory allocating %d\n", size);
-	kmem_dump();
 
 	return NULL;
 }
@@ -359,14 +358,14 @@ kmem_check(void)
 void
 kmem_dump(void)
 {
+	mutex_lock(&kmem_mutex);
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
 		struct list *head, *n;
 		int i, cnt;
 
-		info("\nKernel memory dump (%d):\n", type);
-
-		info("\n free blocks:\n");
-		info(" block size count\n");
+		info("kmem dump (%d)\n", type);
+		info("==============\n");
+		info(" free size  count\n");
 		info(" ---------- --------\n");
 
 		for (i = 0; i < NR_BLOCK_LIST; i++) {
@@ -378,14 +377,15 @@ kmem_dump(void)
 				info("       %4d %8d\n", i << 4, cnt);
 		}
 #if 0
-		info("\n all blocks:\n");
+		info(" all blocks\n");
+		info(" ----------\n");
 
 		head = &kmem_pages[type];
 		for (n = list_first(head); n != head; n = list_next(n)) {
 			struct page_hdr *pg = list_entry(n, struct page_hdr, link);
 
-			info("page %p allocs %d\n", pg, pg->nallocs);
-			if (!kern_area(pg)) {
+			info(" page %p allocs %d\n", pg, pg->nallocs);
+			if (!page_valid(virt_to_phys(pg), 0, &kern_task)) {
 				info(" *** page not in kern_area\n");
 				continue;
 			}
@@ -394,7 +394,7 @@ kmem_dump(void)
 				continue;
 			}
 
-			info("blocks:\n");
+			info(" blocks:\n");
 
 			for (struct block_hdr *blk = &(pg->first_blk); blk != NULL;
 			    blk = blk->pg_next) {
@@ -415,11 +415,12 @@ kmem_dump(void)
 					type = 'a';
 				else
 					type = 'f';
-				info(" %c %p %d\n", type, blk, blk->size);
+				info("  %c %p %d\n", type, blk, blk->size);
 			}
 		}
 #endif
 	}
+	mutex_unlock(&kmem_mutex);
 }
 
 void
