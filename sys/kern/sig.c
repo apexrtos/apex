@@ -91,6 +91,18 @@ ksigisemptyset(const k_sigset_t *ss)
 	}
 }
 
+static void
+ksigallset(k_sigset_t *ss)
+{
+	unsigned long *s = ss->__bits;
+	switch (NSIG / 8 / sizeof(long)) {
+	case 4: s[3] = -1;
+		s[2] = -1;
+	case 2: s[1] = -1;
+	case 1: s[0] = -1;
+	}
+}
+
 /*
  * Check if signal is ignored
  */
@@ -342,6 +354,42 @@ sig_thread(struct thread *th, int sig)
 	}
 
 out:
+	sch_unlock();
+}
+
+/*
+ * sig_block_all - block all signals for thread, return old signal mask
+ */
+k_sigset_t
+sig_block_all()
+{
+	sch_lock();
+	const k_sigset_t old = thread_cur()->sig_blocked;
+	ksigallset(&thread_cur()->sig_blocked);
+	sch_unlock();
+	return old;
+}
+
+/*
+ * sig_restore - restore signal mask
+ */
+void
+sig_restore(const k_sigset_t *old)
+{
+	struct thread *th = thread_cur();
+	sch_lock();
+	thread_cur()->sig_blocked = *old;
+
+	k_sigset_t unblocked;
+	ksigandnset(&unblocked, &th->sig_pending, &th->sig_blocked);
+	if (!ksigisemptyset(&unblocked)) {
+		/*
+		 * Wake up thread at high priority to handle signal
+		 */
+		sch_interrupt(th);
+		if (th->prio > PRI_SIGNAL)
+			sch_setprio(th, th->baseprio, PRI_SIGNAL);
+	}
 	sch_unlock();
 }
 
