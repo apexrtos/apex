@@ -478,40 +478,40 @@ thread_check(void)
 void
 thread_dump(void)
 {
-	static const char state[][4] =
-		{ "RUN", "SLP", "SUS", "S&S", "EXT" };
 	static const char pol[][5] =
 		{ "OTHR", "FIFO", "RR  ", "BTCH", "IDLE", "DDLN" };
-	struct list *i, *j;
+	struct list *i;
 	struct thread *th;
 	struct task *task;
 
 
 	info("Thread dump:\n");
-	info(" mod thread     name     task       stat pol  prio base time(ms) "
+	info(" mod thread     name     task       stat  pol  prio base time(ms) "
 	     "susp sleep event\n");
-	info(" --- ---------- -------- ---------- ---- ---- ---- ---- -------- "
+	info(" --- ---------- -------- ---------- ----- ---- ---- ---- -------- "
 	     "---- -----------\n");
 
+	sch_lock();
 	i = &kern_task.link;
 	do {
 		task = list_entry(i, struct task, link);
-		j = list_first(&task->threads);
-		do {
-			th = list_entry(j, struct thread, task_link);
 
-			info(" %s %p %8s %p %s%c %s  %3d  %3d %8llu %4d %s\n",
-			       (task == &kern_task) ? "Knl" : "Usr", th,
-			       th->name, task, state[th->state],
-			       (th == thread_cur()) ? '*' : ' ',
-			       pol[th->policy], th->prio, th->baseprio,
-			       th->time / 1000000, th->suscnt,
-			       th->slpevt != NULL ? th->slpevt->name : "-");
-
-			j = list_next(j);
-		} while (j != &task->threads);
+		list_for_each_entry(th, &task->threads, task_link) {
+			info(" %s %p %8s %p %c%c%c%c%c %s %4d %4d %8llu %4d %s\n",
+			    (task == &kern_task) ? "Knl" : "Usr", th,
+			    th->name, task,
+			    th->state & TH_SLEEP ? 'S' : ' ',
+			    th->state & TH_SUSPEND ? 'U' : ' ',
+			    th->state & TH_EXIT ? 'E' : ' ',
+			    th->state & TH_ZOMBIE ? 'Z' : ' ',
+			    (th == thread_cur()) ? '*' : ' ',
+			    pol[th->policy], th->prio, th->baseprio,
+			    th->time / 1000000, th->suscnt,
+			    th->slpevt != NULL ? th->slpevt->name : "-");
+		}
 		i = list_next(i);
 	} while (i != &kern_task.link);
+	sch_unlock();
 }
 
 /*
