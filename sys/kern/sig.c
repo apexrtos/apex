@@ -196,8 +196,10 @@ sig_flush(struct task *task)
 		 * Wake up thread at high priority to handle signals
 		 */
 		sch_interrupt(th);
-		if (th->prio > PRI_SIGNAL)
+		if (th->prio > PRI_SIGNAL) {
 			sch_setprio(th, th->baseprio, PRI_SIGNAL);
+			prio_inherit(th);
+		}
 
 		/*
 		 * Clear pending signals from task
@@ -347,8 +349,10 @@ sig_thread(struct thread *th, int sig)
 		 * Wake up thread at high priority to handle signal
 		 */
 		sch_interrupt(th);
-		if (th->prio > PRI_SIGNAL)
+		if (th->prio > PRI_SIGNAL) {
 			sch_setprio(th, th->baseprio, PRI_SIGNAL);
+			prio_inherit(th);
+		}
 	}
 
 out:
@@ -390,8 +394,10 @@ sig_restore(const k_sigset_t *old)
 		 * Wake up thread at high priority to handle signal
 		 */
 		sch_interrupt(th);
-		if (th->prio > PRI_SIGNAL)
+		if (th->prio > PRI_SIGNAL) {
 			sch_setprio(th, th->baseprio, PRI_SIGNAL);
+			prio_inherit(th);
+		}
 	}
 	sch_unlock();
 }

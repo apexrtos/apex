@@ -5,6 +5,7 @@
 #include <futex.h>
 #include <kernel.h>
 #include <sch.h>
+#include <sig.h>
 #include <sync.h>
 #include <thread.h>
 
@@ -63,7 +64,9 @@ prio_inherit(struct thread *waiter)
 /*
  * prio_reset
  *
- * Reset specified thread to it's base priority unless it holds a lock.
+ * Reset specified thread to it's base priority unless it holds a lock or has
+ * pending unblocked signal.
+ *
  * If the thread holds a lock it's priority is set to that of the
  * highest priority lock.
  */
@@ -77,7 +80,7 @@ prio_reset(struct thread *th)
 	pdbg("prio_reset th %s b %d p %d\n", th->name, th->baseprio, th->prio);
 
 	struct list *head, *n;
-	int top_prio = th->baseprio;
+	int top_prio = sig_unblocked_pending(th) ? PRI_SIGNAL : th->baseprio;
 
 	/* search mutexes */
 	head = &th->mutexes;
