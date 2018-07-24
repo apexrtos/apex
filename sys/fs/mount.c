@@ -221,7 +221,8 @@ mount(const char *dev, const char *dir, const char *type, unsigned long flags,
 		.m_devfd = devfd,
 	};
 
-	mutex_lock(&mount_mutex);
+	if ((err = mutex_lock_interruptible(&mount_mutex)))
+		goto err1;
 
 	/* fail if device already mounted */
 	if (device) {
@@ -291,7 +292,9 @@ umount2(const char *path, int flags)
 		return -EINVAL;
 	}
 
-	mutex_lock(&mount_mutex);
+	if ((err = mutex_lock_interruptible(&mount_mutex)))
+		goto out;
+
 	mp = vp->v_mount;
 
 	assert(vp == mp->m_root);

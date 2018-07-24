@@ -24,7 +24,6 @@
 #include <limits.h>
 #include <page.h>
 #include <sch.h>
-#include <sig.h>
 #include <stdarg.h>
 #include <string.h>
 #include <sync.h>
@@ -59,7 +58,16 @@ task_unlock(struct task *t)
 }
 
 /*
- * task_lock - lock task file system mutex
+ * task_lock_interruptible - lock task file system mutex
+ */
+static int
+task_lock_interruptible(struct task *t)
+{
+	return mutex_lock_interruptible(&t->fs_lock);
+}
+
+/*
+ * task_lock - signal safe version of task_lock
  */
 static void
 task_lock(struct task *t)
@@ -88,10 +96,13 @@ fp_flags(uintptr_t file)
 }
 
 /*
- * task_getfp - Get file pointer from task/fd pair.
+ * task_getfp_unlocked - Get file pointer from task/fd pair without locking
+ *			 underlying vnode.
+ *
+ * returns NULL if fd is invalid, valid file pointer otherwise.
  */
 static struct file *
-task_getfp(struct task *t, int fd)
+task_getfp_unlocked(struct task *t, int fd)
 {
 	assert(mutex_owner(&t->fs_lock) == thread_cur());
 
@@ -104,18 +115,66 @@ task_getfp(struct task *t, int fd)
 	else if (!(fp = fp_ptr(t->file[fd])))
 		return NULL;
 
-	vn_lock(fp->f_vnode);
 	return fp;
 }
 
 /*
- * task_getfp_locked - Get file pointer from task/fd pair with task locking.
+ * task_getfp - Get file pointer from task/fd pair and lock underlying vnode.
+ *
+ * returns NULL if fd is invalid, valid file pointer otherwise.
  */
 static struct file *
-task_getfp_locked(struct task *t, int fd)
+task_getfp(struct task *t, int fd)
+{
+	struct file *fp;
+	if ((fp = task_getfp_unlocked(t, fd)))
+		vn_lock(fp->f_vnode);
+	return fp;
+}
+
+/*
+ * task_getfp_interruptible - Interruptible version of task_getfp
+ *
+ * returns -ve error code on failure, valid file pointer otherwise.
+ */
+static struct file *
+task_getfp_interruptible(struct task *t, int fd)
+{
+	int err;
+	struct file *fp;
+	if (!(fp = task_getfp_unlocked(t, fd)))
+		return (struct file *)DERR(-EBADF);
+	if ((err = vn_lock_interruptible(fp->f_vnode)))
+		return (struct file*)err;
+	return fp;
+}
+
+/*
+ * task_file - Get file pointer from task/fd pair with task locking.
+ *
+ * returns NULL if fd is invalid, valid file pointer otherwise.
+ */
+static struct file *
+task_file(struct task *t, int fd)
 {
 	task_lock(t);
 	struct file *fp = task_getfp(t, fd);
+	task_unlock(t);
+	return fp;
+}
+
+/*
+ * task_file_interruptible - interruptible version of task_file.
+ *
+ * returns -ve error code on failure, valid file pointer otherwise.
+ */
+static struct file *
+task_file_interruptible(struct task *t, int fd)
+{
+	int err;
+	if ((err = task_lock_interruptible(t)))
+		return (struct file *)err;
+	struct file *fp = task_getfp_interruptible(t, fd);
 	task_unlock(t);
 	return fp;
 }
@@ -402,8 +461,8 @@ lookup_t(struct task *t, const int fd, const char *path, struct vnode **vpp,
 	int err;
 	struct file *fp;
 
-	if (!(fp = task_getfp_locked(t, fd)))
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
 	vref(fp->f_vnode);
@@ -433,8 +492,8 @@ lookup_t_dir(struct task *t, const int fd, const char *path,
 {
 	struct file *fp;
 
-	if (!(fp = task_getfp_locked(t, fd)))
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
 	vref(fp->f_vnode);
@@ -464,8 +523,8 @@ lookup_t_noexist(struct task *t, const int fd, const char *path,
 	size_t node_len_;
 	const char *node_;
 
-	if (!(fp = task_getfp_locked(t, fd)))
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
 	vref(fp->f_vnode);
@@ -829,6 +888,7 @@ openfor(struct task *t, int dirfd, const char *path, int flags, ...)
 	uintptr_t fp = 0;
 	struct file *fpp;
 	va_list args;
+	int err;
 
 	va_start(args, flags);
 	mode = va_arg(args, int);
@@ -838,7 +898,8 @@ openfor(struct task *t, int dirfd, const char *path, int flags, ...)
 	    t, dirfd, path, flags, mode);
 
 	/* reserve slot for file descriptor. */
-	task_lock(t);
+	if ((err = task_lock_interruptible(t)))
+		return err;
 	if ((fd = task_newfd(t, 0)) < 0) {
 		task_unlock(t);
 		return DERR(-EMFILE);
@@ -914,9 +975,10 @@ kopen(const char *path, int flags, ...)
 struct vnode *
 vn_open(int fd, int flags)
 {
+	struct task *t = task_cur();
 	struct file *fp;
 
-	if (!(fp = task_getfp_locked(task_cur(), fd)))
+	if (!(fp = task_file(t, fd)))
 		return NULL;
 
 	struct vnode *vp = fp->f_vnode;
@@ -967,8 +1029,8 @@ closefor(struct task *t, int fd)
 
 	vdbgsys("closefor: task=%p fd=%d\n", t, fd);
 
-	if (!(fp = task_getfp_locked(t, fd)))
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	err = fs_closefp(fp);
 
@@ -1075,8 +1137,8 @@ lseek(int fd, off_t off, int whence)
 
 	vdbgsys("lseek: fd=%d off=%lld whence=%d\n", fd, off, whence);
 
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	struct vnode *vp = fp->f_vnode;
 
@@ -1211,8 +1273,8 @@ ssize_t
 readv(int fd, const struct iovec *iov, int count)
 {
 	struct file *fp;
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (ssize_t)fp;
 
 	return do_readv(fp, iov, count);
 }
@@ -1232,8 +1294,8 @@ ssize_t
 preadv(int fd, const struct iovec *iov, int count, off_t offset)
 {
 	struct file *fp;
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (ssize_t)fp;
 
 	return do_preadv(fp, iov, count, offset);
 }
@@ -1253,8 +1315,8 @@ ssize_t
 kpreadv(int fd, const struct iovec *iov, int count, off_t offset)
 {
 	struct file *fp;
-	if ((fp = task_getfp_locked(&kern_task, fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(&kern_task, fd)) > (struct file *)-4096UL)
+		return (ssize_t)fp;
 
 	return do_preadv(fp, iov, count, offset);
 }
@@ -1383,8 +1445,8 @@ ssize_t
 writev(int fd, const struct iovec *iov, int count)
 {
 	struct file *fp;
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (ssize_t)fp;
 
 	return do_writev(fp, iov, count);
 }
@@ -1407,8 +1469,8 @@ ssize_t
 pwritev(int fd, const struct iovec *iov, int count, off_t offset)
 {
 	struct file *fp;
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (ssize_t)fp;
 
 	return do_pwritev(fp, iov, count, offset);
 }
@@ -1428,8 +1490,8 @@ ssize_t
 kpwritev(int fd, const struct iovec *iov, int count, off_t offset)
 {
 	struct file *fp;
-	if ((fp = task_getfp_locked(&kern_task, fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(&kern_task, fd)) > (struct file *)-4096UL)
+		return (ssize_t)fp;
 
 	return do_pwritev(fp, iov, count, offset);
 }
@@ -1449,8 +1511,8 @@ do_ioctl(struct task *t, int fd, int request, va_list ap)
 	vdbgsys("ioctl: task=%p fd=%d request=%x arg=%p\n",
 	    t, fd, request, arg);
 
-	if ((fp = task_getfp_locked(t, fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	if (!fp->f_vnode->v_mount)
 		err = -ENOSYS; /* pipe */
@@ -1498,8 +1560,8 @@ fsync(int fd)
 
 	vdbgsys("fs_fsync: fd=%d\n", fd);
 
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	if (!flags_allow_write(fp->f_flags)) {
 		vn_unlock(fp->f_vnode);
@@ -1548,8 +1610,8 @@ do_fstat(struct task *t, int fd, struct stat *st)
 
 	vdbgsys("fstat: task=%p fd=%d st=%p\n", t, fd, st);
 
-	if ((fp = task_getfp_locked(t, fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	err = vn_stat(fp->f_vnode, st);
 
@@ -1580,8 +1642,8 @@ getdents(int dirfd, struct dirent *buf, size_t len)
 
 	vdbgsys("getdents: dirfd=%d buf=%p len=%zu\n", dirfd, buf, len);
 
-	if ((fp = task_getfp_locked(task_cur(), dirfd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), dirfd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	if (!S_ISDIR(fp->f_vnode->v_mode)) {
 		err = DERR(-ENOTDIR);
@@ -1681,18 +1743,19 @@ dup(int fildes)
 	struct file *fp;
 	int fildes2;
 	struct vnode *vp;
+	int err;
 
 	vdbgsys("dup: fildes=%d\n", fildes);
 
 	if (fildes >= ARRAY_SIZE(t->file))
 		return DERR(-EBADF);
 
-	task_lock(t);
+	if ((err = task_lock_interruptible(t)))
+		return err;
 
-	fp = task_getfp(t, fildes);
-	if (fp == NULL) {
+	if ((fp = task_getfp_interruptible(t, fildes)) > (struct file *)-4096UL) {
 		task_unlock(t);
-		return DERR(-EBADF);
+		return (int)fp;
 	}
 
 	vp = fp->f_vnode;
@@ -1723,6 +1786,7 @@ int
 dup2for(struct task *t, int fildes, int fildes2)
 {
 	struct file *fp, *fp2;
+	int err;
 
 	vdbgsys("dup2for t=%p fildes=%d fildes2=%d\n", t, fildes, fildes2);
 
@@ -1733,16 +1797,15 @@ dup2for(struct task *t, int fildes, int fildes2)
 	if (fildes == fildes2)
 		return fildes;
 
-	task_lock(t);
+	if ((err = task_lock_interruptible(t)))
+		return err;
 
-	fp = task_getfp(t, fildes);
-	if (fp == NULL) {
+	if ((fp = task_getfp_interruptible(t, fildes)) > (struct file *)-4096UL) {
 		task_unlock(t);
-		return DERR(-EBADF);
+		return (int)fp;
 	}
 
-	fp2 = task_getfp(t, fildes2);
-	if (fp2 != NULL) {
+	if ((fp2 = task_getfp(t, fildes2))) {
 		/* Close previous file if it's opened. */
 		int err;
 		if ((err = fs_closefp(fp2)) != 0) {
@@ -1778,10 +1841,13 @@ mode_t
 umask(mode_t mask)
 {
 	struct task *t = task_cur();
+	int err;
 
 	vdbgsys("umask mask=0%03o\n", mask);
 
-	task_lock(t);
+	if ((err = task_lock_interruptible(t)))
+		return err;
+
 	mode_t old = t->umask;
 	t->umask = mask;
 	task_unlock(t);
@@ -1804,8 +1870,8 @@ getcwd(char *buf, size_t size)
 	if (size < 2)
 		return (char*)DERR(-ERANGE);
 
-	if (!(fp = task_getfp_locked(task_cur(), AT_FDCWD)))
-		return (char*)DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), AT_FDCWD)) > (struct file *)-4096UL)
+		return (char*)fp;
 
 	/* build path from child to parent node */
 	char *p = buf + size - 1;
@@ -1951,6 +2017,7 @@ fcntl(int fd, int cmd, ...)
 	struct vnode *vp;
 	va_list args;
 	long arg;
+	int err;
 
 	va_start(args, cmd);
 	arg = va_arg(args, long);
@@ -1958,11 +2025,12 @@ fcntl(int fd, int cmd, ...)
 
 	vdbgsys("fcntl fd=%d cmd=%d arg=%ld\n", fd, cmd, arg);
 
-	task_lock(t);
+	if ((err = task_lock_interruptible(t)))
+		return err;
 
-	if ((fp = task_getfp(t, fd)) == NULL) {
+	if ((fp = task_getfp_interruptible(t, fd)) > (struct file *)-4096UL) {
 		task_unlock(t);
-		return DERR(-EBADF);
+		return (int)fp;
 	}
 
 	vp = fp->f_vnode;
@@ -2028,8 +2096,8 @@ fstatfs(int fd, struct statfs *stf)
 
 	vdbgsys("fstatfs fd=%d stf=%p\n", fd, stf);
 
-	if ((fp = task_getfp_locked(t, fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	vp = fp->f_vnode;
 
@@ -2078,8 +2146,10 @@ pipe2(int fd[2], int flags)
 	struct file *rfp, *wfp;
 	struct vnode *vp;
 	int r, rfd, wfd;
+	int err;
 
-	task_lock(t);
+	if ((err = task_lock_interruptible(t)))
+		return err;
 
 	/* reserve fd's */
 	if ((rfd = task_newfd(t, 0)) < 0) {
@@ -2206,7 +2276,8 @@ symlinkat(const char *target, int dirfd, const char *path)
 	if ((err = fs_openfp(task_cur(), dirfd, path, O_WRONLY | O_NOFOLLOW, 0,
 	    (uintptr_t*)&f)))
 		goto out;
-	vn_lock(f.f_vnode);
+	if ((err = vn_lock_interruptible(f.f_vnode)))
+		goto out1;
 
 	/* write link target */
 	struct iovec iov = {
@@ -2216,14 +2287,15 @@ symlinkat(const char *target, int dirfd, const char *path)
 	if ((err = VOP_WRITE(&f, &iov, 1)) != target_len) {
 		if (err >= 0)
 			err = DERR(-EIO);
-		goto out1;
+		goto out2;
 	}
 
 	err = 0;
 
+out2:
+	vput(f.f_vnode);
 out1:
 	VOP_CLOSE(&f);
-	vput(f.f_vnode);
 out:
 	vput(dvp);
 	return err;
@@ -2251,7 +2323,10 @@ readlinkat(int dirfd, const char *path, char *buf, size_t len)
 	if ((res = fs_openfp(task_cur(), dirfd, path, O_RDONLY | O_NOFOLLOW, 0,
 	    (uintptr_t*)&f)))
 		return res;
-	vn_lock(f.f_vnode);
+	if ((res = vn_lock_interruptible(f.f_vnode))) {
+		VOP_CLOSE(&f);
+		return res;
+	}
 
 	struct iovec iov = {
 		.iov_base = buf,
@@ -2420,8 +2495,8 @@ fchmod(int fd, mode_t mode)
 
 	vdbgsys("fchmod fd=%d mode=0%03o\n", fd, mode);
 
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	vref(fp->f_vnode);
 	return do_chmod(fp->f_vnode, mode);
@@ -2468,8 +2543,8 @@ fchown(int fd, uid_t uid, gid_t gid)
 
 	vdbgsys("fchown fd=%d uid=%d gid=%d\n", fd, uid, gid);
 
-	if ((fp = task_getfp_locked(task_cur(), fd)) == NULL)
-		return DERR(-EBADF);
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+		return (int)fp;
 
 	vref(fp->f_vnode);
 	return do_chown(fp->f_vnode, uid, gid);

@@ -147,6 +147,7 @@ int vop_einval(void);
 struct vnode	*vget(struct mount *, struct vnode *, const char *, size_t);
 struct vnode	*vget_pipe(void);
 struct vnode	*vn_lookup(struct vnode *, const char *, size_t);
+int		 vn_lock_interruptible(struct vnode *);
 void		 vn_lock(struct vnode *);
 void		 vn_unlock(struct vnode *);
 void		 vn_hide(struct vnode *);

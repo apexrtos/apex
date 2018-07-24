@@ -89,6 +89,17 @@ vn_hash(struct vnode *parent, const char *name, size_t len)
 }
 
 /*
+ * vn_lock_interruptible - lock vnode
+ */
+int
+vn_lock_interruptible(struct vnode *vp)
+{
+	assert(vp->v_refcnt > 0);
+
+	return mutex_lock_interruptible(&vp->v_lock);
+}
+
+/*
  * vn_lock - lock vnode
  */
 void
@@ -112,7 +123,6 @@ vn_unlock(struct vnode *vp)
 
 /*
  * Returns locked vnode for specified parent and name.
- * vn_lock() will increment the reference count of vnode.
  */
 struct vnode *
 vn_lookup(struct vnode *parent, const char *name, size_t len)
@@ -134,7 +144,7 @@ vn_lookup(struct vnode *parent, const char *name, size_t len)
 		    !(vp->v_flags & VHIDDEN)) {
 			vp->v_refcnt++;
 			mutex_unlock(&vnode_mutex);
-			mutex_lock(&vp->v_lock);
+			vn_lock(vp);
 			return vp;
 		}
 	}
@@ -228,7 +238,7 @@ vget(struct mount *mount, struct vnode *parent, const char *name, size_t len)
 		return NULL;
 	}
 	vfs_busy(vp->v_mount);
-	mutex_lock(&vp->v_lock);
+	vn_lock(vp);
 
 	head = &vnode_table[vn_hash(parent, name, len)];
 
@@ -263,7 +273,7 @@ vget_pipe(void)
 
 	mutex_init(&vp->v_lock);
 
-	mutex_lock(&vp->v_lock);
+	vn_lock(vp);
 
 	return vp;
 }
