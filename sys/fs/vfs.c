@@ -742,7 +742,7 @@ fs_shutdown(void)
 /*
  * fs_exit - Called when a task terminates
  */
-int
+void
 fs_exit(struct task *t)
 {
 	struct file *fp;
@@ -765,7 +765,6 @@ fs_exit(struct task *t)
 	fs_closefp(t->cwdfp);
 
 	task_unlock(t);
-	return 0;
 }
 
 /*

@@ -26,7 +26,7 @@ void	fs_shutdown(void);
 /*
  * These functions perform file system operations on behalf of another task.
  */
-int	fs_exit(struct task *);
+void	fs_exit(struct task *);
 void	fs_fork(struct task *);
 void	fs_exec(struct task *);
 int	openfor(struct task *, int, const char *, int, ...);

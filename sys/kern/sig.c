@@ -462,19 +462,21 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	struct thread *th = thread_cur();
 	struct task *task = task_cur();
 
+	sch_lock();
+
 	/*
 	 * Any unblocked pending signals?
 	 */
 	k_sigset_t unblocked;
 	ksigandnset(&unblocked, &pending, &th->sig_blocked);
 	if (ksigisemptyset(&unblocked))
-		return rval;
+		goto out;
 
 	const int sig = ksigfirst(&unblocked);
 	const sig_handler_fn handler = sig_handler(task, sig);
 
 	/*
-	 * Clear pending signal
+	 * Clear unblocked signal
 	 */
 	const int s1 = irq_disable();
 	ksigdelset(&th->sig_pending, sig);
@@ -499,7 +501,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 			/*
 			 * Some other pending signal, defer
 			 */
-			return rval;
+			goto out;
 		}
 	}
 
@@ -513,7 +515,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 			dbg("Signal without restorer. Bye bye.\n");
 			proc_exit(task, 0);
 			task->exitcode = sig;
-			return rval;
+			goto out;
 		}
 
 		trace("Delivering signal th:%p sig:%d\n", th, sig);
@@ -558,7 +560,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		ksigdelset(&th->sig_blocked, SIGSTOP);
 		ksigdelset(&th->sig_blocked, SIGKILL);
 
-		return rval;
+		goto out;
 	}
 
 	/*
@@ -594,13 +596,13 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		dbg("Fatal signal %d. Terminate.\n", sig);
 		proc_exit(task_cur(), 0);
 		task_cur()->exitcode = sig;
-		return rval;
+		goto out;
 	case SIGTSTP:
 	case SIGTTIN:
 	case SIGTTOU:
 		/* Default action: stop */
 		task_suspend(task);
-		return rval;
+		goto out;
 	case SIGKILL:
 	case SIGSTOP:
 		/* Always handled by process_signal */
@@ -612,14 +614,14 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		assert(0);
 	}
 
+out:
+	sch_unlock();
 	return rval;
 }
 
 __fast_text __attribute__((used)) int
 sig_deliver(int rval)
 {
-	sch_lock();
-
 	struct thread *th = thread_cur();
 	const k_sigset_t pending = th->sig_pending;
 
@@ -635,8 +637,6 @@ sig_deliver(int rval)
 #if defined(CONFIG_DEBUG)
 	assert(!th->mutex_locks);
 #endif
-
-	sch_unlock();
 
 	return rval;
 }

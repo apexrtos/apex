@@ -42,6 +42,7 @@ struct list {
 #define list_first(head)	((head)->next)
 #define list_last(head)		((head)->prev)
 #define list_end(head, node)	((node) == (head))
+#define list_only_entry(node)	((node)->next == (node)->prev)
 
 /*
  * Get the struct for this entry

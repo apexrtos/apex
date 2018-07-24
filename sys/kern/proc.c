@@ -59,18 +59,8 @@ proc_exit(struct task *task, int status)
 	}
 
 	/*
-	 * Notify file system of exit
+	 * Stop task events
 	 */
-	fs_exit(task);
-
-	/*
-	 * Release task resources
-	 */
-	head = &task->futexes;
-	for (n = list_first(head); n != head; n = list_next(n)) {
-		struct futex *fk = list_entry(n, struct futex, task_link);
-		kmem_free(fk);
-	}
 	timer_stop(&task->itimer_real);
 
 	/*
@@ -133,9 +123,8 @@ sc_wait4(pid_t pid, int *ustatus, int options, struct rusage *rusage)
 	pid_t cpid = 0;
 	int have_children;
 
-	sch_lock();
-
 again:
+	sch_lock();
 	have_children = 0;
 	list_for_each_entry(task, &kern_task.link, link) {
 		if (task->parent != cur)
@@ -185,8 +174,22 @@ again:
 				status = task->exitcode;
 
 				/*
+				 * Wait for child threads to finish
+				 */
+				if (!list_empty(&task->threads)) {
+					sch_unlock();
+					sch_yield();
+					goto again;
+				}
+
+				/*
 				 * Free child resources
 				 */
+				struct list *n, *head = &task->futexes;
+				for (n = list_first(head); n != head; n = list_next(n)) {
+					struct futex *fk = list_entry(n, struct futex, task_link);
+					kmem_free(fk);
+				}
 				list_remove(&task->link);
 				as_modify_begin(task->as);
 				as_destroy(task->as);
@@ -222,8 +225,10 @@ again:
 		/*
 		 * Wait for a signal or child exit
 		 */
-		if (sch_sleep(&task_cur()->child_event) == SLP_SUCCESS)
+		if (sch_sleep(&task_cur()->child_event) == SLP_SUCCESS) {
+			sch_unlock();
 			goto again;
+		}
 		err = -EINTR;
 	}
 

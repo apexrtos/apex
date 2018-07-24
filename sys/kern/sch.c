@@ -90,14 +90,15 @@
 #include <assert.h>
 #include <debug.h>
 #include <errno.h>
+#include <fs.h>
 #include <irq.h>
 #include <kernel.h>
 #include <sched.h>
+#include <sections.h>
 #include <sig.h>
 #include <stddef.h>
 #include <thread.h>
 #include <types.h>
-#include <sections.h>
 
 /*
  * Scheduling quantum (nanoseconds for context switch)
@@ -614,13 +615,19 @@ sch_stop(struct thread *th)
 bool
 sch_exit(void)
 {
+	if (!(active_thread->state & TH_EXIT))
+		return false;
+
+	/* cleanup filesystem if this is the last thread in the task */
+	if (list_only_entry(&active_thread->task_link))
+		fs_exit(active_thread->task);
+
 	sch_lock();
-	if (active_thread->state & TH_EXIT) {
-		active_thread->state |= TH_ZOMBIE;
-		active_thread->resched = RESCHED_SWITCH;
-	}
+	active_thread->state |= TH_ZOMBIE;
+	active_thread->resched = RESCHED_SWITCH;
 	sch_unlock();
-	return active_thread->state & TH_EXIT;
+
+	return true;
 }
 
 /*
