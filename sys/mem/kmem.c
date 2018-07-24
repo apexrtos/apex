@@ -188,7 +188,7 @@ kmem_alloc_internal(size_t size, enum MEM_TYPE type)
 {
 	struct block_hdr *blk, *newblk;
 	struct page_hdr *pg;
-	void *p;
+	void *p = 0;
 
 	assert(type < MEM_ALLOC);
 
@@ -211,10 +211,8 @@ kmem_alloc_internal(size_t size, enum MEM_TYPE type)
 	} else {
 		/* No block found. Allocate new page */
 		phys *const pp = page_alloc_order(0, type, PAGE_ALLOC_FIXED, &kern_task);
-		if (pp > (phys *)-4096UL) {
-			mutex_unlock(&kmem_mutex);
-			return NULL;
-		}
+		if (!pp)
+			goto out;
 		pg = (struct page_hdr *)phys_to_virt(pp);
 		pg->nallocs = 0;
 		pg->magic = PAGE_MAGIC + type;
@@ -249,6 +247,7 @@ kmem_alloc_internal(size_t size, enum MEM_TYPE type)
 	/* Increment allocation count of this page */
 	pg->nallocs++;
 	p = (char *)blk + BLKHDR_SIZE;
+out:
 	mutex_unlock(&kmem_mutex);
 	return p;
 }

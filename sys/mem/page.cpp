@@ -37,7 +37,6 @@
 #include <kernel.h>
 #include <list.h>
 #include <mutex>
-#include <sch.h>
 #include <sync.h>
 
 enum PG_STATE {
@@ -302,7 +301,7 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
  *		      of type 'mt' with state 'st'
  *
  * tries to allocate using requested type but falls back if memory is low.
- * returns -ve error code on failure, physical address otherwise.
+ * returns 0 on failure, physical address otherwise.
  */
 phys *
 page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
@@ -327,9 +326,7 @@ page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
 		auto &r = s.regions[i];
 		if (r.type != mt)
 			continue;
-		interruptible_lock l(r.mutex);
-		if (auto r = l.lock(); r < 0)
-			return (phys *)r;
+		std::lock_guard l(r.mutex);
 		const auto p = find_block(r, o);
 		if (p != -1)
 			return do_alloc(r, p, o, st, owner);
@@ -340,15 +337,13 @@ page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
 		auto &r = s.regions[i];
 		if (r.type == mt)
 			continue;
-		interruptible_lock l(r.mutex);
-		if (auto r = l.lock(); r < 0)
-			return (phys *)r;
+		std::lock_guard l(r.mutex);
 		const auto p = find_block(r, o);
 		if (p != -1)
 			return do_alloc(r, p, o, st, owner);
 	}
 
-	return (phys *)DERR(-ENOMEM);
+	return 0;
 }
 
 /*
@@ -357,7 +352,7 @@ page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
  *
  * tries to allocate using requested type but falls back if memory is low.
  * 'len' is rounded up to next page sized boundary.
- * returns -ve error code on failure, physical address otherwise.
+ * returns 0 on failure, physical address otherwise.
  */
 phys *
 page_alloc(size_t len, MEM_TYPE mt, const PAGE_ALLOC_TYPE at, void *owner)
@@ -367,8 +362,8 @@ page_alloc(size_t len, MEM_TYPE mt, const PAGE_ALLOC_TYPE at, void *owner)
 	len = PAGE_ALIGN(len);
 	const auto order = ceil_log2(len) - floor_log2(CONFIG_PAGE_SIZE);
 	const auto addr = page_alloc_order(order, mt, at, owner);
-	if (addr > (phys *)-4096UL)
-		return addr;
+	if (addr == 0)
+		return 0;
 	page_free(addr + len, (CONFIG_PAGE_SIZE << order) - len, owner);
 	return addr;
 }
@@ -378,7 +373,7 @@ page_alloc(size_t len, MEM_TYPE mt, const PAGE_ALLOC_TYPE at, void *owner)
  *		  'addr' of size 'len' with state 'st'
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
- * returns -ve error code on failure, physical address otherwise.
+ * returns 0 on failure, physical address otherwise.
  */
 static phys *
 page_reserve(region &r, phys *const addr, const size_t len,
@@ -395,7 +390,7 @@ page_reserve(region &r, phys *const addr, const size_t len,
 	/* verify that range is free */
 	for (auto i = begin; i != end; ++i)
 		if (r.pages[i].state != PG_FREE)
-			return (phys *)DERR(-EINVAL);
+			return 0;
 
 	/* reserve pages */
 	for (auto i = begin; i != end;) {
@@ -414,14 +409,14 @@ page_reserve(region &r, phys *const addr, const size_t len,
  *		  'len' with state 'st'
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
- * returns -ve error code on failure, physical address otherwise.
+ * returns 0 on failure, physical address otherwise.
  */
 static phys *
 page_reserve(phys *addr, size_t len, const PG_STATE st, void *owner)
 {
 	auto *r = find_region(addr, len);
 	if (!r)
-		return (phys *)-EINVAL;
+		return 0;
 	return page_reserve(*r, addr, len, st, owner);
 }
 
@@ -430,17 +425,15 @@ page_reserve(phys *addr, size_t len, const PG_STATE st, void *owner)
  *                'len'
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
- * returns -ve error code on failure, physical address otherwise.
+ * returns 0 on failure, physical address otherwise.
  */
 phys *
 page_reserve(phys *addr, size_t len, void *owner)
 {
 	auto *r = find_region(addr, len);
 	if (!r)
-		return (phys *)-EINVAL;
-	interruptible_lock l(r->mutex);
-	if (auto r = l.lock(); r < 0)
-		return (phys *)r;
+		return 0;
+	std::lock_guard l(r->mutex);
 	return page_reserve(*r, addr, len, PG_FIXED, owner);
 }
 
@@ -482,13 +475,7 @@ page_free(phys *addr, size_t len, void *owner)
 	if (!r)
 		return DERR(-EFAULT);
 
-	/* If locking region fails (most likely due to signal) we fall back to
-	   taking the global scheduler lock. This means that callers can safely
-	   free pages in error return paths. */
-	interruptible_lock l(r->mutex);
-	std::unique_lock g(global_sch_lock, std::defer_lock);
-	if (l.lock() < 0)
-		g.lock();
+	std::lock_guard l(r->mutex);
 
 	/* find page range */
 	const auto begin = page_num(*r, addr);
@@ -675,9 +662,9 @@ page_init(const struct bootinfo *bi, void *owner)
 		list_insert(&r.blocks[r.nr_orders - 1], &r.pages[0].link);
 
 		/* reserve pages without physical backing */
-		if (page_reserve(r, r.base, r.begin - r.base, PG_HOLE, nullptr) > (phys *)-4096UL)
+		if (!page_reserve(r, r.base, r.begin - r.base, PG_HOLE, nullptr))
 			panic("bad bootinfo");
-		if (page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, nullptr) > (phys *)-4096UL)
+		if (!page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, nullptr))
 			panic("bad bootinfo");
 
 		dbg("page_init: region %zu (%s): %p -> %p covering %p -> %p\n",
@@ -725,11 +712,11 @@ page_init(const struct bootinfo *bi, void *owner)
 
 		switch (m->type) {
 		case MT_MEMHOLE:
-			if (page_reserve((phys*)m->base, m->size, PG_HOLE, nullptr) > (phys *)-4096UL)
+			if (!page_reserve((phys*)m->base, m->size, PG_HOLE, nullptr))
 				panic("bad bootinfo");
 			break;
 		case MT_KERNEL:
-			if (page_reserve((phys*)m->base, m->size, PG_SYSTEM, owner) > (phys *)-4096UL)
+			if (!page_reserve((phys*)m->base, m->size, PG_SYSTEM, owner))
 				dbg("page_init: failed to reserve %p -> %p\n",
 				    m->base, m->base + m->size);
 			break;
@@ -739,7 +726,7 @@ page_init(const struct bootinfo *bi, void *owner)
 			page_reserve((phys*)m->base, m->size, PG_FIXED, nullptr);
 			break;
 		case MT_RESERVED:
-			if (page_reserve((phys*)m->base, m->size, PG_FIXED, owner) > (phys *)-4096UL)
+			if (!page_reserve((phys*)m->base, m->size, PG_FIXED, owner))
 				panic("bad bootinfo");
 			break;
 		}
@@ -748,7 +735,7 @@ page_init(const struct bootinfo *bi, void *owner)
 	/* reserve memory allocated for region & page structures */
 	if (m_alloc > r_alloc->begin) {
 		const auto begin = std::max(m_begin, r_alloc->begin);
-		if (page_reserve(begin, m_alloc - begin, PG_SYSTEM, &page_id) > (phys *)-4096UL)
+		if (!page_reserve(begin, m_alloc - begin, PG_SYSTEM, &page_id))
 			panic("bug");
 	}
 
