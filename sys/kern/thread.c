@@ -215,7 +215,6 @@ do_terminate(struct thread *th)
 	 */
 	sch_stop(th);
 	sig_thread(th, 0);		/* signal 0 is special */
-	list_remove(&th->task_link);
 
 	if (th->clear_child_tid) {
 		const int zero = 0;

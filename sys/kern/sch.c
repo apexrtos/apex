@@ -118,7 +118,7 @@ static struct event	dpc_event;	/* event for DPC */
 /* currently active thread */
 extern struct thread idle_thread;
 __fast_data struct thread *active_thread = &idle_thread;
-__fast_bss static struct thread *prev_thread;
+__fast_data static struct list zombie_list = LIST_INIT(zombie_list);
 
 /*
  * Return priority of highest-priority runnable thread.
@@ -261,27 +261,27 @@ sch_switch(void)
 	next = runq_dequeue();
 	if (next == prev)
 		return;
-	prev_thread = prev;
 	active_thread = next;
+
+	/*
+	 * Queue zombie for deletion
+	 */
+	if (prev->state & TH_ZOMBIE) {
+		/*
+		 * Reaping a thread holding locks is very bad.
+		 */
+#if defined(CONFIG_DEBUG)
+		assert(!prev->mutex_locks);
+#endif
+		list_remove(&prev->task_link);
+		list_insert(&zombie_list, &prev->task_link);
+	}
 
 	/*
 	 * Switch to the new thread.
 	 * You are expected to understand this..
 	 */
 	context_switch(prev, next);
-
-	/*
-	 * Reap zombie threads
-	 */
-	if (prev_thread->state & TH_ZOMBIE) {
-		/*
-		 * Reaping a thread holding locks is very bad.
-		 */
-#if defined(CONFIG_DEBUG)
-		assert(!prev_thread->mutex_locks);
-#endif
-		thread_free(prev_thread);
-	}
 }
 
 /*
@@ -671,6 +671,18 @@ sch_unlock_slowpath(int s)
 		irq_restore(s);
 		s = irq_disable();
 		wakeq_flush();
+	}
+
+	/*
+	 * Reap one zombie
+	 */
+	if (!list_empty(&zombie_list)) {
+		struct thread *th = list_entry(list_first(&zombie_list),
+		    struct thread, task_link);
+		list_remove(&th->task_link);
+		irq_restore(s);
+		thread_free(th);
+		s = irq_disable();
 	}
 }
 
