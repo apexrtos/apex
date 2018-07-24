@@ -90,6 +90,7 @@ int	sc_stat(const char *, struct stat *);
 int	sc_statfs(const char *, size_t, struct statfs *);
 int	sc_symlink(const char*, const char*);
 int	sc_symlinkat(const char*, int, const char*);
+int	sc_sync(void);
 int	sc_umount2(const char *, int);
 int	sc_unlink(const char *);
 int	sc_unlinkat(int, const char *, int);

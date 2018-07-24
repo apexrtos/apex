@@ -347,6 +347,13 @@ sync(void)
 	mutex_unlock(&mount_mutex);
 }
 
+int
+sc_sync(void)
+{
+	sync();
+	return 0;
+}
+
 /*
  * Mark a mount point as busy.
  */
