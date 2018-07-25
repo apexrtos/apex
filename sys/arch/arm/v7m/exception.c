@@ -445,15 +445,20 @@ exc_SVCall(void)
 
 		/* If syscall returned -ERESTARTSYS a previous syscall was
 		   interrupted by a signal with SA_RESTART set. This also means
-		   that an exception frame was popped and psp now points to the
-		   frame for the syscall to be restarted. We _DO NOT_ return
-		   -ERESTARTSYS to userspace as this will trash the exception
-		   frame required for syscall restart. */
+		   that the signal exception frame was popped and psp now
+		   points to the frame for the syscall to be restarted. We
+		   _NEVER_ return -ERESTARTSYS to userspace as this will trash
+		   the exception frame required for syscall restart. We also
+		   need to adjust the return address in the exception frame to
+		   point to the svc instruction again. */
 		"mov r1, -"S(ERESTARTSYS)"\n"
 		"cmp r0, r1\n"
-		"itt ne\n"
-		"mrsne ip, psp\n"
-		"strne r0, [ip]\n"
+		"mrs ip, psp\n"
+		"iteee ne\n"			    /* if r0 != -ERESTARTSYS */
+		"strne r0, [ip, "S(EFRAME_R0)"]\n"  /* then return r0 */
+		"ldreq r0, [ip, "S(EFRAME_RA)"]\n"  /* else load return addr */
+		"subeq r0, 2\n"			    /* back up by 2 */
+		"streq r0, [ip, "S(EFRAME_RA)"]\n"  /* store return addr */
 
 		/* return to userspace */
 		"pop {r4, r5, r6, r7}\n"

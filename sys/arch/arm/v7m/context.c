@@ -252,12 +252,6 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	sf->saved_rrval = rrval;
 	if (rrval == -ERESTARTSYS)
 		sf->saved_sframe = *sframe;
-
-	/* adjust program counter for syscall restart */
-	if (rrval == -ERESTARTSYS) {
-		struct exception_frame *eframe = ctx->saved_psp;
-		eframe->ra -= 2;
-	}
 }
 
 /*
