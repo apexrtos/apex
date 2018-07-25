@@ -90,8 +90,8 @@ __fast_text void
 exc_PendSV(void)
 {
 	assert(thread_cur()->locks == 1);
-	sig_deliver(0);
 	sch_unlock();
+	sig_deliver(0);
 }
 
 /*
