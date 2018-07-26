@@ -560,6 +560,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		ksigdelset(&th->sig_blocked, SIGSTOP);
 		ksigdelset(&th->sig_blocked, SIGKILL);
 
+		rval = sig;
 		goto out;
 	}
 
