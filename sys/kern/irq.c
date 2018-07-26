@@ -156,7 +156,7 @@ irq_detach(struct irq *irq)
 
 	irq_table[irq->vector] = NULL;
 	if (irq->thread != NULL)
-		kthread_terminate(irq->thread);
+		thread_terminate(irq->thread);
 
 	kmem_free(irq);
 }

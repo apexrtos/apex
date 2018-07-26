@@ -113,12 +113,10 @@ int	        thread_createfor(struct task *, struct as *, struct thread **,
 int	        thread_name(struct thread *, const char *);
 int		thread_id(struct thread *);
 struct thread  *thread_find(int);
-int	        thread_terminate(struct thread *);
+void	        thread_terminate(struct thread *);
 void		thread_free(struct thread *);
-void		thread_yield(void);
 int		thread_suspend(struct thread *);
 int		thread_resume(struct thread *);
-int		thread_interrupt(struct thread *);
 noreturn void	thread_idle(void);
 void	        thread_dump(void);
 void	        thread_check(void);
@@ -129,7 +127,6 @@ void	        thread_init(void);
  */
 struct thread  *kthread_create(void (*)(void *), void *, int, const char *,
 			       unsigned);
-void		kthread_terminate(struct thread *);
 
 #if defined(__cplusplus)
 } /* extern "C" */

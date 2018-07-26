@@ -214,6 +214,6 @@ boot_thread(void *arg)
 	console_init();
 #endif
 	run_init();
-	kthread_terminate(thread_cur());
+	thread_terminate(thread_cur());
 	sch_exit();
 }

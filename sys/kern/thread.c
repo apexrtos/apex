@@ -66,9 +66,6 @@
 #define KSTACK_CHECK(th) 1
 #endif	/* !CONFIG_KSTACK_CHECK */
 
-/* forward declarations */
-static void do_terminate(struct thread *);
-
 __fast_bss struct thread idle_thread;
 
 /*
@@ -169,25 +166,26 @@ out:
 }
 
 /*
- * Permanently stop execution of the specified thread.
- * If given thread is a current thread, this routine
- * never returns.
+ * Stop execution of the specified thread
  */
-int
+void
 thread_terminate(struct thread *th)
 {
 	sch_lock();
-	if (!thread_valid(th)) {
-		sch_unlock();
-		return DERR(-ESRCH);
+
+	assert(thread_valid(th));
+
+	sch_stop(th);
+	sig_thread(th, 0);		/* signal 0 is special */
+
+	if (th->clear_child_tid) {
+		const int zero = 0;
+		vm_write(th->task->as, &zero, th->clear_child_tid, sizeof zero);
+		futex(th->task, th->clear_child_tid, FUTEX_PRIVATE | FUTEX_WAKE,
+		    1, 0, 0);
 	}
-	if (!task_access(th->task)) {
-		sch_unlock();
-		return DERR(-EPERM);
-	}
-	do_terminate(th);
+
 	sch_unlock();
-	return 0;
 }
 
 /*
@@ -202,26 +200,6 @@ thread_free(struct thread *th)
 	context_cleanup(&th->ctx);
 	kmem_free(th->kstack);
 	kmem_free(th);
-}
-
-/*
- * Terminate thread-- the internal version of thread_terminate.
- */
-static void
-do_terminate(struct thread *th)
-{
-	/*
-	 * Clean up thread state.
-	 */
-	sch_stop(th);
-	sig_thread(th, 0);		/* signal 0 is special */
-
-	if (th->clear_child_tid) {
-		const int zero = 0;
-		vm_write(th->task->as, &zero, th->clear_child_tid, sizeof zero);
-		futex(th->task, th->clear_child_tid, FUTEX_PRIVATE | FUTEX_WAKE,
-		    1, 0, 0);
-	}
 }
 
 /*
@@ -269,15 +247,6 @@ thread_find(int id)
 	if (!thread_valid(th))
 		return 0;
 	return th;
-}
-
-/*
- * Release current thread for other thread.
- */
-void
-thread_yield(void)
-{
-	sch_yield();
 }
 
 /*
@@ -343,35 +312,6 @@ out:
 }
 
 /*
- * thread_interrupt
- *
- * Interrupt a thread. This will cause it to wake up from any events it may
- * be sleeping on.
- */
-int
-thread_interrupt(struct thread *th)
-{
-	int err = 0;
-
-	sch_lock();
-	if (!thread_valid(th)) {
-		err = DERR(-ESRCH);
-		goto out;
-	}
-	if (th->task != task_cur()) {
-		err = DERR(-EPERM);
-		goto out;
-	}
-
-	sch_interrupt(th);
-
-out:
-	sch_unlock();
-	return err;
-}
-
-
-/*
  * Idle thread.
  *
  * This routine is called only once after kernel
@@ -435,21 +375,6 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 	sch_setprio(th, prio, prio);
 	sch_resume(th);
 	return th;
-}
-
-/*
- * Terminate kernel thread.
- */
-void
-kthread_terminate(struct thread *th)
-{
-
-	assert(th);
-	assert(th->task == &kern_task);
-
-	sch_lock();
-	do_terminate(th);
-	sch_unlock();
 }
 
 void
