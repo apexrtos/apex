@@ -28,29 +28,22 @@
  */
 
 #include <arch.h>
-#include <assert.h>
 #include <console.h>
 #include <debug.h>
 #include <dev/null/null.h>
 #include <dev/zero/zero.h>
 #include <device.h>
-#include <elf_load.h>
 #include <exec.h>
 #include <fcntl.h>
 #include <fs.h>
 #include <irq.h>
 #include <kmem.h>
-#include <mmap.h>
 #include <page.h>
-#include <proc.h>
 #include <sch.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <sys/mount.h>
-#include <sys/stat.h>
 #include <task.h>
 #include <thread.h>
-#include <unistd.h>
 #include <version.h>
 #include <vm.h>
 
