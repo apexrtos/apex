@@ -86,7 +86,7 @@ seg_extend(seg *s, void *addr, size_t len, int prot, vnode *vn, off_t off,
     MEM_TYPE type)
 {
 	if (s->prot != prot || (char*)s->base + len != addr ||
-	    s->type != type || s->off + s->len != off || s->vn != vn)
+	    s->type != type || s->vn != vn || (vn && s->off + s->len != off))
 		return false;
 	s->len += len;
 	return true;
