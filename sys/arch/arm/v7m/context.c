@@ -235,10 +235,6 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 
 	asm("msr psp, %0" :: "r" (sf));
 
-	const struct syscall_frame *sframe =
-	    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
-	    sizeof(struct syscall_frame);
-
 	sf->eframe = (struct exception_frame){
 		.r0 = sig,
 		.r1 = (uint32_t)si,
@@ -250,8 +246,12 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	if (ss)
 		sf->saved_sigset = *ss;
 	sf->saved_rrval = rrval;
-	if (rrval == -ERESTARTSYS)
+	if (rrval == -ERESTARTSYS) {
+		const struct syscall_frame *sframe =
+		    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
+		    sizeof(struct syscall_frame);
 		sf->saved_sframe = *sframe;
+	}
 }
 
 /*
@@ -290,14 +290,14 @@ context_restore(struct context *ctx, k_sigset_t *ss)
 	ctx->saved_psp = 0;
 
 	/* restore state */
-	struct syscall_frame *sframe =
-	    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
-	    sizeof(struct syscall_frame);
-
 	if (ss)
 		*ss = sf->saved_sigset;
-	if (sf->saved_rrval == -ERESTARTSYS)
+	if (sf->saved_rrval == -ERESTARTSYS) {
+		struct syscall_frame *sframe =
+		    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
+		    sizeof(struct syscall_frame);
 		*sframe = sf->saved_sframe;
+	}
 	return sf->saved_rrval;
 }
 
