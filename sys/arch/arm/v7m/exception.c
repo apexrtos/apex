@@ -48,6 +48,8 @@ static_assert(offsetof(struct kern_regs, psp) == KREGS_PSP, "");
 static_assert(offsetof(struct kern_regs, shcsr) == KREGS_SHCSR, "");
 static_assert(sizeof(struct exception_frame) == EFRAME_SIZE, "");
 
+#define EPENDSV_RETURN 255
+
 /*
  * exception entry & exit
  *
@@ -91,7 +93,7 @@ exc_PendSV(void)
 {
 	assert(thread_cur()->locks == 1);
 	sch_unlock();
-	sig_deliver(0);
+	sig_deliver(-EPENDSV_RETURN);
 }
 
 /*
@@ -443,6 +445,16 @@ exc_SVCall(void)
 		/* Deliver signals if necessary. */
 		"bl sig_deliver\n"
 
+		/* If syscall returned -EPENDSV_RETURN we delivered a signal
+		   during return from PendSV. In this case we head straight
+		   back to userspace without adjusting the original exception
+		   frame or restoring r4-r7. */
+		"mov r1, -"S(EPENDSV_RETURN)"\n"
+		"cmp r0, r1\n"
+		"itt eq\n"
+		"addeq sp, 16\n"		    /* drop r4-r7 */
+		"beq asm_syscall_return\n"
+
 		/* If syscall returned -ERESTARTSYS a previous syscall was
 		   interrupted by a signal with SA_RESTART set. This also means
 		   that the signal exception frame was popped and psp now
@@ -459,9 +471,10 @@ exc_SVCall(void)
 		"ldreq r0, [ip, "S(EFRAME_RA)"]\n"  /* else load return addr */
 		"subeq r0, 2\n"			    /* back up by 2 */
 		"streq r0, [ip, "S(EFRAME_RA)"]\n"  /* store return addr */
-
-		/* return to userspace */
 		"pop {r4, r5, r6, r7}\n"
+
+	"asm_syscall_return:\n"
+		/* return to userspace */
 		"mov r0, "S(EXC_RETURN_USER)"\n"
 		"bx r0\n"
 
