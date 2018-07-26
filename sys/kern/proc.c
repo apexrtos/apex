@@ -123,6 +123,9 @@ sc_wait4(pid_t pid, int *ustatus, int options, struct rusage *rusage)
 	pid_t cpid = 0;
 	int have_children;
 
+	if (rusage)
+		dbg("WARNING: wait4 rusage not yet implemented\n");
+
 again:
 	sch_lock();
 	have_children = 0;
