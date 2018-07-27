@@ -143,23 +143,17 @@ sc_fchownat(int dirfd, const char *path, uid_t uid, gid_t gid, int flags)
 int
 sc_fcntl(int fd, int cmd, void *arg)
 {
+	interruptible_lock l(u_access_lock);
 	switch (cmd) {
 	case F_GETLK:
 	case F_SETLK:
 	case F_SETLKW:
-		if (auto r = u_access_begin(); r < 0)
+		if (auto r = l.lock(); r < 0)
 			return r;
 		if (!u_access_ok(arg, sizeof(struct flock), PROT_WRITE))
 			return DERR(-EFAULT);
 	}
-	const auto ret = fcntl(fd, cmd, arg);
-	switch (cmd) {
-	case F_GETLK:
-	case F_SETLK:
-	case F_SETLKW:
-		u_access_end();
-	}
-	return ret;
+	return fcntl(fd, cmd, arg);
 }
 
 int
@@ -224,21 +218,17 @@ sc_getdents(int dirfd, struct dirent *buf, size_t len)
 int
 sc_ioctl(int fd, int request, void *argp)
 {
+	interruptible_lock l(u_access_lock);
 	switch (_IOC_DIR(request)) {
 	case _IOC_READ:
 	case _IOC_WRITE:
-		if (auto r = u_access_begin(); r < 0)
+		if (auto r = l.lock(); r < 0)
 			return r;
 		if (!u_access_ok(argp, _IOC_SIZE(request),
 		    _IOC_DIR(request) == _IOC_READ ? PROT_WRITE : PROT_READ))
 			return DERR(-EFAULT);
 	}
 	return ioctl(fd, request, argp);
-	switch (_IOC_DIR(request)) {
-	case _IOC_READ:
-	case _IOC_WRITE:
-		u_access_end();
-	}
 }
 
 int
