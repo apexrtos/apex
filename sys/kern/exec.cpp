@@ -75,10 +75,13 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	if (auto r = elf_load(as.get(), fd, &entry, auxv, &sp); r < 0)
 		return (thread *)r;
 
+	/* build arguments on new stack */
+	if ((sp = build_args(as.get(), sp, prgv, argv, envp, auxv)) > (void*)-4096UL)
+		return (thread *)sp;
+
 	/* create new main thread */
 	struct thread *main;
-	if (auto r = thread_createfor(t, as.get(), &main, sp, MEM_NORMAL,
-	    entry, 0, prgv, argv, envp, auxv); r < 0)
+	if (auto r = thread_createfor(t, &main, sp, MEM_NORMAL, entry, 0); r < 0)
 		return (thread *)r;
 	sig_exec(t);
 	task_path(t, path);
