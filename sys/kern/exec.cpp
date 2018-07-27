@@ -71,23 +71,9 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	/* load program image into new address space */
 	void (*entry)(void);
 	unsigned auxv[AUX_CNT];
-	if (auto r = elf_load(as.get(), fd, &entry, auxv); r < 0)
-		return (thread *)r;
-
-	/* create stack with guard page */
-#if defined(CONFIG_MMU) || defined(CONFIG_MPU)
-	const size_t guard_size = CONFIG_PAGE_SIZE;
-#else
-	const size_t guard_size = 0;
-#endif
 	void *sp;
-	if ((sp = mmapfor(as.get(), 0, CONFIG_USTACK_SIZE + guard_size, PROT_NONE,
-	    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, MEM_NORMAL)) > (void*)-4096UL)
-		return (thread *)sp;
-	if (auto r = mprotectfor(as.get(), (char*)sp + guard_size, CONFIG_USTACK_SIZE,
-	    PROT_READ | PROT_WRITE); r < 0)
+	if (auto r = elf_load(as.get(), fd, &entry, auxv, &sp); r < 0)
 		return (thread *)r;
-	sp = (char*)sp + CONFIG_USTACK_SIZE + guard_size;
 
 	/* create new main thread */
 	struct thread *main;

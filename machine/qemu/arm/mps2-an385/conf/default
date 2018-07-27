@@ -2,7 +2,6 @@
 # Kernel
 #
 memory PAGE_OFFSET	0x00000000
-memory USTACK_SIZE	0x10000	    # User stack size (multiple of PAGE_SIZE)
 memory KSTACK_SIZE	4048	    # Kernel stack size
 option TIME_SLICE_MS	50	    # milliseconds
 option HZ		1000

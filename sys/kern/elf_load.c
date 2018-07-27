@@ -38,15 +38,17 @@ ph_flags_to_prot(const Phdr *ph)
  * elf_load - load an elf file, attempt to execute in place.
  */
 int
-elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT])
+elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
+    void **stack)
 {
 	int err;
 	Ehdr eh;
 	ssize_t sz;
-	Phdr text_ph, data_ph;
+	Phdr text_ph, data_ph, stack_ph;
 
 	text_ph.p_type = PT_NULL;
 	data_ph.p_type = PT_NULL;
+	stack_ph.p_type = PT_NULL;
 
 	/*
 	 * Read and validate file header
@@ -81,9 +83,12 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT])
 		if (ph.p_type == PT_INTERP)
 			return DERR(-ENOEXEC);
 
-		/* TODO: support no execute stack */
-		if (ph.p_type == PT_GNU_STACK)
-			continue;
+		if (ph.p_type == PT_GNU_STACK) {
+			/* only expect one stack segment */
+			if (stack_ph.p_type != PT_NULL)
+				return DERR(-ENOEXEC);
+			stack_ph = ph;
+		}
 
 		if (ph.p_type != PT_LOAD)
 			continue;
@@ -104,8 +109,9 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT])
 		}
 	}
 
-	/* expect text & data segment */
-	if (text_ph.p_type == PT_NULL || data_ph.p_type == PT_NULL)
+	/* expect text, data & stack segment */
+	if (text_ph.p_type == PT_NULL || data_ph.p_type == PT_NULL ||
+	    stack_ph.p_type == PT_NULL || !stack_ph.p_memsz)
 		return DERR(-ENOEXEC);
 
 	const intptr_t text_start = text_ph.p_vaddr; /* must be aligned */
@@ -148,6 +154,21 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT])
 	/* unmap any text-to-data hole */
 	if ((err = munmapfor(a, (void *)text_end, data_start - text_end)) < 0)
 		return err;
+
+	/* map stack with optional guard page */
+	const size_t stack_size = PAGE_ALIGN(stack_ph.p_memsz);
+#if defined(CONFIG_MMU) || defined(CONFIG_MPU)
+	const size_t guard_size = CONFIG_PAGE_SIZE;
+#else
+	const size_t guard_size = 0;
+#endif
+	if ((*stack = mmapfor(a, 0, stack_size + guard_size, PROT_NONE,
+	    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, MEM_NORMAL)) > (void*)-4096UL)
+		return (int)*stack;
+	if ((err = mprotectfor(a, (char*)*stack + guard_size, stack_size,
+	    ph_flags_to_prot(&stack_ph))) < 0)
+		return err;
+	*stack = (char*)*stack + stack_size + guard_size;
 
 	const ptrdiff_t text_load_offset = (ptrdiff_t)base - text_start;
 

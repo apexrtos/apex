@@ -14,12 +14,10 @@ extern "C" {
  * *entry is set to the entry point of the elf image on success.
  */
 int elf_load(struct as *, int fd, void (**entry)(void),
-	     unsigned auxv[AUX_CNT]);
+	     unsigned auxv[AUX_CNT], void **stack);
 
 /*
  * build_args - build arguments onto stack.
- *
- * stack is assumed to be of USTACK_SIZE.
  *
  * returns stack pointer ready for new thread.
  */
