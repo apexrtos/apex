@@ -10,12 +10,6 @@
 static const unsigned long UART0 = 0x40004000;
 
 void
-clock_init(void)
-{
-	/* nothing to do */
-}
-
-void
 machine_memory_init(void)
 {
 	/* nothing to do for now */

@@ -96,7 +96,6 @@ kernel_main(void)
 	 * Enable interrupt and initialise drivers.
 	 */
 	irq_init();
-	clock_init();
 	device_init();
 	null_init();
 	zero_init();

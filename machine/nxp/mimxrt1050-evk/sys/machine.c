@@ -14,12 +14,6 @@
 static const unsigned long LPUART1 = 0x40184000;
 
 void
-clock_init(void)
-{
-	/* nothing to do */
-}
-
-void
 machine_memory_init(void)
 {
 	/* IMXRT10xx places external SDRAM in a default write-through memory
