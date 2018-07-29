@@ -155,35 +155,6 @@ static_assert(sizeof(struct cbp) == 0x34, "Bad cbp size");
 static volatile struct cbp *const CBP = (struct cbp*)0xe000ef50;
 
 /*
- * SysTick
- */
-struct syst {
-	union syst_csr {
-		uint32_t r;
-		struct {
-			unsigned ENABLE : 1;
-			unsigned TICKINT : 1;
-			unsigned CLKSOURCE : 1;
-			unsigned : 13;
-			unsigned COUNTFLAG : 1;
-		};
-	} CSR;
-	uint32_t RVR;
-	uint32_t CVR;
-	union syst_calib {
-		uint32_t r;
-		struct {
-			unsigned TENMS : 24;
-			unsigned : 6;
-			unsigned SKEW : 1;
-			unsigned NOREF : 1;
-		};
-	} CALIB;
-};
-static_assert(sizeof(struct syst) == 16, "Bad SYST size");
-static volatile struct syst *const SYST = (struct syst*)0xe000e010;
-
-/*
  * NVIC
  */
 struct nvic {
