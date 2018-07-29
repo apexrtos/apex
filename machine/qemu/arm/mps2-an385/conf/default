@@ -25,6 +25,7 @@ memory KERNEL_MAX_SIZE	(CONFIG_LOADER_RAM_BASE_VIRT - CONFIG_KERNEL_BASE_VIRT)
 #
 # Device drivers
 #
+driver sys/dev/arm/armv7m-systick{.clock = 25000000, .clksource = 1}
 driver sys/dev/arm/mps2-uart{.name = "ttyS0", .base = 0x40004000, .ipl = IPL_MIN, .rx_int = 0, .tx_int = 1, .overflow_int = 12}
 driver sys/dev/arm/mps2-uart{.name = "ttyS1", .base = 0x40005000, .ipl = IPL_MIN, .rx_int = 2, .tx_int = 3, .overflow_int = 12}
 driver sys/dev/arm/mps2-uart{.name = "ttyS2", .base = 0x40006000, .ipl = IPL_MIN, .rx_int = 4, .tx_int = 5, .overflow_int = 12}

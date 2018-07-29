@@ -2,7 +2,6 @@
 
 #include <conf/config.h>
 #include <conf/drivers.h>
-#include <cpu.h>
 #include <debug.h>
 #include <dev/arm/mps2-uart/mps2-uart.h>
 #include <interrupt.h>
@@ -13,15 +12,7 @@ static const unsigned long UART0 = 0x40004000;
 void
 clock_init(void)
 {
-	/* set systick timer to interrupt us at CONFIG_HZ */
-	SYST->RVR = SYST->CVR = 25000000 / CONFIG_HZ;
-
-	/* enable timer & interrupts */
-	SYST->CSR = (union syst_csr){
-		.ENABLE = 1,
-		.TICKINT = 1,
-		.CLKSOURCE = 1,	    /* SYSCLK, 25MHz */
-	};
+	/* nothing to do */
 }
 
 void
