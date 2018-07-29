@@ -36,6 +36,7 @@
 #include <access.h>
 #include <arch.h>
 #include <assert.h>
+#include <clock.h>
 #include <debug.h>
 #include <errno.h>
 #include <irq.h>
@@ -367,7 +368,10 @@ timer_tick(int ticks)
 uint64_t
 timer_monotonic(void)
 {
-	return monotonic;
+	const int s = irq_disable();
+	const uint64_t r = monotonic + clock_ns_since_tick();
+	irq_restore(s);
+	return r;
 }
 
 /*
