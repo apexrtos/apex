@@ -16,21 +16,7 @@ static const unsigned long LPUART1 = 0x40184000;
 void
 clock_init(void)
 {
-	/*
-	 * REVISIT: NXP documentation says "24 MHz XTALOSC can be the external
-	 * clock source of SYSTICK" however, experimentation shows that it is
-	 * probably running at 100KHz.
-	 */
-
-	/* set systick timer to interrupt us at CONFIG_HZ */
-	SYST->RVR = SYST->CVR = 100000 / CONFIG_HZ;
-
-	/* enable timer & interrupts */
-	SYST->CSR = (union syst_csr){
-		.ENABLE = 1,
-		.TICKINT = 1,
-		.CLKSOURCE = 0,	    /* EXTERNAL, 24MHz */
-	};
+	/* nothing to do */
 }
 
 void

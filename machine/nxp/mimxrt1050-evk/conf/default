@@ -23,6 +23,13 @@ memory DRAM_BASE	0x80000000
 memory LOADER_RAM_BASE	(CONFIG_DTCM_BASE_VIRT + CONFIG_DTCM_SIZE - CONFIG_LOADER_RAM_SIZE)
 
 #
+# REVISIT: NXP documentation says "24 MHz XTALOSC can be the external
+# clock source of SYSTICK" however, experimentation (and the calibration
+# register) suggest that it is running at 100KHz.
+#
+driver sys/dev/arm/armv7m-systick{.clock = 100000, .clksource = 0}
+
+#
 # LPUART1 is connected to serial->USB bridge
 # GPIO_AD_B0_12 as LPUART1_TX
 # GPIO_AD_B0_13 as LPUART1_RX
