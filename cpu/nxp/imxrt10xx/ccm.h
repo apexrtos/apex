@@ -124,7 +124,27 @@ struct ccm {
 		};
 		uint32_t r;
 	} CSCMR1;
-	uint32_t CSCMR2;
+	union ccm_cscmr2 {
+		struct {
+			uint32_t : 2;
+			uint32_t CAN_CLK_PODF : 6;
+			enum {
+				CAN_CLK_SEL_PLL3_SW_CLK_60M,
+				CAN_CLK_SEL_OSC_CLK,
+				CAN_CLK_SEL_PLL3_SW_CLK_80M,
+				CAN_CLK_SEL_DISABLE,
+			} CAN_CLK_SEL : 2;
+			uint32_t : 9;
+			enum {
+				FLEXIO2_CLK_SEL_PLL4,
+				FLEXIO2_CLK_SEL_PLL3_PFD2,
+				FLEXIO2_CLK_SEL_PLL5,
+				FLEXIO2_CLK_SEL_PLL3_SW_CLK,
+			} FLEXIO2_CLK_SEL : 2;
+			uint32_t : 11;
+		};
+		uint32_t r;
+	} CSCMR2;
 	union ccm_cscdr1 {
 		struct {
 			uint32_t UART_CLK_PODF : 6;
