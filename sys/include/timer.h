@@ -68,6 +68,7 @@ void	    timer_stop(struct timer *);
 uint64_t    timer_delay(uint64_t);
 void	    timer_tick(int);
 uint64_t    timer_monotonic(void);
+uint64_t    timer_monotonic_coarse(void);
 void	    timer_init(void);
 
 /*

@@ -120,8 +120,13 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 	case CLOCK_REALTIME_COARSE:
 		/* TODO(time): real time */
 	case CLOCK_MONOTONIC:
-	case CLOCK_MONOTONIC_COARSE:
 		/* TODO(time): monotonic with adjustments */
+		ns_to_ts(timer_monotonic(), ts);
+		return 0;
+	case CLOCK_MONOTONIC_COARSE:
+		/* TODO(time): coarse (fast) monotonic with adjustments */
+		ns_to_ts(timer_monotonic_coarse(), ts);
+		return 0;
 	case CLOCK_MONOTONIC_RAW:
 		/* TODO(time): monotonic without adjustments */
 		ns_to_ts(timer_monotonic(), ts);

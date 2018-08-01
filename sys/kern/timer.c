@@ -375,6 +375,16 @@ timer_monotonic(void)
 }
 
 /*
+ * Return monotonic time (coarse, fast version)
+ */
+uint64_t
+timer_monotonic_coarse(void)
+{
+	return monotonic;
+}
+
+
+/*
  * Initialize the timer facility, called at system startup time.
  */
 void
