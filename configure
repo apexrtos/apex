@@ -169,8 +169,7 @@ parse_config()
 			args=$(expr "$rest" : '[^{(]*\(.*\)')
 			case $args in
 			'')
-				# driver a/b/x -> x_init();
-				args="()"
+				# driver a/b/x -> no initialisation
 				;;
 			\(*)
 				# driver a/b/x(...) -> x_init(...);
@@ -181,8 +180,10 @@ parse_config()
 				;;
 			esac
 
-			echo "#include <$path/$name.h>" >> "$DRIVERS_H"
-			echo "$c_name""_init$args;" >> "$DRIVERS_C"
+			if [ "x$args" != x ]; then
+				echo "#include <$path/$name.h>" >> "$DRIVERS_H"
+				echo "$c_name""_init$args;" >> "$DRIVERS_C"
+			fi
 			echo "CONFIG_DRIVER_LIST += $path" >> "$CONFIG_MK"
 			;;
 		machcfg)
