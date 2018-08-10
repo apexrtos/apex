@@ -27,7 +27,7 @@ memory LOADER_RAM_BASE	(CONFIG_DTCM_BASE_VIRT + CONFIG_DTCM_SIZE - CONFIG_LOADER
 # clock source of SYSTICK" however, experimentation (and the calibration
 # register) suggest that it is running at 100KHz.
 #
-driver sys/dev/arm/armv7m-systick{.clock = 100000, .clksource = 0}
+driver-1 sys/dev/arm/armv7m-systick{.clock = 100000, .clksource = 0}
 
 #
 # LPUART1 is connected to serial->USB bridge

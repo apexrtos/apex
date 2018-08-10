@@ -161,7 +161,8 @@ parse_config()
 			echo "CONFIG_IMAGEFILES += $rest" >> "$CONFIG_MK"
 			bootimg=y
 			;;
-		driver)
+		driver*)
+			order=$(expr "$cmd" : 'driver\(.*\)')
 			path=$(expr "$rest" : '\([^({[:space:]]*\)')
 			name=$(expr "$path" : '.*/\(.*\)')
 			name=${name:="$path"}
@@ -180,9 +181,13 @@ parse_config()
 				;;
 			esac
 
+			if [ "x$order" = x ]; then
+				order=0
+			fi
+
 			if [ "x$args" != x ]; then
 				echo "#include <$path/$name.h>" >> "$DRIVERS_H"
-				echo "$c_name""_init$args;" >> "$DRIVERS_C"
+				echo "/* $order */ $c_name""_init$args;" >> "$DRIVERS_C"
 			fi
 			echo "CONFIG_DRIVER_LIST += $path" >> "$CONFIG_MK"
 			;;
@@ -297,13 +302,7 @@ main()
 		echo " */"
 		echo
 	} > "$DRIVERS_H"
-
-	{
-		echo "/*"
-		echo " * drivers.c - Automatically generated file. Do not edit."
-		echo " */"
-		echo
-	} > "$DRIVERS_C"
+	: > "$DRIVERS_C"
 
 	{
 		echo "/*"
@@ -390,6 +389,8 @@ main()
 		[ "x$subarch" != x ] &&
 			echo "#define CONFIG_SUBARCH \"$subarch\""
 	} >> "$CONFIG_H"
+
+	printf '/*\n * drivers.c - Automatically generated file. Do not edit.\n */\n\n%s' "$(sort -k 2 -n $DRIVERS_C)" > "$DRIVERS_C"
 
 	# Write makefile
 	cat > "$builddir/Makefile" <<MAKEFILE
