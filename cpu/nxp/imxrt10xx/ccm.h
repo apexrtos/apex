@@ -330,52 +330,75 @@ struct ccm {
 };
 static_assert(sizeof(struct ccm) == 0x8c, "");
 
+enum BYPASS_CLK_SRC {
+	BYPASS_CLK_SRC_REF_CLK_24M,
+	BYPASS_CLK_SRC_CLK1,
+};
+
+union ccm_analog_pll_arm {
+	struct {
+		uint32_t DIV_SELECT : 7;
+		uint32_t : 5;
+		uint32_t POWERDOWN : 1;
+		uint32_t ENABLE : 1;
+		enum BYPASS_CLK_SRC BYPASS_CLK_SRC : 2;
+		uint32_t BYPASS : 1;
+		uint32_t : 2;
+		uint32_t PLL_SEL : 1;
+		uint32_t : 11;
+		uint32_t LOCK : 1;
+	};
+	uint32_t r;
+};
+
+union ccm_analog_pll_usb {
+	struct {
+		uint32_t : 1;
+		uint32_t DIV_SELECT : 1;
+		uint32_t : 4;
+		uint32_t EN_USB_CLKS : 1;
+		uint32_t : 5;
+		uint32_t POWER : 1;
+		uint32_t ENABLE : 1;
+		enum BYPASS_CLK_SRC BYPASS_CLK_SRC : 2;
+		uint32_t BYPASS : 1;
+		uint32_t : 14;
+		uint32_t LOCK : 1;
+	};
+	uint32_t r;
+};
+
+union ccm_analog_pll_sys {
+	struct {
+		uint32_t DIV_SELECT : 1;
+		uint32_t : 11;
+		uint32_t POWERDOWN : 1;
+		uint32_t ENABLE : 1;
+		enum BYPASS_CLK_SRC BYPASS_CLK_SRC : 2;
+		uint32_t BYPASS : 1;
+		uint32_t : 14;
+		uint32_t LOCK : 1;
+	};
+	uint32_t r;
+};
+
 struct ccm_analog {
-	union ccm_analog_pll_arm {
-		struct {
-			uint32_t DIV_SELECT : 7;
-			uint32_t : 5;
-			uint32_t POWERDOWN : 1;
-			uint32_t ENABLE : 1;
-			enum {
-				BYPASS_CLK_SRC_REF_CLK_24M,
-				BYPASS_CLK_SRC_CLK1,
-			} BYPASS_CLK_SRC : 2;
-			uint32_t BYPASS : 1;
-			uint32_t : 2;
-			uint32_t PLL_SEL : 1;
-			uint32_t : 11;
-			uint32_t LOCK : 1;
-		};
-		uint32_t r;
-	} PLL_ARM;
-	uint32_t PLL_ARM_SET;
-	uint32_t PLL_ARM_CLR;
-	uint32_t PLL_ARM_TOG;
-	uint32_t PLL_USB1;
-	uint32_t PLL_USB1_SET;
-	uint32_t PLL_USB1_CLR;
-	uint32_t PLL_USB1_TOG;
-	uint32_t PLL_USB2;
-	uint32_t PLL_USB2_SET;
-	uint32_t PLL_USB2_CLR;
-	uint32_t PLL_USB2_TOG;
-	union ccm_analog_pll_sys {
-		struct {
-			uint32_t DIV_SELECT : 1;
-			uint32_t : 11;
-			uint32_t POWERDOWN : 1;
-			uint32_t ENABLE : 1;
-			uint32_t BYPASS_CLK_SRC : 2;
-			uint32_t BYPASS : 1;
-			uint32_t : 14;
-			uint32_t LOCK : 1;
-		};
-		uint32_t r;
-	} PLL_SYS;
-	uint32_t PLL_SYS_SET;
-	uint32_t PLL_SYS_CLR;
-	uint32_t PLL_SYS_TOG;
+	union ccm_analog_pll_arm PLL_ARM;
+	union ccm_analog_pll_arm PLL_ARM_SET;
+	union ccm_analog_pll_arm PLL_ARM_CLR;
+	union ccm_analog_pll_arm PLL_ARM_TOG;
+	union ccm_analog_pll_usb PLL_USB1;
+	union ccm_analog_pll_usb PLL_USB1_SET;
+	union ccm_analog_pll_usb PLL_USB1_CLR;
+	union ccm_analog_pll_usb PLL_USB1_TOG;
+	union ccm_analog_pll_usb PLL_USB2;
+	union ccm_analog_pll_usb PLL_USB2_SET;
+	union ccm_analog_pll_usb PLL_USB2_CLR;
+	union ccm_analog_pll_usb PLL_USB2_TOG;
+	union ccm_analog_pll_sys PLL_SYS;
+	union ccm_analog_pll_sys PLL_SYS_SET;
+	union ccm_analog_pll_sys PLL_SYS_CLR;
+	union ccm_analog_pll_sys PLL_SYS_TOG;
 	uint32_t PLL_SYS_SS;
 	uint32_t : 32;
 	uint32_t : 32;

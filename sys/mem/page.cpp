@@ -364,8 +364,9 @@ page_alloc(size_t len, MEM_TYPE mt, const PAGE_ALLOC_TYPE at, void *owner)
 	const auto addr = page_alloc_order(order, mt, at, owner);
 	if (addr == 0)
 		return 0;
-	page_free(addr + len, (CONFIG_PAGE_SIZE << order) - len, owner);
-	return addr;
+	const auto excess = (CONFIG_PAGE_SIZE << order) - len;
+	page_free(addr, excess, owner);
+	return addr + excess;
 }
 
 /*
