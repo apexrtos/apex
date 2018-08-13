@@ -163,7 +163,11 @@ asm(
 #if defined(CONFIG_FPU)
 	"vpop {s16-s31}\n"
 #endif
+#if defined(CONFIG_MPU)
+	"b mpu_thread_switch\n"
+#else
 	"bx lr\n"
+#endif
 
 	/* Trigger NMI */
 	"1: mov r3, 0x80000000\n"
@@ -202,7 +206,10 @@ exc_HardFault(void)
 /*
  * exc_MemManage
  */
-__fast_text void
+#if defined(CONFIG_MPU)
+__fast_text
+#endif
+void
 exc_MemManage(void)
 {
 	EXCEPTION_ENTRY();
@@ -226,16 +233,14 @@ exc_MemManage(void)
 
 	/* try to handle fault */
 	const union scb_cfsr cfsr = SCB->CFSR;
-	if (cfsr.MMFSR.MSTKERR || cfsr.MMFSR.MUNSTKERR)
-		mpu_fault((void *)thread_cur()->ctx.kregs.psp);
+	if (cfsr.MMFSR.MMARVALID)
+		mpu_fault((void *)SCB->MMFAR);
 	else if (cfsr.MMFSR.IACCVIOL)
 		mpu_fault((void *)e->ra);
-	else if (cfsr.MMFSR.MLSPERR)
-		mpu_fault((void *)FPU->FPCAR);
-	else if (cfsr.MMFSR.MMARVALID)
-		mpu_fault((void *)SCB->MMFAR);
+	else if (cfsr.MMFSR.MSTKERR)
+		sig_thread(thread_cur(), SIGSEGV); /* stack overflow */
 	else
-		panic("Bad MemManage");
+		panic("MemManage");
 
 	/* clear fault */
 	SCB->CFSR.MMFSR.r = -1;

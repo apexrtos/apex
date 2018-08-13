@@ -12,14 +12,16 @@
 #include <vm.h>
 
 __fast_bss size_t fixed;	    /* number of fixed regions */
+__fast_bss size_t stack;	    /* number of stack regions */
 __fast_bss size_t victim;	    /* next victim to evict */
 __fast_bss const void *fault_addr;  /* last fault address */
+const struct thread *mapped_thread; /* currently mapped thread */
 
 static void
 clear_dynamic(void)
 {
 	const size_t regions = MPU->TYPE.DREGION;
-	for (size_t i = fixed; i < regions; ++i) {
+	for (size_t i = fixed + stack; i < regions; ++i) {
 		MPU->RNR = i;
 		MPU->RASR.r = 0;
 	}
@@ -44,7 +46,7 @@ static_region(const struct mmumap *map, size_t i)
 	}.r;
 }
 
-static uint32_t
+__fast_text static uint32_t
 prot_to_rasr(int prot)
 {
 	switch (prot & (PROT_READ | PROT_WRITE | PROT_EXEC)) {
@@ -97,7 +99,51 @@ mpu_init(const struct mmumap *map, size_t count, int flags)
 void
 mpu_switch(const struct as *as)
 {
+	stack = 0;
+	mapped_thread = NULL;
 	clear_dynamic();
+}
+
+/*
+ * mpu_thread_switch - switch mpu to new thread
+ */
+__attribute__((used)) void
+mpu_thread_switch(struct thread *prev, struct thread *t)
+{
+	if (t->task == &kern_task)
+		return;
+	if (t == mapped_thread)
+		return;
+	if (mapped_thread && mapped_thread->task != t->task)
+		mpu_switch(t->task->as);
+
+	/* map stack */
+	const struct seg *seg = as_find_seg(t->task->as, (void *)t->ctx.kregs.psp);
+	if (!seg || seg_prot(seg) == PROT_NONE) {
+		sig_thread(t, SIGSEGV);
+		return;
+	}
+	stack = 0;
+	const uint32_t rasr_prot = prot_to_rasr(seg_prot(seg));
+	for (void *a = seg_begin(seg); a < seg_end(seg);) {
+		const size_t size = seg_end(seg) - a;
+		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
+		MPU->RBAR.r = (union mpu_rbar){
+			.REGION = fixed + stack,
+			.VALID = 1,
+			.ADDR = (uintptr_t)a >> 5,
+		}.r;
+		MPU->RASR.r = rasr_prot | (union mpu_rasr){
+			.SIZE = o - 1,
+			.ENABLE = 1,
+		}.r;
+		a += 1 << o;
+		++stack;
+	}
+
+	mapped_thread = t;
+	if (victim < fixed + stack)
+		victim = fixed + stack;
 }
 
 /*
@@ -148,7 +194,6 @@ mpu_fault(const void *addr)
 	    floor_log2((uintptr_t)addr ^ (uintptr_t)seg_end(seg)),
 	    floor_log2((-(uintptr_t)addr - 1) ^ -(uintptr_t)seg_begin(seg)));
 
-
 	/* configure MPU */
 	MPU->RBAR.r = (union mpu_rbar){
 		.REGION = victim,
@@ -162,7 +207,7 @@ mpu_fault(const void *addr)
 
 	fault_addr = addr;
 	if (++victim == MPU->TYPE.DREGION)
-		victim = fixed;
+		victim = fixed + stack;
 }
 
 /*
@@ -172,8 +217,8 @@ void
 mpu_dump(void)
 {
 	dbg("*** MPU dump ***\n");
-	dbg("fixed:%x victim:%x fault_addr:%8p\n",
-	    fixed, victim, fault_addr);
+	dbg("fixed:%x stack:%x victim:%x fault_addr:%8p\n",
+	    fixed, stack, victim, fault_addr);
 
 	const union mpu_type type = MPU->TYPE;
 	dbg("MPU_TYPE %08x: SEPARATE:%d IREGION:%d DREGION:%d\n",
@@ -192,7 +237,7 @@ mpu_dump(void)
 		assert(rbar.REGION == i);
 
 		if (rasr.ENABLE)
-			dbg("Region %x: ADDR:%08x SIZE:%08x SRD:%x TEX:%x C:%d B:%d S:%d AP:%x XN:%d\n",
+			dbg("Region %x: ADDR:%08x SIZE:%08x SRD:%02x TEX:%x C:%d B:%d S:%d AP:%x XN:%d\n",
 			    i, rbar.ADDR << 5, 1 << (rasr.SIZE + 1), rasr.SRD, rasr.TEX, rasr.C, rasr.B, rasr.S, rasr.AP, rasr.XN);
 		else
 			dbg("Region %x: disabled\n", i);
