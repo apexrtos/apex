@@ -34,8 +34,8 @@
  *	@(#)tty.h	8.7 (Berkeley) 1/9/95
  */
 
-#ifndef tty_h
-#define tty_h
+#ifndef dev_tty_h
+#define dev_tty_h
 
 #include <stdbool.h>
 #include <stddef.h>
