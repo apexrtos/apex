@@ -149,7 +149,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	    ph_flags_to_prot(&data_ph), flags, fd, PAGE_TRUNC(data_ph.p_offset),
 	    MEM_NORMAL)) > (void*)-4096UL)
 		return (int)data;
-	vm_init_brk(a, (void*)data_end);
+	vm_init_brk(a, dyn ? data + data_end : (void*)data_end);
 
 	/* unmap any text-to-data hole */
 	if ((err = munmapfor(a, (void *)text_end, data_start - text_end)) < 0)
