@@ -234,9 +234,9 @@ exc_MemManage(void)
 	/* try to handle fault */
 	const union scb_cfsr cfsr = SCB->CFSR;
 	if (cfsr.MMFSR.MMARVALID)
-		mpu_fault((void *)SCB->MMFAR);
+		mpu_fault((void *)SCB->MMFAR, 0);
 	else if (cfsr.MMFSR.IACCVIOL)
-		mpu_fault((void *)e->ra);
+		mpu_fault((void *)e->ra, 4);
 	else if (cfsr.MMFSR.MSTKERR)
 		sig_thread(thread_cur(), SIGSEGV); /* stack overflow */
 	else

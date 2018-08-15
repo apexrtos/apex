@@ -122,7 +122,7 @@ void		mpu_switch(const struct as *);
 void		mpu_unmap(const void *, size_t);
 void		mpu_map(const void *, size_t, int);
 void		mpu_protect(const void *, size_t, int);
-void		mpu_fault(const void *);
+void		mpu_fault(const void *, size_t);
 void		mpu_dump(void);
 #endif
 

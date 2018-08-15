@@ -178,7 +178,7 @@ mpu_protect(const void *addr, size_t len, int prot)
  * mpu_fault - handle mpu fault
  */
 __fast_text void
-mpu_fault(const void *addr)
+mpu_fault(const void *addr, size_t len)
 {
 	const struct seg *seg = as_find_seg(task_cur()->as, addr);
 
@@ -188,26 +188,37 @@ mpu_fault(const void *addr)
 		sig_thread(thread_cur(), SIGSEGV);
 		return;
 	}
+	fault_addr = addr;
 
+again:;
 	/* find largest power-of-2 sized region containing addr within seg */
 	const size_t order = MIN(
 	    floor_log2((uintptr_t)addr ^ (uintptr_t)seg_end(seg)),
 	    floor_log2((-(uintptr_t)addr - 1) ^ -(uintptr_t)seg_begin(seg)));
 
 	/* configure MPU */
+	const uintptr_t region_base = (uintptr_t)addr & -(1UL << order);
 	MPU->RBAR.r = (union mpu_rbar){
 		.REGION = victim,
 		.VALID = 1,
-		.ADDR = ((uintptr_t)addr & -(1UL << order)) >> 5,
+		.ADDR = region_base >> 5,
 	}.r;
 	MPU->RASR.r = prot_to_rasr(seg_prot(seg)) | (union mpu_rasr){
 		.SIZE = order - 1,
 		.ENABLE = 1,
 	}.r;
 
-	fault_addr = addr;
 	if (++victim == MPU->TYPE.DREGION)
 		victim = fixed + stack;
+
+	if (len) {
+		addr += len;
+		const void *region_end = (void *)region_base + (1UL << order);
+		if (addr < seg_end(seg) && addr >= region_end) {
+			len = 0;
+			goto again;
+		}
+	}
 }
 
 /*
