@@ -182,6 +182,8 @@ static region *
 find_region(phys *begin, size_t len)
 {
 	const phys *end = begin + len;
+	if (end < begin)
+		return nullptr;
 	for (size_t i = 0; i < s.nr_regions; ++i) {
 		auto &r = s.regions[i];
 		if (begin >= r.begin && end <= r.end)
