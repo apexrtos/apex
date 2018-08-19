@@ -439,7 +439,7 @@ sc_brk(void *addr)
 	/* grow */
 	if (addr > a->brk)
 		if (auto r = mmapfor(a, a->brk,
-		    (uintptr_t)a->brk - (uintptr_t)addr,
+		    (uintptr_t)addr - (uintptr_t)a->brk,
 		    PROT_READ | PROT_WRITE,
 		    MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE,
 		    0, 0, MEM_NORMAL); r > (void*)-4096UL)
