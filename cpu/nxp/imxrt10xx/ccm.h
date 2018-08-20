@@ -382,6 +382,24 @@ union ccm_analog_pll_sys {
 	uint32_t r;
 };
 
+union ccm_analog_pfd {
+	struct {
+		uint32_t PFD0_FRAC : 6;
+		uint32_t PFD0_STABLE : 1;
+		uint32_t PFD0_CLKGATE : 1;
+		uint32_t PFD1_FRAC : 6;
+		uint32_t PFD1_STABLE : 1;
+		uint32_t PFD1_CLKGATE : 1;
+		uint32_t PFD2_FRAC : 6;
+		uint32_t PFD2_STABLE : 1;
+		uint32_t PFD2_CLKGATE : 1;
+		uint32_t PFD3_FRAC : 6;
+		uint32_t PFD3_STABLE : 1;
+		uint32_t PFD3_CLKGATE : 1;
+	};
+	uint32_t r;
+};
+
 struct ccm_analog {
 	union ccm_analog_pll_arm PLL_ARM;
 	union ccm_analog_pll_arm PLL_ARM_SET;
@@ -443,14 +461,14 @@ struct ccm_analog {
 	uint32_t PLL_ENET_SET;
 	uint32_t PLL_ENET_CLR;
 	uint32_t PLL_ENET_TOG;
-	uint32_t PFD_480;
-	uint32_t PFD_480_SET;
-	uint32_t PFD_480_CLR;
-	uint32_t PFD_480_TOG;
-	uint32_t PFD_528;
-	uint32_t PFD_528_SET;
-	uint32_t PFD_528_CLR;
-	uint32_t PFD_528_TOG;
+	union ccm_analog_pfd PFD_480;
+	union ccm_analog_pfd PFD_480_SET;
+	union ccm_analog_pfd PFD_480_CLR;
+	union ccm_analog_pfd PFD_480_TOG;
+	union ccm_analog_pfd PFD_528;
+	union ccm_analog_pfd PFD_528_SET;
+	union ccm_analog_pfd PFD_528_CLR;
+	union ccm_analog_pfd PFD_528_TOG;
 	uint32_t : 32;
 	uint32_t : 32;
 	uint32_t : 32;
