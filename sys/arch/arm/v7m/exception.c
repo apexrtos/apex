@@ -395,7 +395,7 @@ UsageFault(struct exception_frame *eframe)
 		what = "Invalid Coprocessor Access\n";
 
 	/* reset fault register */
-	SCB->CFSR.UFSR.r = 0;
+	SCB->CFSR.UFSR.r = -1;
 
 	dump_exception(task_cur() != &kern_task, eframe);
 	if (task_cur() == &kern_task)
