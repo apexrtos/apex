@@ -4,6 +4,8 @@
 #include <conf/config.h>
 #include <stdint.h>
 
+#define EPENDSV_RETURN 255
+
 /*
  *
  * Register Synonym Special Role in the procedure call standard

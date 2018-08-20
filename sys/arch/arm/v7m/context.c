@@ -246,7 +246,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	if (ss)
 		sf->saved_sigset = *ss;
 	sf->saved_rrval = rrval;
-	if (rrval == -ERESTARTSYS) {
+	if (rrval == -ERESTARTSYS || rrval == -EPENDSV_RETURN) {
 		const struct syscall_frame *sframe =
 		    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
 		    sizeof(struct syscall_frame);
@@ -292,7 +292,8 @@ context_restore(struct context *ctx, k_sigset_t *ss)
 	/* restore state */
 	if (ss)
 		*ss = sf->saved_sigset;
-	if (sf->saved_rrval == -ERESTARTSYS) {
+	if (sf->saved_rrval == -ERESTARTSYS ||
+	    sf->saved_rrval == -EPENDSV_RETURN) {
 		struct syscall_frame *sframe =
 		    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
 		    sizeof(struct syscall_frame);

@@ -48,8 +48,6 @@ static_assert(offsetof(struct kern_regs, psp) == KREGS_PSP, "");
 static_assert(offsetof(struct kern_regs, shcsr) == KREGS_SHCSR, "");
 static_assert(sizeof(struct exception_frame) == EFRAME_SIZE, "");
 
-#define EPENDSV_RETURN 255
-
 /*
  * exception entry & exit
  *
@@ -88,12 +86,25 @@ static_assert(sizeof(struct exception_frame) == EFRAME_SIZE, "");
  *
  * Runs (via tail-chain) after an exception from userspace finishes
  */
-__fast_text void
+__fast_text __attribute__((naked)) void
 exc_PendSV(void)
+{
+	asm(
+		"push {r4, r5, r6, r7}\n"    /* struct syscall_frame */
+		"bl exc_PendSV_c\n"
+		"mov r0, -"S(EPENDSV_RETURN)"\n"
+		"bl sig_deliver\n"
+		"add sp, 16\n"
+		"mov r0, "S(EXC_RETURN_USER)"\n"
+		"bx r0\n"
+	);
+}
+
+__fast_text __attribute__((used)) void
+exc_PendSV_c(void)
 {
 	assert(thread_cur()->locks == 1);
 	sch_unlock();
-	sig_deliver(-EPENDSV_RETURN);
 }
 
 /*
@@ -417,7 +428,7 @@ exc_SVCall(void)
 {
 	asm(
 		/* Preserve non-volatile registers used by the syscall ABI */
-		"push {r4, r5, r6, r7}\n"
+		"push {r4, r5, r6, r7}\n"	    /* struct syscall_frame */
 
 		/* Due to late arrival preemption and tail-chaining the values
 		   in r0, r1, r2, r3, r12 and lr can be changed between
@@ -451,13 +462,9 @@ exc_SVCall(void)
 		"bl sig_deliver\n"
 
 		/* If syscall returned -EPENDSV_RETURN we delivered a signal
-		   during return from PendSV. In this case we head straight
-		   back to userspace without adjusting the original exception
-		   frame or restoring r4-r7. */
+		   during return from PendSV. */
 		"mov r1, -"S(EPENDSV_RETURN)"\n"
 		"cmp r0, r1\n"
-		"itt eq\n"
-		"addeq sp, 16\n"		    /* drop r4-r7 */
 		"beq asm_syscall_return\n"
 
 		/* If syscall returned -ERESTARTSYS a previous syscall was
@@ -476,10 +483,10 @@ exc_SVCall(void)
 		"ldreq r0, [ip, "S(EFRAME_RA)"]\n"  /* else load return addr */
 		"subeq r0, 2\n"			    /* back up by 2 */
 		"streq r0, [ip, "S(EFRAME_RA)"]\n"  /* store return addr */
-		"pop {r4, r5, r6, r7}\n"
 
 	"asm_syscall_return:\n"
 		/* return to userspace */
+		"pop {r4, r5, r6, r7}\n"
 		"mov r0, "S(EXC_RETURN_USER)"\n"
 		"bx r0\n"
 
