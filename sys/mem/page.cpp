@@ -29,7 +29,6 @@
 #include <algorithm>
 #include <bootinfo.h>
 #include <cassert>
-#include <cstdlib>
 #include <cstring>
 #include <debug.h>
 #include <errno.h>
@@ -625,25 +624,35 @@ page_init(const struct bootinfo *bi, void *owner)
 	/* allocate regions */
 	s.regions = (region*)alloc(sizeof *s.regions * s.nr_regions);
 
-	/* initialise regions & pages */
-	for (size_t i = 0, j = 0; i < bi->nr_rams; ++i) {
-		const auto &m = bi->ram[i];
+	/* initialise regions & pages in ascending address order */
+	phys *init_addr = nullptr;
+	for (size_t i = 0; i != s.nr_regions; ++i) {
+		const boot_mem *m = nullptr;
+		for (size_t j = 0; j < bi->nr_rams; ++j) {
+			const auto &t = bi->ram[j];
+			if (t.type != MT_NORMAL && t.type != MT_FAST)
+				continue;
+			if (t.base < init_addr)
+				continue;
+			if (!m || (t.base >= init_addr && t.base < m->base))
+				m = &t;
+		}
+		assert(m);
+
 		MEM_TYPE type;
-		switch (m.type) {
+		switch (m->type) {
 		case MT_NORMAL:
 			type = MEM_NORMAL;
 			break;
 		case MT_FAST:
 			type = MEM_FAST;
 			break;
-		default:
-			continue;
 		}
 
-		region &r = *new(s.regions + j) region;
+		region &r = *new(s.regions + i) region;
 		r.type = type;
-		r.begin = (phys*)PAGE_ALIGN(m.base);
-		r.end = (phys*)PAGE_TRUNC(m.base + m.size);
+		r.begin = (phys*)PAGE_ALIGN(m->base);
+		r.end = (phys*)PAGE_TRUNC(m->base + m->size);
 		const size_t size_order = ceil_log2(r.end - r.begin);
 		r.base = TRUNCn(r.begin, 1 << size_order);
 		r.size = ALIGNn(r.end, 1 << size_order) - r.base;
@@ -671,21 +680,11 @@ page_init(const struct bootinfo *bi, void *owner)
 			panic("bad bootinfo");
 
 		dbg("page_init: region %zu (%s): %p -> %p covering %p -> %p\n",
-		    j, to_string(r.type), r.base, r.base + r.size,
+		    i, to_string(r.type), r.base, r.base + r.size,
 		    r.begin, r.end);
 
-		++j;
+		init_addr = r.end;
 	}
-
-	/* sort regions by address */
-	auto comp = [](const void *lv, const void *rv) {
-		const region *l = (region*)lv;
-		const region *r = (region*)rv;
-		if (l->begin > r->begin) return 1;
-		if (l->begin < r->begin) return -1;
-		return 0;
-	};
-	qsort(s.regions, s.nr_regions, sizeof *s.regions, comp);
 
 	/* make sure that regions don't overlap */
 	for (size_t i = 1; i < s.nr_regions; ++i) {
