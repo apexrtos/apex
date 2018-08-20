@@ -597,6 +597,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		dbg("Fatal signal %d. Terminate.\n", sig);
 		proc_exit(task_cur(), 0);
 		task_cur()->exitcode = sig;
+		sch_exit();
 		goto out;
 	case SIGTSTP:
 	case SIGTTIN:
