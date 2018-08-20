@@ -266,14 +266,25 @@ exc_MemManage(void)
 void
 exc_BusFault(void)
 {
+	EXCEPTION_ENTRY();
+
 	const bool from_user = (int)__builtin_return_address(0) & EXC_SPSEL;
 	struct exception_frame *e;
 	if (from_user)
 		asm("mrs %0, psp" : "=r" (e));
 	else
 		e = __builtin_frame_address(0);
+
 	dump_exception(from_user, e);
-	panic("BusFault");
+	if (!from_user)
+		panic("BusFault");
+	dbg("BusFault");
+	sig_thread(thread_cur(), SIGBUS);
+
+	/* clear fault */
+	SCB->CFSR.BFSR.r = -1;
+
+	EXCEPTION_EXIT();
 }
 
 /*
