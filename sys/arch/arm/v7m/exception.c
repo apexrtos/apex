@@ -121,6 +121,7 @@ exc_PendSV_c(void)
  * and SVCall bits as these are the two modes a kernel thread can run in.
  */
 asm(
+".text\n"
 ".thumb_func\n"
 #if defined(CONFIG_FPU)
 ".fpu vfp\n"
