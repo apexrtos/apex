@@ -676,20 +676,19 @@ sch_unlock_slowpath(int s)
 		 * until _next_ sch_unlock() call.
 		 */
 		irq_restore(s);
+
+		/*
+		 * Reap zombies
+		 */
+		while (!list_empty(&zombie_list)) {
+			struct thread *th = list_entry(list_first(&zombie_list),
+			    struct thread, task_link);
+			list_remove(&th->task_link);
+			thread_free(th);
+		}
+
 		s = irq_disable();
 		wakeq_flush();
-	}
-
-	/*
-	 * Reap one zombie
-	 */
-	if (!list_empty(&zombie_list)) {
-		struct thread *th = list_entry(list_first(&zombie_list),
-		    struct thread, task_link);
-		list_remove(&th->task_link);
-		irq_restore(s);
-		thread_free(th);
-		s = irq_disable();
 	}
 }
 
@@ -700,8 +699,9 @@ sch_unlock(void)
 	thread_check();
 
 	int s = irq_disable();
-	if (--active_thread->locks == 0)
+	if (active_thread->locks == 1)
 		sch_unlock_slowpath(s);
+	--active_thread->locks;
 	irq_restore(s);
 }
 
