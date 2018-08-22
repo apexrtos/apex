@@ -197,6 +197,7 @@ again:
 				as_modify_begin(task->as);
 				as_destroy(task->as);
 				task->magic = 0;
+				kmem_free(task->path);
 				kmem_free(task);
 				break;
 			}
