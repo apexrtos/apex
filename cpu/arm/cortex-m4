@@ -1,7 +1,6 @@
-#
-# Options for ARM Cortex-M4
-#
-
+/*
+ * Options for ARM Cortex-M4
+ */
 arch arm
 subarch v7m
 makeoption CFLAGS += -mcpu=cortex-m4
@@ -15,7 +14,7 @@ makeoption USER_CFLAGS += -Xlinker --exclude-libs=ALL
 makeoption USER_CFLAGS += -z max-page-size=0x1000
 include cpu/arm/thumb
 
-# Cortex-M4 has optional MPU. Set option MPU if available.
+/* Cortex-M4 has optional MPU. Set option MPU if available. */
 
-# musl & gcc can't build a gcc/musl/linux multilib toolchain yet
+/* musl & gcc can't build a gcc/musl/linux multilib toolchain yet */
 cross-compile armv7m-linux-musleabi

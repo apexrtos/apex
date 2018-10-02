@@ -1,6 +1,5 @@
-#
-# Options for building in thumb mode
-#
-
+/*
+ * Options for building in thumb mode
+ */
 makeoption CFLAGS += -mthumb
 makeoption CFLAGS += -Xlinker --thumb-entry=_start

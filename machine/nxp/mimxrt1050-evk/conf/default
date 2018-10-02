@@ -1,20 +1,20 @@
-#
-# Kernel
-#
-memory KSTACK_SIZE	4048	    # Kernel stack size
-option TIME_SLICE_MS	50	    # milliseconds
+/*
+ * Kernel
+ */
+memory KSTACK_SIZE	4048	    // Kernel stack size
+option TIME_SLICE_MS	50	    // milliseconds
 option HZ		1000
 option PAGE_SIZE	0x1000
 memory PAGE_OFFSET	0x00000000
 
-#
-# Memory layout
-#
+/*
+ * Memory layout
+ */
 memory DRAM_SIZE	0x2000000
 memory ITCM_SIZE	0x8000
 memory DTCM_SIZE	0x78000
 memory ROM_SIZE		0x4000000
-memory ROM_OFFSET	0x1080	    # vector table must be 128-byte aligned
+memory ROM_OFFSET	0x1080	    // vector table must be 128-byte aligned
 memory LOADER_RAM_SIZE	0x2000
 memory ROM_BASE		0x60000000
 memory ITCM_BASE	0x0
@@ -22,40 +22,40 @@ memory DTCM_BASE	0x20000000
 memory DRAM_BASE	0x80000000
 memory LOADER_RAM_BASE	(CONFIG_DTCM_BASE_VIRT + CONFIG_DTCM_SIZE - CONFIG_LOADER_RAM_SIZE)
 
-#
-# REVISIT: NXP documentation says "24 MHz XTALOSC can be the external
-# clock source of SYSTICK" however, experimentation (and the calibration
-# register) suggest that it is running at 100KHz.
-#
+/*
+ * REVISIT: NXP documentation says "24 MHz XTALOSC can be the external
+ * clock source of SYSTICK" however, experimentation (and the calibration
+ * register) suggest that it is running at 100KHz.
+ */
 driver-1 sys/dev/arm/armv7m-systick{.clock = 100000, .clksource = 0}
 
-#
-# LPUART1 is connected to serial->USB bridge
-# GPIO_AD_B0_12 as LPUART1_TX
-# GPIO_AD_B0_13 as LPUART1_RX
-#
+/*
+ * LPUART1 is connected to serial->USB bridge
+ * GPIO_AD_B0_12 as LPUART1_TX
+ * GPIO_AD_B0_13 as LPUART1_RX
+ */
 pincfg IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_mux_ctl){ .MUX_MODE = 2, .SION = SION_Software_Input_On_Disabled }.r
 pincfg IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_100MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Disabled }.r
 pincfg IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13.r = (union iomuxc_sw_mux_ctl){ .MUX_MODE = 2, .SION = SION_Software_Input_On_Disabled }.r
 pincfg IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_100MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Disabled }.r
 driver sys/dev/nxp/imxrt-lpuart{.name = "ttyS0", .base = 0x40184000, .clock = 24000000, .ipl = IPL_MIN, .rx_tx_int = 20}
 
-#
-# CPU
-#
+/*
+ * CPU
+ */
 cpu nxp/imxrt1050
 
-#
-# Pretty machine name
-#
+/*
+ * Pretty machine name
+ */
 option MACHINE_NAME NXP MIMXRT1050-EVK
 
-#
-# Build executable image for MIMXRT1050-EVK board
-#
+/*
+ * Build executable image for MIMXRT1050-EVK board
+ */
 mk machine/nxp/mimxrt1050-evk/image/image.mk
 
-#
-# Include helpful "make gdb" rule
-#
+/*
+ * Include helpful "make gdb" rule
+ */
 mk machine/nxp/mimxrt1050-evk/gdb.mk

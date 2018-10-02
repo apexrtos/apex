@@ -105,14 +105,7 @@ find_config()
 
 parse_config()
 {
-	while read -r line; do
-		# Strip comments
-		line=$(expr "x$line" : 'x\([^#]*\)')
-
-		read -r cmd rest <<-END_OF_COMMAND
-			$line
-		END_OF_COMMAND
-
+	while read -r cmd rest; do
 		case $cmd in
 		option)
 			param=$(expr "x$rest" : 'x\([^=[:space:]]*\)')
@@ -243,10 +236,12 @@ parse_config()
 		"")
 			;;
 		*)
-			quit "bad command \"$line\""
+			quit "bad command \"$cmd $rest\""
 			;;
 		esac
-	done < "$1"
+	done <<-EOF
+		$(cpp -P -Wno-builtin-macro-redefined -U__DATE__ -U__TIME__ -undef "$1")
+	EOF
 }
 
 main()
@@ -254,7 +249,7 @@ main()
 	# Set default options
 	a="/$0"; a=${a%/*}; a=${a:-.}; a=${a#/}/; apexdir=$(cd "$a" && pwd)
 	srcdir="$apexdir"
-	print=echo
+	print="echo"
 	builddir=$(pwd)
 
 	# Process input arguments

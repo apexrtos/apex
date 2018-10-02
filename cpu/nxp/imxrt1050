@@ -1,6 +1,6 @@
-#
-# CPU settings
-#
+/*
+ * CPU settings
+ */
 option IRQS		160
 option NVIC_PRIO_BITS	4
 option MPU

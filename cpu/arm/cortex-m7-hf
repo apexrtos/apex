@@ -1,7 +1,6 @@
-#
-# Options for ARM Cortex-M7 (Hard Float)
-#
-
+/*
+ * Options for ARM Cortex-M7 (Hard Float)
+ */
 arch arm
 subarch v7m
 makeoption CFLAGS += -mcpu=cortex-m7
@@ -18,8 +17,8 @@ option ICACHE_LINE_SIZE 32
 option FPU
 include cpu/arm/thumb
 
-# Cortex-M7 has optional MPU. Set option MPU if available.
-# Cortex-M7 has optional cache. Set option CACHE if available.
+/* Cortex-M7 has optional MPU. Set option MPU if available. */
+/* Cortex-M7 has optional cache. Set option CACHE if available. */
 
-# musl & gcc can't build a gcc/musl/linux multilib toolchain yet
+/* musl & gcc can't build a gcc/musl/linux multilib toolchain yet */
 cross-compile armv7m-linux-musleabihf
