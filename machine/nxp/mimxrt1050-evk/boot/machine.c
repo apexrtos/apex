@@ -5,7 +5,7 @@
 #include <cpu/nxp/imxrt10xx/dcdc.h>
 #include <cpu/nxp/imxrt10xx/iomuxc.h>
 #include <cpu/nxp/imxrt10xx/semc.h>
-#include <sys/dev/nxp/imxrt-lpuart/regs.h>
+#include <sys/dev/fsl/lpuart/regs.h>
 
 #if defined(CONFIG_BOOT_CONSOLE)
 static const unsigned long LPUART1 = 0x40184000;

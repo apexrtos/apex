@@ -8,7 +8,7 @@
 #include <cpu/nxp/imxrt10xx/pmu.h>
 #include <cpu/nxp/imxrt10xx/src.h>
 #include <debug.h>
-#include <dev/nxp/imxrt-lpuart/imxrt-lpuart.h>
+#include <dev/fsl/lpuart/lpuart.h>
 #include <interrupt.h>
 #include <kernel.h>
 #include <timer.h>
@@ -98,11 +98,11 @@ machine_panic(void)
 void
 early_console_init(void)
 {
-	imxrt_lpuart_early_init(LPUART1, 24000000, CONFIG_CONSOLE_CFLAG);
+	fsl_lpuart_early_init(LPUART1, 24000000, CONFIG_CONSOLE_CFLAG);
 }
 
 void
 early_console_print(const char *s, size_t len)
 {
-	imxrt_lpuart_early_print(LPUART1, s, len);
+	fsl_lpuart_early_print(LPUART1, s, len);
 }
