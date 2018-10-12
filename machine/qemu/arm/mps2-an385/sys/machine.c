@@ -67,11 +67,11 @@ void
 early_console_init(void)
 {
 	/* QEMU doesn't care about baud rate */
-	mps2_uart_early_init(UART0, CONFIG_CONSOLE_CFLAG);
+	arm_mps2_uart_early_init(UART0, CONFIG_CONSOLE_CFLAG);
 }
 
 void
 early_console_print(const char *s, size_t len)
 {
-	mps2_uart_early_print(UART0, s, len);
+	arm_mps2_uart_early_print(UART0, s, len);
 }
