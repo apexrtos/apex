@@ -12,3 +12,4 @@ INCLUDE := \
 
 SOURCES := \
 	new.cpp \
+	pure.cpp \
