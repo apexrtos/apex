@@ -72,8 +72,11 @@ bootinfo_dump(void)
 void
 debug_puts(const char *s)
 {
-	while (*s)
+	while (*s) {
+		if (*s == '\n')
+			machine_putc('\r');
 		machine_putc(*s++);
+	}
 }
 
 void
