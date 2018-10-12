@@ -647,6 +647,8 @@ page_init(const struct bootinfo *bi, void *owner)
 		case MT_FAST:
 			type = MEM_FAST;
 			break;
+		default:
+			assert(0);  /* impossible, but gcc warns.. */
 		}
 
 		region &r = *new(s.regions + i) region;
