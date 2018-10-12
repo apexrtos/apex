@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-struct mps2_uart_desc {
+struct arm_mps2_uart_desc {
 	const char *name;
 	unsigned long base;
 	int ipl;
@@ -24,9 +24,9 @@ struct mps2_uart_desc {
 	int overflow_int;
 };
 
-void mps2_uart_early_init(unsigned long base, tcflag_t);
-void mps2_uart_early_print(unsigned long base, const char *, size_t);
-void mps2_uart_init(const struct mps2_uart_desc *);
+void arm_mps2_uart_early_init(unsigned long base, tcflag_t);
+void arm_mps2_uart_early_print(unsigned long base, const char *, size_t);
+void arm_mps2_uart_init(const struct arm_mps2_uart_desc *);
 
 #ifdef __cplusplus
 } /* extern "C" */

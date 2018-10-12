@@ -47,7 +47,7 @@ struct mps2_uart {
  * Early initialisation of UART for kernel debugging
  */
 void
-mps2_uart_early_init(unsigned long base, tcflag_t cflag)
+arm_mps2_uart_early_init(unsigned long base, tcflag_t cflag)
 {
 	volatile struct mps2_uart *const u = (struct mps2_uart*)base;
 
@@ -60,7 +60,7 @@ mps2_uart_early_init(unsigned long base, tcflag_t cflag)
  * Early printing for kernel debugging
  */
 void
-mps2_uart_early_print(unsigned long base, const char *s, size_t len)
+arm_mps2_uart_early_print(unsigned long base, const char *s, size_t len)
 {
 	volatile struct mps2_uart *const u = (struct mps2_uart*)base;
 
@@ -158,7 +158,7 @@ oproc(struct tty *tp)
  * Initialize
  */
 void
-mps2_uart_init(const mps2_uart_desc *d)
+arm_mps2_uart_init(const arm_mps2_uart_desc *d)
 {
 	auto tp = tty_create(d->name, tproc, oproc, (void*)d->base);
 	irq_attach(d->rx_int, d->ipl, 0, rx_isr, NULL, tp);
