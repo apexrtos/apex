@@ -9,12 +9,12 @@
 extern "C" {
 #endif
 
-struct armv7m_systick_desc {
+struct arm_armv7m_systick_desc {
 	unsigned long clock;
 	int clksource;
 };
 
-void armv7m_systick_init(const struct armv7m_systick_desc *);
+void arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *);
 
 #ifdef __cplusplus
 } /* extern "C" */

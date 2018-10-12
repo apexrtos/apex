@@ -36,7 +36,7 @@ static volatile struct syst *const SYST = (struct syst*)0xe000e010;
  * Initialise
  */
 void
-armv7m_systick_init(const struct armv7m_systick_desc *d)
+arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *d)
 {
 	/* do not configure twice */
 	assert(!SYST->CSR.ENABLE);
