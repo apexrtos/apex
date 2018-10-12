@@ -1,4 +1,4 @@
-#include "imxrt-lpuart.h"
+#include "lpuart.h"
 
 #include "regs.h"
 #include <cmath>
@@ -149,7 +149,7 @@ static_assert(sizeof(lpuart) == sizeof(lpuart_regs), "");
  */
 class lpuart_inst {
 public:
-	lpuart_inst(const imxrt_lpuart_desc *d)
+	lpuart_inst(const fsl_lpuart_desc *d)
 	: uart{reinterpret_cast<lpuart*>(d->base)}
 	, clock{d->clock}
 	{ }
@@ -208,7 +208,7 @@ get_inst(tty *tp)
  * Early initialisation of UART for kernel debugging
  */
 void
-imxrt_lpuart_early_init(unsigned long base, unsigned long clock, tcflag_t cflag)
+fsl_lpuart_early_init(unsigned long base, unsigned long clock, tcflag_t cflag)
 {
 	lpuart *const u = reinterpret_cast<lpuart*>(base);
 
@@ -233,7 +233,7 @@ imxrt_lpuart_early_init(unsigned long base, unsigned long clock, tcflag_t cflag)
  * Early printing for kernel debugging
  */
 void
-imxrt_lpuart_early_print(unsigned long base, const char *s, size_t len)
+fsl_lpuart_early_print(unsigned long base, const char *s, size_t len)
 {
 	lpuart *const u = reinterpret_cast<lpuart*>(base);
 
@@ -320,7 +320,7 @@ oproc(tty *tp)
  * Initialise
  */
 void
-imxrt_lpuart_init(const imxrt_lpuart_desc *d)
+fsl_lpuart_init(const fsl_lpuart_desc *d)
 {
 	auto tp = tty_create(d->name, tproc, oproc,
 	    reinterpret_cast<void*>(new lpuart_inst{d}));

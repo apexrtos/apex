@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 /*
- * Hardware register description for LPUART found on imxrt processors
+ * Hardware register description for Freescale LPUART
  */
 struct lpuart_regs {
 	volatile uint32_t VERID;
