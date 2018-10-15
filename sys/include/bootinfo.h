@@ -56,6 +56,7 @@ struct boot_mem {
 #define MT_KERNEL	4	    /* kernel text/data */
 #define MT_BOOTDISK	5	    /* bootdisk image */
 #define MT_RESERVED	6	    /* reserved memory e.g. boot stack */
+#define MT_DMA		7	    /* uncached memory suitable for DMA */
 
 /*
  * Boot information

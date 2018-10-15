@@ -99,7 +99,7 @@ constexpr const char *to_string(MEM_TYPE v)
 	switch (v) {
 	case MEM_NORMAL: return "NORMAL";
 	case MEM_FAST: return "FAST";
-	case MEM_ROM: return "ROM";
+	case MEM_DMA: return "DMA";
 	}
 	return nullptr;
 }
@@ -333,10 +333,14 @@ page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
 			return do_alloc(r, p, o, st, owner);
 	}
 
+	/* no fallback for DMA memory */
+	if (mt == MEM_DMA)
+		return 0;
+
 	/* if that failed try to allocate anywhere */
 	for (size_t i = 0; i < s.nr_regions; ++i) {
 		auto &r = s.regions[i];
-		if (r.type == mt)
+		if (r.type == mt || r.type == MEM_DMA)
 			continue;
 		std::lock_guard l(r.mutex);
 		const auto p = find_block(r, o);
@@ -569,6 +573,7 @@ page_init(const struct bootinfo *bi, void *owner)
 				m_end = (phys*)m.base + m.size;
 			}
 		case MT_FAST:
+		case MT_DMA:
 			++s.nr_regions;
 		}
 	}
@@ -630,7 +635,8 @@ page_init(const struct bootinfo *bi, void *owner)
 		const boot_mem *m = nullptr;
 		for (size_t j = 0; j < bi->nr_rams; ++j) {
 			const auto &t = bi->ram[j];
-			if (t.type != MT_NORMAL && t.type != MT_FAST)
+			if (t.type != MT_NORMAL && t.type != MT_FAST &&
+			    t.type != MT_DMA)
 				continue;
 			if (t.base < init_addr)
 				continue;
@@ -646,6 +652,9 @@ page_init(const struct bootinfo *bi, void *owner)
 			break;
 		case MT_FAST:
 			type = MEM_FAST;
+			break;
+		case MT_DMA:
+			type = MEM_DMA;
 			break;
 		default:
 			assert(0);  /* impossible, but gcc warns.. */
@@ -711,6 +720,7 @@ page_init(const struct bootinfo *bi, void *owner)
 		switch (m->type) {
 		case MT_NORMAL:
 		case MT_FAST:
+		case MT_DMA:
 			continue;
 		}
 

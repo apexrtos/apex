@@ -17,7 +17,7 @@ typedef struct k_sigset_t { unsigned long __bits[_NSIG / 8 / sizeof(long)]; } k_
 enum MEM_TYPE {
 	MEM_NORMAL,		    /* normal memory, e.g. DRAM */
 	MEM_FAST,		    /* fast memory, e.g. SOC SRAM */
-	MEM_ROM,		    /* read only memory, e.g. FLASH */
+	MEM_DMA,		    /* uncached DMA pool */
 	MEM_ALLOC = MEM_FAST + 1,   /* maximum allocatable memory type */
 };
 
