@@ -1,5 +1,6 @@
 #include "lpuart.h"
 
+#include "init.h"
 #include "regs.h"
 #include <cmath>
 #include <debug.h>

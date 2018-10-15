@@ -1,5 +1,5 @@
-#ifndef dev_bootdisk_h
-#define dev_bootdisk_h
+#ifndef dev_bootdisk_init_h
+#define dev_bootdisk_init_h
 
 /*
  * /dev/bootdiskX

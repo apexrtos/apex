@@ -1,4 +1,4 @@
-#include "bootdisk.h"
+#include "init.h"
 
 #include <assert.h>
 #include <bootinfo.h>

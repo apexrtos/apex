@@ -1,4 +1,4 @@
-#include "armv7m-systick.h"
+#include "init.h"
 
 #include <arch.h>
 #include <clock.h>

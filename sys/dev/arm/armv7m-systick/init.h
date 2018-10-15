@@ -1,5 +1,5 @@
-#ifndef dev_arm_armv7m_systick_h
-#define dev_arm_armv7m_systick_h
+#ifndef dev_arm_armv7m_systick_init_h
+#define dev_arm_armv7m_systick_init_h
 
 /*
  * Device driver for SysTick timer found in ARMv7-M cores

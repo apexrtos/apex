@@ -160,8 +160,6 @@ parse_config()
 			name=$(expr "$path" : '.*dev/\(.*\)')
 			name=${name:="$path"}
 			c_name=$(echo "$name" | tr '/-' '_')
-			h_name=$(expr "$path" : '.*/\(.*\)')
-			h_name=${h_name:="$path"}
 			args=$(expr "$rest" : '[^{(]*\(.*\)')
 			case $args in
 			'')
@@ -181,7 +179,7 @@ parse_config()
 			fi
 
 			if [ "x$args" != x ]; then
-				echo "#include <$path/$h_name.h>" >> "$DRIVERS_H"
+				echo "#include <$path/init.h>" >> "$DRIVERS_H"
 				echo "/* $order */ $c_name""_init$args;" >> "$DRIVERS_C"
 			fi
 			echo "CONFIG_DRIVER_LIST += $path" >> "$CONFIG_MK"

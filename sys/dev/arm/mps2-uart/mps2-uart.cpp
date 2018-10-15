@@ -1,5 +1,6 @@
 #include "mps2-uart.h"
 
+#include "init.h"
 #include <dev/tty/tty.h>
 #include <irq.h>
 #include <kmem.h>
