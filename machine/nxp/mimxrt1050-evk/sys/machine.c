@@ -18,14 +18,24 @@ static const unsigned long LPUART1 = 0x40184000;
 void
 machine_memory_init(void)
 {
-	/* IMXRT10xx places external SDRAM in a default write-through memory
-	   region. Override this as write-back. */
 	struct mmumap mappings[] = {
+		/* IMXRT10xx places external SDRAM in a default write-through
+		 * memory region. Override this as write-back. */
 		{
-			.paddr = (phys *)0x80000000,
+			.paddr = (phys *)CONFIG_DRAM_BASE_PHYS,
 			.size = CONFIG_DRAM_SIZE,
 			.flags = RASR_KERNEL_RWX_WBWA,
 		},
+#if (CONFIG_DMA_SIZE > 0)
+		/* IMXRT10xx places internal SRAM in default write-back
+		 * memory region. Override DMA pool as uncached. */
+		{
+			.paddr = (phys *)CONFIG_DMA_BASE_PHYS,
+			.size = CONFIG_DMA_SIZE,
+			.flags = RASR_KERNEL_RW,
+
+		}
+#endif
 	};
 	mpu_init(mappings, ARRAY_SIZE(mappings), MPU_ENABLE_DEFAULT_MAP);
 }

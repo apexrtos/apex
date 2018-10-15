@@ -75,7 +75,12 @@ machine_setup(void)
 	bootinfo->ram[1].size = CONFIG_DTCM_SIZE;
 	bootinfo->ram[1].type = MT_FAST;
 
-	bootinfo->nr_rams = 2;
+	/* DMA */
+	bootinfo->ram[2].base = (void*)CONFIG_DMA_BASE_PHYS;
+	bootinfo->ram[2].size = CONFIG_DMA_SIZE;
+	bootinfo->ram[2].type = MT_DMA;
+
+	bootinfo->nr_rams = 3;
 }
 
 /*

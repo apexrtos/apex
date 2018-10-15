@@ -291,6 +291,14 @@ static volatile struct mpu *const MPU = (struct mpu*)0xe000ed90;
 	.C = 1, \
 	.B = 1, \
 }.r)
+#define RASR_KERNEL_RW ((union mpu_rasr){ \
+	.XN = XN_No_Execute, \
+	.AP = AP_Kern_RW, \
+	.TEX = 0b001, \
+	.S = 0, \
+	.C = 0, \
+	.B = 0, \
+}.r)
 #define RASR_USER_R_WBWA ((union mpu_rasr){ \
 	.XN = XN_No_Execute, \
 	.AP = AP_Kern_RW_User_RO, \
