@@ -84,6 +84,13 @@ kernel_main(void)
 	machine_init();
 
 	/*
+	 * Run c++ global constructors.
+	 */
+	extern void (*__init_array_start[1])(void), (*__init_array_end[1])(void);
+	for (void (**p)(void) = __init_array_start; p != __init_array_end; ++p)
+		(*p)();
+
+	/*
 	 * Initialize kernel core.
 	 */
 	vm_init();

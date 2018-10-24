@@ -27,6 +27,11 @@ SECTIONS {
 		*(.fast_rodata)
 	} >ram : kernel
 
+	.init_array : {
+		KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*)))
+		KEEP (*(.init_array))
+	} >ram : kernel
+
 	.filesystems : {
 		__filesystems = .;
 		KEEP(*(.filesystems))
@@ -48,6 +53,8 @@ SECTIONS {
 		. += CONFIG_KSTACK_SIZE;
 	} >ram : kernel
 
+	__init_array_start = ADDR(.init_array);
+	__init_array_end = ADDR(.init_array) + SIZEOF(.init_array);
 	__stack_start = ADDR(.stack);
 	__stack_size = SIZEOF(.stack);
 	__stack_top = ADDR(.stack) + SIZEOF(.stack);
