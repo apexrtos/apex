@@ -118,7 +118,7 @@ static struct event	dpc_event;	/* event for DPC */
 
 /* currently active thread */
 extern struct thread idle_thread;
-__fast_data struct thread *active_thread = &idle_thread;
+__attribute__((used)) __fast_data struct thread *active_thread = &idle_thread;
 __fast_data static struct list zombie_list = LIST_INIT(zombie_list);
 
 /*
