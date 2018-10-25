@@ -1,7 +1,9 @@
 #include "mmap.h"
 #include "vm.h"
 
+#include <algorithm>
 #include <arch.h>
+#include <cerrno>
 #include <debug.h>
 #include <fcntl.h>
 #include <fs.h>
@@ -482,8 +484,6 @@ as *
 as_create(pid_t pid)
 {
 	auto a = std::make_unique<as>();
-	if (!a.get())
-		return nullptr;
 
 	list_init(&a->segs);
 

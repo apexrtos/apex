@@ -5,6 +5,7 @@
 
 #include <access.h>
 #include <arch.h>
+#include <array>
 #include <debug.h>
 #include <dirent.h>
 #include <errno.h>

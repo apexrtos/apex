@@ -2,7 +2,7 @@
 
 #include "init.h"
 #include "regs.h"
-#include <cmath>
+#include <cstdlib>
 #include <debug.h>
 #include <dev/tty/tty.h>
 #include <device.h>

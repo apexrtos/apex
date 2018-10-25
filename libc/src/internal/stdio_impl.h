@@ -24,6 +24,7 @@ struct _IO_FILE {
 	unsigned char *rpos, *rend;
 	unsigned char *wend, *wpos;
 	unsigned char *wbase;
+	size_t (*read)(FILE *, unsigned char *, size_t);
 	size_t (*write)(FILE *, const unsigned char *, size_t);
 	unsigned char *buf;
 	size_t buf_size;
@@ -31,6 +32,9 @@ struct _IO_FILE {
 	signed char lbf;
 	volatile int lock;
 	void *cookie;
+	unsigned char *shend;
+	off_t shlim, shcnt;
+	struct __locale_struct *locale;
 };
 
 size_t __stdio_read(FILE *, unsigned char *, size_t);

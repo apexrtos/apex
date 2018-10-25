@@ -5,6 +5,7 @@
 #include <exec.h>
 
 #include <access.h>
+#include <cerrno>
 #include <debug.h>
 #include <elf_load.h>
 #include <fcntl.h>

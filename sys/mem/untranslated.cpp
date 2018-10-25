@@ -1,6 +1,8 @@
 #include <arch.h>
 
 #include <access.h>
+#include <algorithm>
+#include <cerrno>
 #include <cstring>
 #include <debug.h>
 #include <fs.h>

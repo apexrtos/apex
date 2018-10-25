@@ -4,12 +4,18 @@
 
 TYPE := klib
 TARGET := libc++.a
-CXXFLAGS += -fno-exceptions
+CXXFLAGS += -nostdinc++ -fno-exceptions
+DEFS := -D_LIBCPP_BUILDING_LIBRARY -DLIBCXXRT
 
 INCLUDE := \
 	$(CONFIG_BUILDDIR) \
 	$(CONFIG_APEXDIR)/sys/include \
+	. \
+	include \
+	../libcxxrt/src \
 
 SOURCES := \
-	new.cpp \
-	pure.cpp \
+	src/memory.cpp \
+	src/new.cpp \
+	src/string.cpp \
+	src/vector.cpp \

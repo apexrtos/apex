@@ -1,0 +1,28 @@
+#ifndef libcpp_apex_string_utils_h
+#define libcpp_apex_string_utils_h
+
+#include <string>
+
+/*
+ * strtok for string_view
+ */
+template <class F>
+void strtok(std::string_view s, std::string_view t, F fn)
+{
+	if (s.empty())
+		return;
+
+	auto start = s.find_first_not_of(t, 0);
+	while (start != std::string_view::npos) {
+		const auto p = s.find_first_of(t, start);
+		if (p == std::string_view::npos) {
+			fn(s.substr(start, p));
+			return;
+		} else {
+			fn(s.substr(start, p - start));
+			start = s.find_first_not_of(t, p);
+		}
+	}
+}
+
+#endif
