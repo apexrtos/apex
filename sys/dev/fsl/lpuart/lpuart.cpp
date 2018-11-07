@@ -2,6 +2,7 @@
 
 #include "init.h"
 #include "regs.h"
+#include <arch.h>
 #include <cstdlib>
 #include <debug.h>
 #include <dev/tty/tty.h>
@@ -47,12 +48,12 @@ class lpuart : private lpuart_regs {
 public:
 	void reset()
 	{
-		GLOBAL.r = decltype(GLOBAL){
-			.RST = 1,
-		}.r;
-		GLOBAL.r = decltype(GLOBAL){
-			.RST = 0,
-		}.r;
+		write32(&GLOBAL, [&]{
+			decltype(GLOBAL) g;
+			g.RST = true;
+			return g.r;
+		}());
+		write32(&GLOBAL, 0);
 	}
 
 	void configure(unsigned sbr, unsigned osr, DataBits db,
@@ -61,30 +62,30 @@ public:
 		const auto ien = ints == Interrupts::Enabled;
 
 		/* disable receiver & transmitter during reconfiguration */
-		CTRL.r = 0;
-		BAUD.r = [&]{
-			decltype(BAUD) v{};
+		write32(&CTRL, 0);
+		write32(&BAUD, [&]{
+			decltype(BAUD) v;
 			v.SBR = sbr;
 			v.SBNS = static_cast<unsigned>(sb);
 			v.BOTHEDGE = true;
 			v.OSR = osr - 1;
 			return v.r;
-		}();
-		FIFO.r = [&]{
-			decltype(FIFO) v{};
+		}());
+		write32(&FIFO, [&]{
+			decltype(FIFO) v;
 			v.RXFE = ien;
 			v.TXFE = ien;
 			v.RXIDEN = ien ? 1 : 0;
 			return v.r;
-		}();
-		WATER.r = [&]{
-			decltype(WATER) v{};
+		}());
+		write32(&WATER, [&]{
+			decltype(WATER) v;
 			v.RXWATER = rxfifo_size() - 1;
 			v.TXWATER = 0;
 			return v.r;
-		}();
-		CTRL.r = [&]{
-			decltype(CTRL) v{};
+		}());
+		write32(&CTRL, [&]{
+			decltype(CTRL) v;
 			if (p != Parity::Disabled) {
 				v.PE = true;
 				v.PT = static_cast<unsigned>(p) - 1;
@@ -94,43 +95,47 @@ public:
 			v.TE = true;
 			v.RIE = ien;
 			return v.r;
-		}();
+		}());
 	}
 
 	void txint_disable()
 	{
-		CTRL.TIE = false;
+		auto v = CTRL;
+		v.TIE = false;
+		write32(&CTRL, v.r);
 	}
 
 	void txint_enable()
 	{
-		CTRL.TIE = true;
+		auto v = CTRL;
+		v.TIE = true;
+		write32(&CTRL, v.r);
 	}
 
 	void putch_polled(const char c)
 	{
-		while (!STAT.TDRE);
+		while (!read32(&STAT).TDRE);
 		putch(c);
 	}
 
 	char getch() const
 	{
-		return DATA;
+		return read32(&DATA);
 	}
 
 	void putch(const char c)
 	{
-		DATA = c;
+		write32(&DATA, c);
 	}
 
 	std::size_t txcount() const
 	{
-		return WATER.TXCOUNT;
+		return read32(&WATER).TXCOUNT;
 	}
 
 	std::size_t rxcount() const
 	{
-		return WATER.RXCOUNT;
+		return read32(&WATER).RXCOUNT;
 	}
 
 	std::size_t txfifo_size() const
