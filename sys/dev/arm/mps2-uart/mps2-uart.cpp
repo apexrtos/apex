@@ -1,6 +1,7 @@
 #include "mps2-uart.h"
 
 #include "init.h"
+#include <arch.h>
 #include <dev/tty/tty.h>
 #include <irq.h>
 #include <kmem.h>
@@ -8,9 +9,13 @@
 /*
  * Hardware registers
  */
+#define CPPREG(name) \
+	name() : r{0} { } \
+	name(auto v) : r{v} { }
 struct mps2_uart {
 	uint32_t DATA;
 	union state {
+		CPPREG(state);
 		struct {
 			uint32_t TX_FULL : 1;
 			uint32_t RX_FULL : 1;
@@ -21,6 +26,7 @@ struct mps2_uart {
 		uint32_t r;
 	} STATE;
 	union ctrl {
+		CPPREG(ctrl);
 		struct {
 			uint32_t TX_ENABLE : 1;
 			uint32_t RX_ENABLE : 1;
@@ -33,6 +39,7 @@ struct mps2_uart {
 		uint32_t r;
 	} CTRL;
 	union int_status_clear {
+		CPPREG(int_status_clear);
 		struct {
 			uint32_t TX : 1;
 			uint32_t RX : 1;
@@ -50,11 +57,15 @@ struct mps2_uart {
 void
 arm_mps2_uart_early_init(unsigned long base, tcflag_t cflag)
 {
-	volatile struct mps2_uart *const u = (struct mps2_uart*)base;
+	auto u = reinterpret_cast<mps2_uart *>(base);
 
 	/* TODO: process cflag */
-	u->BAUDDIV = 16;	    /* QEMU doesn't care as long as >= 16 */
-	u->CTRL.TX_ENABLE = 1;
+	write32(&u->BAUDDIV, 16);    /* QEMU doesn't care as long as >= 16 */
+	write32(&u->CTRL, []{
+		union mps2_uart::ctrl c;
+		c.TX_ENABLE = 1;
+		return c.r;
+	}());
 }
 
 /*
@@ -63,11 +74,11 @@ arm_mps2_uart_early_init(unsigned long base, tcflag_t cflag)
 void
 arm_mps2_uart_early_print(unsigned long base, const char *s, size_t len)
 {
-	volatile struct mps2_uart *const u = (struct mps2_uart*)base;
+	auto u = reinterpret_cast<mps2_uart *>(base);
 
 	auto putch = [&u](char c) {
-		while (u->STATE.TX_FULL);
-		u->DATA = c;
+		while (read32(&u->STATE).TX_FULL);
+		write32(&u->DATA, c);
 	};
 
 	while (len) {
@@ -84,16 +95,17 @@ arm_mps2_uart_early_print(unsigned long base, const char *s, size_t len)
 static int
 rx_isr(int vector, void *data)
 {
-	auto tp = (struct tty *)data;
-	auto u = (volatile struct mps2_uart *)tty_data(tp);
+	auto tp = static_cast<tty *>(data);
+	auto u = static_cast<mps2_uart *>(tty_data(tp));
 
-	u->INT_STATUS_CLEAR.r = (mps2_uart::int_status_clear){{
-		.TX = 0,
-		.RX = 1
-	}}.r;
+	write32(&u->INT_STATUS_CLEAR, []{
+		mps2_uart::int_status_clear s;
+		s.RX = 1;
+		return s.r;
+	}());
 
-	while (u->STATE.RX_FULL)
-		tty_input(tp, u->DATA);
+	while (read32(&u->STATE).RX_FULL)
+		tty_input(tp, read32(&u->DATA));
 
 	return INT_DONE;
 }
@@ -104,20 +116,22 @@ rx_isr(int vector, void *data)
 static int
 tx_isr(int vector, void *data)
 {
-	auto tp = (struct tty *)data;
-	auto u = (volatile struct mps2_uart *)tty_data(tp);
+	auto tp = static_cast<tty *>(data);
+	auto u = static_cast<mps2_uart *>(tty_data(tp));
 
-	u->INT_STATUS_CLEAR.r = (mps2_uart::int_status_clear){{
-		.TX = 1
-	}}.r;
+	write32(&u->INT_STATUS_CLEAR, []{
+		mps2_uart::int_status_clear s;
+		s.TX = 1;
+		return s.r;
+	}());
 
-	while (!u->STATE.TX_FULL) {
+	while (!read32(&u->STATE).TX_FULL) {
 		int c;
 		if ((c = tty_oq_getc(tp)) < 0) {
 			tty_oq_done(tp);
 			break;
 		}
-		u->DATA = c;
+		write32(&u->DATA,  c);
 	}
 
 	return INT_DONE;
@@ -127,19 +141,21 @@ tx_isr(int vector, void *data)
  * Called whenever UART hardware needs to be reconfigured
  */
 static int
-tproc(struct tty *tp)
+tproc(tty *tp)
 {
-	auto u = (volatile struct mps2_uart *)tty_data(tp);
+	auto u = static_cast<mps2_uart *>(tty_data(tp));
 	auto termios = tty_termios(tp);
 	const bool rx = termios->c_cflag & CREAD;
 
-	u->BAUDDIV = 16;	    /* QEMU doesn't care as long as >= 16 */
-	u->CTRL.r = (mps2_uart::ctrl){{
-		.TX_ENABLE = 1,
-		.RX_ENABLE = rx,
-		.TX_INTERRUPT_ENABLE = 1,
-		.RX_INTERRUPT_ENABLE = rx,
-	}}.r;
+	write32(&u->BAUDDIV, 16);	    /* QEMU doesn't care as long as >= 16 */
+	write32(&u->CTRL, [&]{
+		mps2_uart::ctrl c;
+		c.TX_ENABLE = 1;
+		c.RX_ENABLE = rx;
+		c.TX_INTERRUPT_ENABLE = 1;
+		c.RX_INTERRUPT_ENABLE = rx;
+		return c.r;
+	}());
 
 	return 0;
 }
@@ -148,7 +164,7 @@ tproc(struct tty *tp)
  * Called whenever UART output should start.
  */
 static void
-oproc(struct tty *tp)
+oproc(tty *tp)
 {
 	const int s = irq_disable();
 	tx_isr(0, tp);
@@ -161,7 +177,7 @@ oproc(struct tty *tp)
 void
 arm_mps2_uart_init(const arm_mps2_uart_desc *d)
 {
-	auto tp = tty_create(d->name, tproc, oproc, (void*)d->base);
+	auto tp = tty_create(d->name, tproc, oproc, reinterpret_cast<void *>(d->base));
 	irq_attach(d->rx_int, d->ipl, 0, rx_isr, NULL, tp);
 	irq_attach(d->tx_int, d->ipl, 0, tx_isr, NULL, tp);
 }
