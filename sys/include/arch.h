@@ -30,6 +30,7 @@
 #ifndef arch_h
 #define arch_h
 
+#include <assert.h>
 #include <conf/config.h>
 #include <elf.h>
 #include <signal.h>
@@ -104,6 +105,24 @@ bool		arch_check_elfhdr(const Elf32_Ehdr *);
 unsigned	arch_elf_hwcap(void);
 void	       *arch_stack_align(void *);
 void		cache_coherent_exec(const void *, size_t);
+void		cache_flush(const void *, size_t);
+void		cache_invalidate(const void *, size_t);
+void		cache_flush_invalidate(const void *, size_t);
+void		memory_barrier(void);
+void		read_memory_barrier(void);
+void		write_memory_barrier(void);
+uint8_t		io_read8(const uint8_t *);
+uint16_t	io_read16(const uint16_t *);
+uint32_t	io_read32(const uint32_t *);
+#if UINTPTR_MAX == 0xffffffffffffffff
+uint64_t	io_read64(const uint64_t *);
+#endif
+void		io_write8(uint8_t *, uint8_t);
+void		io_write16(uint16_t *, uint16_t);
+void		io_write32(uint32_t *, uint32_t);
+#if UINTPTR_MAX == 0xffffffffffffffff
+void		io_write64(uint64_t *, uint64_t);
+#endif
 
 #if defined(CONFIG_MMU)
 void		mmu_init(struct mmumap *, size_t);
@@ -124,6 +143,36 @@ void		mpu_map(const void *, size_t, int);
 void		mpu_protect(const void *, size_t, int);
 void		mpu_fault(const void *, size_t);
 void		mpu_dump(void);
+#endif
+
+#define read8(p) ({ \
+	static_assert(sizeof(*p) == 1, ""); \
+	(__typeof__(*p))io_read8((const uint8_t*)p);})
+#define read16(p) ({ \
+	static_assert(sizeof(*p) == 2, ""); \
+	(__typeof__(*p))io_read16((const uint16_t*)p);})
+#define read32(p) ({ \
+	static_assert(sizeof(*p) == 4, ""); \
+	(__typeof__(*p))io_read32((const uint32_t*)p);})
+#if UINTPTR_MAX == 0xffffffffffffffff
+#define read64(p) ({ \
+	static_assert(sizeof(*p) == 4, ""); \
+	(__typeof__(*p))io_read64((const uint64_t*)p);})
+#endif
+
+#define write8(p, ...) ({ \
+	static_assert(sizeof(*p) == 1, ""); \
+	io_write8((uint8_t*)p, __VA_ARGS__);})
+#define write16(p, ...) ({ \
+	static_assert(sizeof(*p) == 2, ""); \
+	io_write16((uint16_t*)p, __VA_ARGS__);})
+#define write32(p, ...) ({ \
+	static_assert(sizeof(*p) == 4, ""); \
+	io_write32((uint32_t*)p, __VA_ARGS__);})
+#if UINTPTR_MAX == 0xffffffffffffffff
+#define write64(p, ...) ({ \
+	static_assert(sizeof(*p) == 4, ""); \
+	io_write64((uint64_t*)p, __VA_ARGS__);})
 #endif
 
 #if defined(__cplusplus)
