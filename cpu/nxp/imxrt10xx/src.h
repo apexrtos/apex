@@ -43,6 +43,6 @@ struct src {
 };
 static_assert(sizeof(struct src) == 0x48, "");
 
-static volatile struct src *const SRC = (struct src*)0x400f8000;
+static struct src *const SRC = (struct src*)0x400f8000;
 
 #endif

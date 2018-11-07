@@ -36,10 +36,10 @@ driver-1 sys/dev/arm/armv7m-systick{.clock = 100000, .clksource = 0}
  * GPIO_AD_B0_12 as LPUART1_TX
  * GPIO_AD_B0_13 as LPUART1_RX
  */
-pincfg IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_mux_ctl){ .MUX_MODE = 2, .SION = SION_Software_Input_On_Disabled }.r
-pincfg IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_100MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Disabled }.r
-pincfg IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13.r = (union iomuxc_sw_mux_ctl){ .MUX_MODE = 2, .SION = SION_Software_Input_On_Disabled }.r
-pincfg IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_100MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Disabled }.r
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 2, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_100MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Disabled }.r)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 2, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_100MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Disabled }.r)
 driver sys/dev/fsl/lpuart{.name = "ttyS0", .base = 0x40184000, .clock = 24000000, .ipl = IPL_MIN, .rx_tx_int = 20}
 
 /*

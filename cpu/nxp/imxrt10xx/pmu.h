@@ -55,6 +55,6 @@ struct pmu {
 };
 static_assert(sizeof(struct pmu) == 0x70, "");
 
-static volatile struct pmu *const PMU = (struct pmu*)0x400d8110;
+static struct pmu *const PMU = (struct pmu*)0x400d8110;
 
 #endif

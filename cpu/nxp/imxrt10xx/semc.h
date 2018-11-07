@@ -222,6 +222,6 @@ struct semc {
 };
 static_assert(sizeof(struct semc) == 0x100, "");
 
-static volatile struct semc *const SEMC = (struct semc*)0x402f0000;
+static struct semc *const SEMC = (struct semc*)0x402f0000;
 
 #endif

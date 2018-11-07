@@ -500,7 +500,7 @@ struct ccm_analog {
 };
 static_assert(sizeof(struct ccm_analog) == 0x180, "");
 
-static volatile struct ccm *const CCM = (struct ccm*)0x400fc000;
-static volatile struct ccm_analog *const CCM_ANALOG = (struct ccm_analog*)0x400d8000;
+static struct ccm *const CCM = (struct ccm*)0x400fc000;
+static struct ccm_analog *const CCM_ANALOG = (struct ccm_analog*)0x400d8000;
 
 #endif

@@ -571,7 +571,7 @@ struct iomuxc_gpr {
 			uint32_t GPR13;
 			uint32_t GPR14;
 			uint32_t GPR15;
-			union {
+			union iomuxc_gpr_gpr16 {
 				struct {
 					uint32_t INIT_ITCM_EN : 1;
 					uint32_t INIT_DTCM_EN : 1;
@@ -581,7 +581,7 @@ struct iomuxc_gpr {
 				};
 				uint32_t r;
 			} GPR16;
-			union {
+			union iomuxc_gpr_gpr17 {
 				struct {
 					uint32_t FLEXRAM_BANK_CFG;
 				};
@@ -618,9 +618,9 @@ struct iomuxc_snvs_gpr {
 };
 static_assert(sizeof(struct iomuxc_snvs_gpr) == 0x10, "");
 
-static volatile struct iomuxc *const IOMUXC = (struct iomuxc*)0x401f8000;
-static volatile struct iomuxc_gpr *const IOMUXC_GPR = (struct iomuxc_gpr*)0x400ac000;
-static volatile struct iomuxc_snvs *const IOMUXC_SNVS = (struct iomuxc_snvs*)0x400a8000;
-static volatile struct iomuxc_snvs_gpr *const IOMUXC_SNVS_GPR = (struct iomuxc_snvs_gpr*)0x400a4000;
+static struct iomuxc *const IOMUXC = (struct iomuxc*)0x401f8000;
+static struct iomuxc_gpr *const IOMUXC_GPR = (struct iomuxc_gpr*)0x400ac000;
+static struct iomuxc_snvs *const IOMUXC_SNVS = (struct iomuxc_snvs*)0x400a8000;
+static struct iomuxc_snvs_gpr *const IOMUXC_SNVS_GPR = (struct iomuxc_snvs_gpr*)0x400a4000;
 
 #endif

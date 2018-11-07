@@ -6,6 +6,7 @@
 #include <cpu/nxp/imxrt10xx/iomuxc.h>
 #include <cpu/nxp/imxrt10xx/semc.h>
 #include <sys/dev/fsl/lpuart/regs.h>
+#include <sys/include/arch.h>
 
 #if defined(CONFIG_BOOT_CONSOLE)
 static const unsigned long LPUART1 = 0x40184000;
@@ -19,11 +20,11 @@ machine_setup(void)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
-	IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_mux_ctl){
 		.MUX_MODE = 2,
 		.SION = SION_Software_Input_On_Disabled,
-	}.r;
-	IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_pad_ctl){
+	}.r);
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){
 		.SRE = SRE_Slow,
 		.DSE = DSE_R0_6,
 		.SPEED = SPEED_100MHz,
@@ -32,14 +33,14 @@ machine_setup(void)
 		.PUE = PUE_Keeper,
 		.PUS = PUS_100K_Pull_Down,
 		.HYS = HYS_Hysteresis_Disabled,
-	}.r;
+	}.r);
 
 	/* set GPIO_AD_B0_13 as LPUART1_RX */
-	IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13.r = (union iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13, (union iomuxc_sw_mux_ctl){
 		.MUX_MODE = 2,
 		.SION = SION_Software_Input_On_Disabled,
-	}.r;
-	IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12.r = (union iomuxc_sw_pad_ctl){
+	}.r);
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){
 		.SRE = SRE_Slow,
 		.DSE = DSE_R0_6,
 		.SPEED = SPEED_100MHz,
@@ -48,21 +49,21 @@ machine_setup(void)
 		.PUE = PUE_Keeper,
 		.PUS = PUS_100K_Pull_Down,
 		.HYS = HYS_Hysteresis_Disabled,
-	}.r;
+	}.r);
 
 	struct lpuart_regs *const u = (struct lpuart_regs*)LPUART1;
 
 	/* configure for 115200 baud */
-	u->BAUD.r = (union lpuart_baud){
+	write32(&u->BAUD, (union lpuart_baud){
 		.SBR = 8,
 		.SBNS = 0, /* one stop bit */
 		.OSR = 25, /* baud = 24M / (SBR * (OSR + 1) = 115384, 0.16% error */
-	}.r;
-	u->CTRL.r = (union lpuart_ctrl){
+	}.r);
+	write32(&u->CTRL, (union lpuart_ctrl){
 		.PE = 0, /* parity disabled */
 		.M = 0, /* 8 bit */
 		.TE = 1, /* transmitter enabled */
-	}.r;
+	}.r);
 #endif
 
 	/* DRAM */
@@ -92,8 +93,8 @@ machine_putc(int c)
 #if defined(CONFIG_BOOT_CONSOLE)
 	struct lpuart_regs *const u = (struct lpuart_regs*)LPUART1;
 
-	while (!u->STAT.TDRE);
-	u->DATA = c;
+	while (!read32(&u->STAT).TDRE);
+	write32(&u->DATA, c);
 #endif
 }
 
@@ -220,24 +221,25 @@ void
 machine_clock_init(void)
 {
 	/* set core voltage to 1.25V for 600MHz operation */
-	while (DCDC->REG3.TRG < (1250 - 800) / 25) {
+	for (union dcdc_reg3 v = DCDC->REG3; v.TRG < (1250 - 800) / 25;) {
 		/* step by 25mV */
-		DCDC->REG3.TRG += 1;
+		v.TRG += 1;
+		write32(&DCDC->REG3, v.r);
 		/* wait for core voltage to stabilise */
-		while (!DCDC->REG0.STS_DC_OK);
+		while (!read32(&DCDC->REG0).STS_DC_OK);
 	}
 
 	/* bypass PLL1 (ARM PLL) and configure for 1200MHz */
-	CCM_ANALOG->PLL_ARM.r = (union ccm_analog_pll_arm){
+	write32(&CCM_ANALOG->PLL_ARM, (union ccm_analog_pll_arm){
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
 		.BYPASS_CLK_SRC = BYPASS_CLK_SRC_REF_CLK_24M,
 		.BYPASS = 1,
-	}.r;
+	}.r);
 
 	/* set SEMC clock source to PLL2.PFD2/3 = 166MHz */
-	CCM->CBCDR.r = (union ccm_cbcdr){
+	write32(&CCM->CBCDR, (union ccm_cbcdr){
 		.SEMC_CLK_SEL = SEMC_CLK_SEL_ALTERNATE,
 		.SEMC_ALT_CLK_SEL = SEMC_ALT_CLK_SEL_PLL2_PFD2,
 		.IPG_PODF = 3, /* divide by 4 */
@@ -245,37 +247,37 @@ machine_clock_init(void)
 		.SEMC_PODF = 2, /* divide by 3 */
 		.PERIPH_CLK_SEL = PERIPH_CLK_SEL_PRE_PERIPH,
 		.PERIPH_CLK2_PODF = 0, /* divide by 1 */
-	}.r;
+	}.r);
 
 	/* wait for PLL1 to stabilise */
-	while (!CCM_ANALOG->PLL_ARM.LOCK);
+	while (!read32(&CCM_ANALOG->PLL_ARM).LOCK);
 
 	/* unbypass PLL1 */
-	CCM_ANALOG->PLL_ARM.r = (union ccm_analog_pll_arm){
+	write32(&CCM_ANALOG->PLL_ARM, (union ccm_analog_pll_arm){
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
 		.BYPASS_CLK_SRC = BYPASS_CLK_SRC_REF_CLK_24M,
 		.BYPASS = 0,
-	}.r;
+	}.r);
 
 	/* configure UART_CLK_ROOT */
-	CCM->CSCDR1.r = (union ccm_cscdr1){
+	write32(&CCM->CSCDR1, (union ccm_cscdr1){
 		.UART_CLK_PODF = 0,
 		.UART_CLK_SEL = UART_CLK_SEL_osc_clk,
 		.USDHC1_PODF = 1,
 		.USDHC2_PODF = 1,
 		.TRACE_PODF = 3,
-	}.r;
+	}.r);
 
 	/* TODO: gate all unnecessary clocks */
-	CCM->CCGR0.r = 0xffffffff;
-	CCM->CCGR1.r = 0xffffffff;
-	CCM->CCGR2.r = 0xffffffff;
-	CCM->CCGR3.r = 0xffffffff;
-	CCM->CCGR4.r = 0xffffffff;
-	CCM->CCGR5.r = 0xffffffff;
-	CCM->CCGR6.r = 0xffffffff;
+	write32(&CCM->CCGR0, 0xffffffff);
+	write32(&CCM->CCGR1, 0xffffffff);
+	write32(&CCM->CCGR2, 0xffffffff);
+	write32(&CCM->CCGR3, 0xffffffff);
+	write32(&CCM->CCGR4, 0xffffffff);
+	write32(&CCM->CCGR5, 0xffffffff);
+	write32(&CCM->CCGR6, 0xffffffff);
 }
 
 /*
@@ -286,20 +288,20 @@ machine_memory_init(void)
 {
 	/* pad multiplexing */
 	for (size_t i = 0; i < 42; ++i) {
-		IOMUXC->SW_MUX_CTL_PAD_GPIO_EMC[i].r = (union iomuxc_sw_mux_ctl){
+		write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_EMC[i], (union iomuxc_sw_mux_ctl){
 			.MUX_MODE = 0,
 			.SION = SION_Software_Input_On_Disabled,
-		}.r;
+		}.r);
 	}
 	/* DQS loopback from pad */
-	IOMUXC->SW_MUX_CTL_PAD_GPIO_EMC_39.r = (union iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_EMC_39, (union iomuxc_sw_mux_ctl){
 		.MUX_MODE = 0,
 		.SION = SION_Software_Input_On_Enabled
-	}.r;
+	}.r);
 
 	/* pad control */
 	for (size_t i = 0; i < 42; ++i) {
-		IOMUXC->SW_PAD_CTL_PAD_GPIO_EMC[i].r = (union iomuxc_sw_pad_ctl){
+		write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_EMC[i], (union iomuxc_sw_pad_ctl){
 			.SRE = SRE_Fast,
 			.DSE = DSE_R0_7,
 			.SPEED = SPEED_200MHz,
@@ -308,108 +310,108 @@ machine_memory_init(void)
 			.PUE = PUE_Keeper,
 			.PUS = PUS_100K_Pull_Down,
 			.HYS = HYS_Hysteresis_Enabled
-		}.r;
+		}.r);
 	}
 
 	/* SEMC */
-	SEMC->MCR.r = (union semc_mcr){
+	write32(&SEMC->MCR, (union semc_mcr){
 		.DQSMD = DQSMD_from_pad,
 		.BTO = 16,
-	}.r;
-	SEMC->BMCR0.r = (union semc_bmcr0){
+	}.r);
+	write32(&SEMC->BMCR0, (union semc_bmcr0){
 		.WQOS = 4,
 		.WAGE = 2,
 		.WSH = 5,
 		.WRWS = 3,
-	}.r;
-	SEMC->BMCR1.r = (union semc_bmcr1){
+	}.r);
+	write32(&SEMC->BMCR1, (union semc_bmcr1){
 		.WQOS = 4,
 		.WAGE = 2,
 		.WPH = 5,
 		.WRWS = 3,
 		.WBR = 6,
-	}.r;
-	SEMC->IOCR.r = (union semc_iocr){
+	}.r);
+	write32(&SEMC->IOCR, (union semc_iocr){
 		.MUX_A8 = 0,	/* SDRAM Address bit (A8) */
 		.MUX_CSX0 = 5,	/* NOR CE# */
 		.MUX_CSX1 = 6,	/* PSRAM CE# */
 		.MUX_CSX2 = 4,	/* NAND CE# */
 		.MUX_CSX3 = 7,	/* DBI CSX */
 		.MUX_RDY = 0,	/* NAND Ready/Wait# input */
-	}.r;
-	SEMC->BR0.r = (union semc_br){
+	}.r);
+	write32(&SEMC->BR0, (union semc_br){
 		.VLD = 1,
 		.MS = 13,	/* 32MiB */
 		.BA = 0x80000,
-	}.r;
-	SEMC->SDRAMCR0.r = (union semc_sdramcr0){
+	}.r);
+	write32(&SEMC->SDRAMCR0, (union semc_sdramcr0){
 		.PS = 1,	/* 16 bit */
 		.BL = 3,	/* burst length 8 */
 		.COL = 3,	/* 9 bit columns */
 		.CL = 3,	/* CAS latency 3 */
-	}.r;
-	SEMC->SDRAMCR1.r = (union semc_sdramcr1){
+	}.r);
+	write32(&SEMC->SDRAMCR1, (union semc_sdramcr1){
 		.PRE2ACT = 2,
 		.ACT2RW = 2,
 		.RFRC = 9,
 		.WRC = 1,
 		.CKEOFF = 5,
 		.ACT2PRE = 6,
-	}.r;
-	SEMC->SDRAMCR2.r = (union semc_sdramcr2){
+	}.r);
+	write32(&SEMC->SDRAMCR2, (union semc_sdramcr2){
 		.SRRC = 32,
 		.REF2REF = 9,
 		.ACT2ACT = 1,
 		.ITO = 0,
-	}.r;
+	}.r);
 
 	/* send commands to SDRAM */
-	SEMC->IPCR0.r = (union semc_ipcr0){
+	write32(&SEMC->IPCR0, (union semc_ipcr0){
 		.SA = 0x80000000,
-	}.r;
-	SEMC->IPCR1.r = (union semc_ipcr1){
+	}.r);
+	write32(&SEMC->IPCR1, (union semc_ipcr1){
 		.DATASZ = 2,
-	}.r;
-	SEMC->IPCR2.r = (union semc_ipcr2){
+	}.r);
+	write32(&SEMC->IPCR2, (union semc_ipcr2){
 		.BM0 = 0,
 		.BM1 = 0,
 		.BM2 = 0,
 		.BM3 = 0,
-	}.r;
+	}.r);
 
 	/* issue precharge all command */
-	SEMC->IPCMD.r = (union semc_ipcmd){
+	write32(&SEMC->IPCMD, (union semc_ipcmd){
 		.CMD = CMD_SDRAM_PRECHARGE_ALL,
 		.KEY = 0xa55a,
-	}.r;
-	while (!SEMC->INTR.IPCMDDONE);
+	}.r);
+	while (!read32(&SEMC->INTR).IPCMDDONE);
 
 	/* issue two auto refresh commands */
-	SEMC->IPCMD.r = (union semc_ipcmd){
+	write32(&SEMC->IPCMD, (union semc_ipcmd){
 		.CMD = CMD_SDRAM_AUTO_REFRESH,
 		.KEY = 0xa55a,
-	}.r;
-	while (!SEMC->INTR.IPCMDDONE);
-	SEMC->IPCMD.r = (union semc_ipcmd){
+	}.r);
+	while (!read32(&SEMC->INTR).IPCMDDONE);
+	write32(&SEMC->IPCMD, (union semc_ipcmd){
 		.CMD = CMD_SDRAM_AUTO_REFRESH,
 		.KEY = 0xa55a,
-	}.r;
-	while (!SEMC->INTR.IPCMDDONE);
+	}.r);
+	while (!read32(&SEMC->INTR).IPCMDDONE);
 
 	/* set mode register */
-	SEMC->IPTXDAT = 0x33;
-	SEMC->IPCMD.r = (union semc_ipcmd){
+	write32(&SEMC->IPTXDAT, 0x33);
+	write32(&SEMC->IPCMD, (union semc_ipcmd){
 		.CMD = CMD_SDRAM_MODESET,
 		.KEY = 0xa55a,
-	}.r;
-	while (!SEMC->INTR.IPCMDDONE);
+	}.r);
+	while (!read32(&SEMC->INTR).IPCMDDONE);
 
 	/* enable auto refresh */
-	SEMC->SDRAMCR3.r = (union semc_sdramcr3){
+	write32(&SEMC->SDRAMCR3, (union semc_sdramcr3){
 		.REN = 1,
 		.REBL = 4,
 		.PRESCALE = 10,
 		.RT = 33,
 		.UT = 80,
-	}.r;
+	}.r);
 }

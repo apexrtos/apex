@@ -85,6 +85,6 @@ struct dcdc {
 };
 static_assert(sizeof(struct dcdc) == 0x10, "");
 
-static volatile struct dcdc *const DCDC = (struct dcdc*)0x40080000;
+static struct dcdc *const DCDC = (struct dcdc*)0x40080000;
 
 #endif
