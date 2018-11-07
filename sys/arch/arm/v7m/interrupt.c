@@ -34,7 +34,7 @@ interrupt_mask(int vector)
 	assert(vector <= 495);
 
 	/* disable */
-	NVIC->ICER[vector / 32] = 1 << vector % 32;
+	write32(&NVIC->ICER[vector / 32], 1 << vector % 32);
 }
 
 void
@@ -43,10 +43,10 @@ interrupt_unmask(int vector, int level)
 	assert(vector <= 495);
 
 	/* set priority */
-	NVIC->IPR[vector] = level;
+	write8(&NVIC->IPR[vector], level);
 
 	/* enable */
-	NVIC->ISER[vector / 32] = 1 << vector % 32;
+	write32(&NVIC->ISER[vector / 32], 1 << vector % 32);
 }
 
 void

@@ -22,8 +22,8 @@ clear_dynamic(void)
 {
 	const size_t regions = MPU->TYPE.DREGION;
 	for (size_t i = fixed + stack; i < regions; ++i) {
-		MPU->RNR = i;
-		MPU->RASR.r = 0;
+		write32(&MPU->RNR, i);
+		write32(&MPU->RASR, 0);
 	}
 	fault_addr = 0;
 }
@@ -35,15 +35,15 @@ static_region(const struct mmumap *map, size_t i)
 		panic("region must be power-of-2 sized");
 	if ((uintptr_t)map->paddr & (map->size - 1))
 		panic("region must be aligned on size boundary");
-	MPU->RBAR.r = (union mpu_rbar){
+	write32(&MPU->RBAR, (union mpu_rbar){
 		.REGION = i,
 		.VALID = 1,
 		.ADDR = (uintptr_t)map->paddr >> 5,
-	}.r;
-	MPU->RASR.r = map->flags | (union mpu_rasr){
+	}.r);
+	write32(&MPU->RASR, map->flags | (union mpu_rasr){
 		.SIZE = floor_log2(map->size) - 1,
 		.ENABLE = 1,
-	}.r;
+	}.r);
 }
 
 __fast_text static uint32_t
@@ -84,11 +84,11 @@ mpu_init(const struct mmumap *map, size_t count, int flags)
 	fixed = victim = count;
 	clear_dynamic();
 
-	MPU->CTRL.r = (union mpu_ctrl){
+	write32(&MPU->CTRL, (union mpu_ctrl){
 		.PRIVDEFENA = !!(flags & MPU_ENABLE_DEFAULT_MAP),
 		.HFNMIENA = 1,
 		.ENABLE = 1,
-	}.r;
+	}.r);
 
 	dbg("PMSAv7 MPU initialised, %d dynamic regions\n", regions - fixed);
 }
@@ -128,15 +128,15 @@ mpu_thread_switch(struct thread *prev, struct thread *t)
 	for (void *a = seg_begin(seg); a < seg_end(seg);) {
 		const size_t size = seg_end(seg) - a;
 		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
-		MPU->RBAR.r = (union mpu_rbar){
+		write32(&MPU->RBAR, (union mpu_rbar){
 			.REGION = fixed + stack,
 			.VALID = 1,
 			.ADDR = (uintptr_t)a >> 5,
-		}.r;
-		MPU->RASR.r = rasr_prot | (union mpu_rasr){
+		}.r);
+		write32(&MPU->RASR, rasr_prot | (union mpu_rasr){
 			.SIZE = o - 1,
 			.ENABLE = 1,
-		}.r;
+		}.r);
 		a += 1 << o;
 		++stack;
 	}
@@ -198,15 +198,15 @@ again:;
 
 	/* configure MPU */
 	const uintptr_t region_base = (uintptr_t)addr & -(1UL << order);
-	MPU->RBAR.r = (union mpu_rbar){
+	write32(&MPU->RBAR, (union mpu_rbar){
 		.REGION = victim,
 		.VALID = 1,
 		.ADDR = region_base >> 5,
-	}.r;
-	MPU->RASR.r = prot_to_rasr(seg_prot(seg)) | (union mpu_rasr){
+	}.r);
+	write32(&MPU->RASR, prot_to_rasr(seg_prot(seg)) | (union mpu_rasr){
 		.SIZE = order - 1,
 		.ENABLE = 1,
-	}.r;
+	}.r);
 
 	if (++victim == MPU->TYPE.DREGION)
 		victim = fixed + stack;
@@ -240,7 +240,7 @@ mpu_dump(void)
 	    ctrl.r, ctrl.ENABLE, ctrl.HFNMIENA, ctrl.PRIVDEFENA);
 
 	for (size_t i = 0; i < MPU->TYPE.DREGION; ++i) {
-		MPU->RNR = i;
+		write32(&MPU->RNR, i);
 
 		const union mpu_rbar rbar = MPU->RBAR;
 		const union mpu_rasr rasr = MPU->RASR;

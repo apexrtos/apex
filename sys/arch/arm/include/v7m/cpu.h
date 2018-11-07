@@ -131,7 +131,7 @@ struct scb {
 	uint8_t todo2[0x50];
 };
 static_assert(sizeof(struct scb) == 0x90, "Bad scb size!");
-static volatile struct scb *const SCB = (struct scb*)0xe000ed00;
+static struct scb *const SCB = (struct scb*)0xe000ed00;
 
 /*
  * Cache and branch predictor maintenance operations
@@ -139,20 +139,20 @@ static volatile struct scb *const SCB = (struct scb*)0xe000ed00;
 struct cbp {
 	uint32_t ICIALLU;
 	uint32_t : 32;
-	const void *ICIMVAU;
-	const void *DCIMVAC;
+	uint32_t ICIMVAU;
+	uint32_t DCIMVAC;
 	uint32_t DCISW;
-	const void *DCCMVAU;
-	const void *DCCMVAC;
+	uint32_t DCCMVAU;
+	uint32_t DCCMVAC;
 	uint32_t DCCSW;
-	const void *DCCIMVAC;
+	uint32_t DCCIMVAC;
 	uint32_t DCCISW;
 	uint32_t BPIALL;
 	uint32_t : 32;
 	uint32_t : 32;
 };
 static_assert(sizeof(struct cbp) == 0x34, "Bad cbp size");
-static volatile struct cbp *const CBP = (struct cbp*)0xe000ef50;
+static struct cbp *const CBP = (struct cbp*)0xe000ef50;
 
 /*
  * NVIC
@@ -172,7 +172,7 @@ struct nvic {
 	uint32_t reserved_5[452];
 };
 static_assert(sizeof(struct nvic) == 3072, "Bad NVIC size");
-static volatile struct nvic *const NVIC = (struct nvic*)0xe000e100;
+static struct nvic *const NVIC = (struct nvic*)0xe000e100;
 
 /*
  * FPU
@@ -186,7 +186,7 @@ struct fpu {
 	uint32_t MVFR2;
 };
 static_assert(sizeof(struct fpu) == 24, "Bad FPU size");
-static volatile struct fpu *const FPU = (struct fpu*)0xe000ef34;
+static struct fpu *const FPU = (struct fpu*)0xe000ef34;
 
 /*
  * MPU
@@ -273,7 +273,7 @@ struct mpu {
 	uint32_t : 32;
 };
 static_assert(sizeof(struct mpu) == 0x60, "Bad MPU size");
-static volatile struct mpu *const MPU = (struct mpu*)0xe000ed90;
+static struct mpu *const MPU = (struct mpu*)0xe000ed90;
 
 /*
  * values for 'flags' argument of mpu_init

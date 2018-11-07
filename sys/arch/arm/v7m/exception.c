@@ -70,7 +70,7 @@ static_assert(sizeof(struct exception_frame) == EFRAME_SIZE, "");
 		if (!((int)__builtin_return_address(0) & EXC_SPSEL)) \
 			sch_lock(); \
 		else if (!sch_locked()) { \
-			SCB->ICSR.r = (union scb_icsr){.PENDSVSET = 1}.r; \
+			write32(&SCB->ICSR, (union scb_icsr){.PENDSVSET = 1}.r); \
 			sch_lock(); \
 		} \
 	} while (0)
@@ -255,7 +255,7 @@ exc_MemManage(void)
 		panic("MemManage");
 
 	/* clear fault */
-	SCB->CFSR.MMFSR.r = -1;
+	write8(&SCB->CFSR.MMFSR, -1);
 #endif
 
 	EXCEPTION_EXIT();
@@ -283,7 +283,7 @@ exc_BusFault(void)
 	sig_thread(thread_cur(), SIGBUS);
 
 	/* clear fault */
-	SCB->CFSR.BFSR.r = -1;
+	write8(&SCB->CFSR.BFSR, -1);
 
 	EXCEPTION_EXIT();
 }
@@ -407,7 +407,7 @@ UsageFault(struct exception_frame *eframe)
 		what = "Invalid Coprocessor Access\n";
 
 	/* reset fault register */
-	SCB->CFSR.UFSR.r = -1;
+	write16(&SCB->CFSR.UFSR, -1);
 
 	dump_exception(task_cur() != &kern_task, eframe);
 	if (task_cur() == &kern_task)
