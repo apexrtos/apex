@@ -9,6 +9,7 @@
 #include <machine.h>
 
 #include <boot.h>
+#include <sys/include/arch.h>
 
 struct cmsdk_uart {
 	uint32_t DATA;
@@ -42,7 +43,7 @@ struct cmsdk_uart {
 };
 
 #if defined(CONFIG_BOOT_CONSOLE)
-static volatile struct cmsdk_uart *const UART = (struct cmsdk_uart*)0x40004000;
+static struct cmsdk_uart *const UART = (struct cmsdk_uart*)0x40004000;
 #endif
 
 /*
@@ -51,8 +52,10 @@ static volatile struct cmsdk_uart *const UART = (struct cmsdk_uart*)0x40004000;
 void machine_setup(void)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
-	UART->BAUDDIV = 16;	    /* QEMU doesn't care as long as >= 16 */
-	UART->CTRL.TX_ENABLE = 1;
+	write32(&UART->BAUDDIV, 16);	    /* QEMU doesn't care as long as >= 16 */
+	write32(&UART->CTRL, (union cmsdk_uart_ctrl) {
+		.TX_ENABLE = 1,
+	}.r);
 #endif
 
 	/* Main memory */
@@ -69,8 +72,8 @@ void machine_setup(void)
 void machine_putc(int c)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
-	while (UART->STATE.TX_FULL);
-	UART->DATA = c;
+	while (read32(&UART->STATE).TX_FULL);
+	write32(&UART->DATA, c);
 #endif
 }
 
