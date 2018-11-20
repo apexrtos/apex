@@ -54,6 +54,7 @@ SOURCES := \
     lib/jhash3.c \
     lib/queue.c \
     lib/raise.c \
+    lib/string_utils.cpp \
     mem/access.cpp \
     mem/kmem.c \
     mem/page.cpp \
