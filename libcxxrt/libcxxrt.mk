@@ -13,4 +13,5 @@ SOURCES := \
 	src/auxhelper.cc \
 	src/dynamic_cast.cc \
 	src/libelftc_dem_gnu3.c \
+	src/stdexcept.cc \
 	src/typeinfo.cc \
