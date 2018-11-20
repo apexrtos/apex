@@ -12,8 +12,12 @@
 #include <sch.h>
 #include <stddef.h>
 #include <termios.h>
+#include <thread.h>
+#include <stdatomic.h>
 
 static int fd;
+struct event evt;
+atomic_int wakeups;
 
 /*
  * read
@@ -34,15 +38,19 @@ static ssize_t console_write(struct file *file, const struct iovec *iov,
 }
 
 /*
- * DPC for syslog output
+ * Console writer thread
  */
 static void
-console_output(void *unused)
+console_thread(void *unused)
 {
 	int len;
 	char buf[256];
-	while ((len = syslog_format(buf, sizeof buf)) > 0)
-		kpwrite(fd, buf, len, -1);
+	while (true) {
+		if (!--wakeups)
+			sch_sleep(&evt);
+		while ((len = syslog_format(buf, sizeof buf)) > 0)
+			kpwrite(fd, buf, len, -1);
+	}
 }
 
 /*
@@ -53,8 +61,8 @@ console_output(void *unused)
 static void
 console_start(void)
 {
-	static struct dpc dpc;
-	sch_dpc(&dpc, console_output, NULL);
+	++wakeups;
+	sch_wakeup(&evt, 0);
 }
 
 /*
@@ -83,6 +91,14 @@ console_init(void)
 	tio.c_cflag = CONFIG_CONSOLE_CFLAG;
 	if ((err = kioctl(fd, TCSETS, &tio)) < 0)
 		return err;
+
+	event_init(&evt, "console", ev_SLEEP);
+
+	sch_lock();
+	if (!kthread_create(&console_thread, NULL, PRI_BACKGROUND, "console",
+	    MEM_NORMAL))
+		panic("console_init");
+	sch_unlock();
 
 	device_create(&io, "console", DF_CHR, NULL);
 	syslog_output(console_start);
