@@ -3,7 +3,7 @@
 /*
  * Complete all memory accesses before starting next memory access
  */
-void
+inline void
 memory_barrier(void)
 {
 	asm volatile("dmb" ::: "memory");
@@ -12,7 +12,7 @@ memory_barrier(void)
 /*
  * Complete all memory reads before starting next memory access
  */
-void
+inline void
 read_memory_barrier(void)
 {
 	asm volatile("dmb" ::: "memory");
@@ -21,7 +21,7 @@ read_memory_barrier(void)
 /*
  * Complete all memory writes before starting next memory access
  */
-void
+inline void
 write_memory_barrier(void)
 {
 	asm volatile("dmb" ::: "memory");
