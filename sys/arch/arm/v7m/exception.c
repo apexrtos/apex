@@ -388,6 +388,7 @@ UsageFault(struct exception_frame *eframe)
 {
 	EXCEPTION_ENTRY();
 
+	const bool from_user = (int)__builtin_return_address(0) & EXC_SPSEL;
 	const union scb_cfsr cfsr = SCB->CFSR;
 	const char *what = "Usage Fault\n";
 	int sig = SIGILL;
@@ -409,8 +410,8 @@ UsageFault(struct exception_frame *eframe)
 	/* reset fault register */
 	write16(&SCB->CFSR.UFSR, -1);
 
-	dump_exception(task_cur() != &kern_task, eframe);
-	if (task_cur() == &kern_task)
+	dump_exception(from_user, eframe);
+	if (!from_user)
 		panic(what);
 	dbg(what);
 	sig_thread(thread_cur(), sig);
