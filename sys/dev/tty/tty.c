@@ -733,6 +733,9 @@ tty_create(const char *name, int (*tproc)(struct tty *),
     void (*oproc)(struct tty *), void *data)
 {
 	struct tty *tp = kmem_alloc(sizeof(struct tty), MEM_NORMAL);
+	if (!tp)
+		return (void *)DERR(-ENOMEM);
+
 	memset(tp, 0, sizeof(struct tty));
 
 	event_init(&tp->t_input, "TTY input", ev_IO);
@@ -770,7 +773,10 @@ tty_create(const char *name, int (*tproc)(struct tty *),
 		.write = tty_write_iov,
 		.ioctl = tty_ioctl,
 	};
-	device_create(&tty_io, name, DF_CHR, tp);
+	if (!device_create(&tty_io, name, DF_CHR, tp)) {
+		kmem_free(tp);
+		return (void *)DERR(-EINVAL);
+	}
 
 	return tp;
 }
