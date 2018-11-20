@@ -35,6 +35,8 @@ SOURCES := \
     src/math/scalbnl.c \
     src/multibyte/btowc.c \
     src/multibyte/internal.c \
+    src/multibyte/mbrtoc16.c \
+    src/multibyte/mbrtowc.c \
     src/multibyte/mbtowc.c \
     src/multibyte/wcrtomb.c \
     src/multibyte/wctomb.c \
