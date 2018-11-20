@@ -85,6 +85,7 @@ struct thread {
 #define PRI_DPC		33	/* priority for Deferred Procedure Call */
 #define PRI_SIGNAL	63	/* priority for signal delivery */
 #define PRI_DEFAULT	200	/* default user priority */
+#define PRI_BACKGROUND	254	/* priority for background processing */
 #define PRI_IDLE	255	/* priority for idle thread */
 #define PRI_MIN		255	/* minimum priority */
 
