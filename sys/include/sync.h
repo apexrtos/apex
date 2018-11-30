@@ -30,6 +30,7 @@
 #ifndef sync_h
 #define sync_h
 
+#include <conf/config.h>
 #include <types.h>
 
 struct list;
@@ -60,6 +61,14 @@ struct rwlock {
 	};
 };
 
+struct spinlock {
+#if defined(CONFIG_SMP)
+#error not yet implemented
+#else
+	char dummy;
+#endif
+};
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -88,6 +97,12 @@ int	       rwlock_read_unlock(struct rwlock *);
 int	       rwlock_write_lock_interruptible(struct rwlock *);
 int	       rwlock_write_unlock(struct rwlock *);
 
+void	       spinlock_init(struct spinlock *);
+void	       spinlock_lock(struct spinlock *);
+void	       spinlock_unlock(struct spinlock *);
+int	       spinlock_lock_irq_disable(struct spinlock *);
+void	       spinlock_unlock_irq_restore(struct spinlock *, int);
+
 #if defined(__cplusplus)
 } /* extern "C" */
 
@@ -114,6 +129,18 @@ public:
 
 private:
 	::rwlock m_;
+};
+
+class spinlock {
+public:
+	spinlock() { spinlock_init(&s_); }
+	void lock() { spinlock_lock(&s_); }
+	void unlock() { spinlock_unlock(&s_); }
+	int lock_irq_disable() { return spinlock_lock_irq_disable(&s_); }
+	void unlock_irq_restore(int v) { spinlock_unlock_irq_restore(&s_, v); }
+
+private:
+	::spinlock s_;
 };
 
 } /* namespace a */

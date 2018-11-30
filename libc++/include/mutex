@@ -43,6 +43,33 @@ private:
 };
 
 /*
+ * lock_guard_irq
+ */
+template<typename T>
+class lock_guard_irq {
+public:
+	typedef T mutex_type;
+
+	explicit lock_guard_irq(T &m)
+	: m_{m}
+	{
+		s = m_.lock_irq_disable();
+	}
+
+	~lock_guard_irq()
+	{
+		m_.unlock_irq_restore(s);
+	}
+
+	lock_guard_irq(const lock_guard_irq &) = delete;
+	lock_guard_irq &operator=(const lock_guard_irq &) = delete;
+
+private:
+	T &m_;
+	int s;
+};
+
+/*
  * unique_lock
  */
 template<typename T>
@@ -152,6 +179,118 @@ private:
 
 template<typename T> void
 swap(unique_lock<T> &l, unique_lock<T> &r)
+{
+	l.swap(r);
+}
+
+/*
+ * unique_lock_irq
+ */
+template<typename T>
+class unique_lock_irq {
+public:
+	typedef T mutex_type;
+
+	unique_lock_irq()
+	: m_{0}
+	, locked_{false}
+	{ }
+
+	explicit unique_lock_irq(T &m)
+	: m_{&m}
+	, locked_{false}
+	{
+		lock();
+	}
+
+	unique_lock_irq(T &m, defer_lock_t)
+	: m_{&m}
+	, locked_{false}
+	{ }
+
+	~unique_lock_irq()
+	{
+		if (locked_)
+			unlock();
+	}
+
+	unique_lock_irq(const unique_lock_irq &) = delete;
+	unique_lock_irq &operator=(const unique_lock_irq &) = delete;
+
+	unique_lock_irq(unique_lock_irq &&o)
+	: m_{o.m_}
+	, s_{o.s_}
+	, locked_{o.locked_}
+	{
+		o.m_ = nullptr;
+		o.locked_ = false;
+	}
+
+	unique_lock_irq &operator=(unique_lock_irq &&o)
+	{
+		if (locked_)
+			unlock();
+
+		unique_lock_irq tmp{std::move(o)};
+		tmp.swap(*this);
+
+		return *this;
+	}
+
+	void lock()
+	{
+		assert(m_);
+		assert(!locked_);
+		s_ = m_->lock_irq_disable();
+		locked_ = true;
+	}
+
+	void unlock()
+	{
+		assert(m_);
+		assert(locked_);
+		m_->unlock_irq_restore(s_);
+		locked_ = false;
+	}
+
+	void swap(unique_lock_irq &o)
+	{
+		std::swap(m_, o.m_);
+		std::swap(s_, o.s_);
+		std::swap(locked_, o.locked_);
+	}
+
+	T* release()
+	{
+		const auto r{m_};
+		m_ = 0;
+		locked_ = false;
+		return r;
+	}
+
+	bool owns_lock() const
+	{
+		return locked_;
+	}
+
+	explicit operator bool() const
+	{
+		return locked_;
+	}
+
+	T* mutex() const
+	{
+		return m_;
+	}
+
+private:
+	T *m_;
+	bool locked_;
+	int s_;
+};
+
+template<typename T> void
+swap(unique_lock_irq<T> &l, unique_lock_irq<T> &r)
 {
 	l.swap(r);
 }

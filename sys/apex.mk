@@ -63,6 +63,7 @@ SOURCES := \
     sync/futex.c \
     sync/mutex.c \
     sync/rwlock.c \
+    sync/spinlock.c \
 
 # Generic memory translation support
 ifneq ($(origin CONFIG_MMU),undefined)
