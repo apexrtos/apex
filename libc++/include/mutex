@@ -57,19 +57,19 @@ public:
 
 	explicit unique_lock(T &m)
 	: m_{&m}
-	, locked_(false)
+	, locked_{false}
 	{
 		lock();
 	}
 
 	unique_lock(T &m, defer_lock_t)
 	: m_{&m}
-	, locked_(false)
+	, locked_{false}
 	{ }
 
 	unique_lock(T &m, adopt_lock_t)
 	: m_{&m}
-	, locked_(true)
+	, locked_{true}
 	{ }
 
 	~unique_lock()
@@ -82,8 +82,8 @@ public:
 	unique_lock &operator=(const unique_lock &) = delete;
 
 	unique_lock(unique_lock &&o)
-	: m_(o.m_)
-	, locked_(o.locked_)
+	: m_{o.m_}
+	, locked_{o.locked_}
 	{
 		o.m_ = nullptr;
 		o.locked_ = false;
