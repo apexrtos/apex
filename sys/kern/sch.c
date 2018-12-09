@@ -699,7 +699,8 @@ sch_unlock(void)
 	thread_check();
 
 	int s = irq_disable();
-	if (active_thread->locks == 1)
+	if (active_thread->locks == 1 &&
+	    (active_thread->resched || !queue_empty(&wakeq)))
 		sch_unlock_slowpath(s);
 	--active_thread->locks;
 	irq_restore(s);
