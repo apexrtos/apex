@@ -605,7 +605,13 @@ struct __gcc_atomic_t {
 #endif // _LIBCPP_CXX03_LANG
   _LIBCPP_CONSTEXPR explicit __gcc_atomic_t(_Tp value) _NOEXCEPT
     : __a_value(value) {}
-  _Tp __a_value;
+
+  /* force at least natural alignment for power-of-2 sized _Tp's <= 16-bytes */
+  static constexpr auto _Size_Align =
+    sizeof(_Tp) & sizeof(_Tp) - 1 || sizeof(_Tp) > 16 ? 0 : sizeof(_Tp);
+  static constexpr auto _Alignment =
+    alignof(_Tp) > _Size_Align ? alignof(_Tp) : _Size_Align;
+  alignas(_Alignment) _Tp __a_value;
 };
 #define _Atomic(x) __gcc_atomic::__gcc_atomic_t<x>
 
