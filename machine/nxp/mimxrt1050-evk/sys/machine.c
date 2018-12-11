@@ -4,6 +4,7 @@
 #include <conf/drivers.h>
 #include <cpu.h>
 #include <cpu/nxp/imxrt10xx/ccm.h>
+#include <cpu/nxp/imxrt10xx/gpio.h>
 #include <cpu/nxp/imxrt10xx/iomuxc.h>
 #include <cpu/nxp/imxrt10xx/pmu.h>
 #include <cpu/nxp/imxrt10xx/src.h>
