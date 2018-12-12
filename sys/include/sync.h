@@ -64,6 +64,8 @@ struct rwlock {
 struct spinlock {
 #if defined(CONFIG_SMP)
 #error not yet implemented
+#elif defined CONFIG_DEBUG
+	struct thread *owner;
 #else
 	char dummy;
 #endif
@@ -102,6 +104,7 @@ void	       spinlock_lock(struct spinlock *);
 void	       spinlock_unlock(struct spinlock *);
 int	       spinlock_lock_irq_disable(struct spinlock *);
 void	       spinlock_unlock_irq_restore(struct spinlock *, int);
+void	       spinlock_assert_locked(struct spinlock *);
 
 #if defined(__cplusplus)
 } /* extern "C" */
@@ -138,6 +141,7 @@ public:
 	void unlock() { spinlock_unlock(&s_); }
 	int lock_irq_disable() { return spinlock_lock_irq_disable(&s_); }
 	void unlock_irq_restore(int v) { spinlock_unlock_irq_restore(&s_, v); }
+	void assert_locked() { spinlock_assert_locked(&s_); }
 
 private:
 	::spinlock s_;
