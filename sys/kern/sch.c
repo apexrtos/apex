@@ -646,7 +646,8 @@ sch_exit(void)
 inline void
 sch_lock(void)
 {
-	active_thread->locks++;
+	write_once(&active_thread->locks, active_thread->locks + 1);
+	compiler_barrier();
 	thread_check();
 }
 
