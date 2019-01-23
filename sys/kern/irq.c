@@ -277,7 +277,7 @@ irq_handler(int vector)
 		 */
 		assert(irq->ist);
 		irq->istreq++;
-		sch_wakeup(&irq->istevt, SLP_SUCCESS);
+		sch_wakeup(&irq->istevt, 0);
 		assert(irq->istreq != 0);
 	}
 }

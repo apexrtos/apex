@@ -47,14 +47,6 @@ struct dpc {
 	void	       *arg;		/* Argument to pass */
 };
 
-/*
- * Sleep result
- */
-#define SLP_SUCCESS	0	/* success */
-#define SLP_TIMEOUT	1	/* timeout */
-#define SLP_INVAL	2	/* target event becomes invalid */
-#define SLP_INTR	3	/* interrupted by exception */
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

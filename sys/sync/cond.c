@@ -142,16 +142,9 @@ cond_timedwait_interruptible(struct cond *c, struct mutex *m, uint64_t nsec)
 		goto out;
 	}
 
-	switch (rc) {
-	case SLP_TIMEOUT:
-		err = -ETIMEDOUT;
-		break;
-	case SLP_INTR:
-		err = -EINTR;
-		break;
-	default:
-		panic("cond: bad sleep result");
-	}
+	/* sleep timed out or was interrupted */
+	assert(rc < 0);
+	err = rc;
 
 out:
 	sch_unlock();
@@ -194,7 +187,7 @@ cond_broadcast(struct cond *c)
 	sch_lock();
 	if (cp->signal < cp->wait) {
 		cp->signal = cp->wait;
-		sch_wakeup(&cp->event, SLP_SUCCESS);
+		sch_wakeup(&cp->event, 0);
 	}
 	sch_unlock();
 

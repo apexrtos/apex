@@ -277,7 +277,7 @@ tty_wait(struct tty *tp)
 			(*tp->t_oproc)(tp);
 			if (ttyq_empty(&tp->t_outq))
 				break;
-			if (SLP_INTR == sch_sleep(&tp->t_output))
+			if (-EINTR == sch_sleep(&tp->t_output))
 				return DERR(-EINTR);
 		}
 	}
@@ -329,7 +329,7 @@ tty_oq_dmalen(struct tty *tp)
 void
 tty_oq_done(struct tty *tp)
 {
-	sch_wakeup(&tp->t_output, SLP_SUCCESS);
+	sch_wakeup(&tp->t_output, 0);
 }
 
 /*
@@ -571,7 +571,7 @@ tty_read(struct file *file, void *buf, size_t len)
 		vn_unlock(file->f_vnode);
 		rc = sch_sleep(&tp->t_input);
 		vn_lock(file->f_vnode);
-		if (rc == SLP_INTR)
+		if (rc == -EINTR)
 			return -EINTR;
 	}
 	while (count < len) {
@@ -619,7 +619,7 @@ tty_write(struct file *file, void *buf, size_t len)
 					break;
 			}
 			int rc = sch_sleep(&tp->t_output);
-			if (rc == SLP_INTR) {
+			if (rc == -EINTR) {
 				if (count == 0)
 					count = DERR(-EINTR);
 				/* still do tty_start() if EINTR */

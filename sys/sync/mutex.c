@@ -182,14 +182,14 @@ mutex_lock_slowpath(struct mutex *m)
 	prio_inherit(thread_cur());
 
 	/* wait for unlock */
-	int err = 0;
-	switch (sch_sleep(&mp->event)) {
+	int err;
+	switch ((err = sch_sleep(&mp->event))) {
 	case 0:
 		/* mutex_unlock will set us as the owner */
 		assert(mutex_owner(m) == thread_cur());
 		assert(thread_cur()->wait_mutex == NULL);
 		break;
-	case SLP_INTR:
+	case -EINTR:
 #if defined(CONFIG_DEBUG)
 		--thread_cur()->mutex_locks;
 #endif

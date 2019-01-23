@@ -68,17 +68,7 @@ futex_wait(struct task *t, int *uaddr, int val, const struct timespec *ts)
 	struct futex *f;
 	if (!(f = futex_get(t, uaddr)))
 		return DERR(-ENOMEM);
-	switch (sch_nanosleep(&f->event, ts ? ts_to_ns(ts) : 0)) {
-	case 0:
-		/* woken by FUTEX_WAKE */
-		return 0;
-	case SLP_TIMEOUT:
-		return -ETIMEDOUT;
-	case SLP_INTR:
-		return -EINTR;
-	default:
-		return DERR(-EINVAL);
-	}
+	return sch_nanosleep(&f->event, ts ? ts_to_ns(ts) : 0);
 	/* Be _very_ careful. Requeue can move us from one futex to another, so
 	 * we are not necessarily waiting on 'f' anymore. */
 }
@@ -103,7 +93,7 @@ futex_wake(struct task *t, int *uaddr, int val)
 	}
 
 	if (val == INT_MAX)
-		return sch_wakeup(&f->event, SLP_SUCCESS);
+		return sch_wakeup(&f->event, 0);
 
 	int n = val;
 	while (n && sch_wakeone(&f->event)) --n;

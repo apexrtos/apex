@@ -224,7 +224,7 @@ timer_delay(uint64_t nsec)
 	int rc;
 
 	rc = sch_nanosleep(&delay_event, nsec);
-	if (rc != SLP_TIMEOUT) {
+	if (rc != -ETIMEDOUT) {
 		tmr = &thread_cur()->timeout;
 		remain = time_remain(tmr->expire);
 	}
@@ -340,7 +340,7 @@ timer_tick(int ticks)
 			if (rem == 0)
 				rem = 1;
 			timer_add(tmr, rem);
-			sch_wakeup(&tmr->event, SLP_SUCCESS);
+			sch_wakeup(&tmr->event, 0);
 		} else {
 			/*
 			 * One-shot timer
@@ -350,7 +350,7 @@ timer_tick(int ticks)
 		}
 	}
 	if (wakeup)
-		sch_wakeup(&timer_event, SLP_SUCCESS);
+		sch_wakeup(&timer_event, 0);
 
 	/* itimer_prof decrements any time the process is running */
 	run_itimer(&t->itimer_prof, ns, SIGPROF);

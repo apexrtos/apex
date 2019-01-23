@@ -229,11 +229,10 @@ again:
 		/*
 		 * Wait for a signal or child exit
 		 */
-		if (sch_sleep(&task_cur()->child_event) == SLP_SUCCESS) {
+		if (!(err = sch_sleep(&task_cur()->child_event))) {
 			sch_unlock();
 			goto again;
 		}
-		err = -EINTR;
 	}
 
 out:

@@ -293,7 +293,7 @@ sch_switch(void)
 static void
 sleep_expire(void *arg)
 {
-	sch_unsleep(arg, SLP_TIMEOUT);
+	sch_unsleep(arg, -ETIMEDOUT);
 }
 
 /*
@@ -339,7 +339,7 @@ sch_nanosleep(struct event *evt, uint64_t nsec)
 	sch_lock();
 
 	if (sig_unblocked_pending(active_thread))
-		active_thread->slpret = SLP_INTR;
+		active_thread->slpret = -EINTR;
 
 	if (active_thread->slpret != 0)
 		goto out;
@@ -508,7 +508,7 @@ sch_interrupt(struct thread *th)
 {
 	sch_lock();
 	if (th->state & TH_SLEEP)
-		sch_unsleep(th, SLP_INTR);
+		sch_unsleep(th, -EINTR);
 	sch_unlock();
 }
 
@@ -813,7 +813,7 @@ sch_dpc(struct dpc *dpc, void (*func)(void *), void *arg)
 	dpc->state = DPC_PENDING;
 
 	/* Wake DPC thread */
-	sch_wakeup(&dpc_event, SLP_SUCCESS);
+	sch_wakeup(&dpc_event, 0);
 
 	irq_restore(s);
 }
