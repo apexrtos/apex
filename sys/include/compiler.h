@@ -42,4 +42,23 @@ compiler_barrier()
 	} \
 })
 
+/*
+ * ARRAY_SIZE
+ */
+#define ARRAY_SIZE(arr) \
+    (sizeof(arr) / sizeof((arr)[0]) + sizeof(typeof(int[1 - 2 * \
+    !!__builtin_types_compatible_p(typeof(arr), typeof(&arr[0]))])) * 0)
+
+/*
+ * Optimiser hints.
+ */
+#define likely(x) __builtin_expect((!!(x)),1)
+#define unlikely(x) __builtin_expect((!!(x)),0)
+
+/*
+ * Create create a weak alias (from musl).
+ */
+#define weak_alias(old, new) \
+	extern "C" __typeof(old) new __attribute__((weak, alias(#old)))
+
 #endif

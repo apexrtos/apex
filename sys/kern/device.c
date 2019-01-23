@@ -34,9 +34,9 @@
 
 #include <access.h>
 #include <assert.h>
+#include <compiler.h>
 #include <debug.h>
 #include <errno.h>
-#include <kernel.h>
 #include <kmem.h>
 #include <sch.h>
 #include <string.h>

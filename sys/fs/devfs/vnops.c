@@ -31,6 +31,7 @@
  * devfs - device file system.
  */
 
+#include <compiler.h>
 #include <debug.h>
 #include <device.h>
 #include <dirent.h>
@@ -39,7 +40,6 @@
 #include <fs/mount.h>
 #include <fs/util.h>
 #include <fs/vnode.h>
-#include <kernel.h>
 #include <string.h>
 #include <sys/stat.h>
 

@@ -15,6 +15,7 @@
 #include "vnode.h"
 #include <alloca.h>
 #include <assert.h>
+#include <compiler.h>
 #include <debug.h>
 #include <dirent.h>
 #include <errno.h>

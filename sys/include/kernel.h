@@ -85,18 +85,6 @@ virt_to_phys(const void *va)
 #define	TRUNC(p)	((__typeof__(p))(((uintptr_t)(p)) & ~ALIGNBYTES))
 #define	TRUNCn(p, n)	((__typeof__(p))(((uintptr_t)(p)) & -(n)))
 
-/* GCC is awesome. */
-#define ARRAY_SIZE(arr) \
-    (sizeof(arr) / sizeof((arr)[0]) + sizeof(typeof(int[1 - 2 * \
-    !!__builtin_types_compatible_p(typeof(arr), typeof(&arr[0]))])) * 0)
-
-/* useful macros to provide information to optimiser */
-#define likely(x) __builtin_expect((!!(x)),1)
-#define unlikely(x) __builtin_expect((!!(x)),0)
-
-/* helpful macro to create a weak alias (from musl) */
-#define weak_alias(old, new) \
-	extern "C" __typeof(old) new __attribute__((weak, alias(#old)))
 
 /*
  * Calculate integer logarithm of an integer

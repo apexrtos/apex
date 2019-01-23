@@ -1,9 +1,9 @@
 #include <prio.h>
 
+#include <compiler.h>
 #include <debug.h>
 #include <errno.h>
 #include <futex.h>
-#include <kernel.h>
 #include <sch.h>
 #include <sig.h>
 #include <sync.h>
