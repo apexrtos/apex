@@ -35,6 +35,7 @@
 #include <elf.h>
 #include <signal.h>
 #include <stdnoreturn.h>
+#include <sys/include/compiler.h>
 #include <sys/include/types.h>
 
 struct as;
@@ -145,6 +146,43 @@ void		mpu_fault(const void *, size_t);
 void		mpu_dump(void);
 #endif
 
+#if defined(CONFIG_SMP)
+static inline void
+smp_memory_barrier()
+{
+	memory_barrier();
+}
+
+static inline void
+smp_read_memory_barrier()
+{
+	read_memory_barrier();
+}
+
+static inline void
+smp_write_memory_barrier()
+{
+	write_memory_barrier();
+}
+#else
+static inline void
+smp_memory_barrier()
+{
+	compiler_barrier();
+}
+
+static inline void
+smp_read_memory_barrier()
+{
+	compiler_barrier();
+}
+
+static inline void
+smp_write_memory_barrier()
+{
+	compiler_barrier();
+}
+#endif
 
 #define read8(p) ({ \
 	static_assert(sizeof(*p) == 1, ""); \
