@@ -35,7 +35,6 @@
 #include <inttypes.h>
 #include <kernel.h>
 #include <list.h>
-#include <mutex>
 #include <sync.h>
 
 enum PG_STATE {

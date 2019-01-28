@@ -4,7 +4,6 @@
 #include <arch.h>
 #include <debug.h>
 #include <errno.h>
-#include <mutex>
 #include <proc.h>
 #include <string.h>
 #include <sys/mman.h>

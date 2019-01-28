@@ -10,7 +10,6 @@
 #include <kernel.h>
 #include <kmem.h>
 #include <list.h>
-#include <mutex>
 #include <sections.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
@@ -161,7 +160,7 @@ mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
 			return (void*)DERR(-EBADF);
 	}
 
-	interruptible_write_lock l(a->lock);
+	interruptible_lock l(a->lock.write());
 	if (err = l.lock(); err < 0)
 		return (void*)err;
 
@@ -184,7 +183,7 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 	if (!ulen)
 		return 0;
 
-	interruptible_write_lock l(a->lock);
+	interruptible_lock l(a->lock.write());
 	if (err = l.lock(); err < 0)
 		return err;
 
@@ -260,7 +259,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 	if (!ulen)
 		return 0;
 
-	interruptible_write_lock l(a->lock);
+	interruptible_lock l(a->lock.write());
 	if (err = l.lock(); err < 0)
 		return err;
 
@@ -428,7 +427,7 @@ sc_brk(void *addr)
 	if (!addr)
 		return a->brk;
 
-	interruptible_write_lock l(a->lock);
+	interruptible_lock l(a->lock.write());
 	if (auto r = l.lock(); r < 0)
 		return (void*)r;
 
@@ -519,7 +518,7 @@ void
 as_destroy(as *a)
 {
 	if (--a->ref > 0) {
-		a->lock.write_unlock();
+		a->lock.write().unlock();
 		return;
 	}
 
@@ -530,7 +529,7 @@ as_destroy(as *a)
 			vn_close(s->vn);
 		kmem_free(s);
 	}
-	a->lock.write_unlock();
+	a->lock.write().unlock();
 	kmem_free(a);
 }
 
@@ -549,7 +548,7 @@ as_reference(as *a)
 int
 as_transfer_begin(as *a)
 {
-	return a->lock.interruptible_read_lock();
+	return a->lock.read().interruptible_lock();
 }
 
 /*
@@ -558,7 +557,7 @@ as_transfer_begin(as *a)
 int
 as_transfer_end(as *a)
 {
-	return a->lock.read_unlock();
+	return a->lock.read().unlock();
 }
 
 /*
@@ -567,7 +566,7 @@ as_transfer_end(as *a)
 int
 as_modify_begin(as *a)
 {
-	return a->lock.interruptible_write_lock();
+	return a->lock.write().interruptible_lock();
 }
 
 /*
@@ -576,7 +575,7 @@ as_modify_begin(as *a)
 int
 as_modify_end(as *a)
 {
-	return a->lock.write_unlock();
+	return a->lock.write().unlock();
 }
 
 /*

@@ -12,7 +12,6 @@
 #include <fs.h>
 #include <limits.h>
 #include <mmap.h>
-#include <mutex>
 #include <sch.h>
 #include <sig.h>
 #include <string.h>

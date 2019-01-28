@@ -12,7 +12,6 @@
 #include <fcntl.h>
 #include <ioctl.h>
 #include <limits.h>
-#include <mutex>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/mount.h>

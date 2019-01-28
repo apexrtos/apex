@@ -7,7 +7,6 @@
 #include <debug.h>
 #include <fs.h>
 #include <kernel.h>
-#include <mutex>
 #include <page.h>
 #include <sys/mman.h>
 #include <sys/uio.h>

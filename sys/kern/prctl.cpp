@@ -3,8 +3,8 @@
 #include <access.h>
 #include <debug.h>
 #include <errno.h>
-#include <mutex>
 #include <stdarg.h>
+#include <sync.h>
 #include <thread.h>
 
 namespace {
