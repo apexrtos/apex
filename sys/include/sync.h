@@ -33,6 +33,10 @@
 #include <conf/config.h>
 #include <types.h>
 
+#if defined(__cplusplus)
+#include <mutex>
+#endif
+
 struct list;
 struct thread;
 
@@ -111,6 +115,9 @@ void	       spinlock_assert_locked(struct spinlock *);
 
 namespace a {
 
+/*
+ * a::mutex - apex c++ mutex wrapper
+ */
 class mutex {
 public:
 	mutex() { mutex_init(&m_); }
@@ -122,25 +129,55 @@ private:
 	::mutex m_;
 };
 
+/*
+ * a::rwlock - apex c++ rwlock wrapper
+ */
+class rwlock_read;
+class rwlock_write;
 class rwlock {
 public:
 	rwlock() { rwlock_init(&m_); }
-	int interruptible_read_lock() { return rwlock_read_lock_interruptible(&m_); }
-	int read_unlock() { return rwlock_read_unlock(&m_); }
-	int interruptible_write_lock() { return rwlock_write_lock_interruptible(&m_); }
-	int write_unlock() { return rwlock_write_unlock(&m_); }
+	rwlock_read &read();
+	rwlock_write &write();
 
-private:
+protected:
 	::rwlock m_;
 };
+class rwlock_read : public rwlock {
+public:
+	int interruptible_lock() { return rwlock_read_lock_interruptible(&m_); }
+	int unlock() { return rwlock_read_unlock(&m_); }
+};
+class rwlock_write : public rwlock {
+public:
+	int interruptible_lock() { return rwlock_write_lock_interruptible(&m_); }
+	int unlock() { return rwlock_write_unlock(&m_); }
+};
+inline rwlock_read &rwlock::read() { return static_cast<rwlock_read&>(*this); }
+inline rwlock_write &rwlock::write() { return static_cast<rwlock_write&>(*this); }
 
+/*
+ * a::spinlock - apex c++ spinlock wrapper
+ */
 class spinlock {
 public:
 	spinlock() { spinlock_init(&s_); }
 	void lock() { spinlock_lock(&s_); }
 	void unlock() { spinlock_unlock(&s_); }
-	int lock_irq_disable() { return spinlock_lock_irq_disable(&s_); }
-	void unlock_irq_restore(int v) { spinlock_unlock_irq_restore(&s_, v); }
+	void assert_locked() { spinlock_assert_locked(&s_); }
+
+private:
+	::spinlock s_;
+};
+
+/*
+ * a::spinlock_irq - apex c++ irq disabling spinlock wrapper
+ */
+class spinlock_irq {
+public:
+	spinlock_irq() { spinlock_init(&s_); }
+	int lock() { return spinlock_lock_irq_disable(&s_); }
+	void unlock(int v) { spinlock_unlock_irq_restore(&s_, v); }
 	void assert_locked() { spinlock_assert_locked(&s_); }
 
 private:
@@ -148,6 +185,190 @@ private:
 };
 
 } /* namespace a */
+
+namespace std {
+
+/*
+ * std::lock_guard specialisation for a::spinlock_irq
+ */
+template<>
+class lock_guard<a::spinlock_irq> {
+public:
+	typedef a::spinlock_irq mutex_type;
+
+	explicit lock_guard(a::spinlock_irq &m)
+	: m_{m}
+	{
+		s = m_.lock();
+	}
+
+	~lock_guard()
+	{
+		m_.unlock(s);
+	}
+
+	lock_guard(const lock_guard&) = delete;
+	lock_guard&operator=(const lock_guard&) = delete;
+
+private:
+	a::spinlock_irq &m_;
+	int s;
+};
+
+/*
+ * std::unique_lock specialisation for a::spinlock_irq
+ */
+template<>
+class unique_lock<a::spinlock_irq> {
+public:
+	typedef a::spinlock_irq mutex_type;
+
+	unique_lock()
+	: m_{0}
+	, locked_{false}
+	{ }
+
+	explicit unique_lock(a::spinlock_irq &m)
+	: m_{&m}
+	, locked_{false}
+	{
+		lock();
+	}
+
+	unique_lock(a::spinlock_irq &m, defer_lock_t)
+	: m_{&m}
+	, locked_{false}
+	{ }
+
+	~unique_lock()
+	{
+		if (locked_)
+			unlock();
+	}
+
+	unique_lock(const unique_lock&) = delete;
+	unique_lock&operator=(const unique_lock&) = delete;
+
+	unique_lock(unique_lock&&o)
+	: m_{o.m_}
+	, locked_{o.locked_}
+	, s_{o.s_}
+	{
+		o.m_ = nullptr;
+		o.locked_ = false;
+	}
+
+	unique_lock&operator=(unique_lock&&o)
+	{
+		if (locked_)
+			unlock();
+
+		unique_lock tmp{std::move(o)};
+		tmp.swap(*this);
+
+		return *this;
+	}
+
+	void lock()
+	{
+		assert(m_);
+		assert(!locked_);
+		s_ = m_->lock();
+		locked_ = true;
+	}
+
+	void unlock()
+	{
+		assert(m_);
+		assert(locked_);
+		m_->unlock(s_);
+		locked_ = false;
+	}
+
+	void swap(unique_lock&o)
+	{
+		std::swap(m_, o.m_);
+		std::swap(s_, o.s_);
+		std::swap(locked_, o.locked_);
+	}
+
+	a::spinlock_irq* release()
+	{
+		const auto r{m_};
+		m_ = 0;
+		locked_ = false;
+		return r;
+	}
+
+	bool owns_lock() const
+	{
+		return locked_;
+	}
+
+	explicit operator bool() const
+	{
+		return locked_;
+	}
+
+	a::spinlock_irq* mutex() const
+	{
+		return m_;
+	}
+
+private:
+	a::spinlock_irq *m_;
+	bool locked_;
+	int s_;
+};
+
+} /* namespace std */
+
+/*
+ * interruptible_lock
+ */
+template<typename T>
+class interruptible_lock {
+public:
+	typedef T mutex_type;
+
+	explicit interruptible_lock(T &m)
+	: m_{m}
+	, locked_{false}
+	{ }
+
+	auto lock()
+	{
+		/* m_.interruptible_lock() returns 0 on success */
+		const auto r = m_.interruptible_lock();
+		locked_ = !r;
+		return r;
+	}
+
+	void unlock()
+	{
+		if (locked_) {
+			m_.unlock();
+			locked_ = false;
+		}
+	}
+
+	bool locked() const
+	{
+		return locked_;
+	}
+
+	~interruptible_lock()
+	{
+		unlock();
+	}
+
+	interruptible_lock(const interruptible_lock &) = delete;
+	interruptible_lock &operator=(const interruptible_lock &) = delete;
+
+private:
+	T &m_;
+	bool locked_;
+};
 
 #endif /* __cplusplus */
 
