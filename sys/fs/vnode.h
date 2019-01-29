@@ -135,6 +135,10 @@ struct vnops {
 #define VOP_INACTIVE(VP)	    ((VP)->v_mount->m_op->vfs_vnops->vop_inactive)(VP)
 #define VOP_TRUNCATE(VP)	    ((VP)->v_mount->m_op->vfs_vnops->vop_truncate)(VP)
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 /*
  * Generic null/invalid operations
  */
@@ -156,6 +160,10 @@ int		 vn_stat(struct vnode *, struct stat *);
 void		 vput(struct vnode *);
 void		 vref(struct vnode *);
 void		 vgone(struct vnode *);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* !vnode_h */
 
