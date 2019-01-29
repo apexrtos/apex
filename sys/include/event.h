@@ -46,7 +46,7 @@ struct event {
 		ev_SLEEP,
 		ev_EXCEPTION
 	} type;
-	char *name;			/* pointer to event name string */
+	const char *name;		/* pointer to event name string */
 };
 
 /* Macro to initialize event dynamically */
