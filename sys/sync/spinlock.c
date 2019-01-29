@@ -41,7 +41,6 @@ spinlock_unlock(struct spinlock *s)
 inline int
 spinlock_lock_irq_disable(struct spinlock *s)
 {
-	sch_lock();
 	const int i = irq_disable();
 #if defined(CONFIG_DEBUG)
 	assert(!s->owner);
@@ -57,7 +56,6 @@ spinlock_unlock_irq_restore(struct spinlock *s, int v)
 	s->owner = 0;
 #endif
 	irq_restore(v);
-	sch_unlock();
 }
 
 inline void
