@@ -71,20 +71,22 @@ virt_to_phys(const void *va)
 #define PAGE_TRUNC(n)	((__typeof__(n))((((uintptr_t)(n)) & (uintptr_t)~PAGE_MASK)))
 
 /*
- * Round p (pointer or byte index) up to a correctly-aligned value for all
- * data types (int, long, ...).   The result is uintptr_t and must be cast to
- * any desired pointer type.
+ * Align or truncate a pointer to a power of 2 boundary.
  */
-#if UINTPTR_MAX == 0xffffffff
-#define ALIGNBYTES	3
-#else
-#define ALIGNBYTES	7
-#endif
-#define	ALIGN(p)	((__typeof__(p))(((uintptr_t)(p) + ALIGNBYTES) & ~ALIGNBYTES))
 #define ALIGNn(p, n)	((__typeof__(p))(((uintptr_t)(p) + ((n) - 1)) & (-n)))
-#define	TRUNC(p)	((__typeof__(p))(((uintptr_t)(p)) & ~ALIGNBYTES))
 #define	TRUNCn(p, n)	((__typeof__(p))(((uintptr_t)(p)) & -(n)))
 
+/*
+ * Align or truncate a pointer to a boundary suitable for storing all native
+ * data types.
+ */
+#if UINTPTR_MAX == 0xffffffff
+#define ALIGN(p)    ALIGNn(p, 4)
+#define TRUNC(p)    TRUNCn(p, 4)
+#else
+#define ALIGN(p)    ALIGNn(p, 8)
+#define TRUNC(p)    TRUNCn(p, 8)
+#endif
 
 /*
  * Calculate integer logarithm of an integer
