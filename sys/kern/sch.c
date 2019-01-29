@@ -223,9 +223,9 @@ wakeq_flush(void)
 		th = queue_entry(q, struct thread, link);
 		th->slpevt = NULL;
 		th->state &= ~TH_SLEEP;
-		assert(th != active_thread);
 		assert(thread_runnable(th));
-		runq_enqueue(th);
+		if (th != active_thread)
+			runq_enqueue(th);
 	}
 }
 
@@ -334,37 +334,10 @@ sch_nanosleep(struct event *evt, uint64_t nsec)
 {
 	int ret;
 
-	assert(evt);
+	if ((ret = sch_prepare_sleep(evt)))
+		return ret;
 
-	sch_lock();
-
-	if (sig_unblocked_pending(active_thread))
-		active_thread->slpret = -EINTR;
-
-	if (active_thread->slpret != 0)
-		goto out;
-
-	const int s = irq_disable();
-	active_thread->slpevt = evt;
-	active_thread->state |= TH_SLEEP;
-	enqueue(&evt->sleepq, &active_thread->link);
-
-	if (nsec != 0) {
-		/*
-		 * Program timer to wake us up at timeout.
-		 */
-		timer_callout(&active_thread->timeout, nsec, 0, &sleep_expire,
-			      active_thread);
-	}
-	wakeq_flush();
-	sch_switch();	/* Sleep here. Zzzz.. */
-	irq_restore(s);
-
-out:
-	ret = active_thread->slpret;
-	active_thread->slpret = 0;
-	sch_unlock();
-	return ret;
+	return sch_continue_sleep(nsec);
 }
 
 /*
@@ -473,6 +446,53 @@ sch_requeue(struct event *l, struct event *r)
 	sch_unlock();
 
 	return th;
+}
+
+/*
+ * sch_prepare_sleep - prepare to sleep on an event
+ *
+ * Must be followed by a call to sch_continue_sleep or sch_unsleep.
+ */
+int
+sch_prepare_sleep(struct event *evt)
+{
+	assert(evt);
+
+	const int s = irq_disable();
+
+	if (sig_unblocked_pending(active_thread)) {
+		irq_restore(s);
+		return -EINTR;
+	}
+
+	active_thread->slpevt = evt;
+	active_thread->state |= TH_SLEEP;
+	enqueue(&evt->sleepq, &active_thread->link);
+
+	irq_restore(s);
+
+	return 0;
+}
+
+/*
+ * sch_continue_sleep - sleep on prepared event
+ *
+ * Must be called after successful sch_prepare_sleep.
+ */
+int
+sch_continue_sleep(uint64_t nsec)
+{
+	const int s = irq_disable();
+	if (nsec != 0) {
+		/* Program timer to wake us up atfter nsec. */
+		timer_callout(&active_thread->timeout, nsec, 0, &sleep_expire,
+			      active_thread);
+	}
+	wakeq_flush();
+	sch_switch();	/* Sleep here. Zzzz.. */
+	irq_restore(s);
+
+	return active_thread->slpret;
 }
 
 /*
