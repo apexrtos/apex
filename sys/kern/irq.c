@@ -105,6 +105,11 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 	assert(vector < CONFIG_IRQS);
 
 	sch_lock();
+	if (irq_table[vector] != NULL) {
+		sch_unlock();
+		dbg("IRQ%d BUSY\n", vector);
+		return NULL;
+	}
 	if ((irq = kmem_alloc(sizeof(*irq), MEM_FAST)) == NULL) {
 		sch_unlock();
 		return NULL;
@@ -148,12 +153,13 @@ irq_detach(struct irq *irq)
 	assert(irq);
 	assert(irq->vector < CONFIG_IRQS);
 
+	sch_lock();
 	interrupt_mask(irq->vector);
-
 	irq_table[irq->vector] = NULL;
+	sch_unlock();
+
 	if (irq->thread != NULL)
 		thread_terminate(irq->thread);
-
 	kmem_free(irq);
 }
 
