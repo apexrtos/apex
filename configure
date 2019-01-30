@@ -160,6 +160,7 @@ parse_config()
 			name=$(expr "$path" : '.*dev/\(.*\)')
 			name=${name:="$path"}
 			c_name=$(echo "$name" | tr '/-' '_')
+			decls=
 			args=$(expr "$rest" : '[^{(]*\(.*\)')
 			case $args in
 			'')
@@ -170,7 +171,8 @@ parse_config()
 				;;
 			\{*)
 				# driver a/b/x{...} -> x_init(&(struct x_desc){...});
-				args="(&(struct $c_name""_desc)$args)"
+				decls="const struct $c_name""_desc"" desc = $args;"
+				args="(&desc)"
 				;;
 			esac
 
@@ -180,7 +182,7 @@ parse_config()
 
 			if [ "x$args" != x ]; then
 				echo "#include <$path/init.h>" >> "$DRIVERS_H"
-				echo "/* $order */ $c_name""_init$args;" >> "$DRIVERS_C"
+				echo "/* $order */ { $decls $c_name""_init$args; }" >> "$DRIVERS_C"
 			fi
 			echo "CONFIG_DRIVER_LIST += $path" >> "$CONFIG_MK"
 			;;
