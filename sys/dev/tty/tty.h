@@ -40,6 +40,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+struct termios;
 struct tty;
 typedef unsigned int tcflag_t;
 
@@ -47,20 +48,28 @@ typedef unsigned int tcflag_t;
 extern "C" {
 #endif
 
-struct tty	       *tty_create(const char *, int (*tproc)(struct tty *),
-				   void (*oproc)(struct tty *), void *);
-void		       *tty_data(struct tty *);
-const struct termios   *tty_termios(struct tty *);
-int			tty_oq_getc(struct tty *);
-size_t		        tty_oq_count(struct tty *);
-bool			tty_oq_empty(struct tty *);
-size_t			tty_oq_dmalen(struct tty *);
-void			tty_oq_done(struct tty *);
-void			tty_input(struct tty *, int c);
-long			tty_speed(tcflag_t);
+typedef int (*tty_tproc)(struct tty *, tcflag_t);
+typedef void (*tty_oproc)(struct tty *);
+typedef void (*tty_iproc)(struct tty *);
+typedef void (*tty_fproc)(struct tty *, int);
+
+struct tty *tty_create(const char *, size_t bufsiz, size_t bufmin, tty_tproc,
+		       tty_oproc, tty_iproc, tty_fproc, void *);
+void	   *tty_data(struct tty *);
+long	    tty_speed(tcflag_t);
+
+char	   *tty_rx_getbuf(struct tty *);
+void	    tty_rx_putbuf(struct tty *, char *, size_t);
+void	    tty_rx_putc(struct tty *, char);
+void	    tty_rx_overflow(struct tty *);
+
+int	    tty_tx_getc(struct tty *);
+size_t	    tty_tx_getbuf(struct tty *, size_t, const void **);
+void	    tty_tx_advance(struct tty *, size_t);
+void	    tty_tx_complete(struct tty *);
 
 #ifdef __cplusplus
-} /* extern "C" */
+}
 #endif
 
 #endif /* !tty_h */

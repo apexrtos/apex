@@ -3,5 +3,5 @@
 #
 
 SOURCES += \
-    dev/tty/tty.c \
+    dev/tty/tty.cpp \
 
