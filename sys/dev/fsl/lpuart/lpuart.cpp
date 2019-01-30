@@ -6,12 +6,11 @@
 #include <cstdlib>
 #include <debug.h>
 #include <dev/tty/tty.h>
-#include <device.h>
 #include <errno.h>
 #include <irq.h>
 #include <kernel.h>
-#include <kmem.h>
 #include <limits.h>
+#include <sync.h>
 
 namespace {
 
@@ -102,6 +101,7 @@ public:
 	{
 		auto v = CTRL;
 		v.TIE = false;
+		v.TCIE = false;
 		write32(&CTRL, v.r);
 	}
 
@@ -109,7 +109,21 @@ public:
 	{
 		auto v = CTRL;
 		v.TIE = true;
+		v.TCIE = true;
 		write32(&CTRL, v.r);
+	}
+
+	void flush(int io)
+	{
+		auto v = FIFO;
+		v.RXFLUSH = io == TCIFLUSH || io == TCIOFLUSH;
+		v.TXFLUSH = io == TCOFLUSH || io == TCIOFLUSH;
+		write32(&FIFO, v.r);
+	}
+
+	bool tx_complete()
+	{
+		return read32(&STAT).TC;
 	}
 
 	void putch_polled(const char c)
@@ -162,6 +176,8 @@ public:
 
 	lpuart *const uart;
 	const unsigned long clock;
+
+	a::spinlock_irq lock;
 };
 
 /*
@@ -261,17 +277,18 @@ isr(int vector, void *data)
 	const auto inst = get_inst(tp);
 	const auto u = inst->uart;
 
-	for (size_t i = u->rxcount(); i > 0; --i)
-		tty_input(tp, u->getch());
+	std::lock_guard l{inst->lock};
 
-	for (size_t i = u->txfifo_size() - u->txcount(); i > 0; --i) {
-		if (const int c = tty_oq_getc(tp); c >= 0)
+	for (size_t i = u->rxcount(); i > 0; --i)
+		tty_rx_putc(tp, u->getch());
+
+	for (size_t i = u->txfifo_size() - u->txcount(); i > 0; --i)
+		if (const int c = tty_tx_getc(tp); c >= 0)
 			u->putch(c);
-		else {
-			u->txint_disable();
-			tty_oq_done(tp);
-			break;
-		}
+
+	if (u->tx_complete()) {
+		u->txint_disable();
+		tty_tx_complete(tp);
 	}
 
 	return INT_DONE;
@@ -281,13 +298,12 @@ isr(int vector, void *data)
  * Called whenever UART hardware needs to be reconfigured
  */
 static int
-tproc(tty *tp)
+tproc(tty *tp, tcflag_t cflag)
 {
 	const auto inst = get_inst(tp);
 	const auto u = inst->uart;
-	const auto tio = tty_termios(tp);
-	const bool rx = tio->c_cflag & CREAD;
-	const auto speed = tty_speed(tio->c_cflag);
+	const bool rx = cflag & CREAD;
+	const auto speed = tty_speed(cflag);
 
 	if (speed < 0)
 		return DERR(-EINVAL);
@@ -298,6 +314,7 @@ tproc(tty *tp)
 	if (!div.sbr)
 		return DERR(-ENOTSUP);
 
+	std::lock_guard l{inst->lock};
 	u->configure(div.sbr, div.osr,
 	    DataBits::Eight,
 	    Parity::Disabled,
@@ -317,9 +334,21 @@ oproc(tty *tp)
 	const auto inst = get_inst(tp);
 	const auto u = inst->uart;
 
-	const int s = irq_disable();
+	std::lock_guard l{inst->lock};
 	u->txint_enable();
-	irq_restore(s);
+}
+
+/*
+ * Called to flush UART input, output or both
+ */
+static void
+fproc(tty *tp, int io)
+{
+	const auto inst = get_inst(tp);
+	const auto u = inst->uart;
+
+	std::lock_guard l{inst->lock};
+	u->flush(io);
 }
 
 /*
@@ -328,7 +357,7 @@ oproc(tty *tp)
 void
 fsl_lpuart_init(const fsl_lpuart_desc *d)
 {
-	auto tp = tty_create(d->name, tproc, oproc,
+	auto tp = tty_create(d->name, 128, 1, tproc, oproc, nullptr, fproc,
 	    reinterpret_cast<void*>(new lpuart_inst{d}));
 	if (tp > (void *)-4096UL)
 		panic("tty_create");
