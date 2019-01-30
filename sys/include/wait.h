@@ -36,10 +36,10 @@ wait_event_timeout(event &e, int ns, auto condition)
 {
 	assert(ns > 0);
 	const uint64_t expire = timer_monotonic_coarse() + ns;
-	while (!(condition)) {
+	while (!condition()) {
 		if (auto r = sch_prepare_sleep(&e); r)
 			return r;
-		if (condition) {
+		if (condition()) {
 			sch_unsleep(thread_cur(), 0);
 			return ns;
 		}
