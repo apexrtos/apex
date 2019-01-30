@@ -106,7 +106,7 @@ rx_isr(int vector, void *data)
 	}());
 
 	while (read32(&u->STATE).RX_FULL)
-		tty_input(tp, read32(&u->DATA));
+		tty_rx_putc(tp, read32(&u->DATA));
 
 	return INT_DONE;
 }
@@ -128,8 +128,8 @@ tx_isr(int vector, void *data)
 
 	while (!read32(&u->STATE).TX_FULL) {
 		int c;
-		if ((c = tty_oq_getc(tp)) < 0) {
-			tty_oq_done(tp);
+		if ((c = tty_tx_getc(tp)) < 0) {
+			tty_tx_complete(tp);
 			break;
 		}
 		write32(&u->DATA,  c);
@@ -142,11 +142,10 @@ tx_isr(int vector, void *data)
  * Called whenever UART hardware needs to be reconfigured
  */
 static int
-tproc(tty *tp)
+tproc(tty *tp, tcflag_t cflag)
 {
 	auto u = static_cast<mps2_uart *>(tty_data(tp));
-	auto termios = tty_termios(tp);
-	const bool rx = termios->c_cflag & CREAD;
+	const bool rx = cflag & CREAD;
 
 	write32(&u->BAUDDIV, 16);	    /* QEMU doesn't care as long as >= 16 */
 	write32(&u->CTRL, [&]{
@@ -178,7 +177,7 @@ oproc(tty *tp)
 void
 arm_mps2_uart_init(const arm_mps2_uart_desc *d)
 {
-	auto tp = tty_create(d->name, tproc, oproc,
+	auto tp = tty_create(d->name, 128, 1, tproc, oproc, nullptr, nullptr,
 	    reinterpret_cast<void *>(d->base));
 	if (tp > (void *)-4096UL)
 		panic("tty_create");
