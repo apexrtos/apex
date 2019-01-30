@@ -129,10 +129,8 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 		event_init(&irq->istevt, "interrupt", ev_SLEEP);
 	}
 	irq_table[vector] = irq;
-	const int s = irq_disable();
 	interrupt_setup(vector, mode);
 	interrupt_unmask(vector, prio);
-	interrupt_restore(s);
 
 	sch_unlock();
 	dbg("IRQ%d attached priority=%d\n", vector, prio);
@@ -150,9 +148,7 @@ irq_detach(struct irq *irq)
 	assert(irq);
 	assert(irq->vector < CONFIG_IRQS);
 
-	const int s = irq_disable();
 	interrupt_mask(irq->vector);
-	irq_restore(s);
 
 	irq_table[irq->vector] = NULL;
 	if (irq->thread != NULL)
