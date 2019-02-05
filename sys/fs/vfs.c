@@ -2075,6 +2075,8 @@ fcntl(int fd, int cmd, ...)
 		ret = fp->f_flags;
 		break;
 	case F_SETFL:
+		fp->f_flags = arg;
+		break;
 	default:
 		ret = DERR(-ENOSYS);
 		break;
