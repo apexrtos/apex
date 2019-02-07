@@ -39,6 +39,7 @@ SOURCES := \
     kern/exec.cpp \
     kern/irq.c \
     kern/main.c \
+    kern/dma.cpp \
     kern/prctl.cpp \
     kern/prio.c \
     kern/proc.c \
