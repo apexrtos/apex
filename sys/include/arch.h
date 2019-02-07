@@ -195,7 +195,7 @@ smp_write_memory_barrier()
 	(__typeof__(*p))mmio_read32((const uint32_t*)p);})
 #if UINTPTR_MAX == 0xffffffffffffffff
 #define read64(p) ({ \
-	static_assert(sizeof(*p) == 4, ""); \
+	static_assert(sizeof(*p) == 8, ""); \
 	(__typeof__(*p))mmio_read64((const uint64_t*)p);})
 #endif
 
@@ -210,7 +210,7 @@ smp_write_memory_barrier()
 	mmio_write32((uint32_t*)p, __VA_ARGS__);})
 #if UINTPTR_MAX == 0xffffffffffffffff
 #define write64(p, ...) ({ \
-	static_assert(sizeof(*p) == 4, ""); \
+	static_assert(sizeof(*p) == 8, ""); \
 	mmio_write64((uint64_t*)p, __VA_ARGS__);})
 #endif
 
