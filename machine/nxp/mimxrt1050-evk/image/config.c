@@ -17,8 +17,8 @@ const struct flexspi_boot_nor config = {
 		.version.minor = 4, /* REVISIT: reference manual uses 0/1 but SDK uses 4 */
 		.version.bugfix = 0,
 		.readSampleClkSrc = 3, /* external input from DQS pad */
-		.dataHoldTime = 3,
-		.dataSetupTime = 3,
+		.csHoldTime = 3,
+		.csSetupTime = 3,
 		.columnAddressWidth = 3,
 		.controllerMiscOption =
 		    (1 << 6) | /* ddr mode */

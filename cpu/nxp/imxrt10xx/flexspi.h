@@ -68,8 +68,8 @@ struct flexspi_boot_config {
 	} version;
 	uint32_t : 32;
 	uint8_t readSampleClkSrc;
-	uint8_t dataHoldTime;
-	uint8_t dataSetupTime;
+	uint8_t csHoldTime;
+	uint8_t csSetupTime;
 	uint8_t columnAddressWidth;
 	uint8_t deviceModeCfgEnable;
 	uint8_t deviceModeType;		/* REVISIT: undocumented */
@@ -78,8 +78,10 @@ struct flexspi_boot_config {
 	uint32_t deviceModeArg;
 	uint8_t configCmdEnable;
 	uint8_t configModeType[3];	/* REVISIT: undocumented */
-	struct flexspi_lut_seq configCmdSeqs[4];
-	uint32_t cfgCmdArgs[4];
+	struct flexspi_lut_seq configCmdSeqs[3];
+	uint32_t : 32;
+	uint32_t cfgCmdArgs[3];
+	uint32_t : 32;
 	uint32_t controllerMiscOption;
 	uint8_t deviceType;
 	uint8_t sflashPadType;
@@ -121,7 +123,7 @@ struct flexspi_boot_nor {
 	uint32_t sectorSize;
 	uint8_t ipCmdSerialClkFreq;
 	uint8_t isUniformBlockSize;     /* REVISIT: undocumented */
-	uint8_t : 8;
+	uint8_t isDataOrderSwapped;	/* REVISIT: undocumented */
 	uint8_t : 8;
 	uint8_t serialNorType;          /* REVISIT: undocuemnted */
 	uint8_t needExitNoCmdMode;      /* REVISIT: undocumented */
