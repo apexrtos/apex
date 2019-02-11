@@ -227,6 +227,7 @@ again:;
 void
 mpu_dump(void)
 {
+#if defined(CONFIG_DEBUG)
 	dbg("*** MPU dump ***\n");
 	dbg("fixed:%x stack:%x victim:%x fault_addr:%8p\n",
 	    fixed, stack, victim, fault_addr);
@@ -253,4 +254,5 @@ mpu_dump(void)
 		else
 			dbg("Region %x: disabled\n", i);
 	}
+#endif
 }
