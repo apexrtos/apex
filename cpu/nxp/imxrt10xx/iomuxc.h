@@ -7,64 +7,82 @@
 /*
  * IOMUX Controller
  */
+enum iomuxc_sw_mux_ctl_sion {
+	SION_Software_Input_On_Disabled,
+	SION_Software_Input_On_Enabled,
+};
+
 union iomuxc_sw_mux_ctl {
 	struct {
 		uint32_t MUX_MODE : 3;
 		uint32_t : 1;
-		enum {
-			SION_Software_Input_On_Disabled,
-			SION_Software_Input_On_Enabled,
-		} SION : 1;
+		enum iomuxc_sw_mux_ctl_sion SION : 1;
 		uint32_t : 27;
 	};
 	uint32_t r;
 };
 
+enum iomuxc_sw_pad_ctl_sre {
+	SRE_Slow,
+	SRE_Fast,
+};
+
+enum iomuxc_sw_pad_ctl_dse {
+	DSE_disabled,
+	DSE_R0,
+	DSE_R0_2,
+	DSE_R0_3,
+	DSE_R0_4,
+	DSE_R0_5,
+	DSE_R0_6,
+	DSE_R0_7,
+};
+
+enum iomuxc_sw_pad_ctl_speed {
+	SPEED_50MHz = 0,
+	SPEED_100MHz = 2,
+	SPEED_200MHz = 3,
+};
+
+enum iomuxc_sw_pad_ctl_ode {
+	ODE_Open_Drain_Disabled,
+	ODE_Open_Drain_Enabled,
+};
+
+enum iomuxc_sw_pad_ctl_pke {
+	PKE_Pull_Keeper_Disabled,
+	PKE_Pull_Keeper_Enabled,
+};
+
+enum iomuxc_sw_pad_ctl_pue {
+	PUE_Keeper,
+	PUE_Pull,
+};
+
+enum iomuxc_sw_pad_ctl_pus {
+	PUS_100K_Pull_Down,
+	PUS_47K_Pull_Up,
+	PUS_100K_Pull_Up,
+	PUS_22K_Pull_Up,
+};
+
+enum iomuxc_sw_pad_ctl_hys {
+	HYS_Hysteresis_Disabled,
+	HYS_Hysteresis_Enabled,
+};
+
 union iomuxc_sw_pad_ctl {
 	struct {
-		enum {
-			SRE_Slow,
-			SRE_Fast,
-		} SRE : 1;
+		enum iomuxc_sw_pad_ctl_sre SRE : 1;
 		uint32_t : 2;
-		enum {
-			DSE_disabled,
-			DSE_R0,
-			DSE_R0_2,
-			DSE_R0_3,
-			DSE_R0_4,
-			DSE_R0_5,
-			DSE_R0_6,
-			DSE_R0_7,
-		} DSE : 3;
-		enum {
-			SPEED_50MHz = 0,
-			SPEED_100MHz = 2,
-			SPEED_200MHz = 3,
-		} SPEED : 2;
+		enum iomuxc_sw_pad_ctl_dse DSE : 3;
+		enum iomuxc_sw_pad_ctl_speed SPEED : 2;
 		uint32_t : 3;
-		enum {
-			ODE_Open_Drain_Disabled,
-			ODE_Open_Drain_Enabled,
-		} ODE : 1;
-		enum {
-			PKE_Pull_Keeper_Disabled,
-			PKE_Pull_Keeper_Enabled,
-		} PKE : 1;
-		enum {
-			PUE_Keeper,
-			PUE_Pull,
-		} PUE : 1;
-		enum {
-			PUS_100K_Pull_Down,
-			PUS_47K_Pull_Up,
-			PUS_100K_Pull_Up,
-			PUS_22K_Pull_Up,
-		} PUS : 2;
-		enum {
-			HYS_Hysteresis_Disabled,
-			HYS_Hysteresis_Enabled,
-		} HYS : 1;
+		enum iomuxc_sw_pad_ctl_ode ODE : 1;
+		enum iomuxc_sw_pad_ctl_pke PKE : 1;
+		enum iomuxc_sw_pad_ctl_pue PUE : 1;
+		enum iomuxc_sw_pad_ctl_pus PUS : 2;
+		enum iomuxc_sw_pad_ctl_hys HYS : 1;
 		uint32_t : 15;
 	};
 	uint32_t r;
@@ -561,6 +579,24 @@ struct iomuxc {
 };
 static_assert(sizeof(struct iomuxc) == 0x65c, "");
 
+union iomuxc_gpr_gpr16 {
+	struct {
+		uint32_t INIT_ITCM_EN : 1;
+		uint32_t INIT_DTCM_EN : 1;
+		uint32_t FLEXRAM_BANK_CFG_SEL : 1;
+		uint32_t : 4;
+		uint32_t CM7_INIT_VTOR : 25;
+	};
+	uint32_t r;
+};
+
+union iomuxc_gpr_gpr17 {
+	struct {
+		uint32_t FLEXRAM_BANK_CFG;
+	};
+	uint32_t r;
+};
+
 struct iomuxc_gpr {
 	union {
 		uint32_t GPR[26];
@@ -581,22 +617,8 @@ struct iomuxc_gpr {
 			uint32_t GPR13;
 			uint32_t GPR14;
 			uint32_t GPR15;
-			union iomuxc_gpr_gpr16 {
-				struct {
-					uint32_t INIT_ITCM_EN : 1;
-					uint32_t INIT_DTCM_EN : 1;
-					uint32_t FLEXRAM_BANK_CFG_SEL : 1;
-					uint32_t : 4;
-					uint32_t CM7_INIT_VTOR : 25;
-				};
-				uint32_t r;
-			} GPR16;
-			union iomuxc_gpr_gpr17 {
-				struct {
-					uint32_t FLEXRAM_BANK_CFG;
-				};
-				uint32_t r;
-			} GPR17;
+			union iomuxc_gpr_gpr16 GPR16;
+			union iomuxc_gpr_gpr17 GPR17;
 			uint32_t GPR18;
 			uint32_t GPR19;
 			uint32_t GPR20;
@@ -628,9 +650,13 @@ struct iomuxc_snvs_gpr {
 };
 static_assert(sizeof(struct iomuxc_snvs_gpr) == 0x10, "");
 
-static struct iomuxc *const IOMUXC = (struct iomuxc*)0x401f8000;
-static struct iomuxc_gpr *const IOMUXC_GPR = (struct iomuxc_gpr*)0x400ac000;
-static struct iomuxc_snvs *const IOMUXC_SNVS = (struct iomuxc_snvs*)0x400a8000;
-static struct iomuxc_snvs_gpr *const IOMUXC_SNVS_GPR = (struct iomuxc_snvs_gpr*)0x400a4000;
+#define IOMUXC_ADDR 0x401f8000
+#define IOMUXC_GPR_ADDR 0x400ac000
+#define IOMUXC_SNVS_ADDR 0x400a8000
+#define IOMUXC_SNVS_GPR_ADDR 0x400a4000
+static struct iomuxc *const IOMUXC = (struct iomuxc*)IOMUXC_ADDR;
+static struct iomuxc_gpr *const IOMUXC_GPR = (struct iomuxc_gpr*)IOMUXC_GPR_ADDR;
+static struct iomuxc_snvs *const IOMUXC_SNVS = (struct iomuxc_snvs*)IOMUXC_SNVS_ADDR;
+static struct iomuxc_snvs_gpr *const IOMUXC_SNVS_GPR = (struct iomuxc_snvs_gpr*)IOMUXC_SNVS_GPR_ADDR;
 
 #endif
