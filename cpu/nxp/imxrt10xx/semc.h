@@ -17,15 +17,28 @@ union semc_br {
 	uint32_t r;
 };
 
+enum semc_mcr_dqsmd {
+	DQSMD_internal,
+	DQSMD_from_pad,
+};
+
+enum semc_ipcmd_cmd {
+	CMD_SDRAM_READ = 0x8,
+	CMD_SDRAM_WRITE = 0x9,
+	CMD_SDRAM_MODESET = 0xa,
+	CMD_SDRAM_ACTIVE = 0xb,
+	CMD_SDRAM_AUTO_REFRESH = 0xc,
+	CMD_SDRAM_SELF_REFRESH = 0xd,
+	CMD_SDRAM_PRECHARGE = 0xe,
+	CMD_SDRAM_PRECHARGE_ALL = 0xf
+};
+
 struct semc {
 	union semc_mcr {
 		struct {
 			uint32_t SWRST : 1;
 			uint32_t MDIS : 1;
-			enum {
-				DQSMD_internal,
-				DQSMD_from_pad,
-			} DQSMD : 1;
+			enum semc_mcr_dqsmd DQSMD : 1;
 			uint32_t : 3;
 			uint32_t WPOL0 : 1;
 			uint32_t WPOL1 : 1;
@@ -181,16 +194,7 @@ struct semc {
 	} IPCR2;
 	union semc_ipcmd {
 		struct {
-			enum {
-				CMD_SDRAM_READ = 0x8,
-				CMD_SDRAM_WRITE = 0x9,
-				CMD_SDRAM_MODESET = 0xa,
-				CMD_SDRAM_ACTIVE = 0xb,
-				CMD_SDRAM_AUTO_REFRESH = 0xc,
-				CMD_SDRAM_SELF_REFRESH = 0xd,
-				CMD_SDRAM_PRECHARGE = 0xe,
-				CMD_SDRAM_PRECHARGE_ALL = 0xf
-			} CMD : 16;
+			enum semc_ipcmd_cmd CMD : 16;
 			uint32_t KEY : 16;
 		};
 		uint32_t r;
@@ -222,6 +226,7 @@ struct semc {
 };
 static_assert(sizeof(struct semc) == 0x100, "");
 
-static struct semc *const SEMC = (struct semc*)0x402f0000;
+#define SEMC_ADDR 0x402f0000
+static struct semc *const SEMC = (struct semc*)SEMC_ADDR;
 
 #endif
