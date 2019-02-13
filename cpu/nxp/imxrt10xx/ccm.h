@@ -13,6 +13,107 @@ enum ccm_cg {
 	CCM_CG_ON = 3,
 };
 
+enum ccm_cbcdr_semc_clk_sel {
+	SEMC_CLK_SEL_PERIPH,
+	SEMC_CLK_SEL_ALTERNATE,
+};
+
+enum ccm_cbcdr_semc_alt_clk_sel {
+	SEMC_ALT_CLK_SEL_PLL2_PFD2,
+	SEMC_ALT_CLK_SEL_PLL3_PFD1,
+};
+
+enum ccm_cbcdr_periph_clk_sel {
+	PERIPH_CLK_SEL_PRE_PERIPH,
+	PERIPH_CLK_SEL_PERIPH_CLK2,
+};
+
+enum ccm_cbcmr_lpspi_clk_sel {
+	LPSPI_CLK_SEL_PLL3_PFD1,
+	LPSPI_CLK_SEL_PLL3_PFD0,
+	LPSPI_CLK_SEL_PLL2,
+	LPSPI_CLK_SEL_PLL2_PFD2,
+};
+
+enum ccm_cbcmr_periph_clk2_sel {
+	PERIPH_CLK2_SEL_PLL3_SW_CLK,
+	PERIPH_CLK2_SEL_OSC_CLK,
+	PERIPH_CLK2_SEL_PLL2_BYPASS_CLK,
+};
+
+enum ccm_cbcmr_trace_clk_sel {
+	TRACE_CLK_SEL_PLL2,
+	TRACE_CLK_SEL_PLL2_PFD2,
+	TRACE_CLK_SEL_PLL2_PFD0,
+	TRACE_CLK_SEL_PLL2_PFD1,
+};
+
+enum ccm_cbcmr_pre_periph_clk_sel {
+	PRE_PERIPH_CLK_SEL_PLL2,
+	PRE_PERIPH_CLK_SEL_PLL2_PFD2,
+	PRE_PERIPH_CLK_SEL_PLL2_PFD0,
+	PRE_PERIPH_CLK_SEL_PLL1,
+};
+
+enum ccm_cscmr1_perclk_clk_sel {
+	PERCLK_CLK_SEL_IPG_CLK_ROOT,
+	PERCLK_CLK_SEL_OSC_CLK,
+};
+
+enum ccm_cscmr1_sai1_clk_sel {
+	SAI1_CLK_SEL_PLL3_PFD2,
+	SAI1_CLK_SEL_PLL5,
+	SAI1_CLK_SEL_PLL4,
+};
+
+enum ccm_cscmr1_sai2_clk_sel {
+	SAI2_CLK_SEL_PLL3_PFD2,
+	SAI2_CLK_SEL_PLL5,
+	SAI2_CLK_SEL_PLL4,
+};
+
+enum ccm_cscmr1_sai3_clk_sel {
+	SAI3_CLK_SEL_PLL3_PFD2,
+	SAI3_CLK_SEL_PLL5,
+	SAI3_CLK_SEL_PLL4,
+};
+
+enum ccm_cscmr1_usdhc1_clk_sel {
+	USDHC1_CLK_SEL_PLL2_PFD2,
+	USDHC1_CLK_SEL_PLL2_PFD0,
+};
+
+enum ccm_cscmr1_usdhc2_clk_sel {
+	USDHC2_CLK_SEL_PLL2_PFD2,
+	USDHC2_CLK_SEL_PLL2_PFD0,
+};
+
+enum ccm_cscmr1_flexspi_clk_sel {
+	FLEXSPI_CLK_SEL_SEMC_CLK_ROOT_PRE,
+	FLEXSPI_CLK_SEL_PLL3_SW_CLK,
+	FLEXSPI_CLK_SEL_PLL2_PFD2,
+	FLEXSPI_CLK_SEL_PLL3_PFD0,
+};
+
+enum ccm_cscmr2_can_clk_sel {
+	CAN_CLK_SEL_PLL3_SW_CLK_60M,
+	CAN_CLK_SEL_OSC_CLK,
+	CAN_CLK_SEL_PLL3_SW_CLK_80M,
+	CAN_CLK_SEL_DISABLE,
+};
+
+enum ccm_cscmr2_flexio2_clk_sel {
+	FLEXIO2_CLK_SEL_PLL4,
+	FLEXIO2_CLK_SEL_PLL3_PFD2,
+	FLEXIO2_CLK_SEL_PLL5,
+	FLEXIO2_CLK_SEL_PLL3_SW_CLK,
+};
+
+enum ccm_cscdr1_uart_clk_sel {
+	UART_CLK_SEL_pll3_80m,
+	UART_CLK_SEL_osc_clk,
+};
+
 struct ccm {
 	uint32_t CCR;
 	uint32_t : 32;
@@ -22,23 +123,14 @@ struct ccm {
 	union ccm_cbcdr {
 		struct {
 			uint32_t : 6;
-			enum {
-				SEMC_CLK_SEL_PERIPH,
-				SEMC_CLK_SEL_ALTERNATE,
-			} SEMC_CLK_SEL : 1;
-			enum {
-				SEMC_ALT_CLK_SEL_PLL2_PFD2,
-				SEMC_ALT_CLK_SEL_PLL3_PFD1,
-			} SEMC_ALT_CLK_SEL : 1;
+			enum ccm_cbcdr_semc_clk_sel SEMC_CLK_SEL : 1;
+			enum ccm_cbcdr_semc_alt_clk_sel SEMC_ALT_CLK_SEL : 1;
 			uint32_t IPG_PODF : 2;
 			uint32_t AHB_PODF : 3;
 			uint32_t : 3;
 			uint32_t SEMC_PODF : 3;
 			uint32_t : 6;
-			enum {
-				PERIPH_CLK_SEL_PRE_PERIPH,
-				PERIPH_CLK_SEL_PERIPH_CLK2,
-			} PERIPH_CLK_SEL : 1;
+			enum ccm_cbcdr_periph_clk_sel PERIPH_CLK_SEL : 1;
 			uint32_t : 1;
 			uint32_t PERIPH_CLK2_PODF : 3;
 			uint32_t : 2;
@@ -48,31 +140,12 @@ struct ccm {
 	union ccm_cbcmr {
 		struct {
 			uint32_t : 4;
-			enum {
-				LPSPI_CLK_SEL_PLL3_PFD1,
-				LPSPI_CLK_SEL_PLL3_PFD0,
-				LPSPI_CLK_SEL_PLL2,
-				LPSPI_CLK_SEL_PLL2_PFD2,
-			} LPSPI_CLK_SEL : 2;
+			enum ccm_cbcmr_lpspi_clk_sel LPSPI_CLK_SEL : 2;
 			uint32_t : 6;
-			enum {
-				PERIPH_CLK2_SEL_PLL3_SW_CLK,
-				PERIPH_CLK2_SEL_OSC_CLK,
-				PERIPH_CLK2_SEL_PLL2_BYPASS_CLK,
-			} PERIPH_CLK2_SEL : 2;
-			enum {
-				TRACE_CLK_SEL_PLL2,
-				TRACE_CLK_SEL_PLL2_PFD2,
-				TRACE_CLK_SEL_PLL2_PFD0,
-				TRACE_CLK_SEL_PLL2_PFD1,
-			} TRACE_CLK_SEL : 2;
+			enum ccm_cbcmr_periph_clk2_sel PERIPH_CLK2_SEL : 2;
+			enum ccm_cbcmr_trace_clk_sel TRACE_CLK_SEL : 2;
 			uint32_t : 2;
-			enum {
-				PRE_PERIPH_CLK_SEL_PLL2,
-				PRE_PERIPH_CLK_SEL_PLL2_PFD2,
-				PRE_PERIPH_CLK_SEL_PLL2_PFD0,
-				PRE_PERIPH_CLK_SEL_PLL1,
-			} PRE_PERIPH_CLK_SEL : 2;
+			enum ccm_cbcmr_pre_periph_clk_sel PRE_PERIPH_CLK_SEL : 2;
 			uint32_t : 3;
 			uint32_t LCDIF_PODF : 3;
 			uint32_t LPSPI_PODF : 3;
@@ -83,43 +156,17 @@ struct ccm {
 	union ccm_cscmr1 {
 		struct {
 			uint32_t PERCLK_PODF : 6;
-			enum {
-				PERCLK_CLK_SEL_IPG_CLK_ROOT,
-				PERCLK_CLK_SEL_OSC_CLK,
-			} PERCLK_CLK_SEL : 1;
+			enum ccm_cscmr1_perclk_clk_sel PERCLK_CLK_SEL : 1;
 			uint32_t : 3;
-			enum {
-				SAI1_CLK_SEL_PLL3_PFD2,
-				SAI1_CLK_SEL_PLL5,
-				SAI1_CLK_SEL_PLL4,
-			} SAI1_CLK_SEL : 2;
-			enum {
-				SAI2_CLK_SEL_PLL3_PFD2,
-				SAI2_CLK_SEL_PLL5,
-				SAI2_CLK_SEL_PLL4,
-			} SAI2_CLK_SEL : 2;
-			enum {
-				SAI3_CLK_SEL_PLL3_PFD2,
-				SAI3_CLK_SEL_PLL5,
-				SAI3_CLK_SEL_PLL4,
-			} SAI3_CLK_SEL : 2;
-			enum {
-				USDHC1_CLK_SEL_PLL2_PFD2,
-				USDHC1_CLK_SEL_PLL2_PFD0,
-			} USDHC1_CLK_SEL : 1;
-			enum {
-				USDHC2_CLK_SEL_PLL2_PFD2,
-				USDHC2_CLK_SEL_PLL2_PFD0,
-			} USDHC2_CLK_SEL : 1;
+			enum ccm_cscmr1_sai1_clk_sel SAI1_CLK_SEL : 2;
+			enum ccm_cscmr1_sai2_clk_sel SAI2_CLK_SEL : 2;
+			enum ccm_cscmr1_sai3_clk_sel SAI3_CLK_SEL : 2;
+			enum ccm_cscmr1_usdhc1_clk_sel USDHC1_CLK_SEL : 1;
+			enum ccm_cscmr1_usdhc2_clk_sel USDHC2_CLK_SEL : 1;
 			uint32_t : 5;
 			uint32_t FLEXSPI_PODF : 3;
 			uint32_t : 3;
-			enum {
-				FLEXSPI_CLK_SEL_SEMC_CLK_ROOT_PRE,
-				FLEXSPI_CLK_SEL_PLL3_SW_CLK,
-				FLEXSPI_CLK_SEL_PLL2_PFD2,
-				FLEXSPI_CLK_SEL_PLL3_PFD0,
-			} FLEXSPI_CLK_SEL : 2;
+			enum ccm_cscmr1_flexspi_clk_sel FLEXSPI_CLK_SEL : 2;
 			uint32_t : 1;
 		};
 		uint32_t r;
@@ -128,19 +175,9 @@ struct ccm {
 		struct {
 			uint32_t : 2;
 			uint32_t CAN_CLK_PODF : 6;
-			enum {
-				CAN_CLK_SEL_PLL3_SW_CLK_60M,
-				CAN_CLK_SEL_OSC_CLK,
-				CAN_CLK_SEL_PLL3_SW_CLK_80M,
-				CAN_CLK_SEL_DISABLE,
-			} CAN_CLK_SEL : 2;
+			enum ccm_cscmr2_can_clk_sel CAN_CLK_SEL : 2;
 			uint32_t : 9;
-			enum {
-				FLEXIO2_CLK_SEL_PLL4,
-				FLEXIO2_CLK_SEL_PLL3_PFD2,
-				FLEXIO2_CLK_SEL_PLL5,
-				FLEXIO2_CLK_SEL_PLL3_SW_CLK,
-			} FLEXIO2_CLK_SEL : 2;
+			enum ccm_cscmr2_flexio2_clk_sel FLEXIO2_CLK_SEL : 2;
 			uint32_t : 11;
 		};
 		uint32_t r;
@@ -148,10 +185,7 @@ struct ccm {
 	union ccm_cscdr1 {
 		struct {
 			uint32_t UART_CLK_PODF : 6;
-			enum {
-				UART_CLK_SEL_pll3_80m,
-				UART_CLK_SEL_osc_clk,
-			} UART_CLK_SEL : 1;
+			enum ccm_cscdr1_uart_clk_sel UART_CLK_SEL : 1;
 			uint32_t : 4;
 			uint32_t USDHC1_PODF : 3;
 			uint32_t : 2;
@@ -500,7 +534,9 @@ struct ccm_analog {
 };
 static_assert(sizeof(struct ccm_analog) == 0x180, "");
 
-static struct ccm *const CCM = (struct ccm*)0x400fc000;
-static struct ccm_analog *const CCM_ANALOG = (struct ccm_analog*)0x400d8000;
+#define CCM_ADDR 0x400fc000
+#define CCM_ANALOG_ADDR 0x400d8000
+static struct ccm *const CCM = (struct ccm*)CCM_ADDR;
+static struct ccm_analog *const CCM_ANALOG = (struct ccm_analog*)CCM_ANALOG_ADDR;
 
 #endif
