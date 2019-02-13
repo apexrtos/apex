@@ -133,10 +133,10 @@ machine_panic(void)
  *	PRE_PERIPH_CLK_SEL = 3 (PLL1)
  *	LCDIF_PODF = 3 (divide by 4)
  *	LPSPI_PODF = 5 (divide by 6)
- * - CCM_CBCDR = 0x000a8200
- *	SEMC_CLK_SEL = 0 (periph_clk)
+ * - CCM_CBCDR = 0x000a8200 (CONFIGURED BY DCD)
+ *	SEMC_CLK_SEL = 1 (alternate)
  *	SEMC_ALT_CLK_SEL = 0 (PLL2 PFD2)
- *	IPG_PODF = 2 (divide by 3)
+ *	IPG_PODF = 3 (divide by 4)
  *	AHB_PODF = 0 (divide by 1)
  *	SEMC_PODF = 2 (divide by 3)
  *	PERIPH_CLK_SEL = 0 (pre_periph_clk_sel)
@@ -183,7 +183,7 @@ machine_panic(void)
  * - CCM_CCGR0 = 0xc0c00fff
  * - CCM_CCGR1 = 0xfcfcc000
  * - CCM_CCGR2 = 0x0c3ff033
- * - CCM_CCGR3 = 0xf00ff300
+ * - CCM_CCGR3 = 0xf00ff330 (CONFIGURED BY DCD)
  * - CCM_CCGR4 = 0x0000ffff
  * - CCM_CCGR5 = 0xf0033c33
  * - CCM_CCGR6 = 0x00fc3fc0
@@ -237,18 +237,6 @@ machine_clock_init(void)
 		.BYPASS_CLK_SRC = BYPASS_CLK_SRC_REF_CLK_24M,
 		.BYPASS = 1,
 	}.r);
-
-	/* set SEMC clock source to PLL2.PFD2/3 = 166MHz */
-	write32(&CCM->CBCDR, (union ccm_cbcdr){
-		.SEMC_CLK_SEL = SEMC_CLK_SEL_ALTERNATE,
-		.SEMC_ALT_CLK_SEL = SEMC_ALT_CLK_SEL_PLL2_PFD2,
-		.IPG_PODF = 3, /* divide by 4 */
-		.AHB_PODF = 0, /* divide by 1 */
-		.SEMC_PODF = 2, /* divide by 3 */
-		.PERIPH_CLK_SEL = PERIPH_CLK_SEL_PRE_PERIPH,
-		.PERIPH_CLK2_PODF = 0, /* divide by 1 */
-	}.r);
-
 	/* wait for PLL1 to stabilise */
 	while (!read32(&CCM_ANALOG->PLL_ARM).LOCK);
 
@@ -280,138 +268,8 @@ machine_clock_init(void)
 	write32(&CCM->CCGR6, 0xffffffff);
 }
 
-/*
- * Configure SDRAM
- */
 void
 machine_memory_init(void)
 {
-	/* pad multiplexing */
-	for (size_t i = 0; i < 42; ++i) {
-		write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_EMC[i], (union iomuxc_sw_mux_ctl){
-			.MUX_MODE = 0,
-			.SION = SION_Software_Input_On_Disabled,
-		}.r);
-	}
-	/* DQS loopback from pad */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_EMC_39, (union iomuxc_sw_mux_ctl){
-		.MUX_MODE = 0,
-		.SION = SION_Software_Input_On_Enabled
-	}.r);
-
-	/* pad control */
-	for (size_t i = 0; i < 42; ++i) {
-		write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_EMC[i], (union iomuxc_sw_pad_ctl){
-			.SRE = SRE_Fast,
-			.DSE = DSE_R0_7,
-			.SPEED = SPEED_200MHz,
-			.ODE = ODE_Open_Drain_Disabled,
-			.PKE = PKE_Pull_Keeper_Enabled,
-			.PUE = PUE_Keeper,
-			.PUS = PUS_100K_Pull_Down,
-			.HYS = HYS_Hysteresis_Enabled
-		}.r);
-	}
-
-	/* SEMC */
-	write32(&SEMC->MCR, (union semc_mcr){
-		.DQSMD = DQSMD_from_pad,
-		.BTO = 16,
-	}.r);
-	write32(&SEMC->BMCR0, (union semc_bmcr0){
-		.WQOS = 4,
-		.WAGE = 2,
-		.WSH = 5,
-		.WRWS = 3,
-	}.r);
-	write32(&SEMC->BMCR1, (union semc_bmcr1){
-		.WQOS = 4,
-		.WAGE = 2,
-		.WPH = 5,
-		.WRWS = 3,
-		.WBR = 6,
-	}.r);
-	write32(&SEMC->IOCR, (union semc_iocr){
-		.MUX_A8 = 0,	/* SDRAM Address bit (A8) */
-		.MUX_CSX0 = 5,	/* NOR CE# */
-		.MUX_CSX1 = 6,	/* PSRAM CE# */
-		.MUX_CSX2 = 4,	/* NAND CE# */
-		.MUX_CSX3 = 7,	/* DBI CSX */
-		.MUX_RDY = 0,	/* NAND Ready/Wait# input */
-	}.r);
-	write32(&SEMC->BR0, (union semc_br){
-		.VLD = 1,
-		.MS = 13,	/* 32MiB */
-		.BA = 0x80000,
-	}.r);
-	write32(&SEMC->SDRAMCR0, (union semc_sdramcr0){
-		.PS = 1,	/* 16 bit */
-		.BL = 3,	/* burst length 8 */
-		.COL = 3,	/* 9 bit columns */
-		.CL = 3,	/* CAS latency 3 */
-	}.r);
-	write32(&SEMC->SDRAMCR1, (union semc_sdramcr1){
-		.PRE2ACT = 2,
-		.ACT2RW = 2,
-		.RFRC = 9,
-		.WRC = 1,
-		.CKEOFF = 5,
-		.ACT2PRE = 6,
-	}.r);
-	write32(&SEMC->SDRAMCR2, (union semc_sdramcr2){
-		.SRRC = 32,
-		.REF2REF = 9,
-		.ACT2ACT = 1,
-		.ITO = 0,
-	}.r);
-
-	/* send commands to SDRAM */
-	write32(&SEMC->IPCR0, (union semc_ipcr0){
-		.SA = 0x80000000,
-	}.r);
-	write32(&SEMC->IPCR1, (union semc_ipcr1){
-		.DATASZ = 2,
-	}.r);
-	write32(&SEMC->IPCR2, (union semc_ipcr2){
-		.BM0 = 0,
-		.BM1 = 0,
-		.BM2 = 0,
-		.BM3 = 0,
-	}.r);
-
-	/* issue precharge all command */
-	write32(&SEMC->IPCMD, (union semc_ipcmd){
-		.CMD = CMD_SDRAM_PRECHARGE_ALL,
-		.KEY = 0xa55a,
-	}.r);
-	while (!read32(&SEMC->INTR).IPCMDDONE);
-
-	/* issue two auto refresh commands */
-	write32(&SEMC->IPCMD, (union semc_ipcmd){
-		.CMD = CMD_SDRAM_AUTO_REFRESH,
-		.KEY = 0xa55a,
-	}.r);
-	while (!read32(&SEMC->INTR).IPCMDDONE);
-	write32(&SEMC->IPCMD, (union semc_ipcmd){
-		.CMD = CMD_SDRAM_AUTO_REFRESH,
-		.KEY = 0xa55a,
-	}.r);
-	while (!read32(&SEMC->INTR).IPCMDDONE);
-
-	/* set mode register */
-	write32(&SEMC->IPTXDAT, 0x33);
-	write32(&SEMC->IPCMD, (union semc_ipcmd){
-		.CMD = CMD_SDRAM_MODESET,
-		.KEY = 0xa55a,
-	}.r);
-	while (!read32(&SEMC->INTR).IPCMDDONE);
-
-	/* enable auto refresh */
-	write32(&SEMC->SDRAMCR3, (union semc_sdramcr3){
-		.REN = 1,
-		.REBL = 4,
-		.PRESCALE = 10,
-		.RT = 33,
-		.UT = 80,
-	}.r);
+	/* SDRAM initialised by DCD */
 }

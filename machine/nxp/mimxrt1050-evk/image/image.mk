@@ -5,7 +5,8 @@ TYPE := imxrt_xip
 TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evk_apex
 
 LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/flexspi_boot.ld
-CFLAGS := -fno-pie
+CFLAGS := -fno-pie -O2
+CXXFLAGS := -fno-pie -O2
 
 INCLUDE := \
 	$(CONFIG_APEXDIR) \
@@ -14,6 +15,7 @@ INCLUDE := \
 SOURCES := \
 	boot_data.c \
 	config.c \
+	dcd.cpp \
 	ivt.c \
 
 IMG := apeximg

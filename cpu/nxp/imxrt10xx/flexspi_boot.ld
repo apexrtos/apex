@@ -11,6 +11,7 @@ SECTIONS {
 	.headers : {
 		*config.o(.rodata)	/* config must be at offset 0x0 */
 		*boot_data.o(.rodata)
+		dcd = .;
 		*dcd.o(.rodata)
 		. = 0x1000;		/* IVT must be at offset 0x1000 */
 		*ivt.o(.rodata)
