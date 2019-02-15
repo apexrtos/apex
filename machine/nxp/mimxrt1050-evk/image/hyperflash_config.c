@@ -9,7 +9,7 @@
  * REVISIT: we also set the version to 1.4 but reference manual rev 1 only
  * documents 1.1.
  */
-const struct flexspi_boot_nor config = {
+const struct flexspi_boot_nor flexspi_boot_nor_ = {
 	.memConfig = {
 		.tag = "FCFB",
 		.version.ascii = 'V',

@@ -8,11 +8,52 @@ define reset
 	# stack and is too stupid to make sure it will actually work.
 	set *0x400ac040 = 0x00200003
 end
+document reset
+	Usage: reset
+
+	Reset processor.
+end
 
 define flash
+	# Write image to flexspi hyperflash device.
 	reset
-	mon loadbin mimxrt1050-evk_apex 0x60000000
+	python
+import os
+gdb.execute('mon loadbin ' + os.environ['BUILDDIR'] + '/mimxrt1050-evk_hyperflash 0x60000000')
+	end
 	reset
+end
+document flash
+	Usage: flash
+
+	Write image to FlexSPI connected hyperflash device.
+end
+
+define sdflash
+	reset
+
+	echo > Loading flash loader...\n
+	python
+import os
+gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin 0x20000000')
+	end
+	set $pc = *0x20000404
+	mon go
+	echo > Waiting for flash loader to start...\n
+	shell until $TOOLSDIR/blhost -u -- get-property 1 > /dev/null; do; done
+	echo > Configuring SD card in 4-bit mode, no reset, SDR104 timing...\n
+	shell $TOOLSDIR/blhost -u -- fill-memory 0x2000 4 0xd0000310
+	shell $TOOLSDIR/blhost -u -- configure-memory 0x120 0x2000
+	echo > Erasing first 4MiB of SD card...\n
+	shell $TOOLSDIR/blhost -u -- flash-erase-region 0x0 0x400000 0x120
+	echo > Writing to SD card...\n
+	shell $TOOLSDIR/blhost -u -- write-memory 0x0 $BUILDDIR/mimxrt1050-evk_sdcard 0x120
+	reset
+end
+document sdflash
+	Usage: sdflash
+
+	Write image to uSDHC connected SD card.
 end
 
 define debug_boot
@@ -21,10 +62,20 @@ define debug_boot
 	b _start
 	c
 end
+document debug_boot
+	Usage: debug_boot
+
+	Reset CPU and stop at entry to boot loader.
+end
 
 define debug_kernel
 	reset
 	symbol-file apex/sys/apex.elf
 	b _start
 	c
+end
+document debug_kernel
+	Usage: debug_kernel
+
+	Reset CPU and stop at entry to kernel.
 end

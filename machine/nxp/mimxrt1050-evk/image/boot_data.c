@@ -1,12 +1,15 @@
 #include <cpu/nxp/imxrt10xx/boot_data.h>
 
+#include <assert.h>
 #include <conf/config.h>
 
 /*
- * Boot Data Structure
+ * Boot Data Structure to run in RAM
  */
-const struct boot_data boot_data = {
-	.start = CONFIG_ROM_BASE_PHYS,
-	.length = CONFIG_ROM_SIZE,
+const struct boot_data boot_data_ = {
+	.start = CONFIG_LOAD_REGION_BASE_PHYS,
+	.length = IMAGE_SIZE,
 	.plugin = 0,
 };
+
+static_assert(IMAGE_SIZE <= CONFIG_LOAD_REGION_SIZE, "");

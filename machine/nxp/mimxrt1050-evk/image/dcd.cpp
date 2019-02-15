@@ -539,6 +539,6 @@ constexpr struct dcd {
 			}}),
 		};
 	} cmd9;
-} dcd __attribute__((used));
+} dcd_ __attribute__((used));
 
 static_assert(sizeof(dcd) <= 1768, "DCD is limited to 1768 bytes");

@@ -1,5 +1,5 @@
 /*
- * Linker script for IMXRT10xx boot from flash headers
+ * Linker script for IMXRT10xx boot from flexspi headers
  */
 INCLUDE conf/config.ld
 
@@ -10,12 +10,14 @@ MEMORY {
 SECTIONS {
 	.headers : {
 		*config.o(.rodata)	/* config must be at offset 0x0 */
+		boot_data = .;
 		*boot_data.o(.rodata)
 		dcd = .;
 		*dcd.o(.rodata)
 		. = 0x1000;		/* IVT must be at offset 0x1000 */
+		ivt = .;
 		*ivt.o(.rodata)
-		. = CONFIG_ROM_OFFSET;
+		. = CONFIG_LOADER_OFFSET;
 	} > rom = 0xff
 	entry = .;
 }

@@ -1,0 +1,18 @@
+/*
+ * Include common MIMXRT1050-EVK configuration
+ */
+include machine/nxp/mimxrt1050-evk/conf/common
+
+/*
+ * Memory layout for sdcard boot
+ */
+memory LOAD_REGION_SIZE	0x400000
+memory LOAD_REGION_BASE (CONFIG_DRAM_BASE_PHYS + CONFIG_DRAM_SIZE - CONFIG_LOAD_REGION_SIZE)
+memory LOADER_OFFSET	0xb00	    // vector table must be 128-byte aligned
+memory LOADER_ROM_BASE	(CONFIG_LOAD_REGION_BASE_PHYS + CONFIG_LOADER_OFFSET)
+memory LOADER_ROM_SIZE	CONFIG_LOAD_REGION_SIZE
+
+/*
+ * Build sdcard image for MIMXRT1050-EVK board
+ */
+mk machine/nxp/mimxrt1050-evk/image/sdcard.mk

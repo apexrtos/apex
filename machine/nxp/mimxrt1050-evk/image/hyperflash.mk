@@ -1,8 +1,8 @@
 ifneq ($(origin apex/apeximg_rule_exists),undefined)
 
 DEFAULT := y
-TYPE := imxrt_xip
-TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evk_apex
+TYPE := imxrt_boot
+TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evk_hyperflash
 
 LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/flexspi_boot.ld
 CFLAGS := -fno-pie -O2
@@ -13,13 +13,13 @@ INCLUDE := \
 	$(CONFIG_BUILDDIR) \
 
 SOURCES := \
-	boot_data.c \
-	config.c \
+	xip_boot_data.c \
+	hyperflash_config.c \
 	dcd.cpp \
 	ivt.c \
 
 IMG := apeximg
 
-include cpu/nxp/imxrt10xx/imxrt_xip.mk
+include cpu/nxp/imxrt10xx/imxrt_boot.mk
 
 endif
