@@ -69,6 +69,9 @@ public:
 	void tx_advance(size_t);
 	void tx_complete();
 
+	void set_device(device *);
+	::device *device();
+
 private:
 	size_t output(char);
 	size_t output(const char *, size_t, bool);
@@ -79,6 +82,8 @@ private:
 	int tx_wait();
 	void cook();
 	void set_termios(const termios &t);
+
+	::device *dev_;		    /* device handle */
 
 	event input_;		    /* input buffer ready */
 	event output_;		    /* output buffer ready */
@@ -128,7 +133,8 @@ private:
 tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
     size_t tx_bufsiz, std::unique_ptr<phys> txp, tty_tproc tproc,
     tty_oproc oproc, tty_iproc iproc, tty_fproc fproc, void *data)
-: flags_{}
+: dev_{}
+, flags_{}
 , open_{}
 , pgid_{}
 , column_{}
@@ -576,6 +582,25 @@ void
 tty::tx_complete()
 {
 	sch_wakeup(&complete_, 0);
+}
+
+/*
+ * tty::set_device - associate tty with device handle
+ */
+void
+tty::set_device(::device *dev)
+{
+	assert(!dev_);
+	dev_ = dev;
+}
+
+/*
+ * tth::device - retrive tty device handle
+ */
+::device *
+tty::device()
+{
+	return dev_;
 }
 
 /*
@@ -1184,6 +1209,7 @@ tty_create(const char *name, size_t rx_bufsiz, size_t rx_bufmin, tty_tproc tproc
 	if (!t.get())
 		return (tty *)DERR(-ENOMEM);
 
+	device *dev;
 	static struct devio tty_io = {
 		.open = tty_open,
 		.close = tty_close,
@@ -1191,10 +1217,24 @@ tty_create(const char *name, size_t rx_bufsiz, size_t rx_bufmin, tty_tproc tproc
 		.write = tty_write_iov,
 		.ioctl = tty_ioctl,
 	};
-	if (!device_create(&tty_io, name, DF_CHR, t.get()))
+	if (dev = device_create(&tty_io, name, DF_CHR, t.get()); !dev)
 		return (tty *)DERR(-EINVAL);
 
+	t->set_device(dev);
+
 	return t.release();
+}
+
+/*
+ * tty_destroy - destroy a tty device
+ */
+int
+tty_destroy(tty *t)
+{
+	if (auto r = device_destroy(t->device()))
+		return r;
+	delete t;
+	return 0;
 }
 
 /*
