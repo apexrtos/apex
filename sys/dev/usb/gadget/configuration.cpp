@@ -50,6 +50,18 @@ configuration::init(device &d, const size_t index)
 }
 
 /*
+ * configuration::finalise - finalise configuration
+ */
+int
+configuration::finalise()
+{
+	for (auto &f : functions_)
+		if (int err = f->finalise(); err)
+			return err;
+	return 0;
+}
+
+/*
  * configuration::reset - reset configuration
  */
 void

@@ -108,6 +108,15 @@ device::init()
 }
 
 /*
+ * device::finalise - finalise device
+ */
+int
+device::finalise()
+{
+	return v_finalise();
+}
+
+/*
  * device::reset - reset device
  */
 void

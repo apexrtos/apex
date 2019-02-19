@@ -32,6 +32,7 @@ public:
 private:
 	int v_configure(std::string_view) override;
 	int v_init(device &) override;
+	int v_finalise() override;
 	void v_reset() override;
 	int v_start(Speed) override;
 	void v_stop() override;

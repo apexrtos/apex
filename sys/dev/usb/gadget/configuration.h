@@ -26,6 +26,7 @@ public:
 	    uint8_t attributes, uint8_t max_power);
 
 	int init(device &, size_t index);
+	int finalise();
 	void reset();
 	int start(Speed);
 	void stop();

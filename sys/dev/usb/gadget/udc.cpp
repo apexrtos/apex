@@ -118,6 +118,9 @@ udc::set_device(std::unique_ptr<gadget::device> d)
 
 	if (running_)
 		return DERR(-EBUSY);
+	if (device_)
+		if (int err = device_->finalise(); err)
+			return err;
 	device_ = std::move(d);
 	return 0;
 }

@@ -29,6 +29,7 @@ public:
 
 private:
 	int v_init() override;
+	int v_finalise() override;
 	void v_reset() override;
 	setup_result v_process_setup(const setup_request &, Speed,
 	    transaction &) override;

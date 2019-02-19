@@ -188,13 +188,33 @@ cdc_acm::v_configure(std::string_view c)
 }
 
 /*
- * cdc::acm::v_init - initialise cdc_acm instance
+ * cdc_acm::v_init - initialise cdc_acm instance
  */
 int
 cdc_acm::v_init(device &d)
 {
 	d.add_string(function_);
 	return 0;
+}
+
+/*
+ * cdc_acm::v_finalise - finalise cdc_acm instance
+ */
+int
+cdc_acm::v_finalise()
+{
+	std::lock_guard l{lock_};
+
+	if (running_)
+		return DERR(-EBUSY);
+
+	if (!t_)
+		return 0;
+
+	const auto r = tty_destroy(t_);
+	t_ = nullptr;
+
+	return r;
 }
 
 /*
@@ -214,6 +234,9 @@ cdc_acm::v_reset()
 int
 cdc_acm::v_start(const Speed spd)
 {
+	if (!t_)
+		return DERR(-EINVAL);
+
 	if (spd == Speed::Low)
 		return 0;
 
