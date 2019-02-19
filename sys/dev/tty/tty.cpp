@@ -189,7 +189,7 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 int
 tty::open(file *f)
 {
-	struct task *t = task_cur();
+	task *t = task_cur();
 
 	std::lock_guard sl{state_lock_};
 
@@ -1210,7 +1210,7 @@ tty_create(const char *name, size_t rx_bufsiz, size_t rx_bufmin, tty_tproc tproc
 		return (tty *)DERR(-ENOMEM);
 
 	device *dev;
-	static struct devio tty_io = {
+	static devio tty_io = {
 		.open = tty_open,
 		.close = tty_close,
 		.read = tty_read_iov,
