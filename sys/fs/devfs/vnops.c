@@ -52,6 +52,7 @@ static ssize_t devfs_write(struct file *, const struct iovec *, size_t);
 static int devfs_ioctl(struct file *, u_long, void *);
 static int devfs_readdir(struct file *, struct dirent *, size_t);
 static int devfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
+static int devfs_inactive(struct vnode *);
 
 /*
  * vnode operations
@@ -71,7 +72,7 @@ static const struct vnops devfs_vnops = {
 	.vop_rename = ((vnop_rename_fn)vop_einval),
 	.vop_getattr = ((vnop_getattr_fn)vop_nullop),
 	.vop_setattr = ((vnop_setattr_fn)vop_nullop),
-	.vop_inactive = ((vnop_inactive_fn)vop_nullop),
+	.vop_inactive = devfs_inactive,
 	.vop_truncate = ((vnop_truncate_fn)vop_nullop),
 };
 
@@ -225,12 +226,22 @@ devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 	dfsdbg("devfs_lookup: (%zu):%s\n", name_len, name);
 
 	/* TODO: handle name_len when devfs merges with kernel device layer */
-	if (!(dev = device_lookup(name)))
+	if (!(dev = device_lookup(name))) {
+		vp->v_data = NULL;
 		return -ENOENT;
+	}
 
 	vp->v_data = dev;
 	vp->v_mode = ((dev->flags & DF_CHR) ? S_IFCHR : S_IFBLK) |
 	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+	return 0;
+}
+
+static int
+devfs_inactive(struct vnode *vp)
+{
+	if (vp->v_data)
+		device_release(vp->v_data);
 	return 0;
 }
 
