@@ -47,22 +47,6 @@
 static struct list device_list;		/* list of the device objects */
 
 /*
- * Decrement the reference count on a device. If the
- * reference count becomes zero, we can release the
- * resource for the target device. Assumes the device
- * is already validated by caller.
- */
-static void
-device_release(struct device *dev)
-{
-	if (--dev->refcnt == 0) {
-		dev->magic = 0;
-		list_remove(&dev->link);
-		kmem_free(dev);
-	}
-}
-
-/*
  * device_valid - check device validity.
  */
 bool
@@ -99,6 +83,21 @@ device_lookup(const char *name)
 }
 
 /*
+ * device_release - decrement reference count on a device.
+ *
+ * This function must be called after a device reference returned by
+ * device_lookup is no longer required.
+ */
+void
+device_release(struct device *dev)
+{
+	sch_lock();
+	assert(dev->refcnt > 1);
+	--dev->refcnt;
+	sch_unlock();
+}
+
+/*
  * device_create - create new device object.
  *
  * A device object is created by the device driver to provide
@@ -122,6 +121,7 @@ device_create(const struct devio *io, const char *name, int flags, void *info)
 		/*
 		 * Error - the device name is already used.
 		 */
+		device_release(dev);
 		sch_unlock();
 		return 0;
 	}
@@ -151,10 +151,15 @@ device_destroy(struct device *dev)
 	int err = 0;
 
 	sch_lock();
-	if (device_valid(dev))
-		device_release(dev);
-	else
-		err = -ENODEV;
+	if (!device_valid(dev))
+		err = DERR(-ENODEV);
+	else if (dev->refcnt > 1)
+		err = DERR(-EBUSY);
+	else {
+		dev->magic = 0;
+		list_remove(&dev->link);
+		kmem_free(dev);
+	}
 	sch_unlock();
 	return err;
 }

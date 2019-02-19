@@ -85,6 +85,7 @@ extern "C" {
 
 bool		device_valid(struct device *);
 struct device  *device_lookup(const char *name);
+void		device_release(struct device *);
 struct device  *device_create(const struct devio *, const char *, int, void *);
 int		device_destroy(struct device *);
 int		device_broadcast(int, int);
