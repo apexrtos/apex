@@ -27,6 +27,16 @@ memory LOADER_RAM_BASE	(CONFIG_DTCM_BASE_VIRT + CONFIG_DTCM_SIZE - CONFIG_LOADER
 driver sys/dev/usb				// Generic USB support
 driver sys/dev/usb/gadget()			// USB gadget userspace interface
 driver sys/dev/usb/gadget/function/cdc_acm()	// USB abstract control model function
+driver sys/dev/gpio				// Generic GPIO support
+
+/*
+ * GPIO controllers
+ */
+driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio1", .base = 0x401b8000, .irqs = {80, 81}, .ipl = IPL_MIN}
+driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio2", .base = 0x401bc000, .irqs = {82, 83}, .ipl = IPL_MIN}
+driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio3", .base = 0x401c0000, .irqs = {84, 85}, .ipl = IPL_MIN}
+driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio4", .base = 0x401c4000, .irqs = {86, 87}, .ipl = IPL_MIN}
+driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio5", .base = 0x400c0000, .irqs = {88, 89}, .ipl = IPL_MIN}
 
 /*
  * REVISIT: NXP documentation says "24 MHz XTALOSC can be the external
