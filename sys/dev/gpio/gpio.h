@@ -20,7 +20,7 @@ void gpio_set(struct gpio_ref *, int value);
 void gpio_direction_input(struct gpio_ref *);
 void gpio_direction_output(struct gpio_ref *);
 int gpio_irq_attach(struct gpio_ref *, enum GPIO_IRQ_MODE,
-		    int (*isr)(int, void *), void *data);
+		    void (*isr)(unsigned pin, void *data), void *data);
 void gpio_irq_detach(struct gpio_ref *);
 
 #ifdef __cplusplus

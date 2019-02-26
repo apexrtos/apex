@@ -16,7 +16,7 @@ class controller;
 
 class ref {
 public:
-	using isr = int (*)(int, void *);
+	using isr = void (*)(unsigned, void *);
 
 	ref(controller *, size_t pin);
 

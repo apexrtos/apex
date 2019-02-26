@@ -14,7 +14,7 @@ namespace gpio {
 
 class controller {
 public:
-	using isr = int (*)(int, void *);
+	using isr = void (*)(unsigned, void *);
 
 	controller(std::string_view name, size_t pins);
 	virtual ~controller();

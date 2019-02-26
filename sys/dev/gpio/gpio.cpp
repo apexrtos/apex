@@ -63,7 +63,7 @@ gpio_direction_output(gpio_ref *r)
  * gpio_irq_attach - attach handler to referenced GPIO pin interrupt.
  */
 int
-gpio_irq_attach(gpio_ref *r, GPIO_IRQ_MODE mode, int (*isr)(int, void *),
+gpio_irq_attach(gpio_ref *r, GPIO_IRQ_MODE mode, void (*isr)(unsigned, void *),
     void *data)
 {
 	return r->irq_attach(static_cast<gpio::irq_mode>(mode), isr, data);
