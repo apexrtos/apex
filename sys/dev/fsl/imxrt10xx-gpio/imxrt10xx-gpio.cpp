@@ -98,11 +98,11 @@ imxrt10xx_gpio::imxrt10xx_gpio(std::string_view name, regs *r)
 void
 imxrt10xx_gpio::isr()
 {
-	uint32_t s = read32(&r_->ISR);
+	uint32_t s = read32(&r_->ISR) & read32(&r_->IMR);
 	write32(&r_->ISR, s);
 
 	int i;
-	while ((i = __builtin_ffsll(s))) {
+	while ((i = __builtin_ffsl(s))) {
 		i -= 1;		    /* ffsl returns 1 + bit number */
 		irq(i);
 		s -= 1ul << i;
@@ -193,6 +193,9 @@ imxrt10xx_gpio::v_interrupt_setup(size_t pin, gpio::irq_mode mode)
 		else
 			write32(&r_->ICR2, read32(&r_->ICR2) | icr << (pin - 16) * 2);
 	}
+
+	/* clear stale interrupts */
+	write32(&r_->ISR, 1ul << pin);
 
 	return 0;
 }
