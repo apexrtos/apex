@@ -34,7 +34,7 @@ private:
 	size_t pin_;
 
 public:
-	static std::unique_ptr<ref> bind(const gpio_desc *);
+	static std::unique_ptr<ref> bind(const gpio_desc &);
 };
 
 }

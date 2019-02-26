@@ -96,12 +96,12 @@ ref::irq_unmask()
  * ref::bind - bind GPIO pin reference to GPIO description.
  */
 std::unique_ptr<ref>
-ref::bind(const gpio_desc *desc)
+ref::bind(const gpio_desc &desc)
 {
-	auto c = controller::find(desc->controller);
+	auto c = controller::find(desc.controller);
 	if (!c)
 		return nullptr;
-	return std::make_unique<ref>(c, desc->pin);
+	return std::make_unique<ref>(c, desc.pin);
 }
 
 }

@@ -12,7 +12,7 @@ struct gpio_ref : public gpio::ref { };
 gpio_ref *
 gpio_bind(const gpio_desc *desc)
 {
-	return static_cast<gpio_ref *>(gpio::ref::bind(desc).release());
+	return static_cast<gpio_ref *>(gpio::ref::bind(*desc).release());
 }
 
 /*
