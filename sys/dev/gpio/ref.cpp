@@ -75,6 +75,24 @@ ref::irq_detach()
 }
 
 /*
+ * ref::irq_mask - disable interrupts from referenced GPIO pin.
+ */
+void
+ref::irq_mask()
+{
+	c_->irq_mask(pin_);
+}
+
+/*
+ * ref::irq_unmask - enable interrupts from referenced GPIO pin.
+ */
+void
+ref::irq_unmask()
+{
+	c_->irq_unmask(pin_);
+}
+
+/*
  * ref::bind - bind GPIO pin reference to GPIO description.
  */
 std::unique_ptr<ref>

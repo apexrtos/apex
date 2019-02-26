@@ -25,6 +25,8 @@ public:
 	void direction_output(size_t pin);
 	int irq_attach(size_t pin, irq_mode, isr, void *data);
 	void irq_detach(size_t pin);
+	void irq_mask(size_t pin);
+	void irq_unmask(size_t pin);
 
 	const std::string &name() const;
 	size_t pins() const;

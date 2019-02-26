@@ -26,6 +26,8 @@ public:
 	void direction_output();
 	int irq_attach(irq_mode, isr, void *data);
 	void irq_detach();
+	void irq_mask();
+	void irq_unmask();
 
 private:
 	controller *c_;

@@ -106,6 +106,24 @@ controller::irq_detach(size_t pin)
 }
 
 /*
+ * controller::irq_mask - disable interrupts from pin on GPIO controller.
+ */
+void
+controller::irq_mask(size_t pin)
+{
+	v_interrupt_mask(pin);
+}
+
+/*
+ * controller::irq_unmask - enable interrupts from pin on GPIO controller.
+ */
+void
+controller::irq_unmask(size_t pin)
+{
+	v_interrupt_unmask(pin);
+}
+
+/*
  * controller::name - returns GPIO controller name.
  */
 const std::string &

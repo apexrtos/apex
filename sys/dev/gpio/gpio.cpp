@@ -78,4 +78,22 @@ gpio_irq_detach(gpio_ref *r)
 	r->irq_detach();
 }
 
+/*
+ * gpio_irq_mask - disable interrupts from referenced GPIO pin.
+ */
+void
+gpio_irq_mask(gpio_ref *r)
+{
+	r->irq_mask();
+}
+
+/*
+ * gpio_irq_unmask - enable interrupts from referenced GPIO pin.
+ */
+void
+gpio_irq_unmask(gpio_ref *r)
+{
+	return r->irq_unmask();
+}
+
 }

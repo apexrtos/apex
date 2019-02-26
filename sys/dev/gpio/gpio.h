@@ -22,6 +22,8 @@ void gpio_direction_output(struct gpio_ref *);
 int gpio_irq_attach(struct gpio_ref *, enum GPIO_IRQ_MODE,
 		    void (*isr)(unsigned pin, void *data), void *data);
 void gpio_irq_detach(struct gpio_ref *);
+void gpio_irq_mask(struct gpio_ref *);
+void gpio_irq_unmask(struct gpio_ref *);
 
 #ifdef __cplusplus
 }
