@@ -147,9 +147,12 @@ controller::pins() const
 void
 controller::irq(size_t pin)
 {
-	std::lock_guard l{lock_};
 	assert(pin < pins_);
-	auto &e = irq_table_[pin];
+
+	const auto s = lock_.lock();
+	auto e = irq_table_[pin];
+	lock_.unlock(s);
+
 	if (!e.first)
 		return;
 	e.first(pin, e.second);
