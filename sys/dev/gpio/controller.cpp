@@ -78,8 +78,7 @@ controller::direction_output(size_t pin)
  * controller::irq_attach - attach handler to pin on GPIO controller.
  */
 int
-controller::irq_attach(size_t pin, irq_mode mode, int (*isr)(int, void *),
-    void *data)
+controller::irq_attach(size_t pin, irq_mode mode, isr fn, void *data)
 {
 	std::lock_guard l{lock_};
 
@@ -90,7 +89,7 @@ controller::irq_attach(size_t pin, irq_mode mode, int (*isr)(int, void *),
 	if (auto r = v_interrupt_setup(pin, mode); r)
 		return r;
 	v_interrupt_unmask(pin);
-	irq_table_[pin] = {isr, data};
+	irq_table_[pin] = {fn, data};
 	return 0;
 }
 
