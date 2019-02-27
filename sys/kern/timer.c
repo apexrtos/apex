@@ -75,16 +75,14 @@ time_remain(uint64_t expire)
 }
 
 /*
- * Add a timer element to the timer list in the proper place.
+ * Insert a timer element into the timer list in the proper place.
  * Requires interrupts to be disabled by the caller.
  */
 static void
-timer_add(struct timer *tmr, uint64_t nsec)
+timer_insert(struct timer *tmr)
 {
 	struct list *head, *n;
 	struct timer *t;
-
-	tmr->expire = monotonic + nsec;
 
 	/*
 	 * We sort the timer list by time. So, we can
@@ -165,8 +163,7 @@ timer_callout(struct timer *tmr, uint64_t nsec, uint64_t interval,
 {
 	assert(tmr);
 
-	if (nsec == 0)
-		nsec = 1;
+	const uint64_t period = 1000000000 / CONFIG_HZ;
 
 	const int s = irq_disable();
 	if (tmr->active)
@@ -175,7 +172,11 @@ timer_callout(struct timer *tmr, uint64_t nsec, uint64_t interval,
 	tmr->arg = arg;
 	tmr->active = 1;
 	tmr->interval = interval;
-	timer_add(tmr, nsec);
+	/*
+	 * Guarantee that we will sleep for at least nsec.
+	 */
+	tmr->expire = monotonic + period + nsec;
+	timer_insert(tmr);
 	irq_restore(s);
 }
 
@@ -253,7 +254,21 @@ timer_thread(void *arg)
 			tmr = list_entry(list_first(&expire_list),
 					 struct timer, link);
 			list_remove(&tmr->link);
-			tmr->active = 0;
+
+			if (tmr->interval != 0) {
+				/*
+				 * Periodic timer
+				 */
+				tmr->expire += tmr->interval;
+				timer_insert(tmr);
+			} else {
+				/*
+				 * One-shot timer
+				 */
+				tmr->active = 0;
+			}
+
+
 			sch_lock();
 			interrupt_enable();
 			(*tmr->func)(tmr->arg);
@@ -326,28 +341,11 @@ timer_tick(int ticks)
 		if (monotonic < tmr->expire)
 			break;
 		/*
-		 * Remove an expired timer from the list and wakup
-		 * the appropriate thread. If it is periodic timer,
-		 * reprogram the next expiration time. Otherwise,
-		 * it is moved to the expired list.
+		 * Move expired timers from timer list to expire list.
 		 */
 		list_remove(&tmr->link);
-		if (tmr->interval != 0) {
-			/*
-			 * Periodic timer
-			 */
-			uint64_t rem = time_remain(tmr->expire + tmr->interval);
-			if (rem == 0)
-				rem = 1;
-			timer_add(tmr, rem);
-			sch_wakeup(&tmr->event, 0);
-		} else {
-			/*
-			 * One-shot timer
-			 */
-			list_insert(&expire_list, &tmr->link);
-			wakeup = 1;
-		}
+		list_insert(&expire_list, &tmr->link);
+		wakeup = 1;
 	}
 	if (wakeup)
 		sch_wakeup(&timer_event, 0);

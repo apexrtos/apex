@@ -43,7 +43,6 @@ struct timer {
 	int		active;		/* true if active */
 	uint64_t	expire;		/* expire time (nsec) */
 	uint64_t	interval;	/* time interval (nsec) */
-	struct event	event;		/* event for this timer */
 	void	      (*func)(void *);	/* function to call */
 	void	       *arg;		/* function argument */
 };
