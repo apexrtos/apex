@@ -501,6 +501,8 @@ sch_continue_sleep(uint64_t nsec)
  * sch_unsleep() removes the specified thread from its
  * sleep queue. The specified sleep result will be passed
  * to the sleeping thread as a return value of sch_tsleep().
+ *
+ * Callable from interrupt.
  */
 void
 sch_unsleep(struct thread *th, int result)
@@ -522,6 +524,8 @@ sch_unsleep(struct thread *th, int result)
  *
  * sch_interrupt() guarantees that the thread will return from one sleep
  * as soon as possible.
+ *
+ * Callable from interrupt.
  */
 void
 sch_interrupt(struct thread *th)
