@@ -451,17 +451,19 @@ sch_requeue(struct event *l, struct event *r)
 /*
  * sch_prepare_sleep - prepare to sleep on an event
  *
- * Must be followed by a call to sch_continue_sleep or sch_unsleep.
+ * On success, must be followed by sch_continue_sleep or sch_cancel_sleep.
  */
 int
 sch_prepare_sleep(struct event *evt)
 {
 	assert(evt);
 
+	sch_lock();
 	const int s = irq_disable();
 
 	if (sig_unblocked_pending(active_thread)) {
 		irq_restore(s);
+		sch_unlock();
 		return -EINTR;
 	}
 
@@ -491,8 +493,19 @@ sch_continue_sleep(uint64_t nsec)
 	wakeq_flush();
 	sch_switch();	/* Sleep here. Zzzz.. */
 	irq_restore(s);
+	sch_unlock();
 
 	return active_thread->slpret;
+}
+
+/*
+ * sch_cancel_sleep - cancel prepared sleep
+ */
+void
+sch_cancel_sleep(void)
+{
+	sch_unsleep(active_thread, 0);
+	sch_unlock();
 }
 
 /*

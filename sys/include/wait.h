@@ -17,7 +17,7 @@ wait_event(event &e, auto condition)
 		if (auto r = sch_prepare_sleep(&e); r)
 			return r;
 		if (condition()) {
-			sch_unsleep(thread_cur(), 0);
+			sch_cancel_sleep();
 			return 0;
 		}
 		if (auto r = sch_continue_sleep(0); r)
@@ -40,7 +40,7 @@ wait_event_timeout(event &e, int ns, auto condition)
 		if (auto r = sch_prepare_sleep(&e); r)
 			return r;
 		if (condition()) {
-			sch_unsleep(thread_cur(), 0);
+			sch_cancel_sleep();
 			return ns;
 		}
 		if (auto r = sch_continue_sleep(ns); r)
@@ -83,7 +83,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 		if ((__ret = sch_prepare_sleep(&event))) \
 			break; \
 		if (condition) {  \
-			sch_unsleep(thread_cur(), 0); \
+			sch_cancel_sleep(); \
 			break; \
 		} \
 		__ret = sch_continue_sleep(0); \
@@ -107,7 +107,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 			break; \
 		} \
 		if (condition) { \
-			sch_unsleep(thread_cur(), 0); \
+			sch_cancel_sleep(); \
 			break; \
 		} \
 		if ((__rc = sch_continue_sleep(__ret))) { \
