@@ -526,10 +526,7 @@ sch_unsleep(struct thread *th, int result)
 void
 sch_interrupt(struct thread *th)
 {
-	sch_lock();
-	if (th->state & TH_SLEEP)
-		sch_unsleep(th, -EINTR);
-	sch_unlock();
+	sch_unsleep(th, -EINTR);
 }
 
 /*
