@@ -1,0 +1,8 @@
+/*
+ * MIMXRT1060-EVK qspi configuration
+ */
+memory ROM_SIZE 0x800000
+include machine/nxp/mimxrt1060-evk/conf/board
+include machine/nxp/mimxrt1050-evkb/conf/common
+include machine/nxp/mimxrt1050-evkb/conf/flexspi_layout
+mk machine/nxp/mimxrt1050-evkb/image/qspi.mk

@@ -1,4 +1,4 @@
 LDSCRIPT := $(MACHINEDIR)/kernel.ld
 
 SOURCES += \
-	$(MACHINEDIR)/machine.c
+	$(CONFIG_APEXDIR)/machine/nxp/mimxrt1050-evkb/sys/machine.c

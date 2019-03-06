@@ -1,7 +1,7 @@
 /*
- * MIMXRT1050-EVKB sdcard configuration
+ * MIMXRT1060-EVK sdcard configuration
  */
-include machine/nxp/mimxrt1050-evkb/conf/board
+include machine/nxp/mimxrt1060-evk/conf/board
 include machine/nxp/mimxrt1050-evkb/conf/common
 include machine/nxp/mimxrt1050-evkb/conf/sdcard_layout
 mk machine/nxp/mimxrt1050-evkb/image/sdcard.mk

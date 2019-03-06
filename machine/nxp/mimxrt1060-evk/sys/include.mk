@@ -1,0 +1,1 @@
+../../mimxrt1050-evkb/sys/include.mk

@@ -14,7 +14,7 @@ INCLUDE := \
 
 SOURCES := \
 	xip_boot_data.c \
-	hyperflash_config.c \
+	qspi_config.c \
 	dcd.cpp \
 	ivt.c \
 

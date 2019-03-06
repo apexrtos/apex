@@ -1,0 +1,7 @@
+/*
+ * Memory layout for flexspi boot
+ */
+memory ROM_BASE		0x60000000
+memory LOADER_OFFSET	0x1080	    // vector table must be 128-byte aligned
+memory LOADER_ROM_BASE	(CONFIG_ROM_BASE_PHYS + CONFIG_LOADER_OFFSET)
+memory LOADER_ROM_SIZE	(CONFIG_ROM_SIZE - CONFIG_LOADER_OFFSET)

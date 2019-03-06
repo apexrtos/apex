@@ -1,8 +1,8 @@
 /*
- * MIMXRT1050-EVKB hyperflash configuration
+ * MIMXRT1060-EVK hyperflash configuration
  */
 memory ROM_SIZE 0x4000000
-include machine/nxp/mimxrt1050-evkb/conf/board
+include machine/nxp/mimxrt1060-evk/conf/board
 include machine/nxp/mimxrt1050-evkb/conf/common
 include machine/nxp/mimxrt1050-evkb/conf/flexspi_layout
 mk machine/nxp/mimxrt1050-evkb/image/hyperflash.mk

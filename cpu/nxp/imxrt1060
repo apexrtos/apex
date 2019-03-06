@@ -6,5 +6,6 @@ option NVIC_PRIO_BITS	4
 option MPU
 option CACHE
 memory FLEXRAM_SIZE	0x80000
+memory OCRAM2_SIZE	0x80000
 
 include cpu/arm/cortex-m7-hf

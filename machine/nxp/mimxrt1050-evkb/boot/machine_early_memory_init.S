@@ -8,7 +8,16 @@
 
 #define ITCM_BANKS (CONFIG_ITCM_SIZE / 0x8000)
 #define DTCM_BANKS (CONFIG_DTCM_SIZE / 0x8000)
+
+/*
+ * Some IMXRT processors contain a second on chip SRAM. We prefer to use this
+ * for DMA memory instead of flexram to increase the size of available DTCM.
+ */
+#if defined(CONFIG_SRAM_SIZE)
+#define DMA_BANKS 0
+#else
 #define DMA_BANKS (CONFIG_DMA_SIZE / 0x8000)
+#endif
 
 #define ITCM_CONFIG (0xffffffff & (0xffffffff << (32 - ITCM_BANKS << 1)))
 #define DTCM_CONFIG (0xaaaaaaaa & (0xffffffff >> (32 - DTCM_BANKS << 1) << (DMA_BANKS << 1)))

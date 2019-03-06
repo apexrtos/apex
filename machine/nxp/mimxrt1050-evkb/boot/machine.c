@@ -66,22 +66,35 @@ machine_setup(void)
 	}.r);
 #endif
 
+	unsigned i = 0;
+
 	/* DRAM */
-	bootinfo->ram[0].base = (void*)CONFIG_DRAM_BASE_PHYS;
-	bootinfo->ram[0].size = CONFIG_DRAM_SIZE;
-	bootinfo->ram[0].type = MT_NORMAL;
+	bootinfo->ram[i].base = (void*)CONFIG_DRAM_BASE_PHYS;
+	bootinfo->ram[i].size = CONFIG_DRAM_SIZE;
+	bootinfo->ram[i].type = MT_NORMAL;
+	++i;
 
 	/* DTCM */
-	bootinfo->ram[1].base = (void*)CONFIG_DTCM_BASE_PHYS;
-	bootinfo->ram[1].size = CONFIG_DTCM_SIZE;
-	bootinfo->ram[1].type = MT_FAST;
+	bootinfo->ram[i].base = (void*)CONFIG_DTCM_BASE_PHYS;
+	bootinfo->ram[i].size = CONFIG_DTCM_SIZE;
+	bootinfo->ram[i].type = MT_FAST;
+	++i;
 
 	/* DMA */
-	bootinfo->ram[2].base = (void*)CONFIG_DMA_BASE_PHYS;
-	bootinfo->ram[2].size = CONFIG_DMA_SIZE;
-	bootinfo->ram[2].type = MT_DMA;
+	bootinfo->ram[i].base = (void*)CONFIG_DMA_BASE_PHYS;
+	bootinfo->ram[i].size = CONFIG_DMA_SIZE;
+	bootinfo->ram[i].type = MT_DMA;
+	++i;
 
-	bootinfo->nr_rams = 3;
+#if defined(CONFIG_SRAM_SIZE)
+	/* SRAM */
+	bootinfo->ram[i].base = (void*)CONFIG_SRAM_BASE_PHYS;
+	bootinfo->ram[i].size = CONFIG_SRAM_SIZE;
+	bootinfo->ram[i].type = MT_NORMAL;
+	++i;
+#endif
+
+	bootinfo->nr_rams = i;
 }
 
 /*

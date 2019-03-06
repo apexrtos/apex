@@ -14,10 +14,18 @@ memory DRAM_BASE	0x80000000
 memory DRAM_SIZE	0x2000000
 memory ITCM_BASE	0x0
 memory ITCM_SIZE	0x8000
-memory DTCM_BASE	0x20000000
-memory DTCM_SIZE	0x70000
 memory DMA_BASE		0x20200000
 memory DMA_SIZE		0x8000
+memory DTCM_BASE	0x20000000
+#if defined(CONFIG_OCRAM2_SIZE)
+/* DMA memory uses OCRAM2 */
+memory DTCM_SIZE	(CONFIG_FLEXRAM_SIZE - CONFIG_ITCM_SIZE)
+memory SRAM_BASE	(0x20200000 + CONFIG_DMA_SIZE)
+memory SRAM_SIZE	(CONFIG_OCRAM2_SIZE - CONFIG_DMA_SIZE)
+#else
+/* DMA memory uses FlexRAM */
+memory DTCM_SIZE	(CONFIG_FLEXRAM_SIZE - CONFIG_ITCM_SIZE - CONFIG_DMA_SIZE)
+#endif
 memory LOADER_RAM_SIZE	0x2000
 memory LOADER_RAM_BASE	(CONFIG_DTCM_BASE_VIRT + CONFIG_DTCM_SIZE - CONFIG_LOADER_RAM_SIZE)
 
@@ -70,16 +78,6 @@ driver1 sys/dev/fsl/imx-usbphy{ .base = 0x400d9000, .analog_base = 0x400d81a0, .
 driver2 sys/dev/fsl/usb2-udc{ .name = "udc0", .base = 0x402e0000, .irq = 113, .ipl = IPL_MIN }
 
 /*
- * CPU
- */
-cpu nxp/imxrt1050
-
-/*
- * Pretty machine name
- */
-option MACHINE_NAME NXP MIMXRT1050-EVK
-
-/*
  * Include helpful "make gdb" rule
  */
-mk machine/nxp/mimxrt1050-evk/gdb.mk
+mk machine/nxp/mimxrt1050-evkb/gdb.mk

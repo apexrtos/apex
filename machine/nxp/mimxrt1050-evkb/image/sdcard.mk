@@ -2,7 +2,7 @@ ifneq ($(origin apex/apeximg_rule_exists),undefined)
 
 DEFAULT := y
 TYPE := imxrt_boot
-TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evkb_sdcard
+TARGET := $(CONFIG_SRCDIR)/$(CONFIG_BOARD)_sdcard
 
 LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/usdhc_boot.ld
 CFLAGS := -fno-pie -O2
