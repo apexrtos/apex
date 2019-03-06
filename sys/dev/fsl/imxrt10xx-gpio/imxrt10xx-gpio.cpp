@@ -11,9 +11,6 @@ namespace {
 /*
  * regs
  */
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
 struct regs {
 	enum icr {
 		ICR_LOW_LEVEL = 0,
@@ -58,7 +55,7 @@ struct regs {
 	uint32_t DR_CLEAR;
 	uint32_t DR_TOGGLE;
 };
-static_assert(sizeof(struct regs) == 0x90, "");
+static_assert(sizeof(regs) == 0x90, "");
 
 /*
  * imxrt10xx_gpio
@@ -239,7 +236,7 @@ extern "C" {
  * fsl_imxrt10xx_gpio_init
  */
 void
-fsl_imxrt10xx_gpio_init(const struct fsl_imxrt10xx_gpio_desc *d)
+fsl_imxrt10xx_gpio_init(const fsl_imxrt10xx_gpio_desc *d)
 {
 	auto g = new imxrt10xx_gpio{d->name, reinterpret_cast<regs *>(d->base)};
 	gpio::controller::add(g);
