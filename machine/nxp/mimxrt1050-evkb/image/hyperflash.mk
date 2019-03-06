@@ -2,7 +2,7 @@ ifneq ($(origin apex/apeximg_rule_exists),undefined)
 
 DEFAULT := y
 TYPE := imxrt_boot
-TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evk_hyperflash
+TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evkb_hyperflash
 
 LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/flexspi_boot.ld
 CFLAGS := -fno-pie -O2

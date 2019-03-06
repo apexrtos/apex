@@ -2,7 +2,7 @@ ifneq ($(origin apex/apeximg_rule_exists),undefined)
 
 DEFAULT := y
 TYPE := imxrt_boot
-TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evk_sdcard
+TARGET := $(CONFIG_SRCDIR)/mimxrt1050-evkb_sdcard
 
 LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/usdhc_boot.ld
 CFLAGS := -fno-pie -O2
@@ -19,8 +19,8 @@ SOURCES := \
 
 IMG := apeximg
 
-$(APEX_SUBDIR)machine/nxp/mimxrt1050-evk/image/boot_data.o: $(IMG)
-$(APEX_SUBDIR)machine/nxp/mimxrt1050-evk/image/boot_data_EXTRA_CFLAGS := \
+$(APEX_SUBDIR)machine/nxp/mimxrt1050-evkb/image/boot_data.o: $(IMG)
+$(APEX_SUBDIR)machine/nxp/mimxrt1050-evkb/image/boot_data_EXTRA_CFLAGS := \
     -DIMAGE_SIZE="(CONFIG_LOADER_OFFSET + `stat -c %s $(APEX_SUBDIR)$(IMG)`)"
 
 include cpu/nxp/imxrt10xx/imxrt_boot.mk

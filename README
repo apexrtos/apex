@@ -120,7 +120,7 @@ Physical
 
 Vendor	| Board		    | CPU (Architecture)    | Status
 ------	| -----		    | ------------------    | ------
-nxp	| mimxrt1050-evk    | Cortex-M7 (ARMv7-M)   | Complete
+nxp	| mimxrt1050-evkb   | Cortex-M7 (ARMv7-M)   | Complete
 
 Virtual (QEMU)
 --------------

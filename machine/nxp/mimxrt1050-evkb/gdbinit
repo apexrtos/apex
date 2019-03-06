@@ -19,7 +19,7 @@ define flash
 	reset
 	python
 import os
-gdb.execute('mon loadbin ' + os.environ['BUILDDIR'] + '/mimxrt1050-evk_hyperflash 0x60000000')
+gdb.execute('mon loadbin ' + os.environ['BUILDDIR'] + '/mimxrt1050-evkb_hyperflash 0x60000000')
 	end
 	reset
 end
@@ -47,7 +47,7 @@ gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin 0x20
 	echo > Erasing first 4MiB of SD card...\n
 	shell $TOOLSDIR/blhost -u -- flash-erase-region 0x0 0x400000 0x120
 	echo > Writing to SD card...\n
-	shell $TOOLSDIR/blhost -u -- write-memory 0x0 $BUILDDIR/mimxrt1050-evk_sdcard 0x120
+	shell $TOOLSDIR/blhost -u -- write-memory 0x0 $BUILDDIR/mimxrt1050-evkb_sdcard 0x120
 	reset
 end
 document sdflash
