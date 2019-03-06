@@ -2,6 +2,7 @@
 
 #include "init.h"
 #include "regs.h"
+#include <algorithm>
 #include <arch.h>
 #include <cstdlib>
 #include <debug.h>
@@ -197,9 +198,9 @@ calculate_dividers(const long clock, const long speed)
 	long error = LONG_MAX;
 
 	for (int osr = 4; osr <= 32; ++osr) {
-		const int sbr = div_closest(clock, speed * osr);
+		const int sbr = std::min(div_closest(clock, speed * osr), 8191l);
 		if (sbr == 0)
-			continue;
+			break;
 		const auto e = std::abs(speed - clock / (osr * sbr));
 		if (e <= error) {
 			error = e;
