@@ -1,1 +1,1 @@
-../../mimxrt1050-evkb/sys/include.mk
+../../imxrt1050-evkb/sys/include.mk

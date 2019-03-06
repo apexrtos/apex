@@ -1,1 +1,1 @@
-../../mimxrt1050-evkb/sys/kernel.ld
+../../imxrt1050-evkb/sys/kernel.ld

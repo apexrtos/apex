@@ -1,7 +1,7 @@
 #include <cpu/nxp/imxrt10xx/flexspi.h>
 
 /*
- * FlexSPI configuration for IS25WP064AJBLE QSPI flash on MIMXRT1050-EVKB and
+ * FlexSPI configuration for IS25WP064AJBLE QSPI flash on IMXRT1050-EVKB and
  * MIMXRT1060-EVK boards.
  *
  * REVISIT: for now we are setting undocumented features so that the generated

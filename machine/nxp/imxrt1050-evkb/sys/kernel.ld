@@ -1,5 +1,5 @@
 /*
- * Linker script for kernel running on MIMXRT1050-EVKB and MIMXRT1060-EVK
+ * Linker script for kernel running on IMXRT1050-EVKB and MIMXRT1060-EVK
  */
 
 INCLUDE conf/config.ld

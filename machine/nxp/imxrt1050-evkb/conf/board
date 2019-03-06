@@ -1,0 +1,15 @@
+/*
+ * Board
+ */
+option BOARD imxrt1050-evkb
+option BOARD_IMXRT1050EVKB
+
+/*
+ * CPU
+ */
+cpu nxp/imxrt1050
+
+/*
+ * Pretty machine name
+ */
+option MACHINE_NAME NXP IMXRT1050-EVKB

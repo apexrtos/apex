@@ -80,4 +80,4 @@ driver2 sys/dev/fsl/usb2-udc{ .name = "udc0", .base = 0x402e0000, .irq = 113, .i
 /*
  * Include helpful "make gdb" rule
  */
-mk machine/nxp/mimxrt1050-evkb/gdb.mk
+mk machine/nxp/imxrt1050-evkb/gdb.mk

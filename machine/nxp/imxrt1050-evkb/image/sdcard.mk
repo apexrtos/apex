@@ -19,8 +19,8 @@ SOURCES := \
 
 IMG := apeximg
 
-$(APEX_SUBDIR)machine/nxp/mimxrt1050-evkb/image/boot_data.o: $(IMG)
-$(APEX_SUBDIR)machine/nxp/mimxrt1050-evkb/image/boot_data_EXTRA_CFLAGS := \
+$(APEX_SUBDIR)machine/nxp/imxrt1050-evkb/image/boot_data.o: $(IMG)
+$(APEX_SUBDIR)machine/nxp/imxrt1050-evkb/image/boot_data_EXTRA_CFLAGS := \
     -DIMAGE_SIZE="(CONFIG_LOADER_OFFSET + `stat -c %s $(APEX_SUBDIR)$(IMG)`)"
 
 include cpu/nxp/imxrt10xx/imxrt_boot.mk
