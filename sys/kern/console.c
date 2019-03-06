@@ -4,16 +4,17 @@
 
 #include "console.h"
 
+#include <arch.h>
 #include <debug.h>
 #include <device.h>
 #include <fcntl.h>
 #include <fs.h>
 #include <ioctl.h>
 #include <sch.h>
+#include <stdatomic.h>
 #include <stddef.h>
 #include <termios.h>
 #include <thread.h>
-#include <stdatomic.h>
 
 static int fd;
 struct event evt;
@@ -43,6 +44,9 @@ static ssize_t console_write(struct file *file, const struct iovec *iov,
 static void
 console_thread(void *unused)
 {
+	/* kernel threads start with interrupts disabled */
+	interrupt_enable();
+
 	int len;
 	char buf[256];
 	while (true) {
@@ -98,11 +102,11 @@ console_init(void)
 	if (!kthread_create(&console_thread, NULL, PRI_BACKGROUND, "console",
 	    MEM_NORMAL))
 		panic("console_init");
+	syslog_output(console_start);
+	console_start();
 	sch_unlock();
 
 	device_create(&io, "console", DF_CHR, NULL);
-	syslog_output(console_start);
-	console_start();
 
 	return 0;
 }
