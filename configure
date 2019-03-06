@@ -246,7 +246,7 @@ parse_config()
 			;;
 		esac
 	done <<-EOF
-		$(cpp -P -Wno-builtin-macro-redefined -U__DATE__ -U__TIME__ -undef "$1")
+		$(cpp -include "$CONFIG_H" -P -Wno-builtin-macro-redefined -U__DATE__ -U__TIME__ -undef "$1")
 	EOF
 }
 
