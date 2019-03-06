@@ -204,11 +204,15 @@ parse_config()
 			[ "x$machine" != x ] &&
 				quit "machine already specified"
 			machine=$rest
+			find_config MACHINE_IN machine "$machine"
+			parse_config "$MACHINE_IN"
 			;;
 		cpu)
 			[ "x$cpu" != x ] &&
 				quit "cpu already specified"
 			cpu=$rest
+			find_config CPU_IN cpu "$cpu"
+			parse_config "$CPU_IN"
 			;;
 		arch)
 			[ "x$arch" != x ] &&
@@ -318,27 +322,35 @@ main()
 	$print "Processing configuration files..."
 	$print
 
-	# Project configuration is mandatory
+	# Handle --cpu option
+	if [ "x$cpu" != x ]; then
+		find_config CPU_IN cpu "$cpu"
+		parse_config "$CPU_IN"
+	fi
+
+	# Handle --machine option
+	if [ "x$machine" != x ]; then
+		find_config MACHINE_IN machine "$machine"
+		machine=${machine%%/conf*}
+		parse_config "$MACHINE_IN"
+	fi
+
+	# Handle --project option
 	[ "x$project" = x ] &&
 		quit "'--project' option not specified"
 	find_config PROJECT_IN project "$project"
-	$print "Project: $project"
 	parse_config "$PROJECT_IN"
 
-	# Machine configuration is mandatory
+	# Check options
 	[ "x$machine" = x ] &&
 		quit "no machine specified"
-	find_config MACHINE_IN machine "$machine"
-	machine=${machine%%/conf*}
-	$print "Machine: $machine"
-	parse_config "$MACHINE_IN"
+	[ "x$cpu" = x ] &&
+		quit "no cpu specified"
 
-	# Optional cpu configuration
-	if [ "x$cpu" != x ]; then
-		find_config CPU_IN cpu "$cpu"
-		$print "CPU:     $cpu"
-		parse_config "$CPU_IN"
-	fi
+	# Print configuration
+	$print "CPU:     $cpu"
+	$print "Machine: $machine"
+	$print "Project: $project"
 
 	# Verify architecture is sane
 	case $arch in
