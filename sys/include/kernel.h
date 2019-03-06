@@ -117,6 +117,18 @@ div_closest(long n, long d)
 }
 
 /*
+ * Integer division to ceiling of quotient
+ */
+static inline long
+div_ceil(long n, long d)
+{
+	if (n % d)
+		return n / d + 1;
+	else
+		return n / d;
+}
+
+/*
  * Determine if integer is a non-zero power of 2.
  */
 static inline bool
