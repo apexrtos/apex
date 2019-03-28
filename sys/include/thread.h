@@ -73,6 +73,7 @@ struct thread {
 	int		errno_storage;	/* error number */
 #if defined(CONFIG_DEBUG)
 	int		mutex_locks;	/* mutex lock counter */
+	int		spinlock_locks;	/* spinlock lock counter */
 #endif
 };
 

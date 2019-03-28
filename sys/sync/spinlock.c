@@ -25,6 +25,7 @@ spinlock_lock(struct spinlock *s)
 #if defined(CONFIG_DEBUG)
 	assert(!s->owner);
 	s->owner = thread_cur();
+	++thread_cur()->spinlock_locks;
 #endif
 }
 
@@ -34,6 +35,7 @@ spinlock_unlock(struct spinlock *s)
 #if defined(CONFIG_DEBUG)
 	assert(s->owner == thread_cur());
 	s->owner = 0;
+	--thread_cur()->spinlock_locks;
 #endif
 	sch_unlock();
 }
@@ -45,6 +47,7 @@ spinlock_lock_irq_disable(struct spinlock *s)
 #if defined(CONFIG_DEBUG)
 	assert(!s->owner);
 	s->owner = thread_cur();
+	++thread_cur()->spinlock_locks;
 #endif
 	return i;
 }
@@ -54,6 +57,7 @@ spinlock_unlock_irq_restore(struct spinlock *s, int v)
 {
 #if defined(CONFIG_DEBUG)
 	s->owner = 0;
+	--thread_cur()->spinlock_locks;
 #endif
 	irq_restore(v);
 }

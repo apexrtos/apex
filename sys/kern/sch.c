@@ -245,6 +245,13 @@ sch_switch(void)
 	struct thread *prev, *next;
 
 	/*
+	 * Switching threads while holding a spinlock is very bad.
+	 */
+#if defined(CONFIG_DEBUG)
+	assert(!active_thread->spinlock_locks);
+#endif
+
+	/*
 	 * Move a current thread to the run queue.
 	 */
 	prev = active_thread;
