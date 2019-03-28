@@ -90,7 +90,7 @@ machine_setup(void)
 	/* SRAM */
 	bootinfo->ram[i].base = (void*)CONFIG_SRAM_BASE_PHYS;
 	bootinfo->ram[i].size = CONFIG_SRAM_SIZE;
-	bootinfo->ram[i].type = MT_NORMAL;
+	bootinfo->ram[i].type = MT_FAST;
 	++i;
 #endif
 
