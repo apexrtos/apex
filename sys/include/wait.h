@@ -2,8 +2,9 @@
 #define wait_h
 
 #include <assert.h>
-#include <timer.h>
+#include <sch.h>
 #include <thread.h>
+#include <timer.h>
 
 #if defined(__cplusplus)
 
