@@ -89,6 +89,7 @@ int	       mutex_prio(const struct mutex *);
 void	       mutex_setprio(struct mutex *, int);
 unsigned       mutex_count(const struct mutex *);
 struct mutex  *mutex_entry(struct list*);
+void	       mutex_assert_locked(const struct mutex *);
 
 bool	       cond_valid(const struct cond *);
 void	       cond_init(struct cond *);
@@ -124,6 +125,7 @@ public:
 	int interruptible_lock() { return mutex_lock_interruptible(&m_); }
 	int lock() { return mutex_lock(&m_); }
 	int unlock() { return mutex_unlock(&m_); }
+	void assert_locked() const { mutex_assert_locked(&m_); }
 
 private:
 	::mutex m_;

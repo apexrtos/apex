@@ -362,3 +362,12 @@ mutex_entry(struct list *l)
 {
 	return (struct mutex*)list_entry(l, struct mutex_private, link);
 }
+
+/*
+ * mutex_assert_locked - ensure that current thread owns mutex
+ */
+void
+mutex_assert_locked(const struct mutex *m)
+{
+	assert(mutex_owner(m) == thread_cur());
+}
