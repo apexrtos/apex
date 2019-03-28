@@ -8,6 +8,7 @@
 #include <dev/usb/gadget/transaction.h>
 #include <dev/usb/gadget/udc.h>
 #include <dma.h>
+#include <endian.h>
 #include <irq.h>
 #include <mutex>
 #include <page.h>
@@ -296,6 +297,7 @@ struct regs {
 	} ENDPTCTRL[8];
 };
 static_assert(sizeof(regs) == 0x1e0, "");
+static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
 
 /*
  * dtd
