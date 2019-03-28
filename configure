@@ -262,8 +262,9 @@ main()
 	parse_args "$@"
 
 	# Make sure we are not attempting to configure in $srcdir
-	[ "$srcdir" = "$builddir" ] &&
+	case $(readlink -f "$builddir")/ in $(readlink -f "$srcdir")/*)
 		quit "in-tree build not supported"
+	esac
 
 	CONFIG_MK="conf/config.mk"
 	CONFIG_H="conf/config.h"
