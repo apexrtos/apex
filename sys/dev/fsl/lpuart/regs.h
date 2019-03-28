@@ -2,6 +2,7 @@
 #define dev_nxp_imxrt_lpuart_regs_h
 
 #include <assert.h>
+#include <endian.h>
 #include <stdint.h>
 
 #if defined(__cplusplus)
@@ -154,6 +155,7 @@ struct lpuart_regs {
 	} WATER;
 };
 static_assert(sizeof(struct lpuart_regs) == 0x30, "");
+static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
 
 #undef CPPREG
 
