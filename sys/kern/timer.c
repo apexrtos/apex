@@ -156,6 +156,8 @@ ns_to_tv(uint64_t ns, struct timeval *tv)
  * Schedule a callout function to run after a specified
  * length of time.  A device driver can call
  * timer_callout()/timer_stop() from ISR at interrupt level.
+ *
+ * If nsec == 1 we call out after the next tick.
  */
 void
 timer_callout(struct timer *tmr, uint64_t nsec, uint64_t interval,
@@ -173,9 +175,9 @@ timer_callout(struct timer *tmr, uint64_t nsec, uint64_t interval,
 	tmr->active = 1;
 	tmr->interval = interval;
 	/*
-	 * Guarantee that we will sleep for at least nsec.
+	 * Guarantee that we will call out after at least nsec.
 	 */
-	tmr->expire = monotonic + period + nsec;
+	tmr->expire = monotonic + period + (nsec == 1 ? 0 : nsec);
 	timer_insert(tmr);
 	irq_restore(s);
 }
@@ -216,6 +218,8 @@ timer_stop(struct timer *tmr)
  * The caller thread is blocked for the specified time.
  * Returns 0 on success, or the remaining time (nsec) on failure.
  * This service is not available at interrupt level.
+ *
+ * If nsec <= 1 we delay until the next tick.
  */
 uint64_t
 timer_delay(uint64_t nsec)
@@ -224,7 +228,7 @@ timer_delay(uint64_t nsec)
 	u_long remain = 0;
 	int rc;
 
-	rc = sch_nanosleep(&delay_event, nsec);
+	rc = sch_nanosleep(&delay_event, nsec ?: 1);
 	if (rc != -ETIMEDOUT) {
 		tmr = &thread_cur()->timeout;
 		remain = time_remain(tmr->expire);
