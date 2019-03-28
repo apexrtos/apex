@@ -108,7 +108,7 @@ void	       spinlock_lock(struct spinlock *);
 void	       spinlock_unlock(struct spinlock *);
 int	       spinlock_lock_irq_disable(struct spinlock *);
 void	       spinlock_unlock_irq_restore(struct spinlock *, int);
-void	       spinlock_assert_locked(struct spinlock *);
+void	       spinlock_assert_locked(const struct spinlock *);
 
 #if defined(__cplusplus)
 } /* extern "C" */
@@ -164,7 +164,7 @@ public:
 	spinlock() { spinlock_init(&s_); }
 	void lock() { spinlock_lock(&s_); }
 	void unlock() { spinlock_unlock(&s_); }
-	void assert_locked() { spinlock_assert_locked(&s_); }
+	void assert_locked() const { spinlock_assert_locked(&s_); }
 
 private:
 	::spinlock s_;
@@ -178,7 +178,7 @@ public:
 	spinlock_irq() { spinlock_init(&s_); }
 	int lock() { return spinlock_lock_irq_disable(&s_); }
 	void unlock(int v) { spinlock_unlock_irq_restore(&s_, v); }
-	void assert_locked() { spinlock_assert_locked(&s_); }
+	void assert_locked() const { spinlock_assert_locked(&s_); }
 
 private:
 	::spinlock s_;

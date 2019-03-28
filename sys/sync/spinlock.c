@@ -59,7 +59,7 @@ spinlock_unlock_irq_restore(struct spinlock *s, int v)
 }
 
 inline void
-spinlock_assert_locked(struct spinlock *s)
+spinlock_assert_locked(const struct spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
 	assert(s->owner == thread_cur());
