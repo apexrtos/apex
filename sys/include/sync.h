@@ -75,6 +75,13 @@ struct spinlock {
 #endif
 };
 
+struct semaphore {
+	union {
+		char storage[20];
+		unsigned align;
+	};
+};
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -110,6 +117,10 @@ void	       spinlock_unlock(struct spinlock *);
 int	       spinlock_lock_irq_disable(struct spinlock *);
 void	       spinlock_unlock_irq_restore(struct spinlock *, int);
 void	       spinlock_assert_locked(const struct spinlock *);
+
+void	       semaphore_init(struct semaphore *);
+int	       semaphore_post(struct semaphore *);
+int	       semaphore_wait_interruptible(struct semaphore *);
 
 #if defined(__cplusplus)
 } /* extern "C" */
@@ -184,6 +195,19 @@ public:
 
 private:
 	::spinlock s_;
+};
+
+/*
+ * a::semaphore - apex c++ semaphore wrapper
+ */
+class semaphore {
+public:
+	semaphore() { semaphore_init(&s_); }
+	int post() { return semaphore_post(&s_); }
+	int wait_interruptible() { return semaphore_wait_interruptible(&s_); }
+
+private:
+	::semaphore s_;
 };
 
 } /* namespace a */

@@ -64,6 +64,7 @@ SOURCES := \
     sync/futex.c \
     sync/mutex.c \
     sync/rwlock.c \
+    sync/semaphore.c \
     sync/spinlock.c \
 
 # Generic memory translation support
