@@ -170,10 +170,19 @@ log_trim(const size_t len)
 void
 syslog_printf(int level, const char *fmt, ...)
 {
-	const int s = irq_disable();
-
 	va_list ap;
 	va_start(ap, fmt);
+	syslog_vprintf(level, fmt, ap);
+	va_end(ap);
+}
+
+/*
+ * syslog_vprintf - see syslog_printf
+ */
+void
+syslog_vprintf(int level, const char *fmt, va_list ap)
+{
+	const int s = irq_disable();
 
 	const int len = log_write(LOG_KERN, level, fmt, ap);
 	if (len <= 0 || len > sizeof(log))
@@ -182,7 +191,6 @@ syslog_printf(int level, const char *fmt, ...)
 	log_write(LOG_KERN, level, fmt, ap);
 
 out:
-	va_end(ap);
 	++log_seq;
 
 	irq_restore(s);
