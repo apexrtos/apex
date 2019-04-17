@@ -6,6 +6,7 @@ subarch v7m
 makeoption CFLAGS += -mcpu=cortex-m3
 makeoption CFLAGS += -masm-syntax-unified
 makeoption ASFLAGS += -mcpu=cortex-m3
+makeoption CXXFLAGS += -mcpu=cortex-m3
 makeoption APEX_CFLAGS += -mslow-flash-data
 makeoption USER_CFLAGS += -static
 makeoption USER_CFLAGS += -pie -fPIE
