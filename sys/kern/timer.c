@@ -57,12 +57,6 @@ static struct list	timer_list;	/* list of active timers */
 static struct list	expire_list;	/* list of expired timers */
 
 /*
- * Macro to get a timer element for the next expiration.
- */
-#define timer_next() \
-	(list_entry(list_first(&timer_list), struct timer, link))
-
-/*
  * Get remaining nanoseconds to the expiration time.
  * Return 0 if time already passed.
  */
@@ -272,7 +266,6 @@ timer_thread(void *arg)
 				tmr->active = 0;
 			}
 
-
 			sch_lock();
 			interrupt_enable();
 			(*tmr->func)(tmr->arg);
@@ -341,7 +334,7 @@ timer_tick(int ticks)
 		/*
 		 * Check timer expiration.
 		 */
-		tmr = timer_next();
+		tmr = list_entry(list_first(&timer_list), struct timer, link);
 		if (monotonic < tmr->expire)
 			break;
 		/*
