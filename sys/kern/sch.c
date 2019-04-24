@@ -492,12 +492,13 @@ int
 sch_continue_sleep(uint64_t nsec)
 {
 	const int s = irq_disable();
-	if (nsec != 0) {
-		/* Program timer to wake us up atfter nsec. */
+	wakeq_flush();
+	if (nsec != 0 && active_thread->state & TH_SLEEP) {
+		/* Program timer to wake us up atfter nsec, but only if we're
+		 * still going to sleep.. */
 		timer_callout(&active_thread->timeout, nsec, 0, &sleep_expire,
 			      active_thread);
 	}
-	wakeq_flush();
 	sch_switch();	/* Sleep here. Zzzz.. */
 	irq_restore(s);
 	sch_unlock();
