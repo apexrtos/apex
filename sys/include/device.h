@@ -76,7 +76,7 @@ struct device {
 	struct list	    link;	/* linkage on device list */
 	const struct devio *devio;	/* device i/o table */
 	void		   *info;	/* device specific info */
-	char		    name[12];	/* name of device */
+	char		    name[16];	/* name of device */
 };
 
 #if defined(__cplusplus)
