@@ -249,6 +249,10 @@ syslog_format(char *buf, const size_t len)
 		}
 
 		++output_seq;
+
+		irq_restore(s);
+		/* interrupts while formatting message will fire here.. */
+		s = irq_disable();
 	}
 
 	irq_restore(s);
