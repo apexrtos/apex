@@ -102,11 +102,17 @@ public:
 	{
 		auto v = CTRL;
 		v.TIE = false;
+		write32(&CTRL, v.r);
+	}
+
+	void tcint_disable()
+	{
+		auto v = CTRL;
 		v.TCIE = false;
 		write32(&CTRL, v.r);
 	}
 
-	void txint_enable()
+	void txints_enable()
 	{
 		auto v = CTRL;
 		v.TIE = true;
@@ -283,12 +289,19 @@ isr(int vector, void *data)
 	for (size_t i = u->rxcount(); i > 0; --i)
 		tty_rx_putc(tp, u->getch());
 
-	for (size_t i = u->txfifo_size() - u->txcount(); i > 0; --i)
-		if (const int c = tty_tx_getc(tp); c >= 0)
-			u->putch(c);
+	bool tx_queued = false;
+	for (size_t i = u->txfifo_size() - u->txcount(); i > 0; --i) {
+		const int c = tty_tx_getc(tp);
+		if (c < 0)
+			break;
+		u->putch(c);
+		tx_queued = true;
+	}
+	if (!tx_queued)
+		u->txint_disable();
 
 	if (u->tx_complete()) {
-		u->txint_disable();
+		u->tcint_disable();
 		tty_tx_complete(tp);
 	}
 
@@ -336,7 +349,7 @@ oproc(tty *tp)
 	const auto u = inst->uart;
 
 	std::lock_guard l{inst->lock};
-	u->txint_enable();
+	u->txints_enable();
 }
 
 /*
