@@ -37,15 +37,6 @@
 struct file;
 struct iovec;
 
-
-/*
- * Driver structure
- */
-struct driver {
-	const char     *name;		/* Name of device driver */
-	int	      (*init)(void);	/* Initialisation routine */
-};
-
 /*
  * Device flags
  */
