@@ -57,6 +57,7 @@ public:
 	ssize_t read(file *, void *, size_t);
 	ssize_t write(file *, const void *, size_t);
 	int ioctl(file *, u_long, void *);
+	void terminate();
 
 	/* interface to drivers */
 	void *data();
@@ -431,6 +432,17 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 		return DERR(-ENOTSUP);
 	}
 	return 0;
+}
+
+/*
+ * tty::terminate - terminate all operations running on tty
+ */
+void
+tty::terminate()
+{
+	sch_wakeup(&input_, -ENODEV);
+	sch_wakeup(&output_, -ENODEV);
+	sch_wakeup(&complete_, -ENODEV);
 }
 
 /*
@@ -1205,13 +1217,22 @@ tty_create(const char *name, size_t rx_bufsiz, size_t rx_bufmin, tty_tproc tproc
 /*
  * tty_destroy - destroy a tty device
  */
-int
+void
 tty_destroy(tty *t)
 {
-	if (auto r = device_destroy(t->device()))
-		return r;
+	/* device_hide guarantees that no more threads can call tty_open,
+	 * tty_close, tty_read, tty_write or tty_ioctl on this tty */
+	device_hide(t->device());
+
+	/* kill all active operations on this tty */
+	while (device_busy(t->device())) {
+		t->terminate();
+		timer_delay(0);
+	}
+
+	/* destroy tty */
+	device_destroy(t->device());
 	delete t;
-	return 0;
 }
 
 /*
