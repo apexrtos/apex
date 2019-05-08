@@ -66,6 +66,8 @@ cdc_acm::cdc_acm(gadget::udc &u)
 , running_{false}
 , line_coding_{115200, 0, 0, 8}
 {
+	std::lock_guard l{lock_};
+
 	tx_.reserve(tx_txn);
 	for (size_t i{0}; i != tx_txn; ++i) {
 		tx_.emplace_back(udc().alloc_transaction());
@@ -165,6 +167,8 @@ cdc_acm::flush_input()
 int
 cdc_acm::v_configure(std::string_view c)
 {
+	std::unique_lock l{lock_};
+
 	auto r = parse_options(c, [this](const auto &name, const auto &value) {
 		if (value.empty())
 			return DERR(-EINVAL);
@@ -236,6 +240,8 @@ cdc_acm::v_reset()
 int
 cdc_acm::v_start(const Speed spd)
 {
+	std::unique_lock l{lock_};
+
 	if (!t_)
 		return DERR(-EILSEQ);
 
@@ -253,7 +259,6 @@ cdc_acm::v_start(const Speed spd)
 	    ch9::TransferType::Bulk, bulk_max_packet_len(spd))}; r < 0)
 		return r;
 
-	std::unique_lock l{lock_};
 	running_ = true;
 	l.unlock();
 
