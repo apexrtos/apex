@@ -237,7 +237,7 @@ int
 cdc_acm::v_start(const Speed spd)
 {
 	if (!t_)
-		return DERR(-EINVAL);
+		return DERR(-EILSEQ);
 
 	if (spd == Speed::Low)
 		return 0;
