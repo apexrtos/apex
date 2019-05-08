@@ -227,9 +227,7 @@ cdc_acm::v_finalise()
 void
 cdc_acm::v_reset()
 {
-	std::lock_guard l{lock_};
-
-	running_ = false;
+	v_stop();
 }
 
 /*
