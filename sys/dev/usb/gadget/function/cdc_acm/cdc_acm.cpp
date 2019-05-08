@@ -108,8 +108,10 @@ cdc_acm::tx_queue()
 			return;
 		auto &t = tx_.back();
 		t->set_buf(p, len);
-		udc().queue(endpoint_offset() + 1,
-		    ch9::Direction::DeviceToHost, t.release());
+		if (auto r = udc().queue(endpoint_offset() + 1,
+		    ch9::Direction::DeviceToHost, t.get()); r < 0)
+			break;
+		t.release();
 		tx_.pop_back();
 	}
 }
@@ -131,8 +133,10 @@ cdc_acm::rx_queue()
 			return;
 		auto &t = rx_.back();
 		t->set_buf(p, bulk_max_packet_len(Speed::High));
-		udc().queue(endpoint_offset() + 1,
-		    ch9::Direction::HostToDevice, t.release());
+		if (auto r = udc().queue(endpoint_offset() + 1,
+		    ch9::Direction::HostToDevice, t.get()); r < 0)
+			break;
+		t.release();
 		rx_.pop_back();
 	}
 }
