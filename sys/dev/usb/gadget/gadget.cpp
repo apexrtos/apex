@@ -39,11 +39,10 @@ gadget_ioctl(file *file, unsigned long cmd, void *data)
 		auto u{gadget::udc::find(d.udc)};
 		if (!u)
 			return DERR(-ENODEV);
-		u->set_device<gadget::composite>(
+		return u->set_device<gadget::composite>(
 		    static_cast<usb::Class>(d.bDeviceClass), d.bDeviceSubClass,
 		    d.bDeviceProtocol, d.idVendor, d.idProduct, d.bcdDevice,
 		    d.Manufacturer, d.Product, d.SerialNumber);
-		return 0;
 	}
 	case USBG_IOC_ADD_CONFIGURATION: {
 		usbg_ioctl_add_configuration d;
