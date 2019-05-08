@@ -89,7 +89,17 @@ cdc_acm::cdc_acm(gadget::udc &u)
  * cdc_acm::~cdc_acm
  */
 cdc_acm::~cdc_acm()
-{ }
+{
+	/* Lock to ensure that data is synchronised. */
+	lock_.lock();
+	lock_.unlock();
+
+	assert(!running_);
+
+	/* Do not hold lock while destroying tty as this can sleep. */
+	if (t_)
+		tty_destroy(t_);
+}
 
 /*
  * cdc_acm::tx_queue - queue tty data for transmision over USB
@@ -203,26 +213,6 @@ cdc_acm::v_init(device &d)
 {
 	d.add_string(function_);
 	return 0;
-}
-
-/*
- * cdc_acm::v_finalise - finalise cdc_acm instance
- */
-int
-cdc_acm::v_finalise()
-{
-	std::lock_guard l{lock_};
-
-	if (running_)
-		return DERR(-EBUSY);
-
-	if (!t_)
-		return 0;
-
-	const auto r = tty_destroy(t_);
-	t_ = nullptr;
-
-	return r;
 }
 
 /*

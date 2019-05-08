@@ -114,14 +114,17 @@ udc::stop()
 int
 udc::set_device(std::unique_ptr<gadget::device> d)
 {
-	std::lock_guard l{lock_};
-
+	std::unique_lock l{lock_};
 	if (running_)
 		return DERR(-EBUSY);
-	if (device_)
-		if (int err = device_->finalise(); err)
-			return err;
+
+	/* Storing the old device in a temporary means that it won't be
+	 * destroyed until after lock_ is released. This is necessary as some
+	 * devices need to sleep in order to terminate active operations. */
+	auto tmp = std::move(device_);
 	device_ = std::move(d);
+	l.unlock();
+
 	return 0;
 }
 

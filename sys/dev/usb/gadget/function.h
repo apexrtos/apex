@@ -26,7 +26,6 @@ public:
 
 	int configure(std::string_view);
 	int init(device &);
-	int finalise();
 	void reset();
 	int start(Speed);
 	void stop();
@@ -44,7 +43,6 @@ public:
 private:
 	virtual int v_configure(std::string_view) = 0;
 	virtual int v_init(device &) = 0;
-	virtual int v_finalise() = 0;
 	virtual void v_reset() = 0;
 	virtual int v_start(Speed) = 0;
 	virtual void v_stop() = 0;

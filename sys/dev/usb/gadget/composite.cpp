@@ -107,21 +107,6 @@ composite::v_init()
 }
 
 /*
- * composite::v_finalise - finalise composite device
- */
-int
-composite::v_finalise()
-{
-	std::lock_guard l{lock_};
-
-	for (auto &c : configurations_)
-		if (int err = c->finalise(); err)
-			return err;
-
-	return 0;
-}
-
-/*
  * composite::v_reset - reset composite device
  */
 void

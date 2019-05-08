@@ -51,15 +51,6 @@ function::init(device &d)
 }
 
 /*
- * function::finalise - finalise function
- */
-int
-function::finalise()
-{
-	return v_finalise();
-}
-
-/*
  * function::reset - reset function
  */
 void

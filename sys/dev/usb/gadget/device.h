@@ -32,7 +32,6 @@ public:
 
 	/* for use by udc only */
 	int init();
-	int finalise();
 	void reset();
 	setup_result process_setup(const setup_request &, Speed, transaction &);
 
@@ -43,7 +42,6 @@ public:
 
 private:
 	virtual int v_init() = 0;
-	virtual int v_finalise() = 0;
 	virtual void v_reset() = 0;
 	virtual setup_result v_process_setup(const setup_request &, Speed,
 	    transaction &) = 0;
