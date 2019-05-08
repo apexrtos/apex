@@ -223,16 +223,18 @@ composite::device_set_configuration_request(const setup_request &s,
 
 	const auto c = usb::configuration(s);
 
-	/* setting configuration 0 returns device to address state */
-	if (!c) {
-		if (active_configuration())
-			configurations_[active_configuration() - 1]->stop();
-		return setup_result::status;
-	}
 	if (c > configurations_.size()) {
 		dbg("composite::set_configuration_request invalid %d\n", c);
 		return setup_result::error;
 	}
+
+	if (active_configuration() && c != active_configuration())
+		configurations_[active_configuration() - 1]->stop();
+
+	/* setting configuration 0 returns device to address state */
+	if (!c)
+		return setup_result::status;
+
 	if (auto r = configurations_[c - 1]->start(spd); r < 0)
 		return setup_result::error;
 
