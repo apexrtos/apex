@@ -21,6 +21,7 @@ public:
 	    uint8_t bDeviceProtocol, uint16_t idVendor, uint16_t idProduct,
 	    uint16_t bcdDevice, std::string_view Manufacturer,
 	    std::string_view Product, std::string_view SerialNumber);
+	~composite() override;
 
 	int add_configuration(std::string_view name,
 	    std::string_view description, uint8_t attributes,
@@ -45,7 +46,7 @@ private:
 
 	configuration *find_configuration(std::string_view name);
 
-	a::spinlock lock_;
+	mutable a::spinlock lock_;
 	bool initialised_;
 	std::vector<std::unique_ptr<configuration>> configurations_;
 	std::vector<std::byte> desc_;

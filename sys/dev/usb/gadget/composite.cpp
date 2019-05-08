@@ -18,7 +18,19 @@ composite::composite(Class bDeviceClass, uint8_t bDeviceSubClass,
 : device{bDeviceClass, bDeviceSubClass, bDeviceProtocol, idVendor, idProduct,
     bcdDevice, Manufacturer, Product, SerialNumber}
 , initialised_{false}
-{ }
+{
+	/* Lock to ensure that data is synchronised. */
+	std::lock_guard l{lock_};
+}
+
+/*
+ * composite::~composite
+ */
+composite::~composite()
+{
+	/* Lock to ensure that data is synchronised. */
+	std::lock_guard l{lock_};
+}
 
 /*
  * composite::add_configuration - add a configuration to composite device
@@ -130,6 +142,8 @@ setup_result
 composite::v_process_setup(const setup_request &s, const Speed spd,
     transaction &t)
 {
+	std::lock_guard l{lock_};
+
 	/* try configuration first */
 	if (active_configuration()) {
 		auto &c = configurations_[active_configuration() - 1];
@@ -155,6 +169,8 @@ composite::v_process_setup(const setup_request &s, const Speed spd,
 size_t
 composite::v_max_endpoints() const
 {
+	std::lock_guard l{lock_};
+
 	size_t ep = 0;
 	for (auto &c : configurations_)
 		if (auto v = c->endpoints(); v > ep)
@@ -168,6 +184,8 @@ composite::v_max_endpoints() const
 size_t
 composite::v_configurations(const Speed spd) const
 {
+	std::lock_guard l{lock_};
+
 	return configurations_.size();
 }
 
@@ -177,6 +195,8 @@ composite::v_configurations(const Speed spd) const
 size_t
 composite::v_interfaces(size_t config) const
 {
+	std::lock_guard l{lock_};
+
 	assert(config > 0);
 	assert(config <= configurations_.size());
 	return configurations_[config - 1]->interfaces();
@@ -190,6 +210,8 @@ composite::v_interfaces(size_t config) const
 composite::bytes
 composite::v_configuration_descriptors(size_t idx, const Speed spd)
 {
+	std::lock_guard l{lock_};
+
 	assert(idx < configurations_.size());
 	auto len = configurations_[idx]->write_descriptors(spd, desc_);
 	return {data(desc_), static_cast<ptrdiff_t>(len)};
@@ -202,6 +224,8 @@ setup_result
 composite::device_request(const setup_request &s, const Speed spd,
     transaction &t)
 {
+	lock_.assert_locked();
+
 	switch (standard_request(s)) {
 	case ch9::Request::SET_CONFIGURATION:
 		return device_set_configuration_request(s, spd, t);
@@ -218,6 +242,8 @@ setup_result
 composite::device_set_configuration_request(const setup_request &s,
     const Speed spd, transaction &t)
 {
+	lock_.assert_locked();
+
 	if (request_direction(s) != ch9::Direction::HostToDevice)
 		return setup_result::error;
 
@@ -247,6 +273,8 @@ composite::device_set_configuration_request(const setup_request &s,
 configuration *
 composite::find_configuration(std::string_view name)
 {
+	lock_.assert_locked();
+
 	for (auto &c : configurations_)
 		if (c->name() == name)
 			return c.get();
