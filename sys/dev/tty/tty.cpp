@@ -1095,12 +1095,7 @@ int
 tty_open(file *f)
 {
 	tty *t = static_cast<tty *>(f->f_data);
-
-	vn_unlock(f->f_vnode);
-	const auto r = t->open(f);
-	vn_lock(f->f_vnode);
-
-	return r;
+	return t->open(f);
 }
 
 /*
@@ -1110,12 +1105,7 @@ int
 tty_close(file *f)
 {
 	tty *t = static_cast<tty *>(f->f_data);
-
-	vn_unlock(f->f_vnode);
-	const auto r = t->close(f);
-	vn_lock(f->f_vnode);
-
-	return r;
+	return t->close(f);
 }
 
 /*
@@ -1131,11 +1121,7 @@ tty_read(file *f, void *buf, size_t len)
 ssize_t
 tty_read_iov(file *f, const iovec *iov, size_t count)
 {
-	vn_unlock(f->f_vnode);
-	const auto r = for_each_iov(f, iov, count, tty_read);
-	vn_lock(f->f_vnode);
-
-	return r;
+	return for_each_iov(f, iov, count, tty_read);
 }
 
 /*
@@ -1152,11 +1138,7 @@ tty_write(file *f, void *buf, size_t len)
 ssize_t
 tty_write_iov(file *f, const iovec *iov, size_t count)
 {
-	vn_unlock(f->f_vnode);
-	const auto r = for_each_iov(f, iov, count, tty_write);
-	vn_lock(f->f_vnode);
-
-	return r;
+	return for_each_iov(f, iov, count, tty_write);
 }
 
 /*
@@ -1166,12 +1148,7 @@ int
 tty_ioctl(file *f, u_long cmd, void *data)
 {
 	tty *t = static_cast<tty *>(f->f_data);
-
-	vn_unlock(f->f_vnode);
-	const auto r = t->ioctl(f, cmd, data);
-	vn_lock(f->f_vnode);
-
-	return r;
+	return t->ioctl(f, cmd, data);
 }
 
 }
