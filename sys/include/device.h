@@ -61,26 +61,23 @@ struct devio {
  * Device structure
  */
 struct device {
-	int		    magic;	/* magic number */
-	int		    refcnt;	/* reference count */
-	int		    flags;	/* device characteristics */
-	struct list	    link;	/* linkage on device list */
+	unsigned long	    busy;	/* device busy count */
 	const struct devio *devio;	/* device i/o table */
 	void		   *info;	/* device specific info */
+	struct vnode	   *vnode;	/* vnode associated with device */
+	int		    flags;	/* device characteristics */
 	char		    name[16];	/* name of device */
+	struct list	    link;	/* linkage on device list */
 };
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-bool		device_valid(struct device *);
-struct device  *device_lookup(const char *name);
-void		device_release(struct device *);
 struct device  *device_create(const struct devio *, const char *, int, void *);
-int		device_destroy(struct device *);
-int		device_broadcast(int, int);
-int		device_info(u_long, int *, char *);
+void		device_hide(struct device *);
+bool		device_busy(struct device *);
+void		device_destroy(struct device *);
 void		device_init(void);
 
 #if defined(__cplusplus)

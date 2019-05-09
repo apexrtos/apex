@@ -29,9 +29,19 @@
 
 /*
  * devfs - device file system.
+ *
+ * This covers the list of devices registered in the kernel and access to them
+ * from the file system.
+ *
+ * The current design is a small step towards the long term goal of fully
+ * merging devices into the file system code, following the "everything is
+ * a file" design philosophy. Because of this, the code below is a bit smelly,
+ * especially when dealing with the vnode lock.
  */
 
+#include <assert.h>
 #include <compiler.h>
+#include <conf/config.h>
 #include <debug.h>
 #include <device.h>
 #include <dirent.h>
@@ -40,10 +50,17 @@
 #include <fs/mount.h>
 #include <fs/util.h>
 #include <fs/vnode.h>
+#include <kmem.h>
 #include <string.h>
 #include <sys/stat.h>
 
 #define dfsdbg(...)
+
+/*
+ * list of devices
+ */
+static struct list device_list;
+static struct spinlock device_list_lock;
 
 static int devfs_open(struct file *, int, mode_t);
 static int devfs_close(struct file *);
@@ -52,7 +69,6 @@ static ssize_t devfs_write(struct file *, const struct iovec *, size_t);
 static int devfs_ioctl(struct file *, u_long, void *);
 static int devfs_readdir(struct file *, struct dirent *, size_t);
 static int devfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
-static int devfs_inactive(struct vnode *);
 
 /*
  * vnode operations
@@ -72,7 +88,7 @@ static const struct vnops devfs_vnops = {
 	.vop_rename = ((vnop_rename_fn)vop_einval),
 	.vop_getattr = ((vnop_getattr_fn)vop_nullop),
 	.vop_setattr = ((vnop_setattr_fn)vop_nullop),
-	.vop_inactive = devfs_inactive,
+	.vop_inactive = ((vnop_inactive_fn)vop_nullop),
 	.vop_truncate = ((vnop_truncate_fn)vop_nullop),
 };
 
@@ -100,10 +116,13 @@ devfs_open(struct file *fp, int flags, mode_t mode)
 	if (fp->f_vnode->v_flags & VROOT)
 		return 0;
 
-	/*
-	 * Otherwise we must have a device pointer.
-	 */
 	struct device *dev = (struct device *)fp->f_vnode->v_data;
+
+	/*
+	 * Device may have been destroyed.
+	 */
+	if (!dev)
+		return -ENODEV;
 
 	/*
 	 * Stash device info in f_data for driver use.
@@ -113,10 +132,18 @@ devfs_open(struct file *fp, int flags, mode_t mode)
 	/*
 	 * Call open function if the device has registered one.
 	 */
-	if (dev->devio->open)
-		return (*dev->devio->open)(fp);
+	if (!dev->devio->open)
+		return 0;
 
-	return 0;
+	++dev->busy;
+	vn_unlock(fp->f_vnode);
+
+	const int r = (*dev->devio->open)(fp);
+
+	vn_lock(fp->f_vnode);
+	--dev->busy;
+
+	return r;
 }
 
 static int
@@ -133,12 +160,26 @@ devfs_close(struct file *fp)
 	struct device *dev = fp->f_vnode->v_data;
 
 	/*
+	 * Device may have been destroyed.
+	 */
+	if (!dev)
+		return -ENODEV;
+
+	/*
 	 * Call close function if the device has registered one.
 	 */
-	if (dev->devio->close)
-		return (*dev->devio->close)(fp);
+	if (!dev->devio->close)
+		return 0;
 
-	return 0;
+	++dev->busy;
+	vn_unlock(fp->f_vnode);
+
+	int r = (*dev->devio->close)(fp);
+
+	vn_lock(fp->f_vnode);
+	--dev->busy;
+
+	return r;
 }
 
 static ssize_t
@@ -146,10 +187,24 @@ devfs_read(struct file *fp, const struct iovec *iov, size_t count)
 {
 	struct device *dev = fp->f_vnode->v_data;
 
+	/*
+	 * Device may have been destroyed.
+	 */
+	if (!dev)
+		return -ENODEV;
+
 	if (!dev->devio->read)
 		return -EIO;
 
-	return (*dev->devio->read)(fp, iov, count);
+	++dev->busy;
+	vn_unlock(fp->f_vnode);
+
+	int r = (*dev->devio->read)(fp, iov, count);
+
+	vn_lock(fp->f_vnode);
+	--dev->busy;
+
+	return r;
 }
 
 static ssize_t
@@ -157,10 +212,24 @@ devfs_write(struct file *fp, const struct iovec *iov, size_t count)
 {
 	struct device *dev = fp->f_vnode->v_data;
 
+	/*
+	 * Device may have been destroyed.
+	 */
+	if (!dev)
+		return -ENODEV;
+
 	if (!dev->devio->write)
 		return -EIO;
 
-	return (*dev->devio->write)(fp, iov, count);
+	++dev->busy;
+	vn_unlock(fp->f_vnode);
+
+	int r = (*dev->devio->write)(fp, iov, count);
+
+	vn_lock(fp->f_vnode);
+	--dev->busy;
+
+	return r;
 }
 
 static int
@@ -168,10 +237,24 @@ devfs_ioctl(struct file *fp, u_long cmd, void *arg)
 {
 	struct device *dev = fp->f_vnode->v_data;
 
+	/*
+	 * Device may have been destroyed.
+	 */
+	if (!dev)
+		return -ENODEV;
+
 	if (!dev->devio->ioctl)
 		return -EIO;
 
-	return (*dev->devio->ioctl)(fp, cmd, arg);
+	++dev->busy;
+	vn_unlock(fp->f_vnode);
+
+	int r = (*dev->devio->ioctl)(fp, cmd, arg);
+
+	vn_lock(fp->f_vnode);
+	--dev->busy;
+
+	return r;
 }
 
 static int
@@ -191,25 +274,28 @@ devfs_readdir(struct file *fp, struct dirent *buf, size_t len)
 		++fp->f_offset;
 	}
 
-	while (1) {
-		/* TODO(efficiency): n^2 here with device_info */
-		struct device *dev;
-		char name[ARRAY_SIZE(dev->name)];
-		int flags;
-		if (device_info(fp->f_offset - 2, &flags, name))
-			goto out;
+	struct device *d;
+	size_t i = 1;
 
-		unsigned char d_type = DT_UNKNOWN;
-		if (flags & DF_CHR)
-			d_type = DT_CHR;
-		else if (flags & DF_BLK)
-			d_type = DT_BLK;
+	/* REVISIT: this can return inconsistent results if a device_create or
+	 * device_destroy happens between calls to devfs_readdir. */
+	spinlock_lock(&device_list_lock);
+	list_for_each_entry(d, &device_list, link) {
+		if (++i != fp->f_offset)
+			continue;
 
-		if (dirbuf_add(&buf, &remain, 0, fp->f_offset, d_type, name))
-			goto out;
+		unsigned char t = DT_UNKNOWN;
+		if (d->flags & DF_CHR)
+			t = DT_CHR;
+		else if (d->flags & DF_BLK)
+			t = DT_BLK;
+
+		if (dirbuf_add(&buf, &remain, 0, fp->f_offset, t, d->name))
+			break;
 
 		++fp->f_offset;
 	}
+	spinlock_unlock(&device_list_lock);
 
 out:
 	if (remain != len)
@@ -225,24 +311,137 @@ devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 
 	dfsdbg("devfs_lookup: (%zu):%s\n", name_len, name);
 
-	/* TODO: handle name_len when devfs merges with kernel device layer */
-	if (!(dev = device_lookup(name))) {
-		vp->v_data = NULL;
-		return -ENOENT;
-	}
+	spinlock_lock(&device_list_lock);
+	list_for_each_entry(dev, &device_list, link) {
+		if (name_len >= ARRAY_SIZE(dev->name) || dev->name[name_len] ||
+		    strncmp(dev->name, name, name_len))
+			continue;
+		vp->v_data = dev;
+		vp->v_mode = ((dev->flags & DF_CHR) ? S_IFCHR : S_IFBLK) |
+		    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
-	vp->v_data = dev;
-	vp->v_mode = ((dev->flags & DF_CHR) ? S_IFCHR : S_IFBLK) |
-	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
-	return 0;
+		vref(vp);
+		dev->vnode = vp;
+
+		spinlock_unlock(&device_list_lock);
+		return 0;
+	}
+	spinlock_unlock(&device_list_lock);
+
+	return -ENOENT;
 }
 
-static int
-devfs_inactive(struct vnode *vp)
+/*
+ * Device operations
+ */
+void
+device_init(void)
 {
-	if (vp->v_data)
-		device_release(vp->v_data);
-	return 0;
+	list_init(&device_list);
+	spinlock_init(&device_list_lock);
+}
+
+struct device *
+device_create(const struct devio *io, const char *name, int flags, void *info)
+{
+	struct device *dev;
+	size_t len;
+
+	dbg("Create /dev/%s\n", name);
+
+	len = strlen(name);
+	if (len == 0 || len >= ARRAY_SIZE(dev->name))	/* Invalid name? */
+		return 0;
+
+	spinlock_lock(&device_list_lock);
+
+	list_for_each_entry(dev, &device_list, link) {
+		if (strcmp(dev->name, name) == 0) {
+			/* device name in use */
+			spinlock_unlock(&device_list_lock);
+			return 0;
+		}
+	}
+	if ((dev = kmem_alloc(sizeof(*dev), MEM_NORMAL)) == NULL) {
+		spinlock_unlock(&device_list_lock);
+		return 0;
+	}
+	strlcpy(dev->name, name, len + 1);
+	dev->flags = flags;
+	dev->vnode = NULL;
+	dev->busy = 0;
+	dev->devio = io;
+	dev->info = info;
+	list_insert(&device_list, &dev->link);
+
+	spinlock_unlock(&device_list_lock);
+	return dev;
+}
+
+/*
+ * device_hide - remove a device from device list and hide associated vnode
+ *
+ * Once a device has been removed no more operations can be started on it.
+ */
+void
+device_hide(struct device *dev)
+{
+	spinlock_lock(&device_list_lock);
+	list_remove(&dev->link);
+	spinlock_unlock(&device_list_lock);
+
+	struct vnode *vp = dev->vnode;
+	if (vp) {
+		vn_lock(vp);
+		vn_hide(vp);
+		vn_unlock(vp);
+	}
+
+#if defined(CONFIG_DEBUG)
+	list_init(&dev->link);
+#endif
+}
+
+/*
+ * device_busy - check if a any operations are running on device
+ */
+bool
+device_busy(struct device *dev)
+{
+	bool r = false;
+	struct vnode *vp = dev->vnode;
+
+	if (vp) {
+		vn_lock(vp);
+		r = dev->busy != 0;
+		vn_unlock(vp);
+	}
+
+	return r;
+}
+
+/*
+ * device_destroy - release device memory
+ *
+ * A device must be hidden and have no running operations before destroying.
+ */
+void
+device_destroy(struct device *dev)
+{
+#if defined(CONFIG_DEBUG)
+	assert(list_empty(&dev->link));
+#endif
+	assert(dev->busy == 0);
+
+	struct vnode *vp = dev->vnode;
+
+	if (vp) {
+		vn_lock(vp);
+		vp->v_data = NULL;
+		vput(vp);
+	}
+
+	kmem_free(dev);
 }
 
 REGISTER_FILESYSTEM(devfs);
