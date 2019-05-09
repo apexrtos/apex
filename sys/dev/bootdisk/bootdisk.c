@@ -8,6 +8,7 @@
 #include <fs.h>
 #include <fs/file.h>
 #include <fs/util.h>
+#include <fs/vnode.h>
 #include <kernel.h>
 #include <kmem.h>
 #include <string.h>
@@ -46,7 +47,11 @@ bootdisk_read(struct file *f, void *buf, size_t len)
 
 	/* Copy data */
 	memcpy(buf, i->p + off, len);
+
+	vn_lock(f->f_vnode);
 	f->f_offset += len;
+	vn_unlock(f->f_vnode);
+
 	return len;
 }
 
