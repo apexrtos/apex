@@ -33,10 +33,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <kmem.h>
-#define free(x) kmem_free(x)
-#define malloc(x) kmem_alloc(x, MEM_NORMAL)
-
 /**
  * @file cpp_demangle.c
  * @brief Decode IA-64 C++ ABI style implementation.

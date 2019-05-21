@@ -29,8 +29,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <kmem.h>
-
 using std::type_info;
 
 type_info::~type_info() {}
@@ -90,8 +88,7 @@ extern "C" char* __cxa_demangle(const char* mangled_name,
 		size_t len = strlen(demangled);
 		if (!buf || (*n < len+1))
 		{
-			kmem_free(buf);
-			buf = static_cast<char*>(kmem_alloc(len + 1, MEM_NORMAL));
+			buf = static_cast<char*>(realloc(buf, len+1));
 		}
 		if (0 != buf)
 		{
@@ -113,7 +110,7 @@ extern "C" char* __cxa_demangle(const char* mangled_name,
 				*status = -1;
 			}
 		}
-		kmem_free(demangled);
+		free(demangled);
 	}
 	else
 	{
