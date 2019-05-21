@@ -19,9 +19,9 @@
 #include <fs.h>
 #include <futex.h>
 #include <kernel.h>
-#include <kmem.h>
 #include <sch.h>
 #include <sig.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <task.h>
@@ -191,14 +191,14 @@ again:
 				struct list *n, *head = &task->futexes;
 				for (n = list_first(head); n != head; n = list_next(n)) {
 					struct futex *fk = list_entry(n, struct futex, task_link);
-					kmem_free(fk);
+					free(fk);
 				}
 				list_remove(&task->link);
 				as_modify_begin(task->as);
 				as_destroy(task->as);
 				task->magic = 0;
-				kmem_free(task->path);
-				kmem_free(task);
+				free(task->path);
+				free(task);
 				break;
 			}
 		}

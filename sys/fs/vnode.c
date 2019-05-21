@@ -42,7 +42,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <jhash3.h>
-#include <kmem.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -213,10 +213,10 @@ vget(struct mount *mount, struct vnode *parent, const char *name, size_t len)
 
 	vdbgvn("vget: parent=%p name=%s len=%zu\n", parent, name, len);
 
-	if (!(vp = kmem_alloc(sizeof(struct vnode), MEM_NORMAL)))
+	if (!(vp = malloc(sizeof(struct vnode))))
 		return NULL;
-	if (!(v_name = kmem_alloc(len + 1, MEM_NORMAL))) {
-		kmem_free(vp);
+	if (!(v_name = malloc(len + 1))) {
+		free(vp);
 		return NULL;
 	}
 
@@ -233,8 +233,8 @@ vget(struct mount *mount, struct vnode *parent, const char *name, size_t len)
 
 	/* allocate fs specific data for vnode  */
 	if ((err = VFS_VGET(vp)) != 0) {
-		kmem_free(vp->v_name);
-		kmem_free(vp);
+		free(vp->v_name);
+		free(vp);
 		return NULL;
 	}
 	vfs_busy(vp->v_mount);
@@ -263,7 +263,7 @@ vget_pipe(void)
 {
 	struct vnode *vp;
 
-	if (!(vp = kmem_alloc(sizeof(struct vnode), MEM_NORMAL)))
+	if (!(vp = malloc(sizeof(struct vnode))))
 		return NULL;
 
 	*vp = (struct vnode) {
@@ -312,8 +312,8 @@ vput(struct vnode *vp)
 	}
 	mutex_unlock(&vp->v_lock);
 	assert(mutex_owner(&vp->v_lock) == NULL);
-	kmem_free(vp->v_name);
-	kmem_free(vp);
+	free(vp->v_name);
+	free(vp);
 
 	/* release parent */
 	if (pvp) {
@@ -364,8 +364,8 @@ vgone(struct vnode *vp)
 	vfs_unbusy(vp->v_mount);
 	mutex_unlock(&vp->v_lock);
 	assert(mutex_owner(&vp->v_lock) == NULL);
-	kmem_free(vp->v_name);
-	kmem_free(vp);
+	free(vp->v_name);
+	free(vp);
 }
 
 /*

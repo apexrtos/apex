@@ -4,9 +4,9 @@
 #include <debug.h>
 #include <errno.h>
 #include <kernel.h>
-#include <kmem.h>
 #include <limits.h>
 #include <sch.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <task.h>
 #include <thread.h>
@@ -38,7 +38,7 @@ futex_get(struct task *t, int *uaddr)
 	if ((f = futex_find(t, uaddr)))
 		return f;
 
-	if (!(f = kmem_alloc(sizeof(struct futex), MEM_NORMAL)))
+	if (!(f = malloc(sizeof(struct futex))))
 		return 0;
 
 	f->addr = virt_to_phys(uaddr);

@@ -50,7 +50,7 @@
 #include <fs/mount.h>
 #include <fs/util.h>
 #include <fs/vnode.h>
-#include <kmem.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -362,7 +362,7 @@ device_create(const struct devio *io, const char *name, int flags, void *info)
 			return 0;
 		}
 	}
-	if ((dev = kmem_alloc(sizeof(*dev), MEM_NORMAL)) == NULL) {
+	if ((dev = malloc(sizeof(*dev))) == NULL) {
 		spinlock_unlock(&device_list_lock);
 		return 0;
 	}
@@ -441,7 +441,7 @@ device_destroy(struct device *dev)
 		vput(vp);
 	}
 
-	kmem_free(dev);
+	free(dev);
 }
 
 REGISTER_FILESYSTEM(devfs);

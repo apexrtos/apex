@@ -41,10 +41,10 @@
 #include <fs.h>
 #include <futex.h>
 #include <kernel.h>
-#include <kmem.h>
 #include <proc.h>
 #include <sch.h>
 #include <stdalign.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <thread.h>
@@ -163,7 +163,7 @@ task_create(struct task *parent, int vm_option, struct task **child)
 	/*
 	 * Allocate task
 	 */
-	if ((task = kmem_alloc(sizeof(*task), MEM_NORMAL)) == NULL) {
+	if ((task = malloc(sizeof(*task))) == NULL) {
 		err = DERR(-ENOMEM);
 		goto out;
 	}
@@ -249,8 +249,8 @@ task_destroy(struct task *task)
 	}
 	task->magic = 0;
 	list_remove(&task->link);
-	kmem_free(task->path);
-	kmem_free(task);
+	free(task->path);
+	free(task);
 
 	sch_unlock();
 	return 0;
@@ -353,12 +353,12 @@ task_path(struct task *task, const char *path)
 		goto out;
 	}
 	if (strcmp(path, task->path)) {
-		if ((copy = kmem_alloc(strlen(path) + 1, MEM_NORMAL)) == NULL) {
+		if ((copy = malloc(strlen(path) + 1)) == NULL) {
 			err = DERR(-ENOMEM);
 			goto out;
 		}
 		strcpy(copy, path);
-		kmem_free(task->path);
+		free(task->path);
 		task->path = copy;
 	}
 

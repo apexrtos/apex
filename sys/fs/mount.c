@@ -40,7 +40,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <fs.h>
-#include <kmem.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sync.h>
 #include <sys/stat.h>
@@ -210,7 +210,7 @@ mount(const char *dev, const char *dir, const char *type, unsigned long flags,
 	}
 
 	/* create mount entry */
-	if (!(mp = kmem_alloc(sizeof(struct mount), MEM_NORMAL))) {
+	if (!(mp = malloc(sizeof(struct mount)))) {
 		err = DERR(-ENOMEM);
 		goto err1;
 	}
@@ -259,7 +259,7 @@ mount(const char *dev, const char *dir, const char *type, unsigned long flags,
 err2:
 	mutex_unlock(&mount_mutex);
 err1:
-	kmem_free(mp);
+	free(mp);
 err0:
 	kclose(devfd);
 	return err;
@@ -328,7 +328,7 @@ umount2(const char *path, int flags)
 
 	if (mp->m_devfd >= 0)
 		kclose(mp->m_devfd);
-	kmem_free(mp);
+	free(mp);
 
 out:
 	mutex_unlock(&mount_mutex);

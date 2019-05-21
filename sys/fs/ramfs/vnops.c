@@ -40,9 +40,9 @@
 #include <fs/util.h>
 #include <fs/vnode.h>
 #include <kernel.h>
-#include <kmem.h>
 #include <limits.h>
 #include <page.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 
@@ -95,10 +95,10 @@ ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 	char *rn_name;
 	struct ramfs_node *np;
 
-	if (!(np = kmem_alloc(sizeof(struct ramfs_node), MEM_NORMAL)))
+	if (!(np = malloc(sizeof(struct ramfs_node))))
 		return NULL;
-	if (!(rn_name = kmem_alloc(name_len + 1, MEM_NORMAL))) {
-		kmem_free(np);
+	if (!(rn_name = malloc(name_len + 1))) {
+		free(np);
 		return NULL;
 	}
 
@@ -116,9 +116,8 @@ ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 void
 ramfs_free_node(struct ramfs_node *np)
 {
-
-	kmem_free(np->rn_name);
-	kmem_free(np);
+	free(np->rn_name);
+	free(np);
 }
 
 static struct ramfs_node *
@@ -174,10 +173,10 @@ ramfs_rename_node(struct ramfs_node *np, const char *name, size_t name_len)
 		strlcpy(np->rn_name, name, np->rn_namelen + 1);
 	} else {
 		/* Expand name buffer */
-		if (!(tmp = kmem_alloc(name_len + 1, MEM_NORMAL)))
+		if (!(tmp = malloc(name_len + 1)))
 			return -ENOMEM;
 		strlcpy(tmp, name, name_len + 1);
-		kmem_free(np->rn_name);
+		free(np->rn_name);
 		np->rn_name = tmp;
 	}
 	np->rn_namelen = name_len;
@@ -319,7 +318,7 @@ ramfs_write(struct file *fp, void *buf, size_t size)
 			 * So that we can reduce the memory allocation unless
 			 * the file size exceeds next page boundary.
 			 * This will prevent the memory fragmentation by
-			 * many kmem_alloc/kmem_free calls.
+			 * many alloc/free calls.
 			 */
 			new_size = PAGE_ALIGN(end_pos);
 			phys *const p = page_alloc(new_size, MEM_NORMAL,

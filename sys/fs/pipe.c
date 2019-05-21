@@ -7,10 +7,10 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <kernel.h>
-#include <kmem.h>
 #include <limits.h>
 #include <page.h>
 #include <sig.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sync.h>
 #include <sys/stat.h>
@@ -69,7 +69,7 @@ pipe_alloc(struct file *fp)
 		return -ENOMEM;
 
 	struct pipe_data *p;
-	if (!(p = kmem_alloc(sizeof *p, MEM_NORMAL))) {
+	if (!(p = malloc(sizeof *p))) {
 		page_free(b, PIPE_BUF, &pipe_id);
 		return -ENOMEM;
 	}
@@ -94,7 +94,7 @@ pipe_free(struct file *fp)
 	struct pipe_data *p = vp->v_pipe;
 
 	page_free(virt_to_phys(p->buf), PIPE_BUF, &pipe_id);
-	kmem_free(p);
+	free(p);
 }
 
 /*

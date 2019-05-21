@@ -21,11 +21,11 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <kernel.h>
-#include <kmem.h>
 #include <limits.h>
 #include <page.h>
 #include <sch.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sync.h>
 #include <sys/param.h>
@@ -650,7 +650,7 @@ fs_openfp(struct task *t, const int dirfd, const char *path, int flags,
 	/* create file structure */
 	if (*pfp)
 		fp = (struct file *)pfp;
-	else if (!(fp = kmem_alloc(sizeof(struct file), MEM_NORMAL)))
+	else if (!(fp = malloc(sizeof(struct file))))
 			return DERR(-ENOMEM);
 	*fp = (struct file) {
 		.f_flags = flags & ~O_CLOEXEC,
@@ -676,7 +676,7 @@ out:
 	if (vp)
 		vput(vp);
 	if (!*pfp)
-		kmem_free(fp);
+		free(fp);
 	return err;
 }
 
@@ -726,7 +726,7 @@ fs_closefp(struct file *fp)
 		err = VOP_CLOSE(fp);
 
 	vput(fp->f_vnode);
-	kmem_free(fp);
+	free(fp);
 	return err;
 }
 
@@ -762,8 +762,8 @@ fs_kinit(void)
 		panic("vn_lookup");
 
 	/* create file structure */
-	if (!(t->cwdfp = kmem_alloc(sizeof(struct file), MEM_NORMAL)))
-		panic("kmem_alloc");
+	if (!(t->cwdfp = malloc(sizeof(struct file))))
+		panic("malloc");
 	*t->cwdfp = (struct file) {
 		.f_flags = O_RDONLY,
 		.f_count = 1,
@@ -2176,11 +2176,11 @@ pipe2(int fd[2], int flags)
 	}
 
 	/* create file structures */
-	if (!(rfp = kmem_alloc(sizeof(struct file), MEM_NORMAL))) {
+	if (!(rfp = malloc(sizeof(struct file)))) {
 		r = DERR(-ENOMEM);
 		goto out1;
 	}
-	if (!(wfp = kmem_alloc(sizeof(struct file), MEM_NORMAL))) {
+	if (!(wfp = malloc(sizeof(struct file)))) {
 		r = DERR(-ENOMEM);
 		goto out2;
 	}
@@ -2216,9 +2216,9 @@ pipe2(int fd[2], int flags)
 	goto out;
 
 out3:
-	kmem_free(wfp);
+	free(wfp);
 out2:
-	kmem_free(rfp);
+	free(rfp);
 out1:
 	vput(vp);
 out0:
