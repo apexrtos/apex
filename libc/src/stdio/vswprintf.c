@@ -2,6 +2,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <wchar.h>
 
 struct cookie {
@@ -41,7 +42,6 @@ int vswprintf(wchar_t *restrict s, size_t n, const wchar_t *restrict fmt, va_lis
 	FILE f = {
 		.lbf = EOF,
 		.write = sw_write,
-		.lock = -1,
 		.buf = buf,
 		.buf_size = sizeof buf,
 		.cookie = &c,

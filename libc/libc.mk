@@ -18,6 +18,7 @@ INCLUDE := \
 	$(CONFIG_BUILDDIR) \
 	$(CONFIG_APEXDIR)/sys/include \
 	src/internal \
+	src/include \
 
 SOURCES := \
     src/ctype/iswspace.c \

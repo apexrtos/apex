@@ -40,7 +40,6 @@ int vsnprintf(char *restrict s, size_t n, const char *restrict fmt, va_list ap)
 	FILE f = {
 		.lbf = EOF,
 		.write = sn_write,
-		.lock = -1,
 		.buf = buf,
 		.cookie = &c,
 	};

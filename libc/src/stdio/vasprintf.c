@@ -3,8 +3,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include <kmem.h>
-
 int vasprintf(char **s, const char *fmt, va_list ap)
 {
 	va_list ap2;
@@ -12,6 +10,6 @@ int vasprintf(char **s, const char *fmt, va_list ap)
 	int l = vsnprintf(0, 0, fmt, ap2);
 	va_end(ap2);
 
-	if (l<0 || !(*s=kmem_alloc(l+1U, MEM_NORMAL))) return -1;
+	if (l<0 || !(*s=malloc(l+1U))) return -1;
 	return vsnprintf(*s, l+1U, fmt, ap);
 }
