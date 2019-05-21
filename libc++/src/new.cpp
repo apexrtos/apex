@@ -13,7 +13,7 @@
 #include "include/atomic_support.h"
 
 #include <debug.h>
-#include <kmem.h>
+#include <stdlib.h>
 
 namespace std
 {
@@ -53,12 +53,14 @@ operator new(std::size_t size) _THROW_BAD_ALLOC
     if (size == 0)
         size = 1;
     void* p;
-    if (!(p = kmem_alloc(size, MEM_NORMAL)))
+    while ((p = ::malloc(size)) == 0)
+    {
 #ifndef _LIBCPP_NO_EXCEPTIONS
         throw std::bad_alloc();
 #else
         panic("OOM");
 #endif
+    }
     return p;
 }
 
@@ -111,7 +113,8 @@ _LIBCPP_WEAK
 void
 operator delete(void* ptr) _NOEXCEPT
 {
-    kmem_free(ptr);
+    if (ptr)
+        ::free(ptr);
 }
 
 _LIBCPP_WEAK
