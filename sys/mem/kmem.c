@@ -60,8 +60,12 @@
 #include <debug.h>
 #include <kernel.h>
 #include <page.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sync.h>
 #include <task.h>
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 /*
  * Block header
@@ -271,6 +275,61 @@ kmem_alloc(size_t size, unsigned type)
 }
 
 /*
+ * malloc - allocate memory block
+ */
+void *
+malloc(size_t size)
+{
+	return kmem_alloc(size, MEM_NORMAL);
+}
+
+/*
+ * calloc - allocate zeroed memory block
+ */
+void *
+calloc(size_t m, size_t n)
+{
+	if (n && m > SIZE_MAX/n)
+		return NULL;
+	n *= m;
+	void *p = malloc(n);
+	if (p)
+		memset(p, 0, n);
+	return p;
+}
+
+/*
+ * realloc - change size of memory block
+ */
+void *
+realloc(void *p, size_t size)
+{
+	if (!size) {
+		free(p);
+		return NULL;
+	}
+
+	if (!p)
+		return malloc(size);
+
+	struct block_hdr *blk = (struct block_hdr *)((char *)p - BLKHDR_SIZE);
+	if (!ALLOC_MAGIC_OK(blk))
+		panic("realloc: invalid address");
+
+	if (blk->size >= size)
+		return p;
+
+	void *np = malloc(size);
+	if (!np)
+		return NULL;
+
+	memcpy(np, p, MIN(size, blk->size));
+	free(p);
+
+	return np;
+}
+
+/*
  * Free allocated memory block.
  *
  * Some kernel does not release the free page for the kernel memory
@@ -323,6 +382,15 @@ kmem_free(void *ptr)
 		page_free(virt_to_phys(pg), CONFIG_PAGE_SIZE, &kern_task);
 	}
 	mutex_unlock(&kmem_mutex);
+}
+
+/*
+ * free - free allocated memory block
+ */
+void
+free(void *p)
+{
+	kmem_free(p);
 }
 
 /*
