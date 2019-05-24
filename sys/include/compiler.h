@@ -59,6 +59,6 @@ compiler_barrier()
  * Create create a weak alias (from musl).
  */
 #define weak_alias(old, new) \
-	extern "C" __typeof(old) new __attribute__((weak, alias(#old)))
+	extern __typeof(old) new __attribute__((weak, alias(#old)))
 
 #endif
