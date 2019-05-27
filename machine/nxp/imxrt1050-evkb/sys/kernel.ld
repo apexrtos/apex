@@ -7,8 +7,7 @@ INCLUDE conf/config.ld
 ENTRY(_start)
 
 PHDRS {
-	hdrs PT_PHDR FILEHDR PHDRS;
-	dram PT_LOAD;
+	dram PT_LOAD FILEHDR PHDRS;
 	itcm PT_LOAD;
 	dtcm PT_LOAD;
 }
@@ -25,7 +24,7 @@ SECTIONS {
 		*(.fast_text)
 	} >itcm : itcm
 
-	.text : {
+	.text ORIGIN(dram) + SIZEOF_HEADERS : {
 		*(.text*)
 	} >dram : dram
 
@@ -66,6 +65,7 @@ SECTIONS {
 		*(.fast_bss)
 	} >dtcm : dtcm
 
+	__elf_headers = ORIGIN(dram);
 	__init_array_start = ADDR(.init_array);
 	__init_array_end = ADDR(.init_array) + SIZEOF(.init_array);
 	__stack_start = ADDR(.stack);

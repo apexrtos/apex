@@ -4,6 +4,7 @@
 #include <types.h>
 
 struct bootinfo;
+struct bootargs;
 
 enum PAGE_ALLOC_TYPE {
 	PAGE_ALLOC_FIXED,	/* Page must remain fixed in memory */
@@ -19,7 +20,7 @@ phys   *page_alloc(size_t, enum MEM_TYPE, enum PAGE_ALLOC_TYPE, void *);
 phys   *page_reserve(phys *, size_t, void *);
 int	page_free(phys *, size_t, void *);
 bool	page_valid(phys *, size_t, void *);
-void	page_init(const struct bootinfo *, void *);
+void	page_init(const struct bootargs *, const struct bootinfo *, void *);
 void	page_dump(void);
 
 #if defined(__cplusplus)

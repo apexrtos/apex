@@ -57,13 +57,6 @@ void machine_setup(void)
 		.TX_ENABLE = 1,
 	}.r);
 #endif
-
-	/* Main memory */
-	bootinfo->ram[0].base = (void*)CONFIG_RAM_BASE_PHYS;
-	bootinfo->ram[0].size = CONFIG_RAM_SIZE;
-	bootinfo->ram[0].type = MT_NORMAL;
-
-	bootinfo->nr_rams = 1;
 }
 
 /*

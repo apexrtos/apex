@@ -7,8 +7,7 @@ INCLUDE conf/config.ld
 ENTRY(_start)
 
 PHDRS {
-	hdrs PT_PHDR FILEHDR PHDRS;
-	kernel PT_LOAD;
+	kernel PT_LOAD FILEHDR PHDRS;
 }
 
 MEMORY {
@@ -16,7 +15,7 @@ MEMORY {
 }
 
 SECTIONS {
-	.text : {
+	.text ORIGIN(ram) + SIZEOF_HEADERS : {
 		*(.vectors)
 		*(.text*)
 		*(.fast_text)
@@ -53,6 +52,7 @@ SECTIONS {
 		. += CONFIG_KSTACK_SIZE;
 	} >ram : kernel
 
+	__elf_headers = ORIGIN(ram);
 	__init_array_start = ADDR(.init_array);
 	__init_array_end = ADDR(.init_array) + SIZEOF(.init_array);
 	__stack_start = ADDR(.stack);

@@ -1,5 +1,6 @@
 #include <arch.h>
 
+#include <bootinfo.h>
 #include <conf/config.h>
 #include <conf/drivers.h>
 #include <cpu.h>
@@ -17,7 +18,7 @@
 static const unsigned long LPUART1 = 0x40184000;
 
 void
-machine_memory_init(void)
+machine_init(struct bootargs *args)
 {
 	struct mmumap mappings[] = {
 		/* IMXRT10xx places external SDRAM in a default write-through
@@ -39,18 +40,54 @@ machine_memory_init(void)
 #endif
 	};
 	mpu_init(mappings, ARRAY_SIZE(mappings), MPU_ENABLE_DEFAULT_MAP);
-}
 
-void
-machine_init(void)
-{
+	unsigned i = bootinfo.nr_rams;
+
+	/* DRAM */
+	bootinfo.ram[i].base = (void*)CONFIG_DRAM_BASE_PHYS;
+	bootinfo.ram[i].size = CONFIG_DRAM_SIZE;
+	bootinfo.ram[i].type = MT_NORMAL;
+	++i;
+
+	/* DTCM */
+	bootinfo.ram[i].base = (void*)CONFIG_DTCM_BASE_PHYS;
+	bootinfo.ram[i].size = CONFIG_DTCM_SIZE;
+	bootinfo.ram[i].type = MT_FAST;
+	++i;
+
+	/* DMA */
+	bootinfo.ram[i].base = (void*)CONFIG_DMA_BASE_PHYS;
+	bootinfo.ram[i].size = CONFIG_DMA_SIZE;
+	bootinfo.ram[i].type = MT_DMA;
+	++i;
+
+#if defined(CONFIG_SRAM_SIZE)
+	/* SRAM */
+	bootinfo.ram[i].base = (void*)CONFIG_SRAM_BASE_PHYS;
+	bootinfo.ram[i].size = CONFIG_SRAM_SIZE;
+	bootinfo.ram[i].type = MT_FAST;
+	++i;
+#endif
+
+	bootinfo.nr_rams = i;
+
+	/*
+	 * Run machine initialisation.
+	 */
 	#include <conf/machcfg.c>
+
+	/*
+	 * Run pin initialisation.
+	 */
 	#include <conf/pincfg.c>
 }
 
 void
-machine_driver_init(void)
+machine_driver_init(struct bootargs *bootargs)
 {
+	/*
+	 * Run driver initialisation.
+	 */
 	#include <conf/drivers.c>
 }
 

@@ -27,10 +27,12 @@
 #include <page.h>
 
 #include <algorithm>
+#include <bootargs.h>
 #include <bootinfo.h>
 #include <cassert>
 #include <cstring>
 #include <debug.h>
+#include <elf.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <kernel.h>
@@ -70,7 +72,6 @@ struct region {
 static struct {
 	region *regions;
 	size_t nr_regions;
-	size_t bootdisk_size;
 } s;
 
 /*
@@ -557,8 +558,17 @@ page_valid(phys *addr, size_t len, void *owner)
  * page_init - initialise page allocator
  */
 void
-page_init(const struct bootinfo *bi, void *owner)
+page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
 {
+	/* make sure kernel ELF headers are sane */
+	extern char __elf_headers[1];
+	const Elf32_Ehdr *eh = reinterpret_cast<Elf32_Ehdr *>(__elf_headers);
+	if (eh->e_ident[EI_MAG0] != ELFMAG0 ||
+	    eh->e_ident[EI_MAG1] != ELFMAG1 ||
+	    eh->e_ident[EI_MAG2] != ELFMAG2 ||
+	    eh->e_ident[EI_MAG3] != ELFMAG3)
+		panic("bad ELF header");
+
 	/* analyse bootinfo to count regions & find the first piece of
 	 * contiguous normal memory in which to allocate state */
 	phys *m_alloc = 0;
@@ -580,36 +590,42 @@ page_init(const struct bootinfo *bi, void *owner)
 	if (!m_end)
 		panic("no memory");
 
-	/* adjust m_alloc and m_end for reserved areas */
-	for (size_t i = 0; i < bi->nr_rams; ++i) {
-		const auto &m = bi->ram[i];
-		phys *const r_begin = (phys*)PAGE_TRUNC(m.base);
-		phys *const r_end = (phys*)PAGE_ALIGN(m.base + m.size);
-		switch (m.type) {
-		case MT_MEMHOLE:
-		case MT_KERNEL:
-		case MT_BOOTDISK:
-		case MT_RESERVED:
-			/* no overlap */
-			if (r_end < m_alloc || r_begin >= m_end)
+	/* helper to iterate reserved memory regions in bootargs & kernel */
+	auto for_each_reserved_region = [&](auto fn) {
+		if (args->archive_size)
+			fn(args->archive_addr, args->archive_size);
+		const Elf32_Phdr *ph = (Elf32_Phdr *)(__elf_headers + eh->e_phoff);
+		for (size_t i = 0; i < eh->e_phnum; ++i, ++ph) {
+			if (ph->p_type != PT_LOAD)
 				continue;
-			if (r_begin <= m_alloc) {
-				/* reserved start */
-				m_alloc = r_end;
-			} else if (r_end >= m_end) {
-				/* reserved end */
-				m_end = r_begin;
-			} else if (r_begin - m_alloc > m_end - r_end) {
-				/* reserved hole -- lower region larger */
-				m_end = r_begin;
-			} else {
-				/* reserved hole -- higher region larger */
-				m_alloc = r_end;
-			}
-			if (m_alloc >= m_end)
-				panic("no memory");
+			fn(virt_to_phys((void *)ph->p_vaddr), ph->p_memsz);
 		}
-	}
+	};
+
+	/* adjust m_alloc and m_end for reserved areas */
+	for_each_reserved_region([&] (phys *p, size_t len) {
+		phys *const r_begin = PAGE_TRUNC(p);
+		phys *const r_end = PAGE_ALIGN(p + len);
+
+		/* no overlap */
+		if (r_end < m_alloc || r_begin >= m_end)
+			return;
+		if (r_begin <= m_alloc) {
+			/* reserved start */
+			m_alloc = r_end;
+		} else if (r_end >= m_end) {
+			/* reserved end */
+			m_end = r_begin;
+		} else if (r_begin - m_alloc > m_end - r_end) {
+			/* reserved hole -- lower region larger */
+			m_end = r_begin;
+		} else {
+			/* reserved hole -- higher region larger */
+			m_alloc = r_end;
+		}
+		if (m_alloc >= m_end)
+			panic("no memory");
+	});
 
 	dbg("page_init: allocate state at %p (%" PRIuPTR " bytes "
 	    "usable), %zu regions\n", m_alloc, m_end - m_alloc, s.nr_regions);
@@ -714,36 +730,13 @@ page_init(const struct bootinfo *bi, void *owner)
 	assert(r_alloc);
 
 	/* reserve unusable memory */
-	for (size_t i = 0; i < bi->nr_rams; ++i) {
-		const boot_mem *m = bi->ram + i;
-		switch (m->type) {
-		case MT_NORMAL:
-		case MT_FAST:
-		case MT_DMA:
-			continue;
-		}
-
-		switch (m->type) {
-		case MT_MEMHOLE:
-			if (!page_reserve((phys*)m->base, m->size, PG_HOLE, nullptr))
-				panic("bad bootinfo");
-			break;
-		case MT_KERNEL:
-			if (!page_reserve((phys*)m->base, m->size, PG_SYSTEM, owner))
-				dbg("page_init: failed to reserve %p -> %p\n",
-				    m->base, m->base + m->size);
-			break;
-		case MT_BOOTDISK:
-			s.bootdisk_size = m->size;
-			/* bootdisk can be in ROM */
-			page_reserve((phys*)m->base, m->size, PG_FIXED, nullptr);
-			break;
-		case MT_RESERVED:
-			if (!page_reserve((phys*)m->base, m->size, PG_FIXED, owner))
-				panic("bad bootinfo");
-			break;
-		}
-	}
+	for_each_reserved_region([&](phys *p, size_t len) {
+		auto r = page_reserve(p, len, PG_SYSTEM, &kern_task);
+		/* reservation can fail for ROM addresses or other unmappable
+		 * memory */
+		dbg("page_init: reserve %p -> %p %s\n", p, p + len,
+		   r ? "OK" : "Failed");
+	});
 
 	/* reserve memory allocated for region & page structures */
 	if (m_alloc > r_alloc->begin) {

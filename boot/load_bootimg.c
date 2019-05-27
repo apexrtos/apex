@@ -48,12 +48,8 @@ load_bootimg(void)
 
 	if (files > 1) {
 		dbg("Passing file 1 to kernel as boot archive\n");
-
-		int i = bootinfo->nr_rams;
-		bootinfo->ram[i].base = file_data + be32toh(file_sizes[0]);
-		bootinfo->ram[i].size = be32toh(file_sizes[1]);
-		bootinfo->ram[i].type = MT_BOOTDISK;
-		bootinfo->nr_rams++;
+		args.archive_addr = file_data + be32toh(file_sizes[0]);
+		args.archive_size = be32toh(file_sizes[1]);
 	}
 
 	if (files > 2)

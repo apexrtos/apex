@@ -5,6 +5,8 @@
  * /dev/bootdiskX
  */
 
-void bootdisk_init(void);
+struct bootargs;
+
+void bootdisk_init(struct bootargs *);
 
 #endif

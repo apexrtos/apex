@@ -1,5 +1,6 @@
 #include <arch.h>
 
+#include <bootinfo.h>
 #include <conf/config.h>
 #include <conf/drivers.h>
 #include <debug.h>
@@ -10,19 +11,21 @@
 static const unsigned long UART0 = 0x40004000;
 
 void
-machine_memory_init(void)
+machine_init(struct bootargs *args)
 {
-	/* nothing to do for now */
+	unsigned i = bootinfo.nr_rams;
+
+	/* Main memory */
+	bootinfo.ram[i].base = (void*)CONFIG_RAM_BASE_PHYS;
+	bootinfo.ram[i].size = CONFIG_RAM_SIZE;
+	bootinfo.ram[i].type = MT_NORMAL;
+	++i;
+
+	bootinfo.nr_rams = i;
 }
 
 void
-machine_init(void)
-{
-	/* nothing to do for now */
-}
-
-void
-machine_driver_init(void)
+machine_driver_init(struct bootargs *bootargs)
 {
 	#include <conf/drivers.c>
 }

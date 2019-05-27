@@ -34,7 +34,7 @@
 #include <machine.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <sys/include/bootinfo.h>
+#include <sys/include/bootargs.h>
 
 #if defined(CONFIG_DEBUG)
 #define dbg(...) debug_printf(__VA_ARGS__)
@@ -53,8 +53,9 @@
 	machine_panic(); \
 })
 
-extern struct bootinfo *bootinfo;
-extern void (*kernel_entry)(struct bootinfo*);
+extern struct bootargs args;
+extern void (*kernel_entry)(phys *archive_addr, long archive_size,
+    long machdep0, long machdep1);
 
 int load_elf(const phys *img);
 int load_bootimg();

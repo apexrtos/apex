@@ -28,6 +28,7 @@
  */
 
 #include <arch.h>
+#include <bootargs.h>
 #include <console.h>
 #include <debug.h>
 #include <dev/null/null.h>
@@ -62,7 +63,7 @@ boot_thread(void *arg);
  *	- minimum page table is set (MMU systems only)
  */
 void
-kernel_main(void)
+kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 {
 	sch_lock();
 #if defined(CONFIG_EARLY_CONSOLE)
@@ -70,18 +71,21 @@ kernel_main(void)
 #endif
 	info("APEX " VERSION_STRING " for " CONFIG_MACHINE_NAME "\n");
 
-	/*
-	 * Initialize memory managers.
-	 */
-	machine_memory_init();
-	page_init(&bootinfo, &kern_task);
-	kmem_init();
+	dbg("Kernel arguments: 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
+	    (long)archive_addr, archive_size, machdep0, machdep1);
+
+	struct bootargs args = {archive_addr, archive_size, machdep0, machdep1};
 
 	/*
-	 * Do machine-dependent
-	 * initialization.
+	 * Do machine dependent initialisation.
 	 */
-	machine_init();
+	machine_init(&args);
+
+	/*
+	 * Initialise memory managers.
+	 */
+	page_init(&args, &bootinfo, &kern_task);
+	kmem_init();
 
 	/*
 	 * Run c++ global constructors.
@@ -106,20 +110,20 @@ kernel_main(void)
 	device_init();
 	null_init();
 	zero_init();
-	machine_driver_init();
+	machine_driver_init(&args);
 	fs_init();
 
 	/*
 	 * Create boot thread and start scheduler.
 	 */
-	kthread_create(&boot_thread, NULL, PRI_DEFAULT, "boot", MEM_NORMAL);
+	kthread_create(&boot_thread, &args, PRI_DEFAULT, "boot", MEM_NORMAL);
 	machine_ready();
 	sch_unlock();
 	thread_idle();
 }
 
 static void
-mount_fs(void)
+mount_fs(struct bootargs *args)
 {
 	/*
 	 * Root file system is always RAMFS
@@ -207,8 +211,10 @@ run_init(void)
 static void
 boot_thread(void *arg)
 {
+	struct bootargs *args = arg;
+
 	interrupt_enable(); /* kthreads start with interrupts disabled */
-	mount_fs();
+	mount_fs(args);
 #if defined(CONFIG_CONSOLE)
 	console_init();
 #endif

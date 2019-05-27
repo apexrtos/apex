@@ -65,36 +65,6 @@ machine_setup(void)
 		.TE = 1, /* transmitter enabled */
 	}.r);
 #endif
-
-	unsigned i = 0;
-
-	/* DRAM */
-	bootinfo->ram[i].base = (void*)CONFIG_DRAM_BASE_PHYS;
-	bootinfo->ram[i].size = CONFIG_DRAM_SIZE;
-	bootinfo->ram[i].type = MT_NORMAL;
-	++i;
-
-	/* DTCM */
-	bootinfo->ram[i].base = (void*)CONFIG_DTCM_BASE_PHYS;
-	bootinfo->ram[i].size = CONFIG_DTCM_SIZE;
-	bootinfo->ram[i].type = MT_FAST;
-	++i;
-
-	/* DMA */
-	bootinfo->ram[i].base = (void*)CONFIG_DMA_BASE_PHYS;
-	bootinfo->ram[i].size = CONFIG_DMA_SIZE;
-	bootinfo->ram[i].type = MT_DMA;
-	++i;
-
-#if defined(CONFIG_SRAM_SIZE)
-	/* SRAM */
-	bootinfo->ram[i].base = (void*)CONFIG_SRAM_BASE_PHYS;
-	bootinfo->ram[i].size = CONFIG_SRAM_SIZE;
-	bootinfo->ram[i].type = MT_FAST;
-	++i;
-#endif
-
-	bootinfo->nr_rams = i;
 }
 
 /*

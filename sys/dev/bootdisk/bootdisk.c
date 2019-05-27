@@ -1,7 +1,7 @@
 #include "init.h"
 
 #include <assert.h>
-#include <bootinfo.h>
+#include <bootargs.h>
 #include <debug.h>
 #include <device.h>
 #include <errno.h>
@@ -15,38 +15,24 @@
 
 #define rdbg(...)
 
-struct bootdisk_info {
-	char *p;
-	size_t len;
-};
-
-static int
-bootdisk_open(struct file *f)
-{
-	const struct bootdisk_info *i = f->f_data;
-
-	if (!i || !i->p || !i->len)
-		return DERR(-EIO);
-
-	return 0;
-}
+static const char *archive_addr;
+static size_t archive_size;
 
 static ssize_t
 bootdisk_read(struct file *f, void *buf, size_t len)
 {
-	const struct bootdisk_info *i = f->f_data;
 	const size_t off = f->f_offset;
 
 	rdbg("bootdisk_read: buf=%p len=%zu off=%jx\n", buf, len, off);
 
 	/* Check overrun */
-	if ((size_t)off > i->len)
+	if ((size_t)off > archive_size)
 		return DERR(-EIO);
-	if ((size_t)off + len > i->len)
-		len = i->len - off;
+	if ((size_t)off + len > archive_size)
+		len = archive_size - off;
 
 	/* Copy data */
-	memcpy(buf, i->p + off, len);
+	memcpy(buf, archive_addr + off, len);
 
 	vn_lock(f->f_vnode);
 	f->f_offset += len;
@@ -65,7 +51,6 @@ bootdisk_read_iov(struct file *f, const struct iovec *iov, size_t count)
  * Device I/O table
  */
 static struct devio io = {
-	.open = bootdisk_open,
 	.read = bootdisk_read_iov,
 };
 
@@ -73,28 +58,16 @@ static struct devio io = {
  * Initialize
  */
 void
-bootdisk_init(void)
+bootdisk_init(struct bootargs *args)
 {
-	int n = 0;
-	char name[] = "bootdiskX";
+	if (!args->archive_size)
+		return;
 
-	for (size_t i = 0; i < bootinfo.nr_rams; ++i) {
-		const struct boot_mem *ram = bootinfo.ram + i;
-		if (ram->type != MT_BOOTDISK)
-			continue;
-		struct bootdisk_info *i = kmem_alloc(sizeof(*i), MEM_NORMAL);
-		assert(i);
-		*i = (struct bootdisk_info) {
-			.p = phys_to_virt(ram->base),
-			.len = ram->size,
-		};
+	archive_addr = phys_to_virt(args->archive_addr);
+	archive_size = args->archive_size;
 
-		dbg("Bootdisk %d at %p (%uK bytes)\n", n, i->p, i->len / 1024);
+	dbg("Bootdisk at %p (%uK bytes)\n", archive_addr, archive_size / 1024);
 
-		name[8] = '0' + n;
-		struct device *d = device_create(&io, name, DF_BLK, i);
-		assert(d);
-
-		++n;
-	}
+	struct device *d = device_create(&io, "bootdisk0", DF_BLK, NULL);
+	assert(d);
 }

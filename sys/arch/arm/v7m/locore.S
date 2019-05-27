@@ -11,9 +11,9 @@
 
 /*
  * Interrupt Vector Table
- * Alignment is guaranteed by link script
  */
 .section .vectors
+.align 7				/* 128-byte alignment */
 .global vectors
 vectors:
 	.word 0				/* SP_main */
@@ -46,25 +46,28 @@ vectors:
  *   Interrupts are disabled and all interrupt sources are disabled
  *   The stack pointer is unknown
  *   Clocks and caches are appropriately configured
- *   r0 contains the address of bootinfo
+ *   r0 = archive_addr
+ *   r1 = archive_size
+ *   r2 = machdep0
+ *   r3 = machdep1
  */
 .text
 .thumb_func
 .global _start
 _start:
 	/* setup a temporary vector table for the transition to handler mode */
-	ldr r1, =__stack_start	/* use stack for temporary table */
-	add r1, r1, 127		/* align to 128-byte boundary */
-	bic r1, r1, 127
-	adr r2, 1f + 1		/* address of SVC handler */
-	str r2, [r1, 11 * 4]	/* store to temporary vector table */
+	ldr r4, =__stack_start	/* use stack for temporary table */
+	add r4, r4, 127		/* align to 128-byte boundary */
+	bic r4, r4, 127
+	adr r5, 1f + 1		/* address of SVC handler */
+	str r5, [r4, 11 * 4]	/* store to temporary vector table */
 	dsb			/* make sure vector is stored */
 
-	/* set r2 to system control space address */
-	mov r2, A_SCS
+	/* set r5 to system control space address */
+	mov r5, A_SCS
 
 	/* set vector table address to temporary table */
-	str r1, [r2, A_VTOR-A_SCS]
+	str r4, [r5, A_VTOR-A_SCS]
 
 	/* execute SVC */
 	cpsie i
@@ -72,42 +75,39 @@ _start:
 
 	/* set real vector table address */
 1:	cpsid	i
-	ldr r1, =vectors
-	str r1, [r2, A_VTOR-A_SCS]
+	ldr r4, =vectors
+	str r4, [r5, A_VTOR-A_SCS]
 
 	/* set thread mode to unprivileged */
-	mov r1, CONTROL_NPRIV
-	msr control, r1
+	mov r4, CONTROL_NPRIV
+	msr control, r4
 	isb
 
 	/* clear user mode stack as we will become a kernel thread */
-	mov r1, 0
-	msr psp, r1
+	mov r4, 0
+	msr psp, r4
 
 	/* enable UsageFault, BusFault and MemManage exceptions */
-	ldr r1, [r2, A_SHCSR-A_SCS]
-	orr r1, (SHCSR_USGFAULTNA|SHCSR_BUSFAULTENA|SHCSR_MEMFAULTENA)
-	str r1, [r2, A_SHCSR-A_SCS]
+	ldr r4, [r5, A_SHCSR-A_SCS]
+	orr r4, (SHCSR_USGFAULTNA|SHCSR_BUSFAULTENA|SHCSR_MEMFAULTENA)
+	str r4, [r5, A_SHCSR-A_SCS]
 
 	/* set SVC and PendSV priority */
-	mov r5, (IPL_SVCALL << 24)
-	str r5, [r2, A_SHPR2-A_SCS]	/* SVC to 255 */
-	mov r5, (IPL_PENDSV << 16)
-	str r5, [r2, A_SHPR3-A_SCS]	/* PendSV to 255 */
+	mov r4, (IPL_SVCALL << 24)
+	str r4, [r5, A_SHPR2-A_SCS]	/* SVC to 255 */
+	mov r4, (IPL_PENDSV << 16)
+	str r4, [r5, A_SHPR3-A_SCS]	/* PendSV to 255 */
 
 	/* enable access to FPU */
 #ifdef CONFIG_FPU
-	mov r1, 0xf00000		/* CP10, CP11 full access */
-	str r1, [r2, A_CPACR-A_SCS]
+	mov r4, 0xf00000		/* CP10, CP11 full access */
+	str r4, [r5, A_CPACR-A_SCS]
 #endif
 
 	/* setup stack pointer */
 	ldr sp, =__stack_top
 	mov lr, 0xffffffff
 
-	/* copy bootinfo to final location */
-	bl copy_bootinfo
-
-	/* jump to kernel */
+	/* kernel_main(archive_addr, archive_size, machdep0, machdep1) */
 	b kernel_main
 .ltorg

@@ -41,30 +41,8 @@
 /*
  * Boot information
  */
-struct bootinfo *bootinfo;
-void (*kernel_entry)(struct bootinfo*);
-
-void
-bootinfo_dump(void)
-{
-#if defined(CONFIG_DEBUG)
-	const char *strtype[] = { "", "NORMAL", "FAST", "MEMHOLE", "KERNEL",
-	    "BOOTDISK", "RESERVED" };
-
-	dbg("[Boot Information]\n");
-	dbg("nr_rams=%d\n", bootinfo->nr_rams);
-	for (size_t i = 0; i < bootinfo->nr_rams; i++) {
-		if (bootinfo->ram[i].type != 0) {
-			dbg("ram[%d]:  base=0x%08x size=0x%08x type=%s\n",
-			    i,
-			    (int)bootinfo->ram[i].base,
-			    (int)bootinfo->ram[i].size,
-			    strtype[bootinfo->ram[i].type]);
-		}
-	}
-	dbg("\n");
-#endif
-}
+struct bootargs args;
+void (*kernel_entry)(phys *, long, long, long);
 
 /*
  * Debugging
@@ -110,20 +88,14 @@ noreturn void
 loader_main(void)
 {
 	/*
-	 * Allocate bootinfo structure and set bootinfo pointer
-	 */
-	struct bootinfo bi = {};
-	bootinfo = &bi;
-
-	/*
-	 * Setup minimum hardware for boot & initialise bootinfo
+	 * Setup minimum hardware for boot
 	 */
 	machine_setup();
 
 	/*
 	 * Print banner
 	 */
-	info("APEX boot loader v1.00\n");
+	info("APEX boot loader v2.00\n");
 
 	/*
 	 * Load program image
@@ -136,6 +108,7 @@ loader_main(void)
 	 */
 	dbg("Kernel entry point %p\n", kernel_entry);
 	info("Entering kernel...\n\n");
-	(*kernel_entry)(bootinfo);
+	(*kernel_entry)(args.archive_addr, args.archive_size, args.machdep0,
+	    args.machdep1);
 	__builtin_unreachable();
 }
