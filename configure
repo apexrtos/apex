@@ -147,12 +147,17 @@ parse_config()
 				echo "#define CONFIG_${param} $value" >> "$CONFIG_H"
 			fi
 			;;
-		imagefile)
-			# Automatically build image files as required
+		bootimgfile)
+			# Automatically build boot image files as required
 			[ ! -f "$srcdir/$rest" ] &&
 				echo "MK += $rest.mk" >> "$CONFIG_MK"
-			echo "CONFIG_IMAGEFILES += $rest" >> "$CONFIG_MK"
-			bootimg=y
+			echo "CONFIG_BOOTIMGFILES += $rest" >> "$CONFIG_MK"
+			;;
+		bootfile)
+			# Automatically build boot archive files as required
+			[ ! -f "$srcdir/$rest" ] &&
+				echo "MK += $rest.mk" >> "$CONFIG_MK"
+			echo "CONFIG_BOOTFILES += $rest" >> "$CONFIG_MK"
 			;;
 		driver*)
 			order=$(expr "$cmd" : 'driver\(.*\)')
@@ -387,8 +392,6 @@ main()
 			echo "CONFIG_SUBARCH := $subarch"
 		[ "x$nodebug" != x ] &&
 			echo "CONFIG_DEFS += -DNDEBUG"
-		[ "x$bootimg" != x ] &&
-			echo "MK := bootimg.mk \$(MK)"
 	} >> "$CONFIG_MK"
 
 	{

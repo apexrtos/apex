@@ -1,0 +1,3 @@
+TARGET := bootarchive
+TYPE := archive_$(CONFIG_BOOT_ARCHIVE_TYPE)
+SOURCES := $(CONFIG_BOOTFILES)

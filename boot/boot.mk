@@ -19,7 +19,7 @@ INCLUDE := \
 
 SOURCES := \
     errno.c \
-    load_a.c \
+    load_bootimg.c \
     load_elf.c \
     main.c \
     raise.c \

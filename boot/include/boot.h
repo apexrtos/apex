@@ -56,9 +56,8 @@
 extern struct bootinfo *bootinfo;
 extern void (*kernel_entry)(struct bootinfo*);
 
-int load_a(void);
-int load_xip(void *end_addr);
 int load_elf(const phys *img);
+int load_bootimg();
 void debug_puts(const char *);
 void debug_printf(const char *, ...)
 	__attribute__((format (printf, 1, 2)));

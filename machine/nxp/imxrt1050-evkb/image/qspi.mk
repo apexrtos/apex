@@ -1,4 +1,4 @@
-ifneq ($(origin apex/apeximg_rule_exists),undefined)
+ifneq ($$(origin apex/bootimg_rule_exists),undefined)
 
 DEFAULT := y
 TYPE := imxrt_boot
@@ -18,7 +18,7 @@ SOURCES := \
 	dcd.cpp \
 	ivt.c \
 
-IMG := apeximg
+IMG := bootimg
 
 include cpu/nxp/imxrt10xx/imxrt_boot.mk
 

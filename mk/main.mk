@@ -293,42 +293,57 @@ define fn_custom_rule
 endef
 
 #
-# Rule to build a bootable archive
+# Rule to create a '.a' archive
 #
-define fn_boot_arfs_rule
-    # fn_boot_arfs_rule
+define fn_archive_a_rule
+    # fn_archive_a_rule
 
     # include built object flags
-    -include $(tgt).bootaflags
+    -include $(tgt).flags
 
     $(tgt)_AR := $$(CROSS_COMPILE)gcc-ar
     $(tgt)_CLEAN :=
+    $(tgt)_SOURCES := $$(SOURCES)
 
-    $$(eval $$(call fn_flags_rule,$(tgt).bootaflags,$(CONFIG_IMAGEFILES)))
+    $$(eval $$(call fn_flags_rule,$(tgt).flags,$$($(tgt)_SOURCES)))
 
-    .INTERMEDIATE: $(tgt).a
-    $(tgt).a: $(tgt).bootaflags $(CONFIG_IMAGEFILES)
+    $(tgt): $(tgt).flags $$($(tgt)_SOURCES)
 	rm -f $$@
-	$$($(tgt)_AR) rcS $$@ $$(filter-out $$<,$$^)
+	$$($(tgt)_AR) rcS $$@ $$(wordlist 2,$$(words $$^),$$^)
 
-    .INTERMEDIATE: $(tgt).a.size
-    $(tgt).a.size: $(tgt).a
-	perl -e "print pack('N', `stat -c %s $$<`)" > $$@
-
-    ifneq ($(CONFIG_BOOTABLE_IMAGE),)
-    $(tgt): boot/boot $(tgt).a.size $(tgt).a
-	cat $$^ > $$@
-    else
-    $(tgt): $(tgt).a
-	cp $$^ $$@
-    endif
+    $$(eval undefine SOURCES)
 endef
 
 #
-# Rule to build a bootable execute in place file system
+# Rule to build executable boot image
 #
-define fn_boot_xipfs_rule
-	$$(error boot_xipfs not yet implemented)
+# SOURCES must list the bootloader, kernel and any boot archives in that order.
+#
+# The resultant boot image is laid out as follows:
+# 1. Boot loader
+# 2. Zero terminated array of file sizes (32bit big endian)
+# 3. APEX kernel
+# 4. Boot files
+#
+define fn_bootimg_rule
+    # fn_bootimg_rule
+
+    # include built object flags
+    -include $(tgt).flags
+
+    $(tgt)_CLEAN :=
+    $(tgt)_BOOTLOADER := $$(firstword $$(SOURCES))
+    $(tgt)_FILES := $$(wordlist 2,$$(words $$(SOURCES)),$$(SOURCES))
+
+    $$(eval $$(call fn_flags_rule,$(tgt).flags,$$($(tgt)_BOOTLOADER) $$($(tgt)_FILES)))
+
+    $(tgt): $$($(tgt)_BOOTLOADER) $$($(tgt)_FILES) $(tgt).flags
+	cat $$($(tgt)_BOOTLOADER) > $$@
+	$$(foreach a,$$($(tgt)_FILES),perl -e "print pack('N', `stat -c %s $$a`)" >> $$@;)
+	perl -e "print pack('N', 0)" >> $$@
+	cat $$($(tgt)_FILES) >> $$@
+
+    $$(eval undefine SOURCES)
 endef
 
 #
@@ -489,5 +504,5 @@ clean:
 
 # Convenience to run under qemu
 .PHONY: run
-run: apeximg
+run: bootimg
 	$(CONFIG_QEMU_CMD) $<

@@ -117,7 +117,7 @@ machine_putc(int c)
 int
 machine_load_image(void)
 {
-	return load_a();
+	return load_bootimg();
 }
 
 /*
