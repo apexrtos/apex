@@ -11,14 +11,13 @@
 #include <fs.h>
 #include <ioctl.h>
 #include <sch.h>
-#include <stdatomic.h>
 #include <stddef.h>
+#include <sync.h>
 #include <termios.h>
 #include <thread.h>
 
 static int fd;
-struct event evt;
-atomic_int wakeups;
+static struct semaphore sem;
 
 /*
  * read
@@ -50,8 +49,7 @@ console_thread(void *unused)
 	int len;
 	char buf[256];
 	while (true) {
-		if (!--wakeups)
-			sch_sleep(&evt);
+		semaphore_wait_interruptible(&sem);
 		while ((len = syslog_format(buf, sizeof buf)) > 0)
 			kpwrite(fd, buf, len, -1);
 	}
@@ -65,8 +63,7 @@ console_thread(void *unused)
 static void
 console_start(void)
 {
-	++wakeups;
-	sch_wakeup(&evt, 0);
+	semaphore_post(&sem);
 }
 
 /*
@@ -96,14 +93,14 @@ console_init(void)
 	if ((err = kioctl(fd, TCSETS, &tio)) < 0)
 		return err;
 
-	event_init(&evt, "console", ev_SLEEP);
+	semaphore_init(&sem);
+	syslog_output(console_start);
+	console_start();
 
 	sch_lock();
 	if (!kthread_create(&console_thread, NULL, PRI_BACKGROUND, "console",
 	    MEM_NORMAL))
 		panic("console_init");
-	syslog_output(console_start);
-	console_start();
 	sch_unlock();
 
 	device_create(&io, "console", DF_CHR, NULL);
