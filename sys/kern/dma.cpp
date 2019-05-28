@@ -54,8 +54,6 @@ dma_alloc(size_t len)
 
 /*
  * Flush cache if necessary for DMA transfer.
- *
- * REVISIT: test if p is in MEM_DMA range and avoid cache flush?
  */
 void
 dma_cache_flush(const void *p, size_t len)
@@ -67,8 +65,6 @@ dma_cache_flush(const void *p, size_t len)
 
 /*
  * Invalidate cache if necessary after DMA transfer.
- *
- * REVISIT: test if p is in MEM_DMA range and avoid cache invalidate?
  */
 void
 dma_cache_invalidate(const void *p, size_t len)

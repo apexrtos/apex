@@ -18,6 +18,8 @@ void
 cache_coherent_exec(const void *p, size_t len)
 {
 #if defined(CONFIG_CACHE)
+	if (cache_coherent_range(p, len))
+		return;
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
 	asm volatile("dmb" ::: "memory");
@@ -44,6 +46,8 @@ cache_flush(const void *p, size_t len)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
 	asm volatile("dmb" ::: "memory");
+	if (cache_coherent_range(p, len))
+		return;
 	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
 	const void *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
 	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
@@ -60,6 +64,8 @@ void
 cache_invalidate(const void *p, size_t len)
 {
 #if defined(CONFIG_CACHE)
+	if (cache_coherent_range(p, len))
+		return;
 	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
 	const void *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
 	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
@@ -79,6 +85,8 @@ cache_flush_invalidate(const void *p, size_t len)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
 	asm volatile("dmb" ::: "memory");
+	if (cache_coherent_range(p, len))
+		return;
 	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
 	const void *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
 	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
