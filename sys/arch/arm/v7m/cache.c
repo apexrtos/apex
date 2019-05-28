@@ -1,3 +1,6 @@
+/*
+ * NOTE: this file is also used by boot loader
+ */
 #include <sys/include/arch.h>
 
 #include <conf/config.h>
