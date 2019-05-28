@@ -78,13 +78,13 @@ controller::direction_output(size_t pin)
  * controller::irq_attach - attach handler to pin on GPIO controller.
  */
 int
-controller::irq_attach(size_t pin, irq_mode mode, isr fn, void *data)
+controller::irq_attach(size_t pin, irq_mode mode, isr_fn fn, void *data)
 {
 	std::lock_guard l{lock_};
 
 	if (pin >= pins_)
 		return DERR(-EINVAL);
-	if (irq_table_[pin].first)
+	if (irq_table_[pin].isr)
 		return DERR(-EBUSY);
 	if (auto r = v_interrupt_setup(pin, mode); r)
 		return r;
@@ -153,9 +153,9 @@ controller::irq(size_t pin)
 	auto e = irq_table_[pin];
 	lock_.unlock(s);
 
-	if (!e.first)
+	if (!e.isr)
 		return;
-	e.first(pin, e.second);
+	e.isr(pin, e.arg);
 }
 
 namespace {

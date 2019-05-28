@@ -8,13 +8,12 @@
 #include "irq.h"
 #include <string>
 #include <sync.h>
-#include <utility>
 
 namespace gpio {
 
 class controller {
 public:
-	using isr = void (*)(unsigned, void *);
+	using isr_fn = void (*)(unsigned, void *);
 
 	controller(std::string_view name, size_t pins);
 	virtual ~controller();
@@ -23,7 +22,7 @@ public:
 	void set(size_t pin, bool);
 	void direction_input(size_t pin);
 	void direction_output(size_t pin);
-	int irq_attach(size_t pin, irq_mode, isr, void *data);
+	int irq_attach(size_t pin, irq_mode, isr_fn, void *data);
 	void irq_detach(size_t pin);
 	void irq_mask(size_t pin);
 	void irq_unmask(size_t pin);
@@ -35,7 +34,10 @@ protected:
 	void irq(size_t pin);
 
 private:
-	using irq_entry = std::pair<isr, void *>;
+	struct irq_entry {
+		isr_fn isr;
+		void *arg;
+	};
 
 	virtual bool v_get(size_t) = 0;
 	virtual void v_set(size_t, bool) = 0;
