@@ -4,4 +4,4 @@
 include machine/nxp/imxrt1050-evkb/conf/board
 include machine/nxp/imxrt1050-evkb/conf/common
 include machine/nxp/imxrt1050-evkb/conf/sdcard_layout
-mk machine/nxp/imxrt1050-evkb/image/sdcard.mk
+finalmk machine/nxp/imxrt1050-evkb/image/sdcard.mk

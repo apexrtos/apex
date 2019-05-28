@@ -240,6 +240,9 @@ parse_config()
 		mk)
 			echo "MK += $rest" >> "$CONFIG_MK"
 			;;
+		finalmk)
+			echo "FINALMK += $rest" >> "$CONFIG_MK"
+			;;
 		build)
 			echo "MK += $rest.mk" >> "$CONFIG_MK"
 			echo "CONFIG_DEFAULT_TGTS += $rest" >> "$CONFIG_MK"
@@ -287,6 +290,7 @@ main()
 		echo "# config.mk - Automatically generated file. Do not edit."
 		echo "#"
 		echo
+		echo "FINALMK :="
 	} > "$CONFIG_MK"
 
 	{
@@ -392,6 +396,7 @@ main()
 			echo "CONFIG_SUBARCH := $subarch"
 		[ "x$nodebug" != x ] &&
 			echo "CONFIG_DEFS += -DNDEBUG"
+		echo "MK += \$(FINALMK)"
 	} >> "$CONFIG_MK"
 
 	{

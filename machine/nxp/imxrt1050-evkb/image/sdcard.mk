@@ -1,4 +1,4 @@
-ifneq ($$(origin apex/bootimg_rule_exists),undefined)
+ifneq ($(origin apex/bootimg_rule_exists),undefined)
 
 DEFAULT := y
 TYPE := imxrt_boot
