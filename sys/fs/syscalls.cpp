@@ -52,6 +52,9 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 				continue;
 			if (!u_access_ok(iov[d].iov_base, iov[d].iov_len, prot))
 				return DERR(-EFAULT);
+			/* catch ssize_t overflow */
+			if ((size_t)(SSIZE_MAX - l) < iov[d].iov_len)
+				return DERR(-EINVAL);
 			l += iov[d].iov_len;
 			++d;
 		}
