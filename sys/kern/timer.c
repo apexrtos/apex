@@ -393,7 +393,7 @@ timer_init(void)
 	event_init(&delay_event, "delay", ev_SLEEP);
 
 	/* Start timer thread */
-	th = kthread_create(&timer_thread, NULL, PRI_TIMER, "timer", MEM_FAST);
+	th = kthread_create(&timer_thread, NULL, PRI_TIMER, "timer", MA_FAST);
 	if (th == NULL)
 		panic("timer_init");
 }

@@ -8,6 +8,8 @@ option HZ		1000
 option PAGE_SIZE	0x1000
 option IRQS		32	    // External interrupts
 option NVIC_PRIO_BITS	8
+option MA_NORMAL_ATTR	(MA_SPEED_0)	// Normal allocations in DRAM
+option MA_FAST_ATTR	(MA_SPEED_0)	// Fast allocations in DRAM
 
 /*
  * Memory layout

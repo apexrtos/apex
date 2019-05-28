@@ -110,7 +110,7 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 		dbg("IRQ%d BUSY\n", vector);
 		return NULL;
 	}
-	if ((irq = kmem_alloc(sizeof(*irq), MEM_FAST)) == NULL) {
+	if ((irq = kmem_alloc(sizeof(*irq), MA_FAST)) == NULL) {
 		sch_unlock();
 		return NULL;
 	}
@@ -125,7 +125,7 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 		 * Create a new thread for IST.
 		 */
 		irq->thread = kthread_create(&irq_thread, irq,
-		    interrupt_to_ist_priority(prio), "ist", MEM_FAST);
+		    interrupt_to_ist_priority(prio), "ist", MA_FAST);
 		if (irq->thread == NULL) {
 			kmem_free(irq);
 			sch_unlock();

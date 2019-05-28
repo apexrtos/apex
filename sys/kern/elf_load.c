@@ -130,7 +130,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 
 	/* create a mapping covering the program image */
 	if ((base = mmapfor(a, (void *)text_start, image_sz, PROT_NONE,
-	    flags | MAP_ANONYMOUS, -1, 0, MEM_NORMAL)) > (void*)-4096UL)
+	    flags | MAP_ANONYMOUS, -1, 0, MA_NORMAL)) > (void*)-4096UL)
 		return (int)base;
 
 	flags |= MAP_FIXED;
@@ -138,7 +138,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	/* map text */
 	if ((text = mmapfor(a, base, text_end - text_start,
 	    ph_flags_to_prot(&text_ph), flags, fd, text_ph.p_offset,
-	    MEM_NORMAL)) > (void*)-4096UL)
+	    MA_NORMAL)) > (void*)-4096UL)
 		return (int)text;
 
 	/* offset data if text-to-data offset must be maintained */
@@ -147,7 +147,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	/* map data */
 	if ((data = mmapfor(a, data_vaddr, data_end - data_start,
 	    ph_flags_to_prot(&data_ph), flags, fd, PAGE_TRUNC(data_ph.p_offset),
-	    MEM_NORMAL)) > (void*)-4096UL)
+	    MA_NORMAL)) > (void*)-4096UL)
 		return (int)data;
 	vm_init_brk(a, dyn ? data + data_end : (void*)data_end);
 
@@ -163,7 +163,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	const size_t guard_size = 0;
 #endif
 	if ((*stack = mmapfor(a, 0, stack_size + guard_size, PROT_NONE,
-	    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, MEM_NORMAL)) > (void*)-4096UL)
+	    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, MA_NORMAL)) > (void*)-4096UL)
 		return (int)*stack;
 	if ((err = mprotectfor(a, (char*)*stack + guard_size, stack_size,
 	    ph_flags_to_prot(&stack_ph))) < 0)

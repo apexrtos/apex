@@ -57,6 +57,7 @@
 
 #include <access.h>
 #include <assert.h>
+#include <conf/config.h>
 #include <debug.h>
 #include <kernel.h>
 #include <page.h>
@@ -66,6 +67,11 @@
 #include <task.h>
 
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+/*
+ * Number of allocatable memory types
+ */
+#define MEM_ALLOC (1 + (MA_NORMAL != MA_FAST))
 
 /*
  * Block header
@@ -154,6 +160,22 @@ static struct list kmem_pages[MEM_ALLOC];
 static struct mutex kmem_mutex;
 
 /*
+ * Map memory type to associated memory attributes
+ */
+long
+type_to_attr(unsigned type)
+{
+	switch (type) {
+	case 0:
+		return MA_NORMAL;
+	case 1:
+		return MA_FAST;
+	default:
+		assert(0);
+	}
+}
+
+/*
  * Find the free block for the specified size.
  * Returns pointer to free block, or NULL on failure.
  *
@@ -188,7 +210,7 @@ block_find(size_t size, unsigned type)
  * kmem_alloc() returns NULL on failure.
  */
 static void *
-kmem_alloc_internal(size_t size, enum MEM_TYPE type)
+kmem_alloc_internal(size_t size, unsigned type)
 {
 	struct block_hdr *blk, *newblk;
 	struct page_hdr *pg;
@@ -214,7 +236,8 @@ kmem_alloc_internal(size_t size, enum MEM_TYPE type)
 		pg = PAGE_TOP(blk);	 /* Get the page address */
 	} else {
 		/* No block found. Allocate new page */
-		phys *const pp = page_alloc_order(0, type, PAGE_ALLOC_FIXED, &kern_task);
+		phys *const pp = page_alloc_order(0,
+		    type_to_attr(type) | PAF_NO_SPEED_FALLBACK, &kern_task);
 		if (!pp)
 			goto out;
 		pg = (struct page_hdr *)phys_to_virt(pp);
@@ -257,11 +280,19 @@ out:
 }
 
 void *
-kmem_alloc(size_t size, unsigned type)
+kmem_alloc(size_t size, long mem_attr)
 {
 	void *p;
-	unsigned t = type;
+	unsigned type, t;
 
+	if (mem_attr == MA_NORMAL)
+		type = 0;
+	else if (mem_attr == MA_FAST)
+		type = 1;
+	else
+		panic("bad attr");
+
+	t = type;
 	do {
 		if ((p = kmem_alloc_internal(size, t)))
 			return p;
@@ -280,7 +311,7 @@ kmem_alloc(size_t size, unsigned type)
 void *
 malloc(size_t size)
 {
-	return kmem_alloc(size, MEM_NORMAL);
+	return kmem_alloc(size, MA_NORMAL);
 }
 
 /*

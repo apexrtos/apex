@@ -37,8 +37,8 @@
 #ifndef dev_tty_h
 #define dev_tty_h
 
-#include <stdbool.h>
 #include <stddef.h>
+#include <types.h>
 
 struct termios;
 struct tty;
@@ -53,8 +53,8 @@ typedef void (*tty_oproc)(struct tty *);
 typedef void (*tty_iproc)(struct tty *);
 typedef void (*tty_fproc)(struct tty *, int);
 
-struct tty *tty_create(const char *, size_t bufsiz, size_t bufmin, tty_tproc,
-		       tty_oproc, tty_iproc, tty_fproc, void *);
+struct tty *tty_create(const char *, long attr, size_t bufsiz, size_t bufmin,
+		       tty_tproc, tty_oproc, tty_iproc, tty_fproc, void *);
 void	    tty_destroy(struct tty *);
 void	   *tty_data(struct tty *);
 long	    tty_speed(tcflag_t);

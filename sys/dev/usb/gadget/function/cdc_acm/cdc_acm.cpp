@@ -189,6 +189,7 @@ cdc_acm::v_configure(std::string_view c)
 			 * here is pretty horrible, but it's a way to match the
 			 * tty_create interface for now. */
 			const auto t = tty_create(std::string(value).c_str(),
+			    MA_NORMAL | MA_DMA,
 			    bulk_max_packet_len(Speed::High), rx_txn, nullptr,
 			    oproc, iproc, fproc, this);
 			if (t > (void*)-4096UL)

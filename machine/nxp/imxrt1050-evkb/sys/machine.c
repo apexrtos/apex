@@ -1,6 +1,5 @@
 #include <arch.h>
 
-#include <bootinfo.h>
 #include <conf/config.h>
 #include <conf/drivers.h>
 #include <cpu.h>
@@ -13,6 +12,7 @@
 #include <dev/fsl/lpuart/lpuart.h>
 #include <interrupt.h>
 #include <kernel.h>
+#include <page.h>
 #include <timer.h>
 
 static const unsigned long LPUART1 = 0x40184000;
@@ -41,35 +41,35 @@ machine_init(struct bootargs *args)
 	};
 	mpu_init(mappings, ARRAY_SIZE(mappings), MPU_ENABLE_DEFAULT_MAP);
 
-	unsigned i = bootinfo.nr_rams;
-
-	/* DRAM */
-	bootinfo.ram[i].base = (void*)CONFIG_DRAM_BASE_PHYS;
-	bootinfo.ram[i].size = CONFIG_DRAM_SIZE;
-	bootinfo.ram[i].type = MT_NORMAL;
-	++i;
-
-	/* DTCM */
-	bootinfo.ram[i].base = (void*)CONFIG_DTCM_BASE_PHYS;
-	bootinfo.ram[i].size = CONFIG_DTCM_SIZE;
-	bootinfo.ram[i].type = MT_FAST;
-	++i;
-
-	/* DMA */
-	bootinfo.ram[i].base = (void*)CONFIG_DMA_BASE_PHYS;
-	bootinfo.ram[i].size = CONFIG_DMA_SIZE;
-	bootinfo.ram[i].type = MT_DMA;
-	++i;
-
+	const struct meminfo memory[] = {
+		/* DRAM */
+		{
+			.base = (phys*)CONFIG_DRAM_BASE_PHYS,
+			.size = CONFIG_DRAM_SIZE,
+			.attr = MA_SPEED_0 | MA_DMA,
+		},
+		/* DTCM */
+		{
+			.base = (phys*)CONFIG_DTCM_BASE_PHYS,
+			.size = CONFIG_DTCM_SIZE,
+			.attr = MA_SPEED_2,
+		},
+		/* DMA */
+		{
+			.base = (phys*)CONFIG_DMA_BASE_PHYS,
+			.size = CONFIG_DMA_SIZE,
+			.attr = MA_SPEED_1 | MA_DMA | MA_CACHE_COHERENT,
+		},
 #if defined(CONFIG_SRAM_SIZE)
-	/* SRAM */
-	bootinfo.ram[i].base = (void*)CONFIG_SRAM_BASE_PHYS;
-	bootinfo.ram[i].size = CONFIG_SRAM_SIZE;
-	bootinfo.ram[i].type = MT_FAST;
-	++i;
+		/* SRAM */
+		{
+			.base = (phys*)CONFIG_SRAM_BASE_PHYS,
+			.size = CONFIG_SRAM_SIZE,
+			.attr = MA_SPEED_1 | MA_DMA,
+		},
 #endif
-
-	bootinfo.nr_rams = i;
+	};
+	page_init(memory, ARRAY_SIZE(memory), args);
 
 	/*
 	 * Run machine initialisation.

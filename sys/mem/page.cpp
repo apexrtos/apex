@@ -4,9 +4,6 @@
  * The physical page allocator is responsible for allocating physical memory
  * and keeping track of free memory.
  *
- * Memory is split into regions based on boot information memory type. Only
- * one region per type is supported at this time.
- *
  * The caller needs to remember which pages have been allocated and free them
  * when they are no longer required.
  *
@@ -28,7 +25,6 @@
 
 #include <algorithm>
 #include <bootargs.h>
-#include <bootinfo.h>
 #include <cassert>
 #include <cstring>
 #include <debug.h>
@@ -54,7 +50,7 @@ struct page {
 };
 
 struct region {
-	MEM_TYPE type;		/* Type of region, MEM_* */
+	long attr;		/* Retion attributes, bitfield of MA_* */
 	a::mutex mutex;		/* For pages, blocks & bitmap */
 	phys *begin;		/* First physical address in region */
 	phys *end;		/* Last physical address in region + 1 */
@@ -71,6 +67,7 @@ struct region {
 
 static struct {
 	region *regions;
+	region **regions_by_speed;
 	size_t nr_regions;
 } s;
 
@@ -90,16 +87,6 @@ constexpr const char *to_string(PG_STATE v)
 	case PG_SYSTEM: return "SYSTEM";
 	case PG_FIXED: return "FIXED";
 	case PG_MAPPED: return "MAPPED";
-	}
-	return nullptr;
-}
-
-constexpr const char *to_string(MEM_TYPE v)
-{
-	switch (v) {
-	case MEM_NORMAL: return "NORMAL";
-	case MEM_FAST: return "FAST";
-	case MEM_DMA: return "DMA";
 	}
 	return nullptr;
 }
@@ -298,17 +285,16 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
 }
 
 /*
- * page_alloc_order - allocate physical memory of size 1 << 'o' pages in region
- *		      of type 'mt' with state 'st'
+ * page_alloc_order - allocate physical memory of size 1 << 'o' pages with
+ *		      attributes 'attr'
  *
- * tries to allocate using requested type but falls back if memory is low.
+ * tries to allocate using requested attributes but falls back if memory is low.
  * returns 0 on failure, physical address otherwise.
  */
 phys *
-page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
-    void *owner)
+page_alloc_order(const size_t o, long attr, void *owner)
 {
-	const auto st = at == PAGE_ALLOC_FIXED ? PG_FIXED : PG_MAPPED;
+	const auto st = attr & PAF_MAPPED ? PG_MAPPED : PG_FIXED;
 
 	/* find_block returns first page of free block with order >= o */
 	auto find_block = [](const region &r, const size_t o) -> ptrdiff_t {
@@ -322,30 +308,36 @@ page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
 		return -1;
 	};
 
-	/* try to allocate in requested type first */
-	for (size_t i = 0; i < s.nr_regions; ++i) {
-		auto &r = s.regions[i];
-		if (r.type != mt)
-			continue;
-		std::lock_guard l(r.mutex);
-		const auto p = find_block(r, o);
-		if (p != -1)
-			return do_alloc(r, p, o, st, owner);
+	const auto fallbacks = {0, MA_DMA, MA_DMA | MA_CACHE_COHERENT};
+
+	/* find matching speed region with closest matching attributes */
+	for (unsigned long mask : fallbacks) {
+		for (size_t i = 0; i < s.nr_regions; ++i) {
+			auto &r = s.regions[i];
+			if ((r.attr & ~mask) != (attr & ~PAF_MASK))
+				continue;
+			std::lock_guard l(r.mutex);
+			const auto p = find_block(r, o);
+			if (p != -1)
+				return do_alloc(r, p, o, st, owner);
+		}
 	}
 
-	/* no fallback for DMA memory */
-	if (mt == MEM_DMA)
+	if (attr & PAF_NO_SPEED_FALLBACK)
 		return 0;
 
-	/* if that failed try to allocate anywhere */
-	for (size_t i = 0; i < s.nr_regions; ++i) {
-		auto &r = s.regions[i];
-		if (r.type == mt || r.type == MEM_DMA)
-			continue;
-		std::lock_guard l(r.mutex);
-		const auto p = find_block(r, o);
-		if (p != -1)
-			return do_alloc(r, p, o, st, owner);
+	/* find any speed region with closest matching attributes */
+	for (unsigned long mask : fallbacks) {
+		for (size_t i = 0; i < s.nr_regions; ++i) {
+			auto &r = *s.regions_by_speed[i];
+			if ((r.attr & ~mask & ~MA_SPEED_MASK) !=
+			    (attr & ~MA_SPEED_MASK & ~PAF_MASK))
+				continue;
+			std::lock_guard l(r.mutex);
+			const auto p = find_block(r, o);
+			if (p != -1)
+				return do_alloc(r, p, o, st, owner);
+		}
 	}
 
 	return 0;
@@ -360,13 +352,13 @@ page_alloc_order(const size_t o, const MEM_TYPE mt, const PAGE_ALLOC_TYPE at,
  * returns 0 on failure, physical address otherwise.
  */
 phys *
-page_alloc(size_t len, MEM_TYPE mt, const PAGE_ALLOC_TYPE at, void *owner)
+page_alloc(size_t len, long attr, void *owner)
 {
 	if (len == 0)
 		return 0;
 	len = PAGE_ALIGN(len);
 	const auto order = ceil_log2(len) - floor_log2(CONFIG_PAGE_SIZE);
-	const auto addr = page_alloc_order(order, mt, at, owner);
+	const auto addr = page_alloc_order(order, attr, owner);
 	if (addr == 0)
 		return 0;
 	const auto excess = (CONFIG_PAGE_SIZE << order) - len;
@@ -555,10 +547,27 @@ page_valid(phys *addr, size_t len, void *owner)
 }
 
 /*
+ * page_attr - retrieve page attributes
+ */
+long
+page_attr(phys *addr, size_t len)
+{
+	/* no need to lock - we aren't modifying anything, and after page_init
+	   the page layout is immutable */
+
+	/* find region */
+	auto *r = find_region(addr, len);
+	if (!r)
+		return DERR(-EINVAL);
+
+	return r->attr;
+}
+
+/*
  * page_init - initialise page allocator
  */
 void
-page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
+page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 {
 	/* make sure kernel ELF headers are sane */
 	extern char __elf_headers[1];
@@ -569,22 +578,19 @@ page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
 	    eh->e_ident[EI_MAG3] != ELFMAG3)
 		panic("bad ELF header");
 
-	/* analyse bootinfo to count regions & find the first piece of
+	/* analyse meminfo to count regions & find the first piece of
 	 * contiguous normal memory in which to allocate state */
 	phys *m_alloc = 0;
 	phys *m_end = 0;
-	for (size_t i = 0; i < bi->nr_rams; ++i) {
-		const auto &m = bi->ram[i];
-		switch (m.type) {
-		case MT_NORMAL:
-			if (!m_end) {
-				m_alloc = (phys*)m.base;
-				m_end = (phys*)m.base + m.size;
-			}
-		case MT_FAST:
-		case MT_DMA:
-			++s.nr_regions;
-		}
+	for (size_t i = 0; i < mi_size; ++i) {
+		const auto &m = mi[i];
+		++s.nr_regions;
+		if (m_end)
+			continue;
+		if ((m.attr & MA_SPEED_MASK) != MA_NORMAL)
+			continue;
+		m_alloc = (phys*)m.base;
+		m_end = (phys*)m.base + m.size;
 	}
 
 	if (!m_end)
@@ -643,16 +649,14 @@ page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
 
 	/* allocate regions */
 	s.regions = (region*)alloc(sizeof *s.regions * s.nr_regions);
+	s.regions_by_speed = (region**)alloc(sizeof(s.regions) * s.nr_regions);
 
 	/* initialise regions & pages in ascending address order */
 	phys *init_addr = nullptr;
 	for (size_t i = 0; i != s.nr_regions; ++i) {
-		const boot_mem *m = nullptr;
-		for (size_t j = 0; j < bi->nr_rams; ++j) {
-			const auto &t = bi->ram[j];
-			if (t.type != MT_NORMAL && t.type != MT_FAST &&
-			    t.type != MT_DMA)
-				continue;
+		const meminfo *m = nullptr;
+		for (size_t j = 0; j < mi_size; ++j) {
+			const auto &t = mi[j];
 			if (t.base < init_addr)
 				continue;
 			if (!m || (t.base >= init_addr && t.base < m->base))
@@ -660,23 +664,8 @@ page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
 		}
 		assert(m);
 
-		MEM_TYPE type;
-		switch (m->type) {
-		case MT_NORMAL:
-			type = MEM_NORMAL;
-			break;
-		case MT_FAST:
-			type = MEM_FAST;
-			break;
-		case MT_DMA:
-			type = MEM_DMA;
-			break;
-		default:
-			assert(0);  /* impossible, but gcc warns.. */
-		}
-
 		region &r = *new(s.regions + i) region;
-		r.type = type;
+		r.attr = m->attr;
 		r.begin = (phys*)PAGE_ALIGN(m->base);
 		r.end = (phys*)PAGE_TRUNC(m->base + m->size);
 		const size_t size_order = ceil_log2(r.end - r.begin);
@@ -701,13 +690,12 @@ page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
 
 		/* reserve pages without physical backing */
 		if (!page_reserve(r, r.base, r.begin - r.base, PG_HOLE, nullptr))
-			panic("bad bootinfo");
+			panic("bad meminfo");
 		if (!page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, nullptr))
-			panic("bad bootinfo");
+			panic("bad meminfo");
 
-		dbg("page_init: region %zu (%s): %p -> %p covering %p -> %p\n",
-		    i, to_string(r.type), r.base, r.base + r.size,
-		    r.begin, r.end);
+		dbg("page_init: region %zu: %p -> %p covering %p -> %p\n",
+		    i, r.base, r.base + r.size, r.begin, r.end);
 
 		init_addr = r.end;
 	}
@@ -715,14 +703,14 @@ page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
 	/* make sure that regions don't overlap */
 	for (size_t i = 1; i < s.nr_regions; ++i) {
 		if (s.regions[i - 1].end > s.regions[i].begin)
-			panic("bad bootinfo");
+			panic("overlapping regions");
 	}
 
 	/* find allocation region */
 	const region *r_alloc = nullptr;
 	for (size_t i = 0; i < s.nr_regions; ++i) {
 		const auto &r = s.regions[i];
-		if (r.type != MEM_NORMAL)
+		if ((r.attr & MA_SPEED_MASK) != MA_NORMAL)
 			continue;
 		r_alloc = &r;
 		break;
@@ -745,6 +733,18 @@ page_init(const bootargs *args, const struct bootinfo *bi, void *owner)
 			panic("bug");
 	}
 
+	/* initialise regions_by_speed */
+	unsigned spd_idx = 0;
+	for (int spd : {MA_SPEED_0, MA_SPEED_1, MA_SPEED_2, MA_SPEED_3}) {
+		for (size_t i = 0; i < s.nr_regions; ++i) {
+			auto &r = s.regions[i];
+			if ((r.attr & MA_SPEED_MASK) != spd)
+				continue;
+			s.regions_by_speed[spd_idx++] = &r;
+		}
+	}
+	assert(spd_idx == s.nr_regions);
+
 #if defined(CONFIG_DEBUG)
 	page_dump();
 #endif
@@ -762,7 +762,11 @@ void page_dump(void)
 		const region &r = s.regions[i];
 #endif
 		info(" %p -> %p\n", r.begin, r.end);
-		info("  type      %s\n", to_string(r.type));
+		info("  attr      speed %ld%s%s%s\n",
+		    r.attr & MA_SPEED_MASK,
+		    r.attr & MA_DMA ? ", dma" : "",
+		    r.attr & MA_CACHE_COHERENT ? ", coherent" : "",
+		    r.attr & MA_PERSISTENT ? ", persistent" : "");
 		info("  base      %p\n", r.base);
 		info("  size      %zu\n", r.size);
 		info("  usable    %zu\n", r.usable);

@@ -38,7 +38,7 @@ struct task;
 extern "C" {
 #endif
 
-void   *kmem_alloc(size_t, enum MEM_TYPE);
+void   *kmem_alloc(size_t, long mem_attr);
 void	kmem_free(void *);
 void	kmem_init(void);
 void	kmem_check(void);

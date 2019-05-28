@@ -1178,17 +1178,18 @@ extern "C" {
  * fproc: routine to flush queues
  */
 tty *
-tty_create(const char *name, size_t rx_bufsiz, size_t rx_bufmin, tty_tproc tproc,
-    tty_oproc oproc, tty_iproc iproc, tty_fproc fproc, void *data)
+tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
+    tty_tproc tproc, tty_oproc oproc, tty_iproc iproc, tty_fproc fproc,
+    void *data)
 {
 	if (rx_bufsiz > CONFIG_PAGE_SIZE || CONFIG_PAGE_SIZE % rx_bufsiz)
 		return (tty *)DERR(-EINVAL);
 	const size_t rx_sz = ALIGNn(rx_bufsiz * rx_bufmin, CONFIG_PAGE_SIZE);
 
-	std::unique_ptr<phys> rxp{page_alloc(rx_sz, MEM_NORMAL,
-	    PAGE_ALLOC_FIXED, &tty_id), {rx_sz, &tty_id}};
-	std::unique_ptr<phys> txp{page_alloc_order(1, MEM_NORMAL,
-	    PAGE_ALLOC_FIXED, &tty_id), {CONFIG_PAGE_SIZE, &tty_id}};
+	std::unique_ptr<phys> rxp{page_alloc(rx_sz, attr, &tty_id),
+	    {rx_sz, &tty_id}};
+	std::unique_ptr<phys> txp{page_alloc_order(1, attr, &tty_id),
+	    {CONFIG_PAGE_SIZE, &tty_id}};
 	if (!rxp.get() || !txp.get())
 		return (tty *)DERR(-ENOMEM);
 	const size_t rx_bufcnt = rx_sz / rx_bufsiz;

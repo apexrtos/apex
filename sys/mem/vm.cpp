@@ -25,7 +25,7 @@ struct seg {
 	int prot;	/* segment protection PROT_* */
 	void *base;	/* virtual base address of this segment */
 	size_t len;	/* size of segment */
-	MEM_TYPE type;	/* preferred memory type for pages */
+	long attr;	/* preferred memory attributes for pages */
 	off_t off;	/* (optional) offset into vnode */
 	vnode *vn;	/* (optional) vnode backing region */
 };
@@ -84,10 +84,10 @@ do_vm_io(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc, fn f
  */
 static bool
 seg_extend(seg *s, void *addr, size_t len, int prot, vnode *vn, off_t off,
-    MEM_TYPE type)
+    long attr)
 {
 	if (s->prot != prot || (char*)s->base + len != addr ||
-	    s->type != type || s->vn != vn || (vn && s->off + s->len != off))
+	    s->attr != attr || s->vn != vn || (vn && s->off + s->len != off))
 		return false;
 	s->len += len;
 	return true;
@@ -118,15 +118,15 @@ oflags(int prot, int flags)
  */
 static int
 seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
-    std::unique_ptr<vnode> vn, off_t off, MEM_TYPE type)
+    std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	seg *ns;
-	if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
+	if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
 		return DERR(-ENOMEM);
 	ns->prot = prot;
 	ns->base = pages.release();
 	ns->len = len;
-	ns->type = type;
+	ns->attr = attr;
 	ns->off = off;
 	ns->vn = vn.release();
 	list_insert(&prev->link, &ns->link);
@@ -138,7 +138,7 @@ seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
  */
 void *
 mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
-    MEM_TYPE type)
+    long attr)
 {
 	int err;
 	std::unique_ptr<vnode> vn;
@@ -167,7 +167,7 @@ mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
 	if (fixed && (err = munmapfor(a, addr, len)) < 0)
 		return (void*)err;
 
-	return as_map(a, addr, len, prot, flags, std::move(vn), off, type);
+	return as_map(a, addr, len, prot, flags, std::move(vn), off, attr);
 }
 
 /*
@@ -207,7 +207,7 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 		} else if (s->base < uaddr && send > uend) {
 			/* hole in segment */
 			seg *ns;
-			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
+			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
 				return DERR(-ENOMEM);
 			s->len = uaddr - (char*)s->base;
 			err = as_unmap(a, uaddr, ulen, s->vn, s->off + s->len);
@@ -280,9 +280,9 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 		} else if (s->base < uaddr && send > uend) {
 			/* hole in segment */
 			seg *ns1, *ns2;
-			if (!(ns1 = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
+			if (!(ns1 = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
 				return DERR(-ENOMEM);
-			if (!(ns2 = (seg*)kmem_alloc(sizeof(seg), MEM_FAST))) {
+			if (!(ns2 = (seg*)kmem_alloc(sizeof(seg), MA_FAST))) {
 				kmem_free(ns1);
 				return DERR(-ENOMEM);
 			}
@@ -314,7 +314,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 		} else if (s->base < uaddr) {
 			/* end of segment */
 			seg *ns;
-			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
+			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
 				return DERR(-ENOMEM);
 
 			const auto l = uaddr - (char*)s->base;
@@ -334,7 +334,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 		} else if (s->base < uend) {
 			/* start of segment */
 			seg *ns;
-			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MEM_FAST)))
+			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
 				return DERR(-ENOMEM);
 			const auto l = uend - (char*)s->base;
 			err = as_mprotect(a, s->base, l, prot);
@@ -395,7 +395,7 @@ void*
 sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 {
 	return mmapfor(task_cur()->as, addr, len, prot, flags, fd,
-	    (off_t)pgoff * CONFIG_PAGE_SIZE, MEM_NORMAL);
+	    (off_t)pgoff * CONFIG_PAGE_SIZE, MA_NORMAL);
 }
 
 /*
@@ -443,7 +443,7 @@ sc_brk(void *addr)
 		    (uintptr_t)addr - (uintptr_t)a->brk,
 		    PROT_READ | PROT_WRITE,
 		    MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE,
-		    0, 0, MEM_NORMAL); r > (void*)-4096UL)
+		    0, 0, MA_NORMAL); r > (void*)-4096UL)
 			return r;
 
 	return a->brk = addr;
@@ -655,7 +655,7 @@ seg_prot(const seg *s)
  */
 int
 as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
-    int flags, std::unique_ptr<vnode> vn, off_t off, MEM_TYPE type)
+    int flags, std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	seg *s;
 	list_for_each_entry(s, &a->segs, link) {
@@ -665,11 +665,11 @@ as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
 	s = list_entry(list_prev(&s->link), seg, link);
 
 	if (!list_end(&a->segs, &s->link) &&
-	    seg_extend(s, pages.get(), len, prot, vn.get(), off, type)) {
+	    seg_extend(s, pages.get(), len, prot, vn.get(), off, attr)) {
 		pages.release();
 		return 0;
 	}
 
 	return seg_insert(s, std::move(pages), len, prot,
-	    std::move(vn), off, type);
+	    std::move(vn), off, attr);
 }

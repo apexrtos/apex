@@ -32,9 +32,9 @@
 
 #include <conf/config.h>
 #include <context.h>
-#include <stdbool.h>
 #include <stdnoreturn.h>
 #include <timer.h>
+#include <types.h>
 
 struct as;
 struct mutex;
@@ -109,7 +109,7 @@ extern "C" {
 struct thread  *thread_cur(void);
 bool		thread_valid(struct thread *);
 int	        thread_createfor(struct task *, struct thread **, void *,
-				 unsigned, void (*)(void), long);
+				 long mem_attr, void (*)(void), long);
 int	        thread_name(struct thread *, const char *);
 int		thread_id(struct thread *);
 struct thread  *thread_find(int);
@@ -126,7 +126,7 @@ void	        thread_init(void);
  * Kernel threads
  */
 struct thread  *kthread_create(void (*)(void *), void *, int, const char *,
-			       unsigned);
+			       long mem_attr);
 
 #if defined(__cplusplus)
 } /* extern "C" */

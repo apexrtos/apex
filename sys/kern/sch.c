@@ -931,7 +931,7 @@ sch_init(void)
 	active_thread->resched = RESCHED_SWITCH;
 
 	/* Create a DPC thread. */
-	th = kthread_create(dpc_thread, NULL, PRI_DPC, "dpc", MEM_FAST);
+	th = kthread_create(dpc_thread, NULL, PRI_DPC, "dpc", MA_FAST);
 	if (th == NULL)
 		panic("sch_init");
 

@@ -99,7 +99,7 @@ console_init(void)
 
 	sch_lock();
 	if (!kthread_create(&console_thread, NULL, PRI_BACKGROUND, "console",
-	    MEM_NORMAL))
+	    MA_NORMAL))
 		panic("console_init");
 	sch_unlock();
 

@@ -73,15 +73,15 @@ __fast_bss struct thread idle_thread;
  * Returns thread pointer on success, or NULL on failure.
  */
 static struct thread *
-thread_alloc(unsigned type)
+thread_alloc(long mem_attr)
 {
 	struct thread *th;
 	void *stack;
 
-	if ((th = kmem_alloc(sizeof(*th), MEM_FAST)) == NULL)
+	if ((th = kmem_alloc(sizeof(*th), MA_FAST)) == NULL)
 		return NULL;
 
-	if ((stack = kmem_alloc(CONFIG_KSTACK_SIZE, type)) == NULL) {
+	if ((stack = kmem_alloc(CONFIG_KSTACK_SIZE, mem_attr)) == NULL) {
 		kmem_free(th);
 		return NULL;
 	}
@@ -123,7 +123,7 @@ thread_valid(struct thread *th)
  */
 int
 thread_createfor(struct task *task, struct thread **thp, void *sp,
-    unsigned type, void (*entry)(void), long retval)
+    long mem_attr, void (*entry)(void), long retval)
 {
 	struct thread *th;
 	int err = 0;
@@ -138,7 +138,7 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
 		err = DERR(-EPERM);
 		goto out;
 	}
-	if ((th = thread_alloc(type)) == NULL) {
+	if ((th = thread_alloc(mem_attr)) == NULL) {
 		err = DERR(-ENOMEM);
 		goto out;
 	}
@@ -340,7 +340,7 @@ thread_idle(void)
  */
 struct thread *
 kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
-    unsigned type)
+    long mem_attr)
 {
 	struct thread *th;
 	void *sp;
@@ -352,7 +352,7 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 	 * If there is not enough core for the new thread,
 	 * just drop to panic().
 	 */
-	if ((th = thread_alloc(type)) == NULL)
+	if ((th = thread_alloc(mem_attr)) == NULL)
 		return NULL;
 
 	strlcpy(th->name, name, ARRAY_SIZE(th->name));

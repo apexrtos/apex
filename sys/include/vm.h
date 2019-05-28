@@ -50,11 +50,11 @@ struct vnode;
  * MMU interface
  */
 void	   *as_map(as *, void *, size_t, int, int, std::unique_ptr<vnode>,
-		   off_t, MEM_TYPE);
+		   off_t, long mem_attr);
 int	    as_unmap(as *, void *, size_t, vnode *, off_t);
 int	    as_mprotect(as *, void *, size_t, int);
 int	    as_insert(as *, std::unique_ptr<phys>, size_t, int, int,
-		      std::unique_ptr<vnode>, off_t, MEM_TYPE);
+		      std::unique_ptr<vnode>, off_t, long mem_attr);
 
 namespace std {
 

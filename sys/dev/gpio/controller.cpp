@@ -16,7 +16,7 @@ controller::controller(std::string_view name, size_t pins)
 , pins_{pins}
 {
 	const auto s = sizeof(irq_entry) * pins;
-	irq_table_ = reinterpret_cast<irq_entry *>(kmem_alloc(s, MEM_FAST));
+	irq_table_ = reinterpret_cast<irq_entry *>(kmem_alloc(s, MA_FAST));
 	if (!irq_table_)
 		panic("OOM");
 	memset(irq_table_, 0, s);

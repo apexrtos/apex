@@ -3,24 +3,32 @@
 
 #include <types.h>
 
-struct bootinfo;
 struct bootargs;
 
-enum PAGE_ALLOC_TYPE {
-	PAGE_ALLOC_FIXED,	/* Page must remain fixed in memory */
-	PAGE_ALLOC_MAPPED,	/* Page is part of a vm mapping */
+/*
+ * Page allocation flags
+ */
+#define PAF_MAPPED 0x40000000		    /* page is part of a vm mapping */
+#define PAF_NO_SPEED_FALLBACK 0x80000000    /* do not use alternate speed */
+#define PAF_MASK 0xc0000000
+
+struct meminfo {
+	phys *base;		    /* start address */
+	size_t size;		    /* size in bytes */
+	long attr;		    /* bitfield of MA_... attributes */
 };
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-phys   *page_alloc_order(size_t order, enum MEM_TYPE, enum PAGE_ALLOC_TYPE, void *);
-phys   *page_alloc(size_t, enum MEM_TYPE, enum PAGE_ALLOC_TYPE, void *);
+phys   *page_alloc_order(size_t order, long ma_paf, void *);
+phys   *page_alloc(size_t, long ma_paf, void *);
 phys   *page_reserve(phys *, size_t, void *);
 int	page_free(phys *, size_t, void *);
 bool	page_valid(phys *, size_t, void *);
-void	page_init(const struct bootargs *, const struct bootinfo *, void *);
+long	page_attr(phys *, size_t len);
+void	page_init(const struct meminfo *, size_t, const struct bootargs *);
 void	page_dump(void);
 
 #if defined(__cplusplus)

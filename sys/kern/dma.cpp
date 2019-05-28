@@ -21,6 +21,10 @@ char dma_id;
 
 /*
  * Allocate a buffer suitable for use with a DMA controller.
+ *
+ * For now, all DMA allocations are cache coherent.
+ *
+ * REVISIT: replace with slab allocator?
  */
 void *
 dma_alloc(size_t len)
@@ -41,7 +45,7 @@ dma_alloc(size_t len)
 	}
 
 	/* allocate new page */
-	auto p = page_alloc_order(0, MEM_DMA, PAGE_ALLOC_FIXED, &dma_id);
+	auto p = page_alloc_order(0, MA_FAST | MA_DMA | MA_CACHE_COHERENT, &dma_id);
 	if (!p)
 		return nullptr;
 	pages.push_back({len, p});

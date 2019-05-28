@@ -30,7 +30,6 @@ SOURCES := \
     fs/util/for_each_iov.c \
     fs/vfs.c \
     fs/vnode.c \
-    kern/bootinfo.c \
     kern/clone.cpp \
     kern/console.c \
     kern/debug.c \

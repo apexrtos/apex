@@ -177,8 +177,8 @@ oproc(tty *tp)
 void
 arm_mps2_uart_init(const arm_mps2_uart_desc *d)
 {
-	auto tp = tty_create(d->name, 128, 1, tproc, oproc, nullptr, nullptr,
-	    reinterpret_cast<void *>(d->base));
+	auto tp = tty_create(d->name, MA_NORMAL, 128, 1, tproc, oproc,
+	    nullptr, nullptr, reinterpret_cast<void *>(d->base));
 	if (tp > (void *)-4096UL)
 		panic("tty_create");
 	irq_attach(d->rx_int, d->ipl, 0, rx_isr, NULL, tp);

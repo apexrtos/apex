@@ -321,8 +321,8 @@ ramfs_write(struct file *fp, void *buf, size_t size)
 			 * many alloc/free calls.
 			 */
 			new_size = PAGE_ALIGN(end_pos);
-			phys *const p = page_alloc(new_size, MEM_NORMAL,
-			    PAGE_ALLOC_FIXED, &ramfs_id);
+			phys *const p = page_alloc(new_size, MA_NORMAL,
+			    &ramfs_id);
 			if (!p)
 				return -EIO;
 			new_buf = phys_to_virt(p);

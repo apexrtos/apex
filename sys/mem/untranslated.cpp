@@ -60,14 +60,14 @@ as_switch(as *as)
  */
 void *
 as_map(struct as *as, void *addr, size_t len, int prot, int flags,
-    std::unique_ptr<vnode> vn, off_t off, MEM_TYPE type)
+    std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	int r = 0;
 	const auto fixed = flags & MAP_FIXED;
 
 	std::unique_ptr<phys> pages(fixed
 	    ? page_reserve((phys*)addr, len, as)
-	    : page_alloc(len, type, PAGE_ALLOC_FIXED, as),
+	    : page_alloc(len, attr, as),
 	    {len, as});
 
 	if (!pages.get())
@@ -84,7 +84,7 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
 		cache_coherent_exec(addr, len);
 
 	if ((r = as_insert(as, std::move(pages), len, prot, flags,
-	    std::move(vn), off, type)) < 0)
+	    std::move(vn), off, attr)) < 0)
 		return (void*)r;
 
 #if defined(CONFIG_MPU)

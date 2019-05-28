@@ -39,7 +39,6 @@
 #include <fs.h>
 #include <irq.h>
 #include <kmem.h>
-#include <page.h>
 #include <sch.h>
 #include <string.h>
 #include <sys/mount.h>
@@ -84,7 +83,6 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	/*
 	 * Initialise memory managers.
 	 */
-	page_init(&args, &bootinfo, &kern_task);
 	kmem_init();
 
 	/*
@@ -116,7 +114,7 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	/*
 	 * Create boot thread and start scheduler.
 	 */
-	kthread_create(&boot_thread, &args, PRI_DEFAULT, "boot", MEM_NORMAL);
+	kthread_create(&boot_thread, &args, PRI_DEFAULT, "boot", MA_NORMAL);
 	machine_ready();
 	sch_unlock();
 	thread_idle();

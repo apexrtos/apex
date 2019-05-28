@@ -300,7 +300,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 			/* allocate memory for link target */
 			if (tgt_len > link_buf_size) {
 				if (tgt_len + 1 > 32) {
-					p = page_alloc(PATH_MAX, MEM_NORMAL, PAGE_ALLOC_FIXED, &vfs_id);
+					p = page_alloc(PATH_MAX, MA_NORMAL, &vfs_id);
 					if (!p) {
 						err = DERR(-ENOMEM);
 						goto out;
