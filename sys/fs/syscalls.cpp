@@ -46,12 +46,13 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 		const auto c = std::min<size_t>(count, iov.size());
 		size_t d = 0;
 		for (size_t i = 0; i < c; ++i) {
-			if (!uiov[i].iov_base)
+			/* make sure iov can't change under our feet */
+			iov[d] = read_once(uiov + i);
+			if (!iov[d].iov_base)
 				continue;
-			if (!u_access_ok(uiov[i].iov_base, uiov[i].iov_len, prot))
+			if (!u_access_ok(iov[d].iov_base, iov[d].iov_len, prot))
 				return DERR(-EFAULT);
-			iov[d] = uiov[i];
-			l += uiov[i].iov_len;
+			l += iov[d].iov_len;
 			++d;
 		}
 		const ssize_t r = fn(fd, iov.data(), d, offset);
