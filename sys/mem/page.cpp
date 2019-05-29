@@ -565,6 +565,9 @@ page_attr(phys *addr, size_t len)
 
 /*
  * page_init - initialise page allocator
+ *
+ * REVISIT: We currently allocate state starting at a page boundary. This is
+ * wasteful as there could be a partially empty page available for use.
  */
 void
 page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
@@ -706,17 +709,6 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 			panic("overlapping regions");
 	}
 
-	/* find allocation region */
-	const region *r_alloc = nullptr;
-	for (size_t i = 0; i < s.nr_regions; ++i) {
-		const auto &r = s.regions[i];
-		if ((r.attr & MA_SPEED_MASK) != MA_NORMAL)
-			continue;
-		r_alloc = &r;
-		break;
-	}
-	assert(r_alloc);
-
 	/* reserve unusable memory */
 	for_each_reserved_region([&](phys *p, size_t len) {
 		auto r = page_reserve(p, len, PG_SYSTEM, &kern_task);
@@ -727,11 +719,8 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	});
 
 	/* reserve memory allocated for region & page structures */
-	if (m_alloc > r_alloc->begin) {
-		const auto begin = std::max(m_begin, r_alloc->begin);
-		if (!page_reserve(begin, m_alloc - begin, PG_SYSTEM, &page_id))
-			panic("bug");
-	}
+	if (!page_reserve(m_begin, m_alloc - m_begin, PG_SYSTEM, &page_id))
+		panic("bug");
 
 	/* initialise regions_by_speed */
 	unsigned spd_idx = 0;
