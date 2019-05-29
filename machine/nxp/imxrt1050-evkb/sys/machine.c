@@ -20,7 +20,7 @@ static const unsigned long LPUART1 = 0x40184000;
 void
 machine_init(struct bootargs *args)
 {
-	struct mmumap mappings[] = {
+	const struct mmumap mappings[] = {
 		/* IMXRT10xx places external SDRAM in a default write-through
 		 * memory region. Override this as write-back. */
 		{
@@ -35,7 +35,6 @@ machine_init(struct bootargs *args)
 			.paddr = (phys *)CONFIG_DMA_BASE_PHYS,
 			.size = CONFIG_DMA_SIZE,
 			.flags = RASR_KERNEL_RW,
-
 		}
 #endif
 	};
