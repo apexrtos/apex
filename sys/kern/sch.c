@@ -34,11 +34,9 @@
 /**
  * General design:
  *
- * The APEX scheduler is based on the algorithm known as priority
- * based multi level queue. Each thread has its own priority
- * assigned between 0 and 255. The lower number means higher
- * priority like BSD UNIX.  The scheduler maintains 256 level run
- * queues mapped to each priority.  The lowest priority (=255) is
+ * The APEX scheduler is based on the algorithm known as priority based queue.
+ * Each thread has its own priority assigned between 0 and 255. The lower
+ * number means higher priority like BSD UNIX. The lowest priority (=255) is
  * used only for an idle thread.
  *
  * All threads have two different types of priorities:
@@ -56,6 +54,7 @@
  *  - TH_SLEEP   Sleep for some event
  *  - TH_SUSPEND Suspend count is not 0
  *  - TH_EXIT    Terminated
+ *  - TH_ZOMBIE  Ready to be freed
  *
  * The thread is always preemptive even in the kernel mode.
  * There are following 4 reasons to switch thread.
@@ -112,7 +111,6 @@
 #define DPC_PENDING	0x4470503f	/* 'DpP?' */
 
 static struct queue	runq;		/* run queue */
-static struct queue	wakeq;		/* queue for waking threads */
 static struct queue	dpcq;		/* DPC queue */
 static struct event	dpc_event;	/* event for DPC */
 
@@ -135,11 +133,22 @@ runq_top(void)
 }
 
 /*
+ * return true if thread is in runnable state
+ */
+static bool
+thread_runnable(const struct thread *th)
+{
+	return !(th->state & (TH_SLEEP | TH_SUSPEND | TH_ZOMBIE));
+}
+
+/*
  * Insert a thread into the run queue after all threads of higher or equal priority.
  */
 static void
 runq_enqueue(struct thread *th)
 {
+	assert(thread_runnable(th));
+
 	struct queue *q = queue_first(&runq);
 	while (!queue_end(&runq, q)) {
 		struct thread *qth = queue_entry(q, struct thread, link);
@@ -194,39 +203,6 @@ static void
 runq_remove(struct thread *th)
 {
 	queue_remove(&th->link);
-}
-
-/*
- * return true if thread is in runnable state
- */
-static bool
-thread_runnable(const struct thread *th)
-{
-	return !(th->state & (TH_SLEEP | TH_SUSPEND | TH_ZOMBIE));
-}
-
-/*
- * Process all pending woken threads.
- * Please refer to the comment of sch_wakeup().
- */
-static void
-wakeq_flush(void)
-{
-	struct queue *q;
-	struct thread *th;
-
-	while (!queue_empty(&wakeq)) {
-		/*
-		 * Set a thread runnable.
-		 */
-		q = dequeue(&wakeq);
-		th = queue_entry(q, struct thread, link);
-		th->slpevt = NULL;
-		th->state &= ~TH_SLEEP;
-		assert(thread_runnable(th));
-		if (th != active_thread)
-			runq_enqueue(th);
-	}
 }
 
 /*
@@ -353,16 +329,6 @@ sch_nanosleep(struct event *evt, uint64_t nsec)
  * A thread can have sleep and suspend state simultaneously.
  * So, the thread may keep suspending even if it woke up.
  *
- * Since this routine can be called from ISR at interrupt
- * level, accessing runq here will require irq_lock() in all
- * other runq accesses. Thus, this routine will temporary move
- * the target thread into wakeq, and they will be moved to runq
- * at non-interrupt level in wakeq_flush().
- *
- * The woken thread will be put on the tail of runq
- * regardless of its scheduling policy. If woken threads have
- * same priority, next running thread is selected in FIFO order.
- *
  * Returns number of threads woken up.
  */
 unsigned
@@ -378,13 +344,17 @@ sch_wakeup(struct event *evt, int result)
 	const int s = irq_disable();
 	while (!queue_empty(&evt->sleepq)) {
 		/*
-		 * Move a sleeping thread to the wake queue.
+		 * Move a sleeping thread to the run queue.
 		 */
 		q = dequeue(&evt->sleepq);
 		th = queue_entry(q, struct thread, link);
 		th->slpret = result;
-		enqueue(&wakeq, q);
+		th->slpevt = NULL;
+		th->state &= ~TH_SLEEP;
 		timer_stop(&th->timeout);
+		if (th != active_thread)
+			runq_enqueue(th);
+
 		++n;
 	}
 	irq_restore(s);
@@ -424,8 +394,11 @@ sch_wakeone(struct event *evt)
 		}
 		queue_remove(&top->link);
 		top->slpret = 0;
-		enqueue(&wakeq, &top->link);
+		top->slpevt = NULL;
+		top->state &= ~TH_SLEEP;
 		timer_stop(&top->timeout);
+		if (th != active_thread)
+			runq_enqueue(top);
 	}
 	irq_restore(s);
 	sch_unlock();
@@ -492,7 +465,6 @@ int
 sch_continue_sleep(uint64_t nsec)
 {
 	const int s = irq_disable();
-	wakeq_flush();
 	if (nsec != 0 && active_thread->state & TH_SLEEP) {
 		/* Program timer to wake us up atfter nsec, but only if we're
 		 * still going to sleep.. */
@@ -529,14 +501,17 @@ void
 sch_unsleep(struct thread *th, int result)
 {
 	sch_lock();
+	const int s = irq_disable();
 	if (th->state & TH_SLEEP) {
-		const int s = irq_disable();
 		queue_remove(&th->link);
 		th->slpret = result;
-		enqueue(&wakeq, &th->link);
+		th->slpevt = NULL;
+		th->state &= ~TH_SLEEP;
 		timer_stop(&th->timeout);
-		irq_restore(s);
+		if (th != active_thread)
+			runq_enqueue(th);
 	}
+	irq_restore(s);
 	sch_unlock();
 }
 
@@ -564,10 +539,12 @@ void
 sch_yield(void)
 {
 	sch_lock();
+	const int s = irq_disable();
 
 	if (runq_top() <= active_thread->prio)
 		active_thread->resched = RESCHED_SWITCH;
 
+	irq_restore(s);
 	sch_unlock();	/* Switch current thread here */
 }
 
@@ -581,6 +558,7 @@ sch_suspend(struct thread *th)
 	assert(sch_locked());
 	assert(!(th->state & TH_SUSPEND));
 
+	const int s = irq_disable();
 	if (thread_runnable(th)) {
 		if (th == active_thread)
 			th->resched = RESCHED_SWITCH;
@@ -588,6 +566,7 @@ sch_suspend(struct thread *th)
 			runq_remove(th);
 	}
 	th->state |= TH_SUSPEND;
+	irq_restore(s);
 }
 
 /*
@@ -600,9 +579,11 @@ sch_resume(struct thread *th)
 	assert(sch_locked());
 	assert(th->state & TH_SUSPEND);
 
+	const int s = irq_disable();
 	th->state &= ~TH_SUSPEND;
-	if (thread_runnable(th))
+	if (thread_runnable(th) && th != active_thread)
 		runq_enqueue(th);
+	irq_restore(s);
 }
 
 /*
@@ -613,6 +594,8 @@ sch_resume(struct thread *th)
 __fast_text void
 sch_elapse(uint32_t nsec)
 {
+	assert(sch_locked());
+
 	/* Profile running time. */
 	active_thread->time += nsec;
 
@@ -675,15 +658,9 @@ sch_exit(void)
 /*
  * sch_lock - lock the scheduler.
  *
- * The thread switch is disabled during scheduler locked.
- * This is mainly used to synchronize the thread execution
- * to protect global resources. Even when scheduler is
- * locked, an interrupt handler can run. So, we have to
- * use irq_lock() to synchronize a global data with ISR.
+ * Preemption is disabled while the scheduler is locked.
  *
- * Since the scheduling lock can be nested any number of
- * times, the caller has the responsible to unlock the same
- * number of locks.
+ * Interrupts still run while preemption is disabled.
  */
 inline void
 sch_lock(void)
@@ -705,33 +682,17 @@ sch_lock(void)
 static void
 sch_unlock_slowpath(int s)
 {
-	wakeq_flush();
-	while (active_thread->resched) {
+	/* Kick scheduler */
+	sch_switch();
 
-		/* Kick scheduler */
-		sch_switch();
-
-		/*
-		 * Now we run pending interrupts which fired
-		 * during the thread switch. So, we can catch
-		 * the rescheduling request from such ISRs.
-		 * Otherwise, the reschedule may be deferred
-		 * until _next_ sch_unlock() call.
-		 */
-		irq_restore(s);
-
-		/*
-		 * Reap zombies
-		 */
-		while (!list_empty(&zombie_list)) {
-			struct thread *th = list_entry(list_first(&zombie_list),
-			    struct thread, task_link);
-			list_remove(&th->task_link);
-			thread_free(th);
-		}
-
-		s = irq_disable();
-		wakeq_flush();
+	/*
+	 * Reap zombies
+	 */
+	while (!list_empty(&zombie_list)) {
+		struct thread *th = list_entry(list_first(&zombie_list),
+			struct thread, task_link);
+		list_remove(&th->task_link);
+		thread_free(th);
 	}
 }
 
@@ -742,8 +703,7 @@ sch_unlock(void)
 	thread_check();
 
 	int s = irq_disable();
-	if (active_thread->locks == 1 &&
-	    (active_thread->resched || !queue_empty(&wakeq)))
+	if (active_thread->locks == 1 && active_thread->resched)
 		sch_unlock_slowpath(s);
 	--active_thread->locks;
 	irq_restore(s);
@@ -781,6 +741,7 @@ sch_setprio(struct thread *th, int baseprio, int prio)
 
 	th->baseprio = baseprio;
 
+	int s = irq_disable();
 	if (th == active_thread) {
 		/*
 		 * If we change the current thread's priority
@@ -802,6 +763,7 @@ sch_setprio(struct thread *th, int baseprio, int prio)
 		} else
 			th->prio = prio;
 	}
+	irq_restore(s);
 }
 
 int
@@ -925,7 +887,6 @@ sch_init(void)
 	struct thread *th;
 
 	queue_init(&runq);
-	queue_init(&wakeq);
 	queue_init(&dpcq);
 	event_init(&dpc_event, "dpc", ev_SLEEP);
 	active_thread->resched = RESCHED_SWITCH;
