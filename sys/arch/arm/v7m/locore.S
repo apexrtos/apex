@@ -116,6 +116,9 @@ _start:
 	ldr sp, =__stack_top
 	mov lr, 0xffffffff
 
+	/* wait for writes to system control space to complete */
+	dsb
+
 	/* kernel_main(archive_addr, archive_size, machdep0, machdep1) */
 	b kernel_main
 .ltorg
