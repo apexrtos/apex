@@ -352,12 +352,11 @@ task_path(struct task *task, const char *path)
 		err = DERR(-EPERM);
 		goto out;
 	}
-	if (strcmp(path, task->path)) {
-		if ((copy = malloc(strlen(path) + 1)) == NULL) {
+	if (!task->path || strcmp(path, task->path)) {
+		if ((copy = strdup(path)) == NULL) {
 			err = DERR(-ENOMEM);
 			goto out;
 		}
-		strcpy(copy, path);
 		free(task->path);
 		task->path = copy;
 	}
