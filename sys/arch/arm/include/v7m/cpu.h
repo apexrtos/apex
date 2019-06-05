@@ -331,6 +331,7 @@ static struct mpu *const MPU = (struct mpu*)0xe000ed90;
 	.C = 1, \
 	.B = 1, \
 }.r)
+#define RASR_NONE 0
 
 #endif /* !__ASSEMBLY__ */
 
