@@ -80,6 +80,16 @@ debug_printf(const char *fmt, ...)
 	debug_puts(buf);
 }
 
+/*
+ * __assert_fail - print assertion message and halt system
+ */
+noreturn void
+__assert_fail(const char *expr, const char *file, int line, const char *func)
+{
+	debug_printf("Assertion failed: %s (%s: %s: %d)\n",
+	    expr, file, func, line);
+	machine_panic();
+}
 
 /*
  * C entry point
