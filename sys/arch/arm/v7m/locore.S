@@ -95,9 +95,9 @@ _start:
 	orr r4, (SHCSR_USGFAULTNA|SHCSR_BUSFAULTENA|SHCSR_MEMFAULTENA)
 	str r4, [r5, A_SHCSR-A_SCS]
 
-	/* 8-byte stack alignment on exception */
+	/* trab divide by zero, 8-byte stack alignment on exception */
 	ldr r4, [r5, A_CCR-A_SCS]
-	orr r4, CCR_STKALIGN
+	orr r4, CCR_DIV_0_TRP|CCR_STKALIGN
 	str r4, [r5, A_CCR-A_SCS]
 
 	/* set SVC and PendSV priority */
