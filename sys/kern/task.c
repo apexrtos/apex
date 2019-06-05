@@ -401,8 +401,8 @@ task_dump(void)
 
 	info("task dump\n");
 	info("=========\n");
-	info(" task        nthrds susp cap      state parent     pid      path\n");
-	info(" ----------- ------ ---- -------- ----- ---------- -------- ------------\n");
+	info(" task        nthrds susp cap      state parent     pid       path\n");
+	info(" ----------- ------ ---- -------- ----- ---------- --------- ------------\n");
 	i = &kern_task.link;
 	do {
 		task = list_entry(i, struct task, link);
@@ -413,7 +413,7 @@ task_dump(void)
 			j = list_next(j);
 		} while (j != &task->threads);
 
-		info(" %p%c    %3d %4d %08x %s %10p %8d %s\n",
+		info(" %p%c    %3d %4d %08x %s %10p %9d %s\n",
 		       task, (task == task_cur()) ? '*' : ' ', nthreads,
 		       task->suscnt, task->capability,
 		       state[task->state], task->parent, task_pid(task),
