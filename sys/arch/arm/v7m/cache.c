@@ -7,6 +7,7 @@
 #include <cpu.h>
 #include <stddef.h>
 #include <sys/include/kernel.h>
+#include <sys/param.h>
 
 /*
  * Make sure that instruction & data caches are coherent
@@ -23,8 +24,9 @@ cache_coherent_exec(const void *p, size_t len)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
 	asm volatile("dmb" ::: "memory");
-	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
-	const void *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
+	const size_t sz = MAX(CONFIG_DCACHE_LINE_SIZE, CONFIG_ICACHE_LINE_SIZE);
+	const void *start = TRUNCn(p, sz);
+	const void *end = ALIGNn(p + len, sz);
 	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCMVAU, (uintptr_t)l);
 	for (const void *l = start; l != end; l += CONFIG_ICACHE_LINE_SIZE)
