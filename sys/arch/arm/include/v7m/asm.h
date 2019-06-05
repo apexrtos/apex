@@ -42,10 +42,15 @@
 /*
  * Configuration and Control Register
  */
-#define CCR_BP		(1 << 18)   /* Branch prediction enable */
-#define CCR_IC		(1 << 17)   /* Instruction cache enable */
-#define CCR_DC		(1 << 16)   /* Cache enable */
-#define CCR_STKALIGN	(1 << 9)    /* Align stack to 8 bytes on exception */
+#define CCR_BP		    (1 << 18)	/* Branch prediction enable */
+#define CCR_IC		    (1 << 17)	/* Instruction cache enable */
+#define CCR_DC		    (1 << 16)   /* Cache enable */
+#define CCR_STKALIGN	    (1 << 9)    /* Align stack to 8 bytes on exception */
+#define CCR_BFHFNMIGN	    (1 << 8)	/* Ignore faults in critical handlers */
+#define CCR_DIV_0_TRP	    (1 << 4)	/* Trap divide by zero */
+#define CCR_UNALIGN_TRP	    (1 << 3)	/* Trap unaligned word or halfword access */
+#define CCR_USERSETMPEND    (1 << 1)	/* Allow unprivileged writes to STIR */
+#define CCR_NONBASETHRDENA  (1 << 0)	/* Allow thread mode with active exception */
 
 /*
  * System Handler Control and State Register
