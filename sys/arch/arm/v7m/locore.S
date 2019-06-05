@@ -55,6 +55,9 @@ vectors:
 .thumb_func
 .global _start
 _start:
+	/* set stack pointer */
+	ldr sp, =__stack_top
+
 	/* setup a temporary vector table for the transition to handler mode */
 	ldr r4, =__stack_start	/* use stack for temporary table */
 	add r4, r4, 127		/* align to 128-byte boundary */
@@ -104,7 +107,7 @@ _start:
 	str r4, [r5, A_CPACR-A_SCS]
 #endif
 
-	/* setup stack pointer */
+	/* reset stack pointer to drop exception frame from svc */
 	ldr sp, =__stack_top
 	mov lr, 0xffffffff
 
