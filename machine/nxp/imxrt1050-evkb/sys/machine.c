@@ -28,6 +28,14 @@ machine_init(struct bootargs *args)
 			.size = CONFIG_DRAM_SIZE,
 			.flags = RASR_KERNEL_RWX_WBWA,
 		},
+#if (CONFIG_KERNEL_NULL_GUARD_SIZE > 0)
+		/* REVISIT: Use debug hardware instead of wasting MPU entry? */
+		{
+			.paddr = (phys *)0,
+			.size = CONFIG_KERNEL_NULL_GUARD_SIZE,
+			.flags = RASR_NONE,
+		},
+#endif
 #if (CONFIG_DMA_SIZE > 0)
 		/* IMXRT10xx places internal SRAM in default write-back
 		 * memory region. Override DMA pool as uncached. */

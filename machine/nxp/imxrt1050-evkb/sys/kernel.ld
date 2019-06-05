@@ -19,7 +19,7 @@ MEMORY {
 }
 
 SECTIONS {
-	.fast_text : {
+	.fast_text ORIGIN(itcm) + CONFIG_KERNEL_NULL_GUARD_SIZE : {
 		*(.vectors)
 		*(.fast_text)
 	} >itcm : itcm

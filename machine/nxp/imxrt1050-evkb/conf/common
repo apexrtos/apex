@@ -33,6 +33,11 @@ memory LOADER_RAM_SIZE	0x2000
 memory LOADER_RAM_BASE	(CONFIG_DTCM_BASE_VIRT + CONFIG_DTCM_SIZE - CONFIG_LOADER_RAM_SIZE)
 
 /*
+ * Kernel null pointer guard
+ */
+memory KERNEL_NULL_GUARD_SIZE 1024
+
+/*
  * Driver frameworks
  */
 driver sys/dev/usb				// Generic USB support
