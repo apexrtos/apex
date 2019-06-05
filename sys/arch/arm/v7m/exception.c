@@ -184,6 +184,7 @@ asm(
 	/* Trigger NMI */
 	"1: mov r3, 0x80000000\n"
 	"str r3, [ip, "S(A_ICSR)"-"S(A_SCS)"]\n"
+	"dsb\n"
 	"bx lr\n"
 );
 
