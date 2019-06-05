@@ -95,6 +95,11 @@ _start:
 	orr r4, (SHCSR_USGFAULTNA|SHCSR_BUSFAULTENA|SHCSR_MEMFAULTENA)
 	str r4, [r5, A_SHCSR-A_SCS]
 
+	/* 8-byte stack alignment on exception */
+	ldr r4, [r5, A_CCR-A_SCS]
+	orr r4, CCR_STKALIGN
+	str r4, [r5, A_CCR-A_SCS]
+
 	/* set SVC and PendSV priority */
 	mov r4, (IPL_SVCALL << 24)
 	str r4, [r5, A_SHPR2-A_SCS]	/* SVC to 255 */

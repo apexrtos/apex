@@ -36,9 +36,9 @@ vectors:
 	.endr
 
 #if defined(CONFIG_CACHE)
-#define CCR_VAL (CCR_BP|CCR_IC|CCR_DC|CCR_STKALIGN)
+#define CCR_VAL (CCR_BP|CCR_IC|CCR_DC)
 #else
-#define CCR_VAL (CCR_BP|CCR_STKALIGN)
+#define CCR_VAL (CCR_BP)
 #endif
 
 /*
