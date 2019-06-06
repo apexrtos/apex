@@ -302,7 +302,9 @@ vput(struct vnode *vp)
 		vn_unlock(vp);
 		return;
 	}
-	list_remove(&vp->v_link);
+	/* unnamed vnodes (pipes) are not in hash table */
+	if (vp->v_name)
+		list_remove(&vp->v_link);
 	mutex_unlock(&vnode_mutex);
 
 	/* deallocate fs specific vnode data */
