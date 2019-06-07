@@ -41,9 +41,11 @@ gpio_reg::gpio_reg(const regulator_voltage_gpio_desc *d)
 : regulator::voltage(d->name)
 {
 	for (auto &p : d->gpios) {
+		if (!p.controller)
+			break;
 		auto r = gpio::ref::bind(p);
 		if (!r)
-			break;
+			panic("bad desc");
 		gpios_.emplace_back(std::move(r));
 	}
 
