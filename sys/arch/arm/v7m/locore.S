@@ -11,9 +11,25 @@
 
 /*
  * Interrupt Vector Table
+ *
+ * Cortex-M3, M4 and M7 require the vector table to be aligned to the next
+ * power of two greater than the offset of the highest vector in use.
  */
-.section .vectors
-.align 7				/* 128-byte alignment */
+#if CONFIG_IRQS <= 16
+#define ALIGN 7
+#elif CONFIG_IRQS <= 48
+#define ALIGN 8
+#elif CONFIG_IRQS <= 112
+#define ALIGN 9
+#elif CONFIG_IRQS <= 240
+#define ALIGN 10
+#elif CONFIG_IRQS <= 496
+#define ALIGN 11
+#else
+#error ARMv7-M only supports up to 496 external interrupts
+#endif
+.section .vectors, "ax"
+.align ALIGN
 .global vectors
 vectors:
 	.word exc_Unhandled		/* SP_main */
