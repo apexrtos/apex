@@ -596,3 +596,12 @@ exc_NVIC(void)
 	irq_handler(ipsr - 16);
 	EXCEPTION_EXIT();
 }
+
+/*
+ * exc_Unhandled
+ */
+void
+exc_Unhandled(void)
+{
+	panic("Unhandled");
+}

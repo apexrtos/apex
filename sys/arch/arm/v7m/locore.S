@@ -16,20 +16,20 @@
 .align 7				/* 128-byte alignment */
 .global vectors
 vectors:
-	.word 0				/* SP_main */
-	.word 0				/* Reset */
+	.word exc_Unhandled		/* SP_main */
+	.word exc_Unhandled		/* Reset */
 	.word exc_NMI
 	.word exc_HardFault
 	.word exc_MemManage
 	.word exc_BusFault
 	.word exc_UsageFault
-	.word 0				/* 0x1c Reserved */
-	.word 0				/* 0x20 Reserved */
-	.word 0				/* 0x24 Reserved */
-	.word 0				/* 0x28 Reserved */
+	.word exc_Unhandled		/* 0x1c Reserved */
+	.word exc_Unhandled		/* 0x20 Reserved */
+	.word exc_Unhandled		/* 0x24 Reserved */
+	.word exc_Unhandled		/* 0x28 Reserved */
 	.word exc_SVCall
 	.word exc_DebugMonitor
-	.word 0				/* 0x34 Reserved */
+	.word exc_Unhandled		/* 0x34 Reserved */
 	.word exc_PendSV
 	.word exc_SysTick
 	.rept CONFIG_IRQS
