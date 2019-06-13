@@ -7,7 +7,7 @@ option BOARD_IMXRT1050EVKB
 /*
  * CPU
  */
-cpu nxp/imxrt1050
+cpu nxp/MIMXRT1052
 
 /*
  * Pretty machine name
