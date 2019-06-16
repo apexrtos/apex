@@ -376,6 +376,11 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 		}
 		break;
 	}
+	case TCSBRK: {
+		if (arg == nullptr)
+			return DERR(-ENOTSUP);
+		return tx_wait();
+	}
 	case TCXONC: {
 		int iarg = reinterpret_cast<int>(arg);
 		switch (iarg) {
