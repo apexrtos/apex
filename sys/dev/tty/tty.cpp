@@ -327,8 +327,6 @@ tty::write(file *f, const void *buf, size_t len)
 int
 tty::ioctl(file *f, u_long cmd, void *arg)
 {
-	int *intarg = static_cast<int *>(arg);
-
 	switch (cmd) {
 	case TCGETS: {
 		std::lock_guard sl{state_lock_};
@@ -365,13 +363,13 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 		break;
 	}
 	case TCFLSH: {
-		int arg = *intarg;
-		switch (arg) {
+		int iarg = reinterpret_cast<int>(arg);
+		switch (iarg) {
 		case TCIFLUSH:
 		case TCOFLUSH:
 		case TCIOFLUSH: {
 			std::lock_guard sl{state_lock_};
-			flush(arg);
+			flush(iarg);
 		}
 		default:
 			return DERR(-EINVAL);
@@ -379,8 +377,8 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 		break;
 	}
 	case TCXONC: {
-		int arg = *intarg;
-		switch (arg) {
+		int iarg = reinterpret_cast<int>(arg);
+		switch (iarg) {
 		case TCOOFF:
 			/* suspend output */
 			flags_ |= flags::tx_stopped;
@@ -395,7 +393,7 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 		case TCION: {
 			/* transmit start character */
 			std::unique_lock sl{state_lock_};
-			char c = termios_.c_cc[arg == TCIOFF ? VSTOP : VSTART];
+			char c = termios_.c_cc[iarg == TCIOFF ? VSTOP : VSTART];
 			sl.unlock();
 			if (c == _POSIX_VDISABLE)
 				break;
@@ -420,12 +418,12 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 	}
 	case TIOCINQ: {
 		std::lock_guard rl{rxq_lock_};
-		*intarg = rxq_cooked_ - rxq_.begin();
+		*static_cast<int *>(arg) = rxq_cooked_ - rxq_.begin();
 		break;
 	}
 	case TIOCOUTQ: {
 		std::lock_guard tl{txq_lock_};
-		*intarg = txq_.size();
+		*static_cast<int *>(arg) = txq_.size();
 		break;
 	}
 	default:
