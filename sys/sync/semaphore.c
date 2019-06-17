@@ -47,7 +47,7 @@ semaphore_post(struct semaphore *s)
 }
 
 /*
- * semaphore_wait - decrenent (lock) semaphore.
+ * semaphore_wait - decrement (lock) semaphore.
  */
 int
 semaphore_wait_interruptible(struct semaphore *s)
