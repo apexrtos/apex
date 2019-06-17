@@ -49,7 +49,7 @@ public:
 	void reset()
 	{
 		write32(&GLOBAL, [&]{
-			decltype(GLOBAL) g;
+			decltype(GLOBAL) g{};
 			g.RST = true;
 			return g.r;
 		}());
@@ -64,7 +64,7 @@ public:
 		/* disable receiver & transmitter during reconfiguration */
 		write32(&CTRL, 0);
 		write32(&BAUD, [&]{
-			decltype(BAUD) v;
+			decltype(BAUD) v{};
 			v.SBR = sbr;
 			v.SBNS = static_cast<unsigned>(sb);
 			v.BOTHEDGE = true;
@@ -72,20 +72,20 @@ public:
 			return v.r;
 		}());
 		write32(&FIFO, [&]{
-			decltype(FIFO) v;
+			decltype(FIFO) v{};
 			v.RXFE = ien;
 			v.TXFE = ien;
 			v.RXIDEN = ien ? 1 : 0;
 			return v.r;
 		}());
 		write32(&WATER, [&]{
-			decltype(WATER) v;
+			decltype(WATER) v{};
 			v.RXWATER = rxfifo_size() - 1;
 			v.TXWATER = 0;
 			return v.r;
 		}());
 		write32(&CTRL, [&]{
-			decltype(CTRL) v;
+			decltype(CTRL) v{};
 			if (p != Parity::Disabled) {
 				v.PE = true;
 				v.PT = static_cast<unsigned>(p) - 1;
