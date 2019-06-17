@@ -19,6 +19,7 @@
 #include <sys/statfs.h>
 #include <sys/uio.h>
 #include <task.h>
+#include <termios.h>
 #include <unistd.h>
 
 /*
@@ -223,15 +224,45 @@ int
 sc_ioctl(int fd, int request, void *argp)
 {
 	interruptible_lock l(u_access_lock);
-	switch (_IOC_DIR(request)) {
-	case _IOC_READ:
-	case _IOC_WRITE:
+	int dir = _IOC_DIR(request);
+	long size = _IOC_SIZE(request);
+
+	/* fixup ioctls which don't contain direction or size */
+	if (dir == _IOC_NONE) {
+		switch (request) {
+		case TCGETS:
+		case TCSETS:
+		case TCSETSW:
+		case TCSETSF:
+			dir = request == TCGETS ? _IOC_READ : _IOC_WRITE;
+			size = sizeof(termios);
+			break;
+		case TIOCGPGRP:
+		case TIOCSPGRP:
+			dir = request == TIOCGPGRP ? _IOC_READ : _IOC_WRITE;
+			size = sizeof(pid_t);
+			break;
+		case TIOCGWINSZ:
+		case TIOCSWINSZ:
+			dir = request == TIOCGWINSZ ? _IOC_READ : _IOC_WRITE;
+			size = sizeof(winsize);
+			break;
+		case TIOCOUTQ:
+		case TIOCINQ:
+			dir = _IOC_READ;
+			size = sizeof(int);
+			break;
+		}
+	}
+
+	if (dir != _IOC_NONE) {
 		if (auto r = l.lock(); r < 0)
 			return r;
-		if (!u_access_ok(argp, _IOC_SIZE(request),
-		    _IOC_DIR(request) == _IOC_READ ? PROT_WRITE : PROT_READ))
+		if (!u_access_ok(argp, size,
+		    dir & _IOC_READ ? PROT_WRITE : PROT_READ))
 			return DERR(-EFAULT);
 	}
+
 	return ioctl(fd, request, argp);
 }
 
