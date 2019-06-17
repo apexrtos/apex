@@ -100,21 +100,21 @@ public:
 
 	void txint_disable()
 	{
-		auto v = CTRL;
+		auto v = read32(&CTRL);
 		v.TIE = false;
 		write32(&CTRL, v.r);
 	}
 
 	void tcint_disable()
 	{
-		auto v = CTRL;
+		auto v = read32(&CTRL);
 		v.TCIE = false;
 		write32(&CTRL, v.r);
 	}
 
 	void txints_enable()
 	{
-		auto v = CTRL;
+		auto v = read32(&CTRL);
 		v.TIE = true;
 		v.TCIE = true;
 		write32(&CTRL, v.r);
@@ -122,7 +122,7 @@ public:
 
 	void flush(int io)
 	{
-		auto v = FIFO;
+		auto v = read32(&FIFO);
 		v.RXFLUSH = io == TCIFLUSH || io == TCIOFLUSH;
 		v.TXFLUSH = io == TCOFLUSH || io == TCIOFLUSH;
 		write32(&FIFO, v.r);
@@ -161,12 +161,12 @@ public:
 
 	std::size_t txfifo_size() const
 	{
-		return 1 << PARAM.TXFIFO;
+		return 1 << read32(&PARAM).TXFIFO;
 	}
 
 	std::size_t rxfifo_size() const
 	{
-		return 1 << PARAM.RXFIFO;
+		return 1 << read32(&PARAM).RXFIFO;
 	}
 };
 static_assert(sizeof(lpuart) == sizeof(lpuart_regs), "");
