@@ -1,12 +1,110 @@
-define connect
-	target remote localhost:2331
+python
+import os, time, subprocess
+
+trace32_cpu = {
+	'nxp/MIMXRT1051': 'IMXRT1051',
+	'nxp/MIMXRT1052': 'IMXRT1052',
+	'nxp/MIMXRT1061': 'IMXRT1061',
+	'nxp/MIMXRT1062': 'IMXRT1062',
+}
+
+if 'DEBUGGER' not in os.environ:
+	trace32 = subprocess.run(['lsusb', '-d', '0897:'])
+	jlink = subprocess.run(['lsusb', '-d', '1366:'])
+	if trace32.returncode == 0:
+		gdb.write('> Detected trace32 debugger\n')
+		os.environ['DEBUGGER'] = 'trace32'
+	elif jlink.returncode == 0:
+		gdb.write('> Detected jlink debugger\n')
+		os.environ['DEBUGGER'] = 'jlink'
+	else:
+		gdb.write('> No debugger detected\n')
 end
 
+define connect
+	python
+if 'DEBUGGER' not in os.environ:
+	gdb.write('DEBUGGER is not set\n')
+elif os.environ['DEBUGGER'] == 'jlink':
+	gdb.write('Connecting to jlink...\n')
+	gdb.execute('target remote localhost:2331')
+elif os.environ['DEBUGGER'] == 'trace32':
+	gdb.write('Configuring trace32...\n')
+	gdb.execute('target extended-remote localhost:30000')
+	gdb.execute('mon b::reset')
+	gdb.execute('mon b::system.reset')
+	gdb.execute('mon b::system.cpu ' + trace32_cpu[os.environ['CPU']])
+	gdb.execute('mon b::system.config.debugporttype swd')
+	gdb.execute('mon b::system.config.connector mipi20t')
+	gdb.execute('mon b::system.option.dualport on')
+	gdb.execute('mon b::system.memaccess dap')
+	gdb.execute('mon b::system.jtagclock 20MHz')
+	gdb.execute('mon b::tronchip.set mmerr off')    # Don't trap on MemManage
+	gdb.execute('mon b::tronchip.set nocperr off')  # Don't trap on NOCP
+	gdb.execute('mon b::map.bonchip 0x60000000--0x7EFFFFFF')	# ROM
+	gdb.execute('mon b::system.mode attach')
+	gdb.execute('mon b::break')
+	gdb.write('Connecting to target...\n')
+	gdb.execute('disconnect')
+	gdb.execute('target extended-remote localhost:30000')
+else:
+	gdb.write('Unknown debugger "' + os.environ['DEBUGGER'])
+	end
+end
+document connect
+	Usage: connect
+
+	Connect to target via jtag debugger
+end
+
+define configure_trace
+	# SW_MUX_CTL_PAD_GPIO_B0_04 ALT3 = ARM_TRACE0
+	set *(int *)0x401F814C = 3
+	# SW_MUX_CTL_PAD_GPIO_B0_05 ALT3 = ARM_TRACE1
+	set *(int *)0x401F8150 = 3
+	# SW_MUX_CTL_PAD_GPIO_B0_06 ALT3 = ARM_TRACE2
+	set *(int *)0x401F8154 = 3
+	# SW_MUX_CTL_PAD_GPIO_B0_07 ALT3 = ARM_TRACE3
+	set *(int *)0x401F8158 = 3
+	# SW_MUX_CTL_PAD_GPIO_B0_12 ALT2 = ARM_TRACE_CLK
+	set *(int *)0x401F816C = 2
+	python
+if 'DEBUGGER' not in os.environ:
+	gdb.write('DEBUGGER is not set\n')
+elif os.environ['DEBUGGER'] == 'trace32':
+	gdb.execute('mon b::tpiu.portsize 4')
+	gdb.execute('mon b::tpiu.portmode continuous')
+	gdb.execute('mon b::itm.datatrace correlateddata')
+	gdb.execute('mon b::itm.on')
+	gdb.execute('mon b::etm.trace on')
+	gdb.execute('mon b::etm.cond all')
+	gdb.execute('mon b::etm.on')
+	gdb.execute('mon b::trace.method canalyzer')
+	gdb.execute('mon b::canalyzer.autofocus')
+	end
+end
+document configure_trace
+	Usage: configure_trace
+
+	Configure trace pin multiplexing & prepare debugger for tracing
+end
+
+
 define reset
-	mon reset
+	python
+if 'DEBUGGER' not in os.environ:
+	gdb.write('DEBUGGER is not set\n')
+elif os.environ['DEBUGGER'] == 'jlink':
+	gdb.execute('mon reset')
+elif os.environ['DEBUGGER'] == 'trace32':
+	gdb.execute('mon b::system.up')
+else:
+	gdb.write('Unknown debugger "' + os.environ['DEBUGGER'])
+	end
+
 	# Reset FlexRAM configuration as the boot ROM expects to use OCRAM as
 	# stack and is too stupid to make sure it will actually work.
-	set *0x400ac040 = 0x00200003
+	set *(int *)0x400ac040 = 0x00200003
 end
 document reset
 	Usage: reset
@@ -15,18 +113,28 @@ document reset
 end
 
 define flash
-	# Write image to flexspi hyperflash device.
 	reset
 	python
-import os
-gdb.execute('mon loadbin ' + os.environ['BUILDDIR'] + '/' + os.environ['BOARD'] + '_flexspi 0x60000000')
+file = os.environ['BUILDDIR'] + '/' + os.environ['BOARD'] + '_flexspi'
+if 'DEBUGGER' not in os.environ:
+	gdb.write('DEBUGGER is not set\n')
+elif os.environ['DEBUGGER'] == 'jlink':
+	gdb.execute('mon loadbin ' + file + ' 0x60000000')
+elif os.environ['DEBUGGER'] == 'trace32':
+	gdb.execute('mon b::do ~~/demo/arm/flash/imxrt106x-qspi prepareonly')
+	time.sleep(1)
+	gdb.execute('mon b::flash.reprogram all')
+	gdb.execute('mon b::data.load.binary ' + file + ' 0x60000000')
+	gdb.execute('mon b::flash.reprogram off')
+else:
+	gdb.write('Unknown debugger "' + os.environ['DEBUGGER'])
 	end
 	reset
 end
 document flash
 	Usage: flash
 
-	Write image to FlexSPI connected flash device using Segger J-Link.
+	Write image to FlexSPI connected flash device
 end
 
 define sdflash
@@ -34,8 +142,14 @@ define sdflash
 
 	echo > Loading flash loader...\n
 	python
-import os
-gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin 0x20000000')
+if 'DEBUGGER' not in os.environ:
+	gdb.write('DEBUGGER is not set\n')
+elif os.environ['DEBUGGER'] == 'jlink':
+	gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin 0x20000000')
+elif os.environ['DEBUGGER'] == 'trace32':
+	gdb.write('sdflash with trace32 is not supported yet')
+else:
+	gdb.write('Unknown debugger "' + os.environ['DEBUGGER'])
 	end
 	set $pc = *0x20000404
 	mon go
@@ -53,7 +167,7 @@ end
 document sdflash
 	Usage: sdflash
 
-	Write image to uSDHC connected SD card using USB and Segger J-Link.
+	Write image to uSDHC connected SD card
 end
 
 define debug_boot
@@ -73,6 +187,12 @@ define debug_kernel
 	symbol-file apex/sys/apex.elf
 	b _start
 	c
+	python
+if 'DEBUGGER' not in os.environ:
+	gdb.write('DEBUGGER is not set\n')
+elif os.environ['DEBUGGER'] == 'trace32':
+	gdb.execute('mon b::data.load.elf ' + os.environ['BUILDDIR'] + '/apex/sys/apex.elf /nocode')
+	end
 end
 document debug_kernel
 	Usage: debug_kernel
