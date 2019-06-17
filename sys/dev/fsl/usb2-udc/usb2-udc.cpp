@@ -480,7 +480,7 @@ fsl_usb2_udc::fsl_usb2_udc(const char *name, regs *r)
 
 	/* issue controller reset */
 	write32(&r_->USBCMD, []{
-		decltype(r_->USBCMD) v;
+		decltype(r_->USBCMD) v{};
 		v.RST = 1;
 		return v.r;
 	}());
@@ -510,7 +510,7 @@ fsl_usb2_udc::isr()
 			bus_reset_irq();
 		else {
 			write32(&r_->USBCMD, []{
-				decltype(r_->USBCMD) v;
+				decltype(r_->USBCMD) v{};
 				v.RST = 1;
 				return v.r;
 			}());
@@ -633,7 +633,7 @@ fsl_usb2_udc::v_stop()
 
 	/* issue controller reset */
 	write32(&r_->USBCMD, []{
-		decltype(r_->USBCMD) v;
+		decltype(r_->USBCMD) v{};
 		v.RST = 1;
 		return v.r;
 	}());
