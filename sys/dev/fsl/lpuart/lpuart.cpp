@@ -94,6 +94,7 @@ public:
 			v.RE = dir == Direction::RxTx;
 			v.TE = true;
 			v.RIE = ien;
+			v.ORIE = ien;
 			return v.r;
 		}());
 	}
@@ -131,6 +132,20 @@ public:
 	bool tx_complete()
 	{
 		return read32(&STAT).TC;
+	}
+
+	bool overrun()
+	{
+		return read32(&STAT).OR;
+	}
+
+	void clear_overrun()
+	{
+		write32(&STAT, []{
+			decltype(STAT) v{};
+			v.OR = 1;
+			return v.r;
+		}());
 	}
 
 	void putch_polled(const char c)
@@ -288,6 +303,11 @@ isr(int vector, void *data)
 
 	for (size_t i = u->rxcount(); i > 0; --i)
 		tty_rx_putc(tp, u->getch());
+
+	if (u->overrun()) {
+		tty_rx_overflow(tp);
+		u->clear_overrun();
+	}
 
 	bool tx_queued = false;
 	for (size_t i = u->txfifo_size() - u->txcount(); i > 0; --i) {
