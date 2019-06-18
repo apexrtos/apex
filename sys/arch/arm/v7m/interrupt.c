@@ -28,6 +28,14 @@ interrupt_restore(int l)
 	asm volatile("msr primask, %0" :: "r" (l) : "memory");
 }
 
+bool
+interrupt_enabled(void)
+{
+	int primask;
+	interrupt_save(&primask);
+	return primask == 0;
+}
+
 void
 interrupt_mask(int vector)
 {

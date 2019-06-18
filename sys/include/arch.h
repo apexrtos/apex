@@ -85,6 +85,7 @@ void		interrupt_enable(void);
 void		interrupt_disable(void);
 void		interrupt_save(int *);
 void		interrupt_restore(int);
+bool		interrupt_enabled(void);
 void		interrupt_mask(int);
 void		interrupt_unmask(int, int);
 void		interrupt_setup(int, int);
