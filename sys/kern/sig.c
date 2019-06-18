@@ -456,8 +456,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	/*
 	 * Thread is terminating
 	 */
-	if (sch_exit())
-		return rval;
+	sch_testexit();
 
 	struct thread *th = thread_cur();
 	struct task *task = task_cur();
@@ -597,7 +596,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		dbg("Fatal signal %d. Terminate.\n", sig);
 		proc_exit(task_cur(), 0);
 		task_cur()->exitcode = sig;
-		sch_exit();
+		sch_testexit();
 		goto out;
 	case SIGTSTP:
 	case SIGTTIN:

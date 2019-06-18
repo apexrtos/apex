@@ -639,11 +639,11 @@ sch_stop(struct thread *th)
 /*
  * Thread is ready to quit
  */
-bool
-sch_exit(void)
+void
+sch_testexit(void)
 {
 	if (!(active_thread->state & TH_EXIT))
-		return false;
+		return;
 
 	/* cleanup filesystem if this is the last thread in the task */
 	if (list_only_entry(&active_thread->task_link))
@@ -654,7 +654,6 @@ sch_exit(void)
 	active_thread->resched = RESCHED_SWITCH;
 	sch_unlock();
 
-	return true;
 }
 
 /*

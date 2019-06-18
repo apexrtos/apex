@@ -218,5 +218,5 @@ boot_thread(void *arg)
 #endif
 	run_init();
 	thread_terminate(thread_cur());
-	sch_exit();
+	sch_testexit();
 }
