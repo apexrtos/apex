@@ -118,6 +118,7 @@ static struct event	dpc_event;	/* event for DPC */
 extern struct thread idle_thread;
 __attribute__((used)) __fast_data struct thread *active_thread = &idle_thread;
 __fast_data static struct list zombie_list = LIST_INIT(zombie_list);
+__fast_bss static int resched;
 
 /*
  * Return priority of highest-priority runnable thread.
@@ -160,8 +161,8 @@ runq_enqueue(struct thread *th)
 	queue_insert(queue_prev(q), &th->link);
 
 	/* it is only preemption when resched is not pending */
-	if (th->prio < active_thread->prio && active_thread->resched == 0)
-		active_thread->resched = RESCHED_PREEMPT;
+	if (th->prio < active_thread->prio && resched == 0)
+		resched = RESCHED_PREEMPT;
 }
 
 /*
@@ -232,12 +233,12 @@ sch_switch(void)
 	 */
 	prev = active_thread;
 	if (thread_runnable(prev)) {
-		if (prev->resched == RESCHED_PREEMPT)
+		if (resched == RESCHED_PREEMPT)
 			runq_insert(prev);
 		else
 			runq_enqueue(prev);
 	}
-	prev->resched = 0;
+	resched = 0;
 
 	/*
 	 * Select the thread to run the CPU next.
@@ -542,7 +543,7 @@ sch_yield(void)
 	const int s = irq_disable();
 
 	if (runq_top() <= active_thread->prio)
-		active_thread->resched = RESCHED_SWITCH;
+		resched = RESCHED_SWITCH;
 
 	irq_restore(s);
 	sch_unlock();	/* Switch current thread here */
@@ -561,7 +562,7 @@ sch_suspend(struct thread *th)
 	const int s = irq_disable();
 	if (thread_runnable(th)) {
 		if (th == active_thread)
-			th->resched = RESCHED_SWITCH;
+			resched = RESCHED_SWITCH;
 		else
 			runq_remove(th);
 	}
@@ -609,7 +610,7 @@ sch_elapse(uint32_t nsec)
 			 * Give the thread another.
 			 */
 			active_thread->timeleft += QUANTUM;
-			active_thread->resched = RESCHED_SWITCH;
+			resched = RESCHED_SWITCH;
 		}
 	}
 }
@@ -651,7 +652,7 @@ sch_testexit(void)
 
 	sch_lock();
 	active_thread->state |= TH_ZOMBIE;
-	active_thread->resched = RESCHED_SWITCH;
+	resched = RESCHED_SWITCH;
 	sch_unlock();
 
 }
@@ -704,7 +705,7 @@ sch_unlock(void)
 	thread_check();
 
 	int s = irq_disable();
-	if (active_thread->locks == 1 && active_thread->resched)
+	if (active_thread->locks == 1 && resched)
 		sch_unlock_slowpath(s);
 	--active_thread->locks;
 	irq_restore(s);
@@ -750,8 +751,8 @@ sch_setprio(struct thread *th, int baseprio, int prio)
 		 */
 		th->prio = prio;
 		/* it is only preemption when resched is not pending */
-		if (prio > runq_top() && active_thread->resched == 0)
-			active_thread->resched = RESCHED_PREEMPT;
+		if (prio > runq_top() && resched == 0)
+			resched = RESCHED_PREEMPT;
 	} else {
 		if (thread_runnable(th)) {
 			/*
@@ -890,7 +891,6 @@ sch_init(void)
 	queue_init(&runq);
 	queue_init(&dpcq);
 	event_init(&dpc_event, "dpc", ev_SLEEP);
-	active_thread->resched = RESCHED_SWITCH;
 
 	/* Create a DPC thread. */
 	th = kthread_create(dpc_thread, NULL, PRI_DPC, "dpc", MA_FAST);
