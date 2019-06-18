@@ -127,7 +127,7 @@ static int
 runq_top(void)
 {
 	if (queue_empty(&runq))
-		return PRI_MIN;
+		return PRI_MIN + 1;
 
 	struct thread *th = queue_entry(queue_first(&runq), struct thread, link);
 	return th->prio;
