@@ -15,13 +15,13 @@ int
 wait_event(event &e, auto condition)
 {
 	while (!condition()) {
-		if (auto r = sch_prepare_sleep(&e); r)
+		if (auto r = sch_prepare_sleep(&e, 0); r)
 			return r;
 		if (condition()) {
 			sch_cancel_sleep();
 			return 0;
 		}
-		if (auto r = sch_continue_sleep(0); r)
+		if (auto r = sch_continue_sleep(); r)
 			return r;
 	}
 	return 0;
@@ -38,13 +38,13 @@ wait_event_timeout(event &e, int ns, auto condition)
 	assert(ns > 0);
 	const uint64_t expire = timer_monotonic_coarse() + ns;
 	while (!condition()) {
-		if (auto r = sch_prepare_sleep(&e); r)
+		if (auto r = sch_prepare_sleep(&e, ns); r)
 			return r;
 		if (condition()) {
 			sch_cancel_sleep();
 			return ns;
 		}
-		if (auto r = sch_continue_sleep(ns); r)
+		if (auto r = sch_continue_sleep(); r)
 			return r;
 		ns = expire - timer_monotonic_coarse();
 		if (ns <= 0)
@@ -61,10 +61,10 @@ wait_event_lock(event &e, auto &lock, auto condition)
 {
 	assert(lock.owns_lock());
 	while (!condition()) {
-		if (auto r = sch_prepare_sleep(&e); r)
+		if (auto r = sch_prepare_sleep(&e, 0); r)
 			return r;
 		lock.unlock();
-		auto r = sch_continue_sleep(0);
+		auto r = sch_continue_sleep();
 		lock.lock();
 		if (r)
 			return r;
@@ -81,13 +81,13 @@ wait_event_lock(event &e, auto &lock, auto condition)
 ({ \
 	int __ret = 0; \
 	while (!(condition) && !__ret) { \
-		if ((__ret = sch_prepare_sleep(&event))) \
+		if ((__ret = sch_prepare_sleep(&event, 0))) \
 			break; \
 		if (condition) {  \
 			sch_cancel_sleep(); \
 			break; \
 		} \
-		__ret = sch_continue_sleep(0); \
+		__ret = sch_continue_sleep(); \
 	} \
 	__ret; \
 })
@@ -103,7 +103,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 	assert(__ret > 0); \
 	const uint64_t __expire = timer_monotonic_coarse() + __ret; \
 	while (!(condition)) { \
-		if ((__rc = sch_prepare_sleep(&event))) { \
+		if ((__rc = sch_prepare_sleep(&event, __ret))) { \
 			__ret = __rc; \
 			break; \
 		} \
@@ -111,7 +111,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 			sch_cancel_sleep(); \
 			break; \
 		} \
-		if ((__rc = sch_continue_sleep(__ret))) { \
+		if ((__rc = sch_continue_sleep())) { \
 			__ret = __rc; \
 			break; \
 		} \
@@ -130,10 +130,10 @@ wait_event_lock(event &e, auto &lock, auto condition)
 	lock_assert_locked(lock); \
 	int __ret = 0; \
 	while (!(condition) && !__ret) { \
-		if ((__ret = sch_prepare_sleep(event))) \
+		if ((__ret = sch_prepare_sleep(&event, 0))) \
 			break; \
 		spinlock_unlock(lock); \
-		__ret = sch_continue_sleep(0); \
+		__ret = sch_continue_sleep(); \
 		spinlock_lock(lock); \
 	} \
 	__ret; \
@@ -147,10 +147,10 @@ wait_event_lock(event &e, auto &lock, auto condition)
 	spinlock_assert_locked(lock); \
 	int __ret = 0; \
 	while (!(condition) && !__ret) { \
-		if ((__ret = sch_prepare_sleep(event))) \
+		if ((__ret = sch_prepare_sleep(&event, 0))) \
 			break; \
 		spinlock_unlock_irq_restore(lock, irq_state); \
-		__ret = sch_continue_sleep(0); \
+		__ret = sch_continue_sleep(); \
 		irq_state = spinlock_lock_irq_disable(lock); \
 	} \
 	__ret; \

@@ -240,11 +240,11 @@ tty::read(file *f, void *buf, const size_t len)
 
 	/* wait for input */
 	while (!rx_avail()) {
-		if (auto r = sch_prepare_sleep(&input_); r)
+		if (auto r = sch_prepare_sleep(&input_, 0); r)
 			return r;
 		rl.unlock();
 		sl.unlock();
-		if (auto r = sch_continue_sleep(0); r)
+		if (auto r = sch_continue_sleep(); r)
 			return r;
 		sl.lock();
 		rl.lock();

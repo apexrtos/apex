@@ -318,10 +318,10 @@ sch_nanosleep(struct event *evt, uint64_t nsec)
 {
 	int ret;
 
-	if ((ret = sch_prepare_sleep(evt)))
+	if ((ret = sch_prepare_sleep(evt, nsec)))
 		return ret;
 
-	return sch_continue_sleep(nsec);
+	return sch_continue_sleep();
 }
 
 /*
@@ -435,22 +435,25 @@ sch_requeue(struct event *l, struct event *r)
  * On success, must be followed by sch_continue_sleep or sch_cancel_sleep.
  */
 int
-sch_prepare_sleep(struct event *evt)
+sch_prepare_sleep(struct event *evt, uint64_t nsec)
 {
 	assert(evt);
 
-	sch_lock();
 	const int s = irq_disable();
 
 	if (sig_unblocked_pending(active_thread)) {
 		irq_restore(s);
-		sch_unlock();
 		return -EINTR;
 	}
 
 	active_thread->slpevt = evt;
 	active_thread->state |= TH_SLEEP;
 	enqueue(&evt->sleepq, &active_thread->link);
+
+	/* program timer to wake us up after nsec */
+	if (nsec != 0)
+		timer_callout(&active_thread->timeout, nsec, 0,
+		    &sleep_expire, active_thread);
 
 	irq_restore(s);
 
@@ -463,18 +466,12 @@ sch_prepare_sleep(struct event *evt)
  * Must be called after successful sch_prepare_sleep.
  */
 int
-sch_continue_sleep(uint64_t nsec)
+sch_continue_sleep()
 {
 	const int s = irq_disable();
-	if (nsec != 0 && active_thread->state & TH_SLEEP) {
-		/* Program timer to wake us up atfter nsec, but only if we're
-		 * still going to sleep.. */
-		timer_callout(&active_thread->timeout, nsec, 0, &sleep_expire,
-			      active_thread);
-	}
-	sch_switch();	/* Sleep here. Zzzz.. */
+	if (active_thread->state & TH_SLEEP)
+		sch_switch();	/* Sleep here. Zzzz.. */
 	irq_restore(s);
-	sch_unlock();
 
 	return active_thread->slpret;
 }
@@ -486,7 +483,6 @@ void
 sch_cancel_sleep(void)
 {
 	sch_unsleep(active_thread, 0);
-	sch_unlock();
 }
 
 /*
