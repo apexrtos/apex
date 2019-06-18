@@ -555,9 +555,9 @@ sch_yield(void)
 void
 sch_suspend(struct thread *th)
 {
-	assert(sch_locked());
 	assert(!(th->state & TH_SUSPEND));
 
+	sch_lock();
 	const int s = irq_disable();
 	if (thread_runnable(th)) {
 		if (th == active_thread)
@@ -567,6 +567,7 @@ sch_suspend(struct thread *th)
 	}
 	th->state |= TH_SUSPEND;
 	irq_restore(s);
+	sch_unlock();
 }
 
 /*
@@ -576,14 +577,15 @@ sch_suspend(struct thread *th)
 void
 sch_resume(struct thread *th)
 {
-	assert(sch_locked());
 	assert(th->state & TH_SUSPEND);
 
+	sch_lock();
 	const int s = irq_disable();
 	th->state &= ~TH_SUSPEND;
 	if (thread_runnable(th) && th != active_thread)
 		runq_enqueue(th);
 	irq_restore(s);
+	sch_unlock();
 }
 
 /*

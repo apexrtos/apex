@@ -282,7 +282,7 @@ task_suspend(struct task *task)
 		head = &task->threads;
 		for (n = list_first(head); n != head; n = list_next(n)) {
 			th = list_entry(n, struct thread, task_link);
-			thread_suspend(th);
+			sch_suspend(th);
 		}
 	}
 	sch_unlock();
@@ -321,7 +321,7 @@ task_resume(struct task *task)
 		head = &task->threads;
 		for (n = list_first(head); n != head; n = list_next(n)) {
 			th = list_entry(n, struct thread, task_link);
-			thread_resume(th);
+			sch_resume(th);
 		}
 	}
  out:

@@ -17,8 +17,8 @@
 /*
  * offsets into structs for use in assembly below
  */
-#define THREAD_TLS 176
-#define THREAD_KREGS 180
+#define THREAD_TLS 168
+#define THREAD_KREGS 172
 #define EFRAME_R0 0
 #define EFRAME_R1 4
 #define EFRAME_R2 8

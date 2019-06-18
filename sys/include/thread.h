@@ -57,7 +57,6 @@ struct thread {
 	uint64_t	time;		/* total running time (nanoseconds) */
 	int		resched;	/* != 0 if rescheduling is needed */
 	int		locks;		/* schedule lock counter */
-	int		suscnt;		/* suspend counter */
 	struct event   *slpevt;		/* sleep event */
 	int		slpret;		/* sleep result code */
 	struct timer	timeout;	/* thread timer */
@@ -94,7 +93,7 @@ struct thread {
  * Thread state
  */
 #define TH_SLEEP	0x01	/* awaiting an event */
-#define TH_SUSPEND	0x02	/* suspend count is not 0 */
+#define TH_SUSPEND	0x02	/* suspended */
 #define TH_EXIT		0x04	/* terminating */
 #define TH_ZOMBIE	0x08	/* dead */
 
@@ -115,8 +114,6 @@ int		thread_id(struct thread *);
 struct thread  *thread_find(int);
 void	        thread_terminate(struct thread *);
 void		thread_free(struct thread *);
-int		thread_suspend(struct thread *);
-int		thread_resume(struct thread *);
 noreturn void	thread_idle(void);
 void	        thread_dump(void);
 void	        thread_check(void);

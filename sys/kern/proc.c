@@ -82,7 +82,7 @@ proc_exit(struct task *task, int status)
 	 * Resume vfork thread if this process was vforked and didn't exec
 	 */
 	if (task->vfork)
-		thread_resume(task->vfork);
+		sch_resume(task->vfork);
 
 	/*
 	 * Terminate all threads in task

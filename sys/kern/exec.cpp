@@ -106,7 +106,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 
 	/* resume vfork thread if this process was vforked */
 	if (t->vfork) {
-		thread_resume(t->vfork);
+		sch_resume(t->vfork);
 		t->vfork = 0;
 	}
 
@@ -167,7 +167,7 @@ sc_execve(const char *path, const char *const argv[], const char *const envp[])
 		as_modify_end(task_cur()->as);
 		return (int)main;
 	}
-	thread_resume(main);
+	sch_resume(main);
 
 	/* no as_modify_end() - the address space on which the lock was taken
 	   has been destroyed by exec_into, as_destroy releases the lock */

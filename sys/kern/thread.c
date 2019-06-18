@@ -118,7 +118,7 @@ thread_valid(struct thread *th)
 /*
  * Create a new thread.
  *
- * The new thread is initially set to suspend state, and so, thread_resume()
+ * The new thread is initially set to suspend state, and so, sch_resume()
  * must be called to start it.
  */
 int
@@ -149,7 +149,6 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
 	 * Initialize thread state.
 	 */
 	th->task = task;
-	th->suscnt = task->suscnt + 1;
 	void *const ksp = arch_stack_align(th->kstack + CONFIG_KSTACK_SIZE);
 	context_init_uthread(&th->ctx, ksp, sp, entry, retval);
 	/* add new threads to end of list (master thread at head) */
@@ -242,68 +241,6 @@ thread_find(int id)
 	if (!thread_valid(th))
 		return 0;
 	return th;
-}
-
-/*
- * Suspend thread.
- *
- * A thread can be suspended any number of times.
- * And, it does not start to run again unless the
- * thread is resumed by the same count of suspend
- * request.
- */
-int
-thread_suspend(struct thread *th)
-{
-	sch_lock();
-	if (!thread_valid(th)) {
-		sch_unlock();
-		return DERR(-ESRCH);
-	}
-	if (!task_access(th->task)) {
-		sch_unlock();
-		return DERR(-EPERM);
-	}
-	if (++th->suscnt == 1)
-		sch_suspend(th);
-
-	sch_unlock();
-	return 0;
-}
-
-/*
- * Resume thread.
- *
- * A thread does not begin to run, unless both thread
- * suspend count and task suspend count are set to 0.
- */
-int
-thread_resume(struct thread *th)
-{
-	int err = 0;
-
-	assert(th != thread_cur());
-
-	sch_lock();
-	if (!thread_valid(th)) {
-		err = DERR(-ESRCH);
-		goto out;
-	}
-	if (!task_access(th->task)) {
-		err = DERR(-EPERM);
-		goto out;
-	}
-	if (th->suscnt == 0) {
-		err = DERR(-EINVAL);
-		goto out;
-	}
-
-	th->suscnt--;
-	if (th->suscnt == 0 && th->task->suscnt == 0)
-		sch_resume(th);
-out:
-	sch_unlock();
-	return err;
 }
 
 /*
@@ -408,9 +345,9 @@ thread_dump(void)
 	info("thread dump\n");
 	info("===========\n");
 	info(" thread      name     task       stat pol  prio base time(ms) "
-	     "susp sleep event task path\n");
+	     "sleep event task path\n");
 	info(" ----------- -------- ---------- ---- ---- ---- ---- -------- "
-	     "---- ----------- ------------\n");
+	     "----------- ------------\n");
 
 	sch_lock();
 	i = &kern_task.link;
@@ -418,7 +355,7 @@ thread_dump(void)
 		task = list_entry(i, struct task, link);
 
 		list_for_each_entry(th, &task->threads, task_link) {
-			info(" %p%c %8s %p %c%c%c%c %s %4d %4d %8llu %4d %11s %s\n",
+			info(" %p%c %8s %p %c%c%c%c %s %4d %4d %8llu %11s %s\n",
 			    th, (th == thread_cur()) ? '*' : ' ',
 			    th->name, task,
 			    th->state & TH_SLEEP ? 'S' : ' ',
@@ -426,7 +363,7 @@ thread_dump(void)
 			    th->state & TH_EXIT ? 'E' : ' ',
 			    th->state & TH_ZOMBIE ? 'Z' : ' ',
 			    pol[th->policy], th->prio, th->baseprio,
-			    th->time / 1000000, th->suscnt,
+			    th->time / 1000000,
 			    th->slpevt != NULL ? th->slpevt->name : "-",
 			    task->path ?: "kernel");
 		}

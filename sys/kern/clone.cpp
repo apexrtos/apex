@@ -48,7 +48,7 @@ clone_thread(unsigned long flags, void *sp, int *ptid, void *tls,
 	if (flags & CLONE_SETTLS)
 		context_set_tls(&th->ctx, tls);
 
-	thread_resume(th);
+	sch_resume(th);
 
 	return tid;
 }
@@ -80,9 +80,9 @@ clone_process(unsigned long flags, void *sp)
 	if (flags & CLONE_VFORK) {
 		assert(!child->vfork);
 		child->vfork = thread_cur();
-		thread_suspend(thread_cur());
+		sch_suspend(thread_cur());
 	}
-	thread_resume(th);
+	sch_resume(th);
 	/* if this assertion goes off the CPU port is broken */
 	assert(thread_cur()->locks == 1);
 	sch_unlock();

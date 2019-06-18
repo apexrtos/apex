@@ -203,7 +203,7 @@ run_init(void)
 			panic("dup2for");
 	}
 
-	thread_resume(th);
+	sch_resume(th);
 }
 
 static void
