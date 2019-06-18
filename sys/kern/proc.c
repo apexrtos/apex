@@ -72,17 +72,18 @@ proc_exit(struct task *task, int status)
 	task->exitcode = (status & 0xff) << 8;
 
 	/*
+	 * Resume vfork thread if this process was vforked and didn't exec or
+	 * child process failed to run
+	 */
+	if (task->vfork)
+		sch_resume(task->vfork);
+
+	/*
 	 * Signal parent process
 	 */
 	sch_wakeone(&task->parent->child_event);
 	if (task->termsig)
 		sig_task(task->parent, task->termsig);
-
-	/*
-	 * Resume vfork thread if this process was vforked and didn't exec
-	 */
-	if (task->vfork)
-		sch_resume(task->vfork);
 
 	/*
 	 * Terminate all threads in task
