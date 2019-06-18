@@ -55,7 +55,6 @@ struct thread {
 	int		baseprio;	/* base priority */
 	int		timeleft;	/* remaining nanoseconds to run */
 	uint64_t	time;		/* total running time (nanoseconds) */
-	int		locks;		/* schedule lock counter */
 	struct event   *slpevt;		/* sleep event */
 	int		slpret;		/* sleep result code */
 	struct timer	timeout;	/* thread timer */

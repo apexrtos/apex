@@ -17,8 +17,8 @@
 /*
  * offsets into structs for use in assembly below
  */
-#define THREAD_TLS 168
-#define THREAD_KREGS 172
+#define THREAD_TLS 160
+#define THREAD_KREGS 164
 #define EFRAME_R0 0
 #define EFRAME_R1 4
 #define EFRAME_R2 8
@@ -69,7 +69,7 @@ static_assert(sizeof(struct exception_frame) == EFRAME_SIZE, "");
 	do { \
 		if (!((int)__builtin_return_address(0) & EXC_SPSEL)) \
 			sch_lock(); \
-		else if (!sch_locked()) { \
+		else if (!sch_locks()) { \
 			write32(&SCB->ICSR, (union scb_icsr){.PENDSVSET = 1}.r); \
 			sch_lock(); \
 		} \
@@ -103,7 +103,7 @@ exc_PendSV(void)
 __fast_text __attribute__((used)) void
 exc_PendSV_c(void)
 {
-	assert(thread_cur()->locks == 1);
+	assert(sch_locks() == 1);
 	sch_unlock();
 }
 

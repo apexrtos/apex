@@ -282,7 +282,7 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 	struct thread *th;
 	void *sp;
 
-	assert(sch_locked());
+	assert(sch_locks() > 0);
 	assert(name);
 
 	/*

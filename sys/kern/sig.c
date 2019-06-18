@@ -596,8 +596,12 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		dbg("Fatal signal %d. Terminate.\n", sig);
 		proc_exit(task_cur(), 0);
 		task_cur()->exitcode = sig;
+		sch_unlock();
 		sch_testexit();
-		goto out;
+
+		/* if this assertion fires the CPU port is broken */
+		assert(0);
+		__builtin_unreachable();
 	case SIGTSTP:
 	case SIGTTIN:
 	case SIGTTOU:

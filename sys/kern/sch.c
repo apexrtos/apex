@@ -119,6 +119,7 @@ extern struct thread idle_thread;
 __attribute__((used)) __fast_data struct thread *active_thread = &idle_thread;
 __fast_data static struct list zombie_list = LIST_INIT(zombie_list);
 __fast_bss static int resched;
+__fast_bss static int locks;
 
 /*
  * Return priority of highest-priority runnable thread.
@@ -225,7 +226,7 @@ schedule(void)
 {
 	assert(!interrupt_enabled());
 
-	if (!sch_locked() && resched)
+	if (!locks && resched)
 		arch_schedule();
 }
 
@@ -262,6 +263,11 @@ sch_switch(void)
 	 */
 	if (!resched)
 		return;
+
+	/*
+	 * Switching threads with preemption disabled makes no sense!
+	 */
+	assert(!locks);
 
 	/*
 	 * Switching threads while holding a spinlock is very bad.
@@ -337,22 +343,31 @@ sch_sleep(struct event *evt)
  * This routine returns a sleep result. If the thread is
  * woken by sch_wakeup() or sch_wakeone(), it returns 0.
  * Otherwise, it will return the result value which is passed
- * by sch_unsleep().  We allow calling sch_sleep() with
- * interrupt disabled.
+ * by sch_unsleep().
  *
  * sch_sleep() is also defined as a wrapper for
  * sch_nanosleep() without timeout. Note that all sleep
  * requests are interruptible with this kernel.
+ *
+ * sch_sleep() & sch_nanosleep() must be called with interrupts
+ * enabled and preemption disabled. If you need more advanced
+ * functionality use the wait_* funcions.
  */
 int
 sch_nanosleep(struct event *evt, uint64_t nsec)
 {
 	int ret;
 
+	assert(locks == 1);
+
 	if ((ret = sch_prepare_sleep(evt, nsec)))
 		return ret;
 
-	return sch_continue_sleep();
+	sch_unlock();
+	ret = sch_continue_sleep();
+	sch_lock();
+
+	return ret;
 }
 
 /*
@@ -572,7 +587,7 @@ sch_interrupt(struct thread *th)
 void
 sch_yield(void)
 {
-	assert(!sch_locked());
+	assert(!locks);
 
 	const int s = irq_disable();
 
@@ -712,6 +727,7 @@ sch_testexit(void)
 
 	/* if this assertion fires the CPU port is broken */
 	assert(0);
+	__builtin_unreachable();
 }
 
 /*
@@ -724,7 +740,7 @@ sch_testexit(void)
 inline void
 sch_lock(void)
 {
-	write_once(&active_thread->locks, active_thread->locks + 1);
+	write_once(&locks, locks + 1);
 	compiler_barrier();
 	thread_check();
 }
@@ -738,14 +754,14 @@ sch_lock(void)
 inline void
 sch_unlock(void)
 {
-	assert(active_thread->locks > 0);
-	assert(active_thread->locks > 1 || interrupt_enabled());
+	assert(locks > 0);
+	assert(locks > 1 || interrupt_enabled());
 
 	thread_check();
 	compiler_barrier();
-	write_once(&active_thread->locks, active_thread->locks - 1);
+	write_once(&locks, locks - 1);
 
-	if (active_thread->locks)
+	if (locks)
 		return;
 
 	interrupt_disable();
@@ -755,12 +771,12 @@ sch_unlock(void)
 }
 
 /*
- * sch_locked - check if scheduler is locked.
+ * sch_locks - return number of scheduler locks.
  */
-bool
-sch_locked(void)
+int
+sch_locks(void)
 {
-	return active_thread->locks > 0;
+	return locks;
 }
 
 /*

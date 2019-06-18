@@ -83,8 +83,6 @@ clone_process(unsigned long flags, void *sp)
 		sch_suspend(thread_cur());
 	}
 	sch_resume(th);
-	/* if this assertion goes off the CPU port is broken */
-	assert(thread_cur()->locks == 1);
 	sch_unlock();
 
 	return ret;

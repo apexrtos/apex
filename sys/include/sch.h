@@ -75,7 +75,7 @@ void	        sch_stop(struct thread *);
 void		sch_testexit(void);
 void	        sch_lock(void);
 void	        sch_unlock(void);
-bool		sch_locked(void);
+int		sch_locks(void);
 int		sch_getprio(struct thread *);
 void		sch_setprio(struct thread *, int, int);
 int		sch_getpolicy(struct thread *);

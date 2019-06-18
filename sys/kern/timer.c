@@ -222,7 +222,9 @@ timer_delay(uint64_t nsec)
 	u_long remain = 0;
 	int rc;
 
-	rc = sch_nanosleep(&delay_event, nsec ?: 1);
+	if ((rc = sch_prepare_sleep(&delay_event, nsec ?: 1)) == 0)
+		rc = sch_continue_sleep();
+
 	if (rc != -ETIMEDOUT) {
 		tmr = &thread_cur()->timeout;
 		remain = time_remain(tmr->expire);
