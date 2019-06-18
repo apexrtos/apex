@@ -54,6 +54,7 @@ extern "C" {
 /*
  * Scheduler interface
  */
+void		sch_switch(void);
 struct thread  *sch_active(void);
 int		sch_sleep(struct event *);
 int		sch_nanosleep(struct event *, uint64_t);

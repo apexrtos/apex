@@ -126,6 +126,8 @@ __fast_bss static int resched;
 static int
 runq_top(void)
 {
+	assert(!interrupt_enabled());
+
 	if (queue_empty(&runq))
 		return PRI_MIN + 1;
 
@@ -139,6 +141,8 @@ runq_top(void)
 static bool
 thread_runnable(const struct thread *th)
 {
+	assert(!interrupt_enabled());
+
 	return !(th->state & (TH_SLEEP | TH_SUSPEND | TH_ZOMBIE));
 }
 
@@ -148,6 +152,7 @@ thread_runnable(const struct thread *th)
 static void
 runq_enqueue(struct thread *th)
 {
+	assert(!interrupt_enabled());
 	assert(thread_runnable(th));
 
 	struct queue *q = queue_first(&runq);
@@ -172,6 +177,8 @@ runq_enqueue(struct thread *th)
 static void
 runq_insert(struct thread *th)
 {
+	assert(!interrupt_enabled());
+
 	struct queue *q = queue_first(&runq);
 	while (!queue_end(&runq, q)) {
 		struct thread *qth = queue_entry(q, struct thread, link);
@@ -190,6 +197,8 @@ runq_insert(struct thread *th)
 static struct thread *
 runq_dequeue(void)
 {
+	assert(!interrupt_enabled());
+
 	struct thread *th;
 
 	th = queue_entry(queue_first(&runq), struct thread, link);
@@ -203,7 +212,32 @@ runq_dequeue(void)
 static void
 runq_remove(struct thread *th)
 {
+	assert(!interrupt_enabled());
+
 	queue_remove(&th->link);
+}
+
+/*
+ * Request reschedule if current thread needs to be switched
+ */
+static void
+schedule(void)
+{
+	assert(!interrupt_enabled());
+
+	if (!sch_locked() && resched)
+		arch_schedule();
+}
+
+/*
+ * sleep_expire - sleep timer is expired:
+ *
+ * Wake up the thread which is sleeping in sched_tsleep().
+ */
+static void
+sleep_expire(void *arg)
+{
+	sch_unsleep(arg, -ETIMEDOUT);
 }
 
 /*
@@ -216,10 +250,18 @@ runq_remove(struct thread *th)
  * the current thread is inserted into the tail of the run
  * queue.
  */
-static void
+void
 sch_switch(void)
 {
+	assert(!interrupt_enabled());
+
 	struct thread *prev, *next;
+
+	/*
+	 * Ignore spurious sch_switch calls.
+	 */
+	if (!resched)
+		return;
 
 	/*
 	 * Switching threads while holding a spinlock is very bad.
@@ -267,17 +309,6 @@ sch_switch(void)
 	 * You are expected to understand this..
 	 */
 	context_switch(prev, next);
-}
-
-/*
- * sleep_expire - sleep timer is expired:
- *
- * Wake up the thread which is sleeping in sched_tsleep().
- */
-static void
-sleep_expire(void *arg)
-{
-	sch_unsleep(arg, -ETIMEDOUT);
 }
 
 /*
@@ -341,7 +372,6 @@ sch_wakeup(struct event *evt, int result)
 
 	assert(evt);
 
-	sch_lock();
 	const int s = irq_disable();
 	while (!queue_empty(&evt->sleepq)) {
 		/*
@@ -355,11 +385,11 @@ sch_wakeup(struct event *evt, int result)
 		timer_stop(&th->timeout);
 		if (th != active_thread)
 			runq_enqueue(th);
-
 		++n;
 	}
+	if (n)
+		schedule();
 	irq_restore(s);
-	sch_unlock();
 
 	return n;
 }
@@ -377,7 +407,6 @@ sch_wakeone(struct event *evt)
 	struct queue *head, *q;
 	struct thread *top = NULL, *th;
 
-	sch_lock();
 	const int s = irq_disable();
 	head = &evt->sleepq;
 	if (!queue_empty(head)) {
@@ -401,8 +430,10 @@ sch_wakeone(struct event *evt)
 		if (th != active_thread)
 			runq_enqueue(top);
 	}
+	if (top)
+		schedule();
 	irq_restore(s);
-	sch_unlock();
+
 	return top;
 }
 
@@ -415,7 +446,6 @@ sch_requeue(struct event *l, struct event *r)
 	struct queue *q;
 	struct thread *th = 0;
 
-	sch_lock();
 	const int s = irq_disable();
 	if (!queue_empty(&l->sleepq)) {
 		q = dequeue(&l->sleepq);
@@ -424,7 +454,6 @@ sch_requeue(struct event *l, struct event *r)
 		timer_redirect(&th->timeout, &sleep_expire, th);
 	}
 	irq_restore(s);
-	sch_unlock();
 
 	return th;
 }
@@ -468,10 +497,18 @@ sch_prepare_sleep(struct event *evt, uint64_t nsec)
 int
 sch_continue_sleep()
 {
-	const int s = irq_disable();
-	if (active_thread->state & TH_SLEEP)
-		sch_switch();	/* Sleep here. Zzzz.. */
-	irq_restore(s);
+	assert(interrupt_enabled());
+
+	interrupt_disable();
+	/* if we are still going to sleep, sleep now! */
+	if (active_thread->state & TH_SLEEP) {
+		resched = RESCHED_SWITCH;
+		arch_schedule();
+	}
+	interrupt_enable();
+
+	/* if this assertion fires the CPU port is broken */
+	assert(!(active_thread->state & TH_SLEEP));
 
 	return active_thread->slpret;
 }
@@ -497,7 +534,6 @@ sch_cancel_sleep(void)
 void
 sch_unsleep(struct thread *th, int result)
 {
-	sch_lock();
 	const int s = irq_disable();
 	if (th->state & TH_SLEEP) {
 		queue_remove(&th->link);
@@ -505,11 +541,12 @@ sch_unsleep(struct thread *th, int result)
 		th->slpevt = NULL;
 		th->state &= ~TH_SLEEP;
 		timer_stop(&th->timeout);
-		if (th != active_thread)
+		if (th != active_thread) {
 			runq_enqueue(th);
+			schedule();
+		}
 	}
 	irq_restore(s);
-	sch_unlock();
 }
 
 /*
@@ -535,65 +572,61 @@ sch_interrupt(struct thread *th)
 void
 sch_yield(void)
 {
-	sch_lock();
+	assert(!sch_locked());
+
 	const int s = irq_disable();
 
-	if (runq_top() <= active_thread->prio)
+	if (runq_top() <= active_thread->prio) {
 		resched = RESCHED_SWITCH;
+		arch_schedule();
+	}
 
 	irq_restore(s);
-	sch_unlock();	/* Switch current thread here */
 }
 
 /*
  * Suspend the specified thread.
- * Called with scheduler locked.
  */
 void
 sch_suspend(struct thread *th)
 {
 	assert(!(th->state & TH_SUSPEND));
 
-	sch_lock();
 	const int s = irq_disable();
-	if (thread_runnable(th)) {
-		if (th == active_thread)
-			resched = RESCHED_SWITCH;
-		else
-			runq_remove(th);
-	}
+	if (th == active_thread)
+		resched = RESCHED_SWITCH;
+	else if (thread_runnable(th))
+		runq_remove(th);
 	th->state |= TH_SUSPEND;
+	schedule();
 	irq_restore(s);
-	sch_unlock();
 }
 
 /*
  * Resume the specified thread.
- * Called with scheduler locked.
  */
 void
 sch_resume(struct thread *th)
 {
 	assert(th->state & TH_SUSPEND);
 
-	sch_lock();
 	const int s = irq_disable();
 	th->state &= ~TH_SUSPEND;
-	if (thread_runnable(th) && th != active_thread)
+	if (thread_runnable(th) && th != active_thread) {
 		runq_enqueue(th);
+		schedule();
+	}
 	irq_restore(s);
-	sch_unlock();
 }
 
 /*
  * sch_elapse() is called from timer_tick() when time advances.
  * Check quantum expiration, and mark a rescheduling flag.
- * We don't need locking in here.
  */
 __fast_text void
 sch_elapse(uint32_t nsec)
 {
-	assert(sch_locked());
+	const int s = irq_disable();
 
 	/* Profile running time. */
 	active_thread->time += nsec;
@@ -606,9 +639,18 @@ sch_elapse(uint32_t nsec)
 			 * Give the thread another.
 			 */
 			active_thread->timeleft += QUANTUM;
-			resched = RESCHED_SWITCH;
+
+			/*
+			 * If there are other threads of equal or higher
+			 * priority run them now!
+			 */
+			if (runq_top() <= active_thread->prio) {
+				resched = RESCHED_SWITCH;
+				schedule();
+			}
 		}
 	}
+	irq_restore(s);
 }
 
 /*
@@ -630,7 +672,11 @@ sch_start(struct thread *th)
 void
 sch_stop(struct thread *th)
 {
+	const int s = irq_disable();
+
 	th->state |= TH_EXIT;
+
+	irq_restore(s);
 }
 
 /*
@@ -639,6 +685,8 @@ sch_stop(struct thread *th)
 void
 sch_testexit(void)
 {
+	assert(interrupt_enabled());
+
 	if (!(active_thread->state & TH_EXIT))
 		return;
 
@@ -646,11 +694,24 @@ sch_testexit(void)
 	if (list_only_entry(&active_thread->task_link))
 		fs_exit(active_thread->task);
 
-	sch_lock();
+	/* reap zombie threads */
+	interrupt_disable();
+	while (!list_empty(&zombie_list)) {
+		struct thread *th = list_entry(list_first(&zombie_list),
+			struct thread, task_link);
+		list_remove(&th->task_link);
+		interrupt_enable();
+		thread_free(th);
+		interrupt_disable();
+	}
+
 	active_thread->state |= TH_ZOMBIE;
 	resched = RESCHED_SWITCH;
-	sch_unlock();
+	arch_schedule();
+	interrupt_enable();
 
+	/* if this assertion fires the CPU port is broken */
+	assert(0);
 }
 
 /*
@@ -673,38 +734,24 @@ sch_lock(void)
  *
  * If nobody locks the scheduler anymore, it checks the
  * rescheduling flag and kick the scheduler if it's required.
- *
- * Note that this routine will be always called at the end
- * of each interrupt handler.
  */
-static void
-sch_unlock_slowpath(int s)
-{
-	/* Kick scheduler */
-	sch_switch();
-
-	/*
-	 * Reap zombies
-	 */
-	while (!list_empty(&zombie_list)) {
-		struct thread *th = list_entry(list_first(&zombie_list),
-			struct thread, task_link);
-		list_remove(&th->task_link);
-		thread_free(th);
-	}
-}
-
 inline void
 sch_unlock(void)
 {
 	assert(active_thread->locks > 0);
-	thread_check();
+	assert(active_thread->locks > 1 || interrupt_enabled());
 
-	int s = irq_disable();
-	if (active_thread->locks == 1 && resched)
-		sch_unlock_slowpath(s);
-	--active_thread->locks;
-	irq_restore(s);
+	thread_check();
+	compiler_barrier();
+	write_once(&active_thread->locks, active_thread->locks - 1);
+
+	if (active_thread->locks)
+		return;
+
+	interrupt_disable();
+	if (resched)
+		arch_schedule();
+	interrupt_enable();
 }
 
 /*
@@ -730,16 +777,12 @@ sch_getprio(struct thread *th)
  *
  * The rescheduling flag is set if the priority is
  * higher (less than) than the currently running thread.
- * Called with scheduler locked.
  */
 void
 sch_setprio(struct thread *th, int baseprio, int prio)
 {
-	assert(sch_locked());
-
-	th->baseprio = baseprio;
-
 	int s = irq_disable();
+	th->baseprio = baseprio;
 	if (th == active_thread) {
 		/*
 		 * If we change the current thread's priority
@@ -761,6 +804,7 @@ sch_setprio(struct thread *th, int baseprio, int prio)
 		} else
 			th->prio = prio;
 	}
+	schedule();
 	irq_restore(s);
 }
 
@@ -856,7 +900,10 @@ dpc_thread(void *unused_arg)
 		 * Wait until next DPC request. Done after first pass as
 		 * there may be some dpc pending from kernel start
 		 */
-		sch_sleep(&dpc_event);
+		sch_prepare_sleep(&dpc_event, 0);
+		interrupt_enable();
+		sch_continue_sleep();
+		interrupt_disable();
 	}
 	/* NOTREACHED */
 }

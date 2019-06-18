@@ -108,6 +108,15 @@ exc_PendSV_c(void)
 }
 
 /*
+ * arch_schedule
+ */
+void
+arch_schedule(void)
+{
+	sch_switch();
+}
+
+/*
  * exc_NMI/context_switch
  *
  * Context switch

@@ -213,15 +213,10 @@ irq_thread(void *arg)
 
 		interrupt_disable();
 		if (irq->istreq <= 0) {
-			/*
-			 * Since the interrupt is disabled above,
-			 * an interrupt for this vector keeps
-			 * pending until this thread enters sleep
-			 * state. Thus, we don't lose any IST
-			 * requests even if the interrupt is fired
-			 * here.
-			 */
-			sch_sleep(&irq->istevt);
+			sch_prepare_sleep(&irq->istevt, 0);
+			interrupt_enable();
+			sch_continue_sleep();
+			interrupt_disable();
 		}
 		irq->istreq--;
 		assert(irq->istreq >= 0);

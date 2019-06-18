@@ -243,7 +243,10 @@ timer_thread(void *arg)
 
 	for (;;) {
 		/* Wait until next timer expiration. */
-		sch_sleep(&timer_event);
+		sch_prepare_sleep(&timer_event, 0);
+		interrupt_enable();
+		sch_continue_sleep();
+		interrupt_disable();
 
 		while (!list_empty(&expire_list)) {
 			/*
@@ -266,15 +269,8 @@ timer_thread(void *arg)
 				tmr->active = 0;
 			}
 
-			sch_lock();
 			interrupt_enable();
 			(*tmr->func)(tmr->arg);
-
-			/*
-			 * Unlock scheduler here in order to give
-			 * chance to higher priority threads to run.
-			 */
-			sch_unlock();
 			interrupt_disable();
 		}
 	}
@@ -377,7 +373,6 @@ timer_monotonic_coarse(void)
 {
 	return monotonic;
 }
-
 
 /*
  * Initialize the timer facility, called at system startup time.

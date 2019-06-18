@@ -102,6 +102,7 @@ void		machine_reset(void);
 void		machine_poweroff(void);
 void		machine_suspend(void);
 noreturn void	machine_panic(void);
+void		arch_schedule(void);
 void		arch_backtrace(struct thread *);
 bool		arch_check_elfhdr(const Elf32_Ehdr *);
 unsigned	arch_elf_hwcap(void);
