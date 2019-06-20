@@ -193,10 +193,10 @@ syslog_vprintf(int level, const char *fmt, va_list ap)
 out:
 	++log_seq;
 
-	irq_restore(s);
-
 	if (log_output)
 		log_output();
+
+	irq_restore(s);
 }
 
 /*
@@ -205,7 +205,11 @@ out:
 void
 syslog_output(void (*fn)(void))
 {
+	const int s = irq_disable();
+
 	log_output = fn;
+
+	irq_restore(s);
 }
 
 /*
