@@ -216,6 +216,7 @@ irq_thread(void *arg)
 			sch_prepare_sleep(&irq->istevt, 0);
 			interrupt_enable();
 			sch_continue_sleep();
+			sch_testexit();
 			interrupt_disable();
 		}
 		irq->istreq--;
