@@ -158,6 +158,22 @@ machine_panic(void)
 void
 early_console_init(void)
 {
+	/* set GPIO_AD_B0_12 as LPUART1_TX */
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_mux_ctl){
+		.MUX_MODE = 2,
+		.SION = SION_Software_Input_On_Disabled,
+	}.r);
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){
+		.SRE = SRE_Slow,
+		.DSE = DSE_R0_6,
+		.SPEED = SPEED_100MHz,
+		.ODE = ODE_Open_Drain_Disabled,
+		.PKE = PKE_Pull_Keeper_Enabled,
+		.PUE = PUE_Keeper,
+		.PUS = PUS_100K_Pull_Down,
+		.HYS = HYS_Hysteresis_Disabled,
+	}.r);
+
 	fsl_lpuart_early_init(LPUART1, 24000000, CONFIG_CONSOLE_CFLAG);
 }
 
