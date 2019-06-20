@@ -268,11 +268,6 @@ thread_idle(void)
  * scheduling policy is set to SCHED_FIFO. kthread_create()
  * returns thread ID on success, or NULL on failure.
  *
- * Important: Since sch_switch() will disable interrupts in
- * CPU, the interrupt is always disabled at the entry point of
- * the kernel thread. So, the kernel thread must enable the
- * interrupt first when it gets control.
- *
  * This routine assumes the scheduler is already locked.
  */
 struct thread *

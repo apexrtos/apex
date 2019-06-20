@@ -43,9 +43,6 @@ static ssize_t console_write(struct file *file, const struct iovec *iov,
 static void
 console_thread(void *unused)
 {
-	/* kernel threads start with interrupts disabled */
-	interrupt_enable();
-
 	int len;
 	char buf[256];
 	while (true) {

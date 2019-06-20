@@ -245,6 +245,7 @@ timer_thread(void *arg)
 
 	for (;;) {
 		/* Wait until next timer expiration. */
+		interrupt_disable();
 		sch_prepare_sleep(&timer_event, 0);
 		interrupt_enable();
 		sch_continue_sleep();

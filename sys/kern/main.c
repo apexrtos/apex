@@ -211,7 +211,6 @@ boot_thread(void *arg)
 {
 	struct bootargs *args = arg;
 
-	interrupt_enable(); /* kthreads start with interrupts disabled */
 	mount_fs(args);
 #if defined(CONFIG_CONSOLE)
 	console_init();

@@ -201,8 +201,6 @@ irq_thread(void *arg)
 	void *data;
 	struct irq *irq;
 
-	interrupt_enable();
-
 	irq = (struct irq *)arg;
 	func = irq->ist;
 	vec = irq->vector;

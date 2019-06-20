@@ -23,6 +23,24 @@ uthread_entry(void)
 }
 
 /*
+ * kthread_entry
+ *
+ * Entry point for kernel threads.
+ * r0 = arg
+ * r1 = entry
+ *
+ * Kernel threads start with interrupts enabled.
+ */
+__attribute__((naked)) static void
+kthread_entry(void)
+{
+	asm(
+		"cpsie i\n"
+		"bx r1\n"
+	);
+}
+
+/*
  * Initialise context for idle thread.
  *
  * This thread is special as it was initialised early in the boot process and
@@ -50,10 +68,11 @@ context_init_kthread(struct context *ctx, void *kstack_top,
 
 	/* set thread arguments */
 	ktframe->eframe.r0 = (uint32_t)arg;
+	ktframe->eframe.r1 = (uint32_t)entry;
 
 	/* Loading an unaligned value from the stack into the PC on an
 	   exception return is UNPREDICTABLE. */
-	ktframe->eframe.ra = (uint32_t)entry & -2;
+	ktframe->eframe.ra = (uint32_t)kthread_entry & -2;
 	ktframe->eframe.xpsr = EPSR_T | 11;
 
 	/* Pop exception frame after context switch */

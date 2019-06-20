@@ -896,6 +896,7 @@ dpc_thread(void *unused_arg)
 	struct dpc *dpc;
 
 	for (;;) {
+		interrupt_disable();
 		while (!queue_empty(&dpcq)) {
 			q = dequeue(&dpcq);
 			dpc = queue_entry(q, struct dpc, link);
@@ -919,7 +920,6 @@ dpc_thread(void *unused_arg)
 		sch_prepare_sleep(&dpc_event, 0);
 		interrupt_enable();
 		sch_continue_sleep();
-		interrupt_disable();
 	}
 	/* NOTREACHED */
 }
