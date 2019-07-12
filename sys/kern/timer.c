@@ -29,6 +29,10 @@
 
 /*
  * timer.c - kernel timer services.
+ *
+ * TODO:
+ * - monotonic should not be volatile
+ * - replace irq_disable/irq_restore with spinlock (required for SMP)
  */
 
 #include <timer.h>
