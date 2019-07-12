@@ -23,6 +23,7 @@ ssize_t		    vm_writev(struct as *, const struct iovec *, size_t,
 			      const struct iovec *, size_t);
 ssize_t		    vm_read(struct as *, void *, const void *, size_t);
 ssize_t		    vm_write(struct as *, const void *, void *, size_t);
+ssize_t		    vm_copy(struct as *, void *, const void *, size_t);
 struct as	   *as_create(pid_t);
 struct as	   *as_copy(struct as *, pid_t);
 void		    as_destroy(struct as *);

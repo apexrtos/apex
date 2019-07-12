@@ -45,6 +45,23 @@ vm_write(as *as, const void *l, void *r, size_t s)
 }
 
 /*
+ * vm_copy - copy data in address space
+ */
+int
+vm_copy(as *as, void *dst, const void *src, size_t s)
+{
+	interruptible_lock lck(u_access_lock);
+	if (auto r = lck.lock(); r < 0)
+		return r;
+	if (!u_access_okfor(as, src, s, PROT_READ))
+		return DERR(-EFAULT);
+	if (!u_access_okfor(as, dst, s, PROT_WRITE))
+		return DERR(-EFAULT);
+	memcpy(dst, src, s);
+	return s;
+}
+
+/*
  * as_switch - switch to address space
  */
 void
