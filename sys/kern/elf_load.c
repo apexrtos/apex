@@ -233,7 +233,7 @@ build_args(struct as *a, void *stack, const char *const prgv[],
 
 	/* No arguments */
 	if (!argv)
-		return arch_stack_align(stack);
+		return arch_ustack_align(stack);
 
 	assert(stack && argv && auxv);
 
@@ -255,7 +255,7 @@ build_args(struct as *a, void *stack, const char *const prgv[],
 
 	/* Set target stack addresses */
 	void *str = stack - strtot;
-	void *arg = arch_stack_align(TRUNC(stack - strtot - argtot * argsz));
+	void *arg = arch_ustack_align(TRUNC(stack - strtot - argtot * argsz));
 	void *const sp = arg;
 
 	/* Copy in strings & fill in arguments */

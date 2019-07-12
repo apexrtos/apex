@@ -149,7 +149,7 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
 	 * Initialize thread state.
 	 */
 	th->task = task;
-	void *const ksp = arch_stack_align(th->kstack + CONFIG_KSTACK_SIZE);
+	void *const ksp = arch_kstack_align(th->kstack + CONFIG_KSTACK_SIZE);
 	context_init_uthread(&th->ctx, ksp, sp, entry, retval);
 	/* add new threads to end of list (master thread at head) */
 	list_insert(list_last(&task->threads), &th->task_link);
@@ -289,7 +289,7 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 
 	strlcpy(th->name, name, ARRAY_SIZE(th->name));
 	th->task = &kern_task;
-	sp = arch_stack_align((char *)th->kstack + CONFIG_KSTACK_SIZE);
+	sp = arch_kstack_align((char *)th->kstack + CONFIG_KSTACK_SIZE);
 	context_init_kthread(&th->ctx, sp, entry, arg);
 	/* add new threads to end of list (idle_thread at head) */
 	list_insert(list_last(&kern_task.threads), &th->task_link);

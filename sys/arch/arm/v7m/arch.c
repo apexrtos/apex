@@ -32,9 +32,15 @@ arch_elf_hwcap(void)
 }
 
 void *
-arch_stack_align(void *sp)
+arch_ustack_align(void *sp)
 {
 	/* userspace expects 16-byte aligned stack */
 	return (void*)((intptr_t)sp & -16);
 }
 
+void *
+arch_kstack_align(void *sp)
+{
+	/* arm requires 8-byte aligned stack */
+	return (void*)((intptr_t)sp & -8);
+}

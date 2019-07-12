@@ -112,7 +112,7 @@ context_init_uthread(struct context *ctx, void *kstack_top,
 	if (!entry) {
 		/* copy extended syscall frame */
 		struct extended_syscall_frame *cur_esframe =
-		    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
+		    arch_kstack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
 		    sizeof(struct extended_syscall_frame);
 		utframe->esframe = *cur_esframe;
 
@@ -267,7 +267,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	sf->saved_rrval = rrval;
 	if (rrval == -ERESTARTSYS || rrval == -EPENDSV_RETURN) {
 		const struct syscall_frame *sframe =
-		    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
+		    arch_kstack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
 		    sizeof(struct syscall_frame);
 		sf->saved_sframe = *sframe;
 	}
@@ -314,7 +314,7 @@ context_restore(struct context *ctx, k_sigset_t *ss)
 	if (sf->saved_rrval == -ERESTARTSYS ||
 	    sf->saved_rrval == -EPENDSV_RETURN) {
 		struct syscall_frame *sframe =
-		    arch_stack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
+		    arch_kstack_align(thread_cur()->kstack + CONFIG_KSTACK_SIZE) -
 		    sizeof(struct syscall_frame);
 		*sframe = sf->saved_sframe;
 	}
