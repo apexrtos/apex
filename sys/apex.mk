@@ -98,4 +98,4 @@ include $(MACHINEDIR)/include.mk
 # C library
 $(APEX_SUBDIR)sys/lib/errno_EXTRA_CFLAGS := -fno-lto
 $(APEX_SUBDIR)sys/lib/raise_EXTRA_CFLAGS := -fno-lto
-MK := ../libc/libc.mk ../libc++/libc++.mk ../libcxxrt/libcxxrt.mk
+MK += ../libc/libc.mk ../libc++/libc++.mk ../libcxxrt/libcxxrt.mk
