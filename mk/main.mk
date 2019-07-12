@@ -386,7 +386,7 @@ $(foreach ext,$(CXX_EXT),$(eval $(call cpp_rule,$(ext))))
 	+$($($*_TGT)_CC) -c -MD -MP $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -o $@ $<
 
 %.s: %.S %.cflags
-	$($($*_TGT)_CPP) -MD -MP -MT $*.o $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -D__ASSEMBLY__ $< $@
+	$($($*_TGT)_CPP) -MD -MP -MT $*.s $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -D__ASSEMBLY__ $< $@
 
 %.o: %.s %.asflags
 	$($($*_TGT)_AS) $($($*_TGT)_ASFLAGS) $($($*_TGT)_INCLUDE) -o $@ $<
