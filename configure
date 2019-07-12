@@ -404,8 +404,10 @@ main()
 		echo "#define CONFIG_MACHINE \"$machine\""
 		echo "#define CONFIG_CPU \"$cpu\""
 		echo "#define CONFIG_ARCH \"$arch\""
-		[ "x$subarch" != x ] &&
+		if [ "x$subarch" != x ]; then
 			echo "#define CONFIG_SUBARCH \"$subarch\""
+			echo "#define CONFIG_SUBARCH_$subarch 1"
+		fi
 	} >> "$CONFIG_H"
 
 	printf '/*\n * drivers.c - Automatically generated file. Do not edit.\n */\n\n%s' "$(sort -k 2 -n $DRIVERS_C)" > "$DRIVERS_C"
