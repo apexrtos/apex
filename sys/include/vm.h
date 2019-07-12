@@ -32,7 +32,7 @@ int		    as_transfer_end(struct as *);
 int		    as_modify_begin(struct as *);
 int		    as_modify_end(struct as *);
 void		    as_switch(struct as *);
-void		    as_dump(struct as *);
+void		    as_dump(const struct as *);
 const struct seg   *as_find_seg(const struct as *, const void *);
 void		   *seg_begin(const struct seg *);
 void		   *seg_end(const struct seg *);

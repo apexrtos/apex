@@ -582,7 +582,7 @@ as_modify_end(as *a)
  * as_dump
  */
 void
-as_dump(as *a)
+as_dump(const as *a)
 {
 	seg *s;
 	list_for_each_entry(s, &a->segs, link) {
