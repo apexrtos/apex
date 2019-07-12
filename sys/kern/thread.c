@@ -126,22 +126,9 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
     long mem_attr, void (*entry)(void), long retval)
 {
 	struct thread *th;
-	int err = 0;
 
-	sch_lock();
-	if (task == NULL)
-		task = task_cur();
-	else if (!task_valid(task)) {
-		err = DERR(-ESRCH);
-		goto out;
-	} else if (!task_access(task)) {
-		err = DERR(-EPERM);
-		goto out;
-	}
-	if ((th = thread_alloc(mem_attr)) == NULL) {
-		err = DERR(-ENOMEM);
-		goto out;
-	}
+	if ((th = thread_alloc(mem_attr)) == NULL)
+		return DERR(-ENOMEM);
 
 	*thp = th;
 
@@ -152,11 +139,12 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
 	void *const ksp = arch_kstack_align(th->kstack + CONFIG_KSTACK_SIZE);
 	context_init_uthread(&th->ctx, ksp, sp, entry, retval);
 	/* add new threads to end of list (master thread at head) */
+	sch_lock();
 	list_insert(list_last(&task->threads), &th->task_link);
 	sch_start(th);
-out:
 	sch_unlock();
-	return err;
+
+	return 0;
 }
 
 /*
@@ -205,17 +193,11 @@ thread_free(struct thread *th)
 int
 thread_name(struct thread *th, const char *name)
 {
-	int err = 0;
-
 	sch_lock();
-	if (!thread_valid(th))
-		err = DERR(-ESRCH);
-	else if (task_cur() != &kern_task && !task_access(th->task))
-		err = DERR(-EPERM);
-	else
-		strlcpy(th->name, name, ARRAY_SIZE(th->name));
+	strlcpy(th->name, name, ARRAY_SIZE(th->name));
 	sch_unlock();
-	return err;
+
+	return 0;
 }
 
 /*
