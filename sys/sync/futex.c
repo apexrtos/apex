@@ -169,24 +169,17 @@ int
 sc_futex(int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
 	int ret;
+	struct timespec ts;
 
-	if ((ret = u_access_begin()) < 0)
-		return ret;
-
-	/* validate all userspace addresses */
+	/* copy in userspace timespec */
 	switch (op & FUTEX_OP_MASK) {
 	case FUTEX_WAIT:
-		if (val2 && !u_access_ok(val2, sizeof(struct timespec), PROT_READ)) {
-			ret = DERR(-EFAULT);
-			goto out;
-		}
-		break;
+		if (!val2)
+			break;
+		if ((ret = vm_read(task_cur()->as, &ts, val2, sizeof(ts))) < 0)
+			return ret;
+		val2 = &ts;
 	}
 
-	ret = futex(task_cur(), uaddr, op, val, val2, uaddr2);
-
-out:
-	u_access_end();
-
-	return ret;
+	return futex(task_cur(), uaddr, op, val, val2, uaddr2);
 }
