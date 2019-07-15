@@ -28,6 +28,9 @@ endif
 # Expand prerequisite lists
 .SECONDEXPANSION:
 
+# Keep intermediate files
+.SECONDARY:
+
 # Phony target to force rule execution
 .PHONY: force
 
@@ -75,7 +78,6 @@ endef
 #
 # Rule to create a directory
 #
-.PRECIOUS: %/
 %/:
 	mkdir -p $@
 
@@ -87,7 +89,6 @@ endef
 define fn_flags_rule
     # fn_flags_rule
 
-    .PRECIOUS: $(1)
     $(1): force | $$(CURDIR)/$$$$(dir $$$$@)
 	$$(if $$(or $$(filter undefined,$$(origin $$@)),$$(subst x$$($$@),,x$$(strip $(2)))$$(subst x$$(strip $(2)),,x$$($$@))),$$(file >$$@,$$@ := $$(strip $(2))),)
 endef
