@@ -95,6 +95,7 @@ extern "C" __attribute__((used)) int
 sc_clone_(unsigned long flags, void *sp, void *ptid, unsigned long tls,
     void *ctid)
 {
+	sp = arch_ustack_align(sp);
 	if (flags & CLONE_THREAD)
 		return clone_thread(flags, sp, (int*)ptid, (void *)tls, (int*)ctid);
 	else
