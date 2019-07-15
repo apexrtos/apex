@@ -354,7 +354,13 @@ context_siginfo_restore(struct context *ctx, k_sigset_t *ss)
 }
 
 void
-context_cleanup(struct context *ctx)
+context_terminate(struct thread *th)
+{
+	/* nothing to do for now */
+}
+
+void
+context_free(struct context *ctx)
 {
 	/* nothing to do for now */
 }

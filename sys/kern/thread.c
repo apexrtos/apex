@@ -167,6 +167,8 @@ thread_terminate(struct thread *th)
 		    1, 0, 0);
 	}
 
+	context_terminate(th);
+
 	sch_unlock();
 }
 
@@ -179,7 +181,7 @@ thread_free(struct thread *th)
 	assert(th->state & TH_ZOMBIE);
 
 	th->magic = 0;
-	context_cleanup(&th->ctx);
+	context_free(&th->ctx);
 	kmem_free(th->kstack);
 	kmem_free(th);
 }
