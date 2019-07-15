@@ -702,15 +702,24 @@ sch_stop(struct thread *th)
 /*
  * Thread is ready to quit
  */
-void
+bool
 sch_testexit(void)
 {
 	assert(interrupt_enabled());
+	assert(!locks);
 
-	if (!(active_thread->state & TH_EXIT))
-		return;
+	interrupt_disable();
+	if (!(active_thread->state & TH_EXIT)) {
+		interrupt_enable();
+		return false;
+	}
+	interrupt_enable();
 
-	/* cleanup filesystem if this is the last thread in the task */
+	/* cleanup filesystem if this is the last thread in the task
+	 *
+	 * REVISIT: This function can be called from an exception handler which
+	 *	    probably causes subtle filesystem bugs.
+	 */
 	if (list_only_entry(&active_thread->task_link))
 		fs_exit(active_thread->task);
 
@@ -725,14 +734,13 @@ sch_testexit(void)
 		interrupt_disable();
 	}
 
+	/* mark thread as zombie */
 	active_thread->state |= TH_ZOMBIE;
 	resched = RESCHED_SWITCH;
 	arch_schedule();
 	interrupt_enable();
 
-	/* if this assertion fires the CPU port is broken */
-	assert(0);
-	__builtin_unreachable();
+	return true;
 }
 
 /*

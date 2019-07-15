@@ -72,7 +72,7 @@ void	        sch_resume(struct thread *);
 void	        sch_elapse(uint32_t);
 void	        sch_start(struct thread *);
 void	        sch_stop(struct thread *);
-void		sch_testexit(void);
+bool		sch_testexit(void);
 void	        sch_lock(void);
 void	        sch_unlock(void);
 int		sch_locks(void);

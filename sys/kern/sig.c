@@ -456,7 +456,8 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	/*
 	 * Thread is terminating
 	 */
-	sch_testexit();
+	if (sch_testexit())
+		return -ETHREAD_EXIT;
 
 	struct thread *th = thread_cur();
 	struct task *task = task_cur();
@@ -598,10 +599,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		task_cur()->exitcode = sig;
 		sch_unlock();
 		sch_testexit();
-
-		/* if this assertion fires the CPU port is broken */
-		assert(0);
-		__builtin_unreachable();
+		return -ETHREAD_EXIT;
 	case SIGTSTP:
 	case SIGTTIN:
 	case SIGTTOU:
