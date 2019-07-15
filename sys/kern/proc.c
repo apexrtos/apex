@@ -51,11 +51,14 @@ proc_exit(struct task *task, int status)
 
 	/*
 	 * Set the parent pid of all child processes to init.
+	 * Clear all child process vfork thread references.
 	 */
 	struct task *child;
 	list_for_each_entry(child, &kern_task.link, link) {
-		if (child->parent == task)
+		if (child->parent == task) {
 			child->parent = task_find(1);
+			child->vfork = 0;
+		}
 	}
 
 	/*
