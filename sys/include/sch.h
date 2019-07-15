@@ -65,7 +65,7 @@ int		sch_prepare_sleep(struct event *, uint64_t);
 int		sch_continue_sleep();
 void		sch_cancel_sleep(void);
 void	        sch_unsleep(struct thread *, int);
-void	        sch_interrupt(struct thread *);
+void	        sch_signal(struct thread *);
 void	        sch_yield(void);
 void	        sch_suspend(struct thread *);
 void	        sch_resume(struct thread *);

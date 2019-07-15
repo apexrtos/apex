@@ -566,15 +566,12 @@ sch_unsleep(struct thread *th, int result)
 }
 
 /*
- * sch_interrupt - interrupt a thread.
- *
- * sch_interrupt() guarantees that the thread will return from one sleep
- * as soon as possible.
+ * sch_signal - interrupt a thread to deliver signal.
  *
  * Callable from interrupt.
  */
 void
-sch_interrupt(struct thread *th)
+sch_signal(struct thread *th)
 {
 	sch_unsleep(th, -EINTR);
 }
