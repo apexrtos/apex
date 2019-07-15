@@ -573,7 +573,14 @@ sch_unsleep(struct thread *th, int result)
 void
 sch_signal(struct thread *th)
 {
-	sch_unsleep(th, -EINTR);
+	if (th == active_thread) {
+		/* signal will be delivered on return to userspace */
+		const int s = irq_disable();
+		resched = RESCHED_PREEMPT;
+		schedule();
+		irq_restore(s);
+	} else
+		sch_unsleep(th, -EINTR);
 }
 
 /*
