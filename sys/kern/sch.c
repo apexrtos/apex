@@ -513,6 +513,7 @@ int
 sch_continue_sleep()
 {
 	assert(interrupt_enabled());
+	assert(!locks);
 
 	interrupt_disable();
 	/* if we are still going to sleep, sleep now! */
