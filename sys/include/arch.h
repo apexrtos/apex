@@ -64,9 +64,9 @@ extern "C" {
 void		context_init_idle(struct context *, void *kstack_top);
 void		context_init_kthread(struct context *, void *kstack_top,
 				     void (*entry)(void *), void *arg);
-void		context_init_uthread(struct context *, void *kstack_top,
-				     void *ustack_top, void (*entry)(void),
-				     long retval);
+int		context_init_uthread(struct context *, struct as *,
+				     void *kstack_top, void *ustack_top,
+				     void (*entry)(void), long retval);
 void		context_alloc_siginfo(struct context *, siginfo_t **,
 				      ucontext_t **);
 void		context_init_ucontext(struct context *, const k_sigset_t *,

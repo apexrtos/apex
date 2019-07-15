@@ -86,8 +86,8 @@ context_init_kthread(struct context *ctx, void *kstack_top,
 /*
  * Initialise context for userspace thread
  */
-void
-context_init_uthread(struct context *ctx, void *kstack_top,
+int
+context_init_uthread(struct context *ctx, struct as *as, void *kstack_top,
     void *ustack_top, void (*entry)(void), long retval)
 {
 	bool shared_stack = false;
@@ -156,6 +156,8 @@ context_init_uthread(struct context *ctx, void *kstack_top,
 	ctx->kregs.msp = (uint32_t)kstack_top;
 	ctx->kregs.psp = (uint32_t)ustack_top;
 	ctx->kregs.shcsr = (union scb_shcsr){.SVCALLACT = 1}.r;
+
+	return 0;
 }
 
 /*

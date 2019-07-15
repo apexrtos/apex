@@ -81,7 +81,8 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 
 	/* create new main thread */
 	struct thread *main;
-	if (auto r = thread_createfor(t, &main, sp, MA_NORMAL, entry, 0); r < 0)
+	if (auto r = thread_createfor(t, as.get(), &main, sp, MA_NORMAL, entry,
+	    0); r < 0)
 		return (thread *)r;
 	sig_exec(t);
 	task_path(t, path);

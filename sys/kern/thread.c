@@ -122,9 +122,10 @@ thread_valid(struct thread *th)
  * must be called to start it.
  */
 int
-thread_createfor(struct task *task, struct thread **thp, void *sp,
-    long mem_attr, void (*entry)(void), long retval)
+thread_createfor(struct task *task, struct as *as, struct thread **thp,
+    void *sp, long mem_attr, void (*entry)(void), long arg)
 {
+	int r;
 	struct thread *th;
 
 	if ((th = thread_alloc(mem_attr)) == NULL)
@@ -137,7 +138,11 @@ thread_createfor(struct task *task, struct thread **thp, void *sp,
 	 */
 	th->task = task;
 	void *const ksp = arch_kstack_align(th->kstack + CONFIG_KSTACK_SIZE);
-	context_init_uthread(&th->ctx, ksp, sp, entry, retval);
+	if ((r = context_init_uthread(&th->ctx, as, ksp, sp, entry, arg)) < 0) {
+		th->state = TH_ZOMBIE;
+		thread_free(th);
+		return r;
+	}
 	/* add new threads to end of list (master thread at head) */
 	sch_lock();
 	list_insert(list_last(&task->threads), &th->task_link);

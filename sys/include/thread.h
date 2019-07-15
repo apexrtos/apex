@@ -105,8 +105,8 @@ extern "C" {
  */
 struct thread  *thread_cur(void);
 bool		thread_valid(struct thread *);
-int	        thread_createfor(struct task *, struct thread **, void *,
-				 long mem_attr, void (*)(void), long);
+int	        thread_createfor(struct task *, struct as *, struct thread **,
+				 void *, long mem_attr, void (*)(void), long);
 int	        thread_name(struct thread *, const char *);
 int		thread_id(struct thread *);
 struct thread  *thread_find(int);

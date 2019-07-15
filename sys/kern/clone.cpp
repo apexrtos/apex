@@ -36,7 +36,8 @@ clone_thread(unsigned long flags, void *sp, int *ptid, void *tls,
 		return DERR(-EFAULT);
 
 	struct thread *th;
-	if (auto r = thread_createfor(task_cur(), &th, sp, MA_NORMAL, 0, 0); r < 0)
+	if (auto r = thread_createfor(task_cur(), task_cur()->as, &th, sp,
+	    MA_NORMAL, 0, 0); r < 0)
 		return r;
 
 	const int tid = thread_id(th);
@@ -66,7 +67,8 @@ clone_process(unsigned long flags, void *sp)
 		return r;
 
 	struct thread *th;
-	if (auto r = thread_createfor(child, &th, sp, MA_NORMAL, 0, 0); r < 0) {
+	if (auto r = thread_createfor(child, child->as, &th, sp, MA_NORMAL, 0,
+	    0); r < 0) {
 		task_destroy(child);
 		return r;
 	}
