@@ -85,6 +85,8 @@ clone_process(unsigned long flags, void *sp)
 	sch_resume(th);
 	sch_unlock();
 
+	context_restore_vfork(&thread_cur()->ctx, thread_cur()->task->as);
+
 	return ret;
 }
 

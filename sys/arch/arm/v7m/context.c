@@ -274,6 +274,15 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 }
 
 /*
+ * Restore context after vfork
+ */
+void
+context_restore_vfork(struct context *ctx, struct as *as)
+{
+	/* nothing to do for now */
+}
+
+/*
  * Set thread local storage pointer in context
  */
 void

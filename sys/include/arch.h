@@ -75,6 +75,7 @@ void		context_set_signal(struct context *, const k_sigset_t *,
 				   void (*handler)(int), void (*restorer)(void),
 				   int, const siginfo_t *, const ucontext_t *,
 				   int);
+void		context_restore_vfork(struct context *, struct as *);
 void		context_set_tls(struct context *, void *);
 bool		context_in_signal(struct context *);
 void		context_switch(struct thread *, struct thread *);
