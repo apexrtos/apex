@@ -157,7 +157,7 @@ struct page_hdr {
  */
 static struct list free_blocks[MEM_ALLOC][NR_BLOCK_LIST];
 static struct list kmem_pages[MEM_ALLOC];
-static struct mutex kmem_mutex;
+static struct spinlock kmem_lock;
 
 /*
  * Map memory type to associated memory attributes
@@ -218,7 +218,7 @@ kmem_alloc_internal(size_t size, unsigned type)
 
 	assert(type < MEM_ALLOC);
 
-	mutex_lock(&kmem_mutex);
+	spinlock_lock(&kmem_lock);
 	kmem_check();
 	/*
 	 * First, the free block of enough size is searched
@@ -275,7 +275,7 @@ kmem_alloc_internal(size_t size, unsigned type)
 	pg->nallocs++;
 	p = (char *)blk + BLKHDR_SIZE;
 out:
-	mutex_unlock(&kmem_mutex);
+	spinlock_unlock(&kmem_lock);
 	return p;
 }
 
@@ -379,7 +379,7 @@ kmem_free(void *ptr)
 	if (!ptr)
 		return;
 
-	mutex_lock(&kmem_mutex);
+	spinlock_lock(&kmem_lock);
 	kmem_check();
 
 	/* Get the block header */
@@ -412,7 +412,7 @@ kmem_free(void *ptr)
 		pg->magic = 0;
 		page_free(virt_to_phys(pg), CONFIG_PAGE_SIZE, &kern_task);
 	}
-	mutex_unlock(&kmem_mutex);
+	spinlock_unlock(&kmem_lock);
 }
 
 /*
@@ -435,7 +435,7 @@ kmem_check(void)
 	struct page_hdr *pg;
 	struct block_hdr *blk;
 
-	mutex_lock(&kmem_mutex);
+	spinlock_lock(&kmem_lock);
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
 		head = &kmem_pages[type];
 		for (n = list_first(head); n != head; n = list_next(n)) {
@@ -450,14 +450,14 @@ kmem_check(void)
 			}
 		}
 	}
-	mutex_unlock(&kmem_mutex);
+	spinlock_unlock(&kmem_lock);
 #endif
 }
 
 void
 kmem_dump(void)
 {
-	mutex_lock(&kmem_mutex);
+	spinlock_lock(&kmem_lock);
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
 		struct list *head, *n;
 		int i, cnt;
@@ -519,7 +519,7 @@ kmem_dump(void)
 		}
 #endif
 	}
-	mutex_unlock(&kmem_mutex);
+	spinlock_unlock(&kmem_lock);
 }
 
 void
@@ -530,5 +530,5 @@ kmem_init(void)
 		for (int i = 0; i < NR_BLOCK_LIST; i++)
 			list_init(&free_blocks[type][i]);
 	}
-	mutex_init(&kmem_mutex);
+	spinlock_init(&kmem_lock);
 }
