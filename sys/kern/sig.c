@@ -532,23 +532,21 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		else if (rval == -EINTR_NORESTART)
 			rval = -EINTR;
 
-		/* run signal handler */
-		if (sig_flags(task, sig) & SA_SIGINFO) {
-			ucontext_t *uc;
-			siginfo_t *si;
-			context_alloc_siginfo(&th->ctx, &si, &uc);
+		siginfo_t si;
+		const bool info = sig_flags(task, sig) & SA_SIGINFO;
 
+		if (info) {
 			/* TODO: more to fill in here */
-			*si = (siginfo_t) {
+			si = (siginfo_t){
 				.si_signo = sig,
 			};
+		}
 
-			context_set_signal(&th->ctx, NULL, handler,
-			    sig_restorer(task, sig), sig, si, uc, rval);
-			context_init_ucontext(&th->ctx, &th->sig_blocked, uc);
-		} else {
-			context_set_signal(&th->ctx, &th->sig_blocked, handler,
-			    sig_restorer(task, sig), sig, NULL, NULL, rval);
+		/* setup context to run signal handler */
+		if (context_set_signal(&th->ctx, &th->sig_blocked, handler,
+		    sig_restorer(task, sig), sig, info ? &si : 0, rval) < 0) {
+			dbg("Signal setup failed. Terminate.\n");
+			goto fatal;
 		}
 
 		/* adjust blocked signal mask */
@@ -595,6 +593,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	case 32 ... NSIG:	/* real time signals */
 		/* Default action: terminate */
 		dbg("Fatal signal %d. Terminate.\n", sig);
+fatal:
 		proc_exit(task_cur(), 0);
 		task_cur()->exitcode = sig;
 		sch_unlock();
