@@ -95,8 +95,8 @@ clone_process(unsigned long flags, void *sp)
 /*
  * sc_clone - minimal clone implementation
  */
-extern "C" __attribute__((used)) int
-sc_clone_(unsigned long flags, void *sp, void *ptid, unsigned long tls,
+int
+sc_clone(unsigned long flags, void *sp, void *ptid, unsigned long tls,
     void *ctid)
 {
 	sp = arch_ustack_align(sp);
@@ -105,24 +105,21 @@ sc_clone_(unsigned long flags, void *sp, void *ptid, unsigned long tls,
 	else
 		return clone_process(flags, sp);
 }
-weak_alias(sc_clone_, sc_clone);
 
 /*
  * sc_fork - fork a new process
  */
-extern "C" __attribute__((used)) int
-sc_fork_(void)
+int
+sc_fork(void)
 {
-	return sc_clone_(SIGCHLD, 0, 0, 0, 0);
+	return sc_clone(SIGCHLD, 0, 0, 0, 0);
 }
-weak_alias(sc_fork_, sc_fork);
 
 /*
  * sc_vfork - fork a new process and suspend caller
  */
-extern "C" __attribute__((used)) int
-sc_vfork_(void)
+int
+sc_vfork(void)
 {
-	return sc_clone_(CLONE_VM | CLONE_VFORK | SIGCHLD, 0, 0, 0, 0);
+	return sc_clone(CLONE_VM | CLONE_VFORK | SIGCHLD, 0, 0, 0, 0);
 }
-weak_alias(sc_vfork_, sc_vfork);

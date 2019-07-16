@@ -621,7 +621,7 @@ out:
 	return rval;
 }
 
-__fast_text __attribute__((used)) int
+__fast_text int
 sig_deliver(int rval)
 {
 	struct thread *th = thread_cur();

@@ -48,7 +48,7 @@
  * writes are discarded, bad reads return 0. A fault is marked in the thread
  * state and returned to userspace on syscall return.
  */
-__fast_rodata __attribute__((used)) const void *const
+__fast_rodata const void *const
 syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_access] = sc_access,
 	[SYS_brk] = sc_brk,
