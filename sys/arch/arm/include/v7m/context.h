@@ -4,10 +4,7 @@
 #include <conf/config.h>
 #include <stdint.h>
 
-#define EPENDSV_RETURN 255
-
 /*
- *
  * Register Synonym Special Role in the procedure call standard
  * ======== ======= ===========================================
  * r15	    PC	    The Program Counter.
@@ -18,7 +15,7 @@
  * r10	    v7	    Variable-register 7.
  * r9		    Platform register. The meaning of this register is defined
  *		    by the platform standard.
- *	    v6	    Variagle-register 6.
+ *	    v6	    Variable-register 6.
  *	    SB	    Static Base (PIC).
  *	    TR	    Thread Register.
  * r8	    v5	    Variable-register 5.
@@ -33,8 +30,13 @@
  */
 
 /*
- * These registers are automatically pushed/popped by the core on exception
- * entry/exit.
+ * This frame is automatically pushed/popped to/from the currently active stack
+ * by the core on exception entry/exit.
+ *
+ * Lazy FPU state preservation means that the 17 volatile FPU registers are not
+ * preserved unless code within the exception handler uses the FPU.
+ *
+ * The kernel will preserve non-volatile FPU registers during context switch.
  *
  * ReturnAddress depends on exception type:
  * Type			    Instruction
@@ -51,7 +53,7 @@
  *	Synchronous	    This
  *	Asynchronous	    Next
  */
-struct exception_frame {
+struct exception_frame_basic {
 	uint32_t r0;
 	uint32_t r1;
 	uint32_t r2;
@@ -60,7 +62,17 @@ struct exception_frame {
 	uint32_t lr;
 	uint32_t ra;	    /* ReturnAddress(ExceptionType); */
 	uint32_t xpsr;	    /* XPSR<31:10>:frameptralign:XPSR<8:0> */
-#if defined(CONFIG_FPU)
+};
+
+struct exception_frame_extended {
+	uint32_t r0;
+	uint32_t r1;
+	uint32_t r2;
+	uint32_t r3;
+	uint32_t r12;
+	uint32_t lr;
+	uint32_t ra;	    /* ReturnAddress(ExceptionType); */
+	uint32_t xpsr;	    /* XPSR<31:10>:frameptralign:XPSR<8:0> */
 	uint32_t s0;
 	uint32_t s1;
 	uint32_t s2;
@@ -78,35 +90,14 @@ struct exception_frame {
 	uint32_t s14;
 	uint32_t s15;
 	uint32_t fpscr;
-	uint32_t dummy;	    /* stack must be 8-byte aligned */
-#endif
+	uint32_t pad;	    /* stack must be 8-byte aligned */
 };
 
 /*
- * This frame is pushed when we process a system call
- */
-struct syscall_frame {
-	uint32_t r4;
-	uint32_t r5;
-	uint32_t r6;
-	uint32_t r7;
-};
-
-/*
- * This frame is pushed when we process an extended system call
- */
-struct extended_syscall_frame {
-	uint32_t r8;
-	uint32_t r9;
-	uint32_t r10;
-	uint32_t r11;
-	struct syscall_frame sframe;
-};
-
-/*
- * Registers manually switched in context_switch.
+ * Non-volatile registers switched by context switch.
  */
 struct nvregs {
+	uint32_t control;
 	uint32_t r4;
 	uint32_t r5;
 	uint32_t r6;
@@ -116,7 +107,9 @@ struct nvregs {
 	uint32_t r10;
 	uint32_t r11;
 	uint32_t lr;
-#if defined(CONFIG_FPU)
+};
+
+struct fpu_nvregs {
 	uint32_t s16;
 	uint32_t s17;
 	uint32_t s18;
@@ -133,39 +126,27 @@ struct nvregs {
 	uint32_t s29;
 	uint32_t s30;
 	uint32_t s31;
-#endif
 };
 
 /*
- * This frame is pushed when we create a new userspace thread
+ * System call arguments pushed by system call entry.
  */
-struct uthread_frame {
-	struct nvregs nvregs;
-	struct exception_frame eframe;
-	struct extended_syscall_frame esframe;
+struct syscall_args {
+	uint32_t a4;			    /* syscall argument 4 */
+	uint32_t a5;			    /* syscall argument 5 */
+	uint32_t a6;			    /* syscall argument 6 */
+	uint32_t syscall;		    /* syscall number */
 };
 
 /*
- * This frame is pushed when we create a new kernel thread
+ * Context stored in struct thread
  */
-struct kthread_frame {
-	struct nvregs nvregs;
-	struct exception_frame eframe;
-};
-
-/*
- * Registers required for switching threads
- */
-struct kern_regs {
-	uint32_t msp;
-	uint32_t psp;
-	uint32_t shcsr;
-};
-
 struct context {
-	void		       *tls;		/* userspace tls address */
-	struct kern_regs	kregs;		/* kernel mode registers */
-	void		       *saved_psp;	/* psp before signal */
+	void *tls;		    /* userspace tls address */
+	void *ustack;		    /* user stack pointer */
+	void *estack;		    /* user->kernel entry stack pointer */
+	void *kstack;		    /* kernel stack pointer */
+	void *vfork_eframe;	    /* vfork saved exception frame */
 };
 
 #endif /* !arm_v7m_context_h */

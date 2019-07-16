@@ -3,6 +3,7 @@
  */
 memory PAGE_OFFSET	0x00000000
 memory KSTACK_SIZE	4048	    // Kernel stack size
+memory IRQSTACK_SIZE	4096	    // IRQ stack size
 option TIME_SLICE_MS	50	    // milliseconds
 option HZ		1000
 option PAGE_SIZE	0x1000

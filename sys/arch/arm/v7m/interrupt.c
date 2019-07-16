@@ -81,6 +81,8 @@ interrupt_to_ist_priority(int prio)
 bool
 interrupt_from_userspace(void)
 {
-	/* if we are the only active exception we must have come from userspace */
-	return SCB->ICSR.RETTOBASE;
+	/* userspace threads are unprivileged */
+	int control;
+	asm("mrs %0, control" : "=r"(control));
+	return control & CONTROL_NPRIV;
 }

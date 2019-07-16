@@ -1,8 +1,6 @@
 #ifndef arm_v7m_cpu_h
 #define arm_v7m_cpu_h
 
-#include <conf/config.h>
-
 /*
  * CONTROL register
  */
@@ -18,14 +16,15 @@
 /*
  * EXC_RETURN
  */
-#if defined(CONFIG_FPU)
-#define EXC_RETURN_USER	0xffffffed  /* Return to thread mode, process stack */
-#define EXC_RETURN_KERN	0xffffffe1  /* Return to thread mode, main stack */
-#else
-#define EXC_RETURN_USER	0xfffffffd  /* Return to thread mode, process stack */
-#define EXC_RETURN_KERN	0xfffffff1  /* Return to thread mode, main stack */
-#endif
-#define EXC_SPSEL	0x00000004  /* SPSEL when exception taken */
+#define EXC_RETURN_HANDLER_MAIN_EXTENDED    0xffffffe1
+#define EXC_RETURN_THREAD_MAIN_EXTENDED	    0xffffffe9
+#define EXC_RETURN_THREAD_PROCESS_EXTENDED  0xffffffed
+#define EXC_RETURN_HANDLER_MAIN_BASIC	    0xfffffff1
+#define EXC_RETURN_THREAD_MAIN_BASIC	    0xfffffff9
+#define EXC_RETURN_THREAD_PROCESS_BASIC	    0xfffffffd
+#define EXC_SPSEL	0x00000004  /* exception on process stack */
+#define EXC_THREAD	0x00000008  /* exception from thread mode */
+#define EXC_NOT_FPCA	0x00000010  /* return with out FP extension */
 
 #ifndef __ASSEMBLY__
 
@@ -178,7 +177,23 @@ static struct nvic *const NVIC = (struct nvic*)0xe000e100;
  * FPU
  */
 struct fpu {
-	uint32_t FPCCR;
+	union fpu_fpccr {
+		uint32_t r;
+		struct {
+			uint32_t LSPACT : 1;
+			uint32_t USER : 1;
+			uint32_t : 1;
+			uint32_t THREAD : 1;
+			uint32_t HFRDY : 1;
+			uint32_t MMRDY : 1;
+			uint32_t BFRDY : 1;
+			uint32_t : 1;
+			uint32_t MONRDY : 1;
+			uint32_t : 20;
+			uint32_t LSPEN : 1;
+			uint32_t ASPEN : 1;
+		};
+	} FPCCR;
 	uint32_t FPCAR;
 	uint32_t FPDSCR;
 	uint32_t MVFR0;

@@ -2,12 +2,6 @@
 #define arm_v7m_asm_h
 
 /*
- * macro to stringify another macro
- */
-#define S(x) S2(x)
-#define S2(x) #x
-
-/*
  * System Control Space Base Address
  */
 #define A_SCS	    0xe000e000
@@ -101,4 +95,4 @@
 #define A_DCCISW    0xe000ef74  /* D-cache clean and invalidate by set-way */
 #define A_BPIALL    0xe000ef78  /* Branch predictor invalidate all */
 
-#endif /* arm_v7m_asm_h */
+#endif

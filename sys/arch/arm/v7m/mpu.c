@@ -1,7 +1,9 @@
+#include "mpu.h"
 #include <arch.h>
 
 #include <cpu.h>
 #include <debug.h>
+#include <irq.h>
 #include <kernel.h>
 #include <sections.h>
 #include <sig.h>
@@ -11,21 +13,24 @@
 #include <thread.h>
 #include <vm.h>
 
-__fast_bss size_t fixed;	    /* number of fixed regions */
-__fast_bss size_t stack;	    /* number of stack regions */
-__fast_bss size_t victim;	    /* next victim to evict */
-__fast_bss const void *fault_addr;  /* last fault address */
-const struct thread *mapped_thread; /* currently mapped thread */
+__fast_bss size_t fixed;			/* number of fixed regions */
+__fast_bss size_t stack;			/* number of stack regions */
+__fast_bss size_t victim;			/* next victim to evict */
+__fast_bss const void *fault_addr;		/* last fault address */
+__fast_bss const struct thread *mapped_thread;	/* currently mapped thread */
 
 static void
 clear_dynamic(void)
 {
+	stack = 0;
+	mapped_thread = NULL;
+	fault_addr = 0;
+
 	const size_t regions = MPU->TYPE.DREGION;
-	for (size_t i = fixed + stack; i < regions; ++i) {
+	for (size_t i = fixed; i < regions; ++i) {
 		write32(&MPU->RNR, i);
 		write32(&MPU->RASR, 0);
 	}
-	fault_addr = 0;
 }
 
 static void
@@ -99,26 +104,33 @@ mpu_init(const struct mmumap *map, size_t count, int flags)
 void
 mpu_switch(const struct as *as)
 {
-	stack = 0;
-	mapped_thread = NULL;
+	const int s = irq_disable();
 	clear_dynamic();
+	mpu_user_thread_switch();
+	irq_restore(s);
 }
 
 /*
- * mpu_thread_switch - switch mpu to new thread
+ * mpu_user_thread_switch - switch mpu userspace thread context
  */
-__attribute__((used)) void
-mpu_thread_switch(struct thread *prev, struct thread *t)
+__fast_text void
+mpu_user_thread_switch()
 {
-	if (t->task == &kern_task)
-		return;
+	struct thread *t = thread_cur();
+
+	assert(t->task != &kern_task);
+
 	if (t == mapped_thread)
 		return;
 	if (mapped_thread && mapped_thread->task != t->task)
 		mpu_switch(t->task->as);
 
+	/* zombies have no ustack */
+	if (!t->ctx.ustack)
+		return;
+
 	/* map stack */
-	const struct seg *seg = as_find_seg(t->task->as, (void *)t->ctx.kregs.psp);
+	const struct seg *seg = as_find_seg(t->task->as, (void *)t->ctx.ustack);
 	if (!seg || seg_prot(seg) == PROT_NONE) {
 		sig_thread(t, SIGSEGV);
 		return;
@@ -141,9 +153,22 @@ mpu_thread_switch(struct thread *prev, struct thread *t)
 		++stack;
 	}
 
+	fault_addr = 0;
 	mapped_thread = t;
 	if (victim < fixed + stack)
 		victim = fixed + stack;
+}
+
+/*
+ * mpu_thread_terminate - notify mpu of terminated thread
+ */
+void
+mpu_thread_terminate(struct thread *th)
+{
+	const int s = irq_disable();
+	if (th == mapped_thread)
+		clear_dynamic();
+	irq_restore(s);
 }
 
 /*
@@ -152,7 +177,10 @@ mpu_thread_switch(struct thread *prev, struct thread *t)
 void
 mpu_unmap(const void *addr, size_t len)
 {
+	const int s = irq_disable();
 	clear_dynamic();
+	mpu_user_thread_switch();
+	irq_restore(s);
 }
 
 /*
@@ -171,7 +199,10 @@ mpu_map(const void *addr, size_t len, int prot)
 void
 mpu_protect(const void *addr, size_t len, int prot)
 {
+	const int s = irq_disable();
 	clear_dynamic();
+	mpu_user_thread_switch();
+	irq_restore(s);
 }
 
 /*
@@ -184,7 +215,8 @@ mpu_fault(const void *addr, size_t len)
 
 	/* double fault at the same address means that last time we faulted in
 	   a region it didn't satisfy the MPU */
-	if (!seg || seg_prot(seg) == PROT_NONE || addr == fault_addr) {
+	if (!seg || seg_prot(seg) == PROT_NONE || addr == fault_addr ||
+	    (len && addr + len > seg_end(seg))) {
 		sig_thread(thread_cur(), SIGSEGV);
 		return;
 	}
@@ -211,11 +243,12 @@ again:;
 	if (++victim == MPU->TYPE.DREGION)
 		victim = fixed + stack;
 
+	/* multiple mappings if access crosses mapping boundary */
 	if (len) {
-		addr += len;
-		const void *region_end = (void *)region_base + (1UL << order);
-		if (addr < seg_end(seg) && addr >= region_end) {
-			len = 0;
+		void *region_end = (void *)region_base + (1UL << order);
+		if (addr + len > region_end) {
+			addr = region_end;
+			len = addr + len - region_end;
 			goto again;
 		}
 	}

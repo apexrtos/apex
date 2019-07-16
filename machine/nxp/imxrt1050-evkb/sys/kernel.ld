@@ -65,12 +65,19 @@ SECTIONS {
 		*(.fast_bss)
 	} >dtcm : dtcm
 
+	.irqstack : ALIGN(8) {
+		. += CONFIG_IRQSTACK_SIZE;
+	} >dtcm : dtcm
+
 	__elf_headers = ORIGIN(dram);
 	__init_array_start = ADDR(.init_array);
 	__init_array_end = ADDR(.init_array) + SIZEOF(.init_array);
 	__stack_start = ADDR(.stack);
 	__stack_size = SIZEOF(.stack);
 	__stack_top = ADDR(.stack) + SIZEOF(.stack);
+	__irqstack_start = ADDR(.irqstack);
+	__irqstack_size = SIZEOF(.irqstack);
+	__irqstack_top = ADDR(.irqstack) + SIZEOF(.irqstack);
 
 	/* Discard .ARM.exidx and .ARM.attributes */
 	/DISCARD/ : { *(.ARM.*) }
