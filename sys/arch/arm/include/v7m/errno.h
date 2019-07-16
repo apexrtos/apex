@@ -10,4 +10,10 @@
  */
 #define ETHREAD_EXIT 255
 
+/*
+ * sigreturn will return ERESTARTSYS if a system call was interrupted
+ * by a signal with SA_RESTART set.
+ */
+#define ERESTARTSYS 256
+
 #endif

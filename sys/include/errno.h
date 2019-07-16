@@ -3,7 +3,6 @@
 
 #include_next <errno.h>
 
-#define ERESTARTSYS 200
-#define EINTR_NORESTART 201
+#define EINTR_NORESTART 200
 
 #endif /* apex_errno_h */
