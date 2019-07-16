@@ -51,7 +51,7 @@ struct page {
 
 struct region {
 	long attr;		/* Retion attributes, bitfield of MA_* */
-	a::mutex mutex;		/* For pages, blocks & bitmap */
+	a::spinlock lock;	/* For pages, blocks & bitmap */
 	phys *begin;		/* First physical address in region */
 	phys *end;		/* Last physical address in region + 1 */
 	phys *base;		/* power-of-2 aligned base address of region */
@@ -316,7 +316,7 @@ page_alloc_order(const size_t o, long attr, void *owner)
 			auto &r = s.regions[i];
 			if ((r.attr & ~mask) != (attr & ~PAF_MASK))
 				continue;
-			std::lock_guard l(r.mutex);
+			std::lock_guard l(r.lock);
 			const auto p = find_block(r, o);
 			if (p != -1)
 				return do_alloc(r, p, o, st, owner);
@@ -333,7 +333,7 @@ page_alloc_order(const size_t o, long attr, void *owner)
 			if ((r.attr & ~mask & ~MA_SPEED_MASK) !=
 			    (attr & ~MA_SPEED_MASK & ~PAF_MASK))
 				continue;
-			std::lock_guard l(r.mutex);
+			std::lock_guard l(r.lock);
 			const auto p = find_block(r, o);
 			if (p != -1)
 				return do_alloc(r, p, o, st, owner);
@@ -431,7 +431,7 @@ page_reserve(phys *addr, size_t len, void *owner)
 	auto *r = find_region(addr, len);
 	if (!r)
 		return 0;
-	std::lock_guard l(r->mutex);
+	std::lock_guard l(r->lock);
 	return page_reserve(*r, addr, len, PG_FIXED, owner);
 }
 
@@ -473,7 +473,7 @@ page_free(phys *addr, size_t len, void *owner)
 	if (!r)
 		return DERR(-EFAULT);
 
-	std::lock_guard l(r->mutex);
+	std::lock_guard l(r->lock);
 
 	/* find page range */
 	const auto begin = page_num(*r, addr);
