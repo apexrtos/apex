@@ -44,10 +44,7 @@
 #include <thread.h>
 #include <timer.h>
 
-#define COND_MAGIC     0x436f6e3f      /* 'Con?' */
-
 struct cond_private {
-	int magic;		/* magic number */
 	struct mutex *mutex;	/* mutex associated with this condition */
 	unsigned wait;		/* # waiting threads */
 	unsigned signal;	/* # of signals */
@@ -56,17 +53,6 @@ struct cond_private {
 
 static_assert(sizeof(struct cond_private) == sizeof(struct cond), "");
 static_assert(alignof(struct cond_private) == alignof(struct cond), "");
-
-/*
- * cond_valid - check cond validity.
- */
-bool
-cond_valid(const struct cond *c)
-{
-	const struct cond_private *cp = (struct cond_private*)c->storage;
-
-	return k_address(c) && cp->magic == COND_MAGIC;
-}
 
 /*
  * cond_init - Create and initialize a condition variable.
@@ -79,7 +65,6 @@ cond_init(struct cond *c)
 {
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
-	cp->magic = COND_MAGIC;
 	cp->mutex = NULL;
 	cp->wait = 0;
 	cp->signal = 0;
@@ -104,9 +89,6 @@ cond_wait_interruptible(struct cond *c, struct mutex *m)
 int
 cond_timedwait_interruptible(struct cond *c, struct mutex *m, uint64_t nsec)
 {
-	if (!cond_valid(c))
-		return DERR(-EINVAL);
-
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
 	/* can't wait with recursively locked mutex */
@@ -158,9 +140,6 @@ out:
 int
 cond_signal(struct cond *c)
 {
-	if (!cond_valid(c))
-		return DERR(-EINVAL);
-
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
 	sch_lock();
@@ -179,9 +158,6 @@ cond_signal(struct cond *c)
 int
 cond_broadcast(struct cond *c)
 {
-	if (!cond_valid(c))
-		return DERR(-EINVAL);
-
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
 	sch_lock();
