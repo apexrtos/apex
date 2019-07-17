@@ -35,15 +35,17 @@
  * A mutex is used to protect un-sharable resources. A thread
  * can use mutex_lock() to ensure that global resource is not
  * accessed by other thread.
+ *
+ * TODO: remove recursive mutex support.
+ *	 SMP: spin before going to sleep.
  */
 
 #include <sync.h>
 
-#include <access.h>
 #include <assert.h>
 #include <debug.h>
 #include <errno.h>
-#include <kernel.h>
+#include <event.h>
 #include <sch.h>
 #include <sig.h>
 #include <stdalign.h>
@@ -52,6 +54,7 @@
 
 struct mutex_private {
 	atomic_intptr_t owner;	/* owner thread locking this mutex */
+	struct spinlock lock;	/* lock to protect struct mutex contents */
 	unsigned count;		/* counter for recursive lock */
 	struct event event;	/* event */
 };
@@ -82,9 +85,10 @@ mutex_init(struct mutex *m)
 static int __attribute__((noinline))
 mutex_lock_slowpath(struct mutex *m)
 {
+	int r;
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
-	sch_lock();
+	spinlock_lock(&mp->lock);
 
 	/* check if we already hold the mutex */
 	if (mutex_owner(m) == thread_cur()) {
@@ -94,7 +98,7 @@ mutex_lock_slowpath(struct mutex *m)
 		    memory_order_relaxed
 		);
 		++mp->count;
-		sch_unlock();
+		spinlock_unlock(&mp->lock);
 		return 0;
 	}
 
@@ -107,7 +111,7 @@ mutex_lock_slowpath(struct mutex *m)
 	    memory_order_acquire,
 	    memory_order_relaxed)) {
 		mp->count = 1;
-		sch_unlock();
+		spinlock_unlock(&mp->lock);
 		return 0;
 	}
 
@@ -118,24 +122,15 @@ mutex_lock_slowpath(struct mutex *m)
 	);
 
 	/* wait for unlock */
-	int err;
-	switch ((err = sch_sleep(&mp->event))) {
-	case 0:
-		/* mutex_unlock will set us as the owner */
-		assert(mutex_owner(m) == thread_cur());
-		break;
-	case -EINTR:
+	r = sch_prepare_sleep(&mp->event, 0);
+	spinlock_unlock(&mp->lock);
+	if (r == 0)
+		r = sch_continue_sleep();
 #if defined(CONFIG_DEBUG)
+	if (r < 0)
 		--thread_cur()->mutex_locks;
 #endif
-		err = -EINTR;
-		break;
-	default:
-		panic("mutex: bad sleep result");
-	}
-
-	sch_unlock();
-	return err;
+	return r;
 }
 
 int
@@ -182,18 +177,20 @@ mutex_unlock_slowpath(struct mutex *m)
 
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
+	spinlock_lock(&mp->lock);
+
 	/* check recursive lock */
 	if (--mp->count != 0) {
+		spinlock_unlock(&mp->lock);
 		return 0;
 	}
 
-	sch_lock();
 
 	if (!(atomic_load_explicit(
 	    &mp->owner,
 	    memory_order_relaxed) & MUTEX_WAITERS)) {
 		atomic_store_explicit(&mp->owner, 0, memory_order_release);
-		sch_unlock();
+		spinlock_unlock(&mp->lock);
 		return 0;
 	}
 
@@ -209,7 +206,7 @@ mutex_unlock_slowpath(struct mutex *m)
 	if (event_waiting(&mp->event))
 		atomic_fetch_or_explicit(&mp->owner, MUTEX_WAITERS, memory_order_relaxed);
 
-	sch_unlock();
+	spinlock_unlock(&mp->lock);
 	return 0;
 }
 
