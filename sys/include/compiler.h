@@ -102,13 +102,15 @@ write_once(T *p, const T &v)
 }
 #else
 #define write_once(p, v) ({ \
+	typeof(*(p)) tmp; \
 	switch (sizeof(*(p))) { \
 	case 1 ... 8: \
 		*(volatile typeof(*(p)) *)(p) = v; \
 		break; \
 	default: \
+		tmp = v; \
 		compiler_barrier(); \
-		memcpy((p), &v, sizeof(*(p))); \
+		memcpy((p), &tmp, sizeof(*(p))); \
 		compiler_barrier(); \
 	} \
 })
