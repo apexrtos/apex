@@ -28,9 +28,7 @@ struct thread;
 struct futex {
 	phys *addr;		/* futex address */
 	struct event event;	/* event */
-	struct list lock_link;	/* linkage on locked futex list */
 	struct list task_link;	/* linkage on task futex list */
-	int prio;		/* highest prio in waiting threads */
 	struct thread *owner;	/* thread holding futex */
 };
 

@@ -53,14 +53,14 @@ struct cond {
 
 struct mutex {
 	union {
-		char storage[40];
+		char storage[28];
 		unsigned align;
 	};
 };
 
 struct rwlock {
 	union {
-		char storage[80];
+		char storage[68];
 		unsigned align;
 	};
 };
@@ -92,10 +92,7 @@ int	       mutex_lock_interruptible(struct mutex *);
 int	       mutex_lock(struct mutex *);
 int	       mutex_unlock(struct mutex *);
 struct thread *mutex_owner(const struct mutex *);
-int	       mutex_prio(const struct mutex *);
-void	       mutex_setprio(struct mutex *, int);
 unsigned       mutex_count(const struct mutex *);
-struct mutex  *mutex_entry(struct list*);
 void	       mutex_assert_locked(const struct mutex *);
 
 bool	       cond_valid(const struct cond *);

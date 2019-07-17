@@ -43,7 +43,6 @@ futex_get(struct task *t, int *uaddr)
 
 	f->addr = virt_to_phys(uaddr);
 	event_init(&f->event, "futex", ev_LOCK);
-	f->prio = PRI_MIN;
 	f->owner = 0;
 	list_insert(&t->futexes, &f->task_link);
 

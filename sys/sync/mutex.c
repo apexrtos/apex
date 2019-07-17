@@ -35,36 +35,6 @@
  * A mutex is used to protect un-sharable resources. A thread
  * can use mutex_lock() to ensure that global resource is not
  * accessed by other thread.
- *
- * APEX will change the thread priority to prevent priority inversion.
- *
- * <Priority inheritance>
- *   The priority is changed at the following conditions.
- *
- *   1. When the current thread can not lock the mutex and its
- *      mutex owner has lower priority than current thread, the
- *      priority of mutex owner is boosted to same priority with
- *      current thread.  If this mutex owner is waiting for another
- *      mutex, such related mutexes are also processed.
- *
- *   2. When the current thread unlocks the mutex and its priority
- *      has already been inherited, the current priority is reset.
- *      In this time, the current priority is changed to the highest
- *      priority among the threads waiting for the mutexes locked by
- *      current thread.
- *
- *   3. When the thread priority is changed by user request, the
- *      inherited thread's priority is changed.
- *
- * <Limitation>
- *
- *   1. If the priority is changed by user request, the priority
- *      recomputation is done only when the new priority is higher
- *      than old priority. The inherited priority is reset to base
- *      priority when the mutex is unlocked.
- *
- *   2. Even if thread is killed with mutex waiting, the related
- *      priority is not adjusted.
  */
 
 #include <sync.h>
@@ -74,7 +44,6 @@
 #include <debug.h>
 #include <errno.h>
 #include <kernel.h>
-#include <prio.h>
 #include <sch.h>
 #include <sig.h>
 #include <stdalign.h>
@@ -88,8 +57,6 @@ struct mutex_private {
 	atomic_intptr_t owner;	/* owner thread locking this mutex */
 	unsigned count;		/* counter for recursive lock */
 	struct event event;	/* event */
-	struct list link;	/* linkage on locked mutex list */
-	int prio;		/* highest prio in waiting threads */
 };
 
 static_assert(sizeof(struct mutex_private) == sizeof(struct mutex), "");
@@ -115,9 +82,9 @@ mutex_init(struct mutex *m)
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
 	mp->magic = MUTEX_MAGIC;
-	event_init(&mp->event, "mutex", ev_LOCK);
 	atomic_store_explicit(&mp->owner, 0, memory_order_relaxed);
-	/* No need to initialise link, prio or count */
+	mp->count = 0;
+	event_init(&mp->event, "mutex", ev_LOCK);
 }
 
 /*
@@ -162,24 +129,11 @@ mutex_lock_slowpath(struct mutex *m)
 		return 0;
 	}
 
-	/*
-	 * If we are the first waiter we need to add m to the owner's lock list
-	 * and initialise the mutex priority.
-	 */
-	if (!event_waiting(&mp->event)) {
-		mp->prio = mutex_owner(m)->prio;
-		list_insert(&mutex_owner(m)->mutexes, &mp->link);
-	}
-
 	atomic_fetch_or_explicit(
 	    &mp->owner,
 	    MUTEX_WAITERS,
 	    memory_order_relaxed
 	);
-
-	/* set wait_mutex and inherit priority */
-	thread_cur()->wait_mutex = m;
-	prio_inherit(thread_cur());
 
 	/* wait for unlock */
 	int err;
@@ -187,13 +141,11 @@ mutex_lock_slowpath(struct mutex *m)
 	case 0:
 		/* mutex_unlock will set us as the owner */
 		assert(mutex_owner(m) == thread_cur());
-		assert(thread_cur()->wait_mutex == NULL);
 		break;
 	case -EINTR:
 #if defined(CONFIG_DEBUG)
 		--thread_cur()->mutex_locks;
 #endif
-		thread_cur()->wait_mutex = NULL;
 		err = -EINTR;
 		break;
 	default:
@@ -266,10 +218,6 @@ mutex_unlock_slowpath(struct mutex *m)
 		return 0;
 	}
 
-	/* remove from lock list and reset priority */
-	list_remove(&mp->link);
-	prio_reset(thread_cur());
-
 	/* wake up one waiter and set new owner */
 	atomic_store_explicit(
 	    &mp->owner,
@@ -279,12 +227,8 @@ mutex_unlock_slowpath(struct mutex *m)
 	mp->count = 1;
 	assert(atomic_load_explicit(&mp->owner, memory_order_relaxed));
 
-	if (event_waiting(&mp->event)) {
-		mp->prio = mutex_owner(m)->prio;
-		list_insert(&mutex_owner(m)->mutexes, &mp->link);
+	if (event_waiting(&mp->event))
 		atomic_fetch_or_explicit(&mp->owner, MUTEX_WAITERS, memory_order_relaxed);
-	}
-	mutex_owner(m)->wait_mutex = NULL;
 
 	sch_unlock();
 	return 0;
@@ -325,26 +269,6 @@ mutex_owner(const struct mutex *m)
 }
 
 /*
- * mutex_prio - get priority of mutex
- */
-int
-mutex_prio(const struct mutex *m)
-{
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
-	return mp->prio;
-}
-
-/*
- * mutex_setprio - set priority of mutex
- */
-void
-mutex_setprio(struct mutex *m, int prio)
-{
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
-	mp->prio = prio;
-}
-
-/*
  * mutex_count - get lock count of mutex
  */
 unsigned
@@ -352,15 +276,6 @@ mutex_count(const struct mutex *m)
 {
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 	return mp->count;
-}
-
-/*
- * mutex_entry - get mutex struct from list entry
- */
-struct mutex*
-mutex_entry(struct list *l)
-{
-	return (struct mutex*)list_entry(l, struct mutex_private, link);
 }
 
 /*

@@ -6,7 +6,6 @@
 #include <debug.h>
 #include <errno.h>
 #include <irq.h>
-#include <prio.h>
 #include <proc.h>
 #include <sch.h>
 #include <sections.h>
@@ -196,10 +195,8 @@ sig_flush(struct task *task)
 		 * Wake up thread at high priority to handle signals
 		 */
 		sch_signal(th);
-		if (th->prio > PRI_SIGNAL) {
+		if (th->prio > PRI_SIGNAL)
 			sch_setprio(th, th->baseprio, PRI_SIGNAL);
-			prio_inherit(th);
-		}
 
 		/*
 		 * Clear pending signals from task
@@ -359,7 +356,6 @@ sig_thread(struct thread *th, int sig)
 		sch_setprio(th, PRI_SIGNAL, PRI_SIGNAL);
 	else if (unblocked_pending && (th->prio > PRI_SIGNAL))
 		sch_setprio(th, th->baseprio, PRI_SIGNAL);
-	prio_inherit(th);
 
 out:
 	sch_unlock();
@@ -400,10 +396,8 @@ sig_restore(const k_sigset_t *old)
 		 * Wake up thread at high priority to handle signal
 		 */
 		sch_signal(th);
-		if (th->prio > PRI_SIGNAL) {
+		if (th->prio > PRI_SIGNAL)
 			sch_setprio(th, th->baseprio, PRI_SIGNAL);
-			prio_inherit(th);
-		}
 	}
 	sch_unlock();
 }
@@ -835,7 +829,6 @@ sc_sigreturn(void)
 	ksigdelset(&th->sig_blocked, SIGSTOP);
 	ksigdelset(&th->sig_blocked, SIGKILL);
 
-	prio_reset(th);
 	sch_unlock();
 
 	return ret;
@@ -857,7 +850,6 @@ sc_rt_sigreturn(void)
 	ksigdelset(&th->sig_blocked, SIGSTOP);
 	ksigdelset(&th->sig_blocked, SIGKILL);
 
-	prio_reset(th);
 	sch_unlock();
 
 	return ret;

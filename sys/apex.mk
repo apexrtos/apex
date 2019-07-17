@@ -39,7 +39,6 @@ SOURCES := \
     kern/irq.c \
     kern/main.c \
     kern/prctl.cpp \
-    kern/prio.c \
     kern/proc.c \
     kern/sch.c \
     kern/sig.c \

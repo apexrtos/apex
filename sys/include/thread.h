@@ -60,10 +60,6 @@ struct thread {
 	struct timer	timeout;	/* thread timer */
 	k_sigset_t	sig_pending;	/* bitmap of pending signals */
 	k_sigset_t	sig_blocked;	/* bitmap of blocked signals */
-	struct list	mutexes;	/* mutexes locked by this thread */
-	struct mutex   *wait_mutex;	/* mutex pointer currently waiting */
-	struct list	futexes;	/* waiting futexes held */
-	struct futex   *wait_futex;	/* futex pointer currently waiting */
 	void           *kstack;		/* base address of kernel stack */
 	int	       *clear_child_tid;/* clear & futex_wake this on exit */
 	struct context	ctx;		/* machine specific context */

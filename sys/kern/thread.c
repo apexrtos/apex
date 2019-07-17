@@ -42,7 +42,6 @@
 #include <futex.h>
 #include <kernel.h>
 #include <kmem.h>
-#include <prio.h>
 #include <sch.h>
 #include <sched.h>
 #include <sections.h>
@@ -88,8 +87,6 @@ thread_alloc(long mem_attr)
 	memset(th, 0, sizeof(*th));
 	th->kstack = stack;
 	th->magic = THREAD_MAGIC;
-	list_init(&th->mutexes);
-	list_init(&th->futexes);
 #if defined(CONFIG_KSTACK_CHECK)
 	memset(th->kstack, 0xaa, CONFIG_KSTACK_SIZE);
 	KSTACK_CHECK_INIT(th);
@@ -368,8 +365,6 @@ thread_init(void)
 
 	idle_thread.kstack = __stack_start;
 	idle_thread.magic = THREAD_MAGIC;
-	list_init(&idle_thread.mutexes);
-	list_init(&idle_thread.futexes);
 	idle_thread.task = &kern_task;
 	idle_thread.policy = SCHED_FIFO;
 	idle_thread.prio = PRI_IDLE;
