@@ -82,7 +82,13 @@ extern "C" char* __cxa_demangle(const char* mangled_name,
 	// however, and for our changes to be pushed upstream.  We also need to
 	// call a different demangling function here depending on the ABI (e.g.
 	// ARM).
+#if 0
 	char *demangled = __cxa_demangle_gnu3(mangled_name);
+#else
+	/* REVISIT: demangling is disabled for APEX due to missing architecture
+	 *	    support. */
+	char *demangled = NULL;
+#endif
 	if (NULL != demangled)
 	{
 		size_t len = strlen(demangled);
