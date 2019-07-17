@@ -50,10 +50,7 @@
 #include <stdatomic.h>
 #include <thread.h>
 
-#define MUTEX_MAGIC    0x4d75783f      /* 'Mux?' */
-
 struct mutex_private {
-	int magic;		/* magic number */
 	atomic_intptr_t owner;	/* owner thread locking this mutex */
 	unsigned count;		/* counter for recursive lock */
 	struct event event;	/* event */
@@ -63,17 +60,6 @@ static_assert(sizeof(struct mutex_private) == sizeof(struct mutex), "");
 static_assert(alignof(struct mutex_private) == alignof(struct mutex), "");
 
 /*
- * mutex_valid - check mutex validity.
- */
-bool
-mutex_valid(const struct mutex *m)
-{
-	const struct mutex_private *mp = (struct mutex_private*)m->storage;
-
-	return k_address(m) && mp->magic == MUTEX_MAGIC;
-}
-
-/*
  * mutex_init - Initialize a mutex.
  */
 void
@@ -81,7 +67,6 @@ mutex_init(struct mutex *m)
 {
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
-	mp->magic = MUTEX_MAGIC;
 	atomic_store_explicit(&mp->owner, 0, memory_order_relaxed);
 	mp->count = 0;
 	event_init(&mp->event, "mutex", ev_LOCK);
@@ -97,9 +82,6 @@ mutex_init(struct mutex *m)
 static int __attribute__((noinline))
 mutex_lock_slowpath(struct mutex *m)
 {
-	if (!mutex_valid(m))
-		return DERR(-EINVAL);
-
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
 	sch_lock();
@@ -194,9 +176,6 @@ mutex_lock(struct mutex *m)
 static int __attribute__((noinline))
 mutex_unlock_slowpath(struct mutex *m)
 {
-	if (!mutex_valid(m))
-		return DERR(-EINVAL);
-
 	/* can't unlock if we don't hold */
 	if (mutex_owner(m) != thread_cur())
 		return DERR(-EINVAL);
