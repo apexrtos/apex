@@ -78,14 +78,10 @@ clone_process(unsigned long flags, void *sp)
 
 	const auto ret = task_pid(child);
 
-	sch_lock();
-	if (flags & CLONE_VFORK) {
-		assert(!child->vfork);
+	assert(!child->vfork);
+	if (flags & CLONE_VFORK)
 		child->vfork = thread_cur();
-		sch_suspend(thread_cur());
-	}
-	sch_resume(th);
-	sch_unlock();
+	sch_suspend_resume(child->vfork, th);
 
 	context_restore_vfork(&thread_cur()->ctx, thread_cur()->task->as);
 
