@@ -610,16 +610,7 @@ sch_yield(void)
 void
 sch_suspend(struct thread *th)
 {
-	assert(!(th->state & TH_SUSPEND));
-
-	const int s = irq_disable();
-	if (th == active_thread)
-		resched = RESCHED_SWITCH;
-	else if (thread_runnable(th))
-		runq_remove(th);
-	th->state |= TH_SUSPEND;
-	schedule();
-	irq_restore(s);
+	sch_suspend_resume(th, NULL);
 }
 
 /*
@@ -628,14 +619,43 @@ sch_suspend(struct thread *th)
 void
 sch_resume(struct thread *th)
 {
-	assert(th->state & TH_SUSPEND);
+	sch_suspend_resume(NULL, th);
+}
+
+/*
+ * Atomically suspend one thread and resume another.
+ */
+void
+sch_suspend_resume(struct thread *suspend, struct thread *resume)
+{
+	bool reschedule = false;
 
 	const int s = irq_disable();
-	th->state &= ~TH_SUSPEND;
-	if (thread_runnable(th) && th != active_thread) {
-		runq_enqueue(th);
-		schedule();
+
+	if (suspend) {
+		assert(!(suspend->state & TH_SUSPEND));
+
+		if (suspend == active_thread)
+			resched = RESCHED_SWITCH;
+		else if (thread_runnable(suspend))
+			runq_remove(suspend);
+		suspend->state |= TH_SUSPEND;
+		reschedule = true;
 	}
+
+	if (resume) {
+		assert(resume->state & TH_SUSPEND);
+
+		resume->state &= ~TH_SUSPEND;
+		if (thread_runnable(resume) && resume != active_thread) {
+			runq_enqueue(resume);
+			reschedule = true;
+		}
+	}
+
+	if (reschedule)
+		schedule();
+
 	irq_restore(s);
 }
 

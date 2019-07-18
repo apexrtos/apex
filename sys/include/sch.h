@@ -69,6 +69,7 @@ void	        sch_signal(struct thread *);
 void	        sch_yield(void);
 void	        sch_suspend(struct thread *);
 void	        sch_resume(struct thread *);
+void	        sch_suspend_resume(struct thread *, struct thread *);
 void	        sch_elapse(uint32_t);
 void	        sch_start(struct thread *);
 void	        sch_stop(struct thread *);
