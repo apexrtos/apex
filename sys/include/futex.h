@@ -1,12 +1,7 @@
 #ifndef futex_h
 #define futex_h
 
-#include <event.h>
-#include <list.h>
-#include <types.h>
-
 struct task;
-struct thread;
 
 #define FUTEX_WAIT		0x0
 #define FUTEX_WAKE		0x1
@@ -25,19 +20,24 @@ struct thread;
 #define FUTEX_OWNER_DIED	0x40000000
 #define FUTEX_WAITERS           0x80000000
 
-struct futex {
-	phys *addr;		/* futex address */
-	struct event event;	/* event */
-	struct list task_link;	/* linkage on task futex list */
-	struct thread *owner;	/* thread holding futex */
+/*
+ * futex state stored on task
+ */
+struct futexes {
+	union {
+		char storage[12];
+		unsigned align;
+	};
 };
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-int sc_futex(int *, int, int, void *, int *);
 int futex(struct task *, int *, int, int, void *, int *);
+int sc_futex(int *, int, int, void *, int *);
+void futexes_init(struct futexes *);
+void futexes_destroy(struct futexes *);
 
 #if defined(__cplusplus)
 }

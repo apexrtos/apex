@@ -192,11 +192,7 @@ again:
 				/*
 				 * Free child resources
 				 */
-				struct list *n, *head = &task->futexes;
-				for (n = list_first(head); n != head; n = list_next(n)) {
-					struct futex *fk = list_entry(n, struct futex, task_link);
-					free(fk);
-				}
+				futexes_destroy(task_futexes(task));
 				list_remove(&task->link);
 				as_modify_begin(task->as);
 				as_destroy(task->as);

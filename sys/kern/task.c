@@ -206,7 +206,7 @@ task_create(struct task *parent, int vm_option, struct task **child)
 	task->capability = parent->capability;
 	task->parent = parent;
 	list_init(&task->threads);
-	list_init(&task->futexes);
+	futexes_init(&task->futexes);
 	task->pgid = parent->pgid;
 	task->sid = parent->sid;
 	task->state = PS_RUN;
@@ -389,6 +389,12 @@ task_access(struct task *task)
 	return task == task_cur() ||
 	    task->parent == task_cur() ||
 	    task_capable(CAP_TASK);
+}
+
+struct futexes *
+task_futexes(struct task *t)
+{
+	return &t->futexes;
 }
 
 void

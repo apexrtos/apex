@@ -30,6 +30,7 @@
 #ifndef task_h
 #define task_h
 
+#include <futex.h>
 #include <ksigaction.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -48,7 +49,7 @@ struct task {
 	int		suscnt;		    /* suspend counter */
 	unsigned	capability;	    /* security permission flag */
 	struct task    *parent;		    /* parent task */
-	struct list	futexes;	    /* futexes in use by this task */
+	struct futexes	futexes;	    /* futex state for task */
 	struct itimer	itimer_prof;	    /* interval timer ITIMER_PROF */
 	struct itimer	itimer_virtual;	    /* interval timer ITIMER_VIRTUAL */
 	struct timer	itimer_real;	    /* interval timer ITIMER_REAL */
@@ -113,6 +114,7 @@ int	        task_resume(struct task *);
 int	        task_path(struct task *, const char *);
 bool	        task_capable(unsigned);
 bool	        task_access(struct task *);
+struct futexes *task_futexes(struct task *);
 void		task_dump(void);
 void		task_init(void);
 
