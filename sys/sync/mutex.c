@@ -245,16 +245,6 @@ mutex_owner(const struct mutex *m)
 }
 
 /*
- * mutex_count - get lock count of mutex
- */
-unsigned
-mutex_count(const struct mutex *m)
-{
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
-	return mp->count;
-}
-
-/*
  * mutex_assert_locked - ensure that current thread owns mutex
  */
 void

@@ -92,7 +92,6 @@ int	       mutex_lock_interruptible(struct mutex *);
 int	       mutex_lock(struct mutex *);
 int	       mutex_unlock(struct mutex *);
 struct thread *mutex_owner(const struct mutex *);
-unsigned       mutex_count(const struct mutex *);
 void	       mutex_assert_locked(const struct mutex *);
 
 bool	       cond_valid(const struct cond *);
