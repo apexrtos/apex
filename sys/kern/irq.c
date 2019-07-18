@@ -37,25 +37,22 @@
  *
  * - Interrupt Service Routine (ISR)
  *
- *  ISR is started by an actual hardware interrupt. The associated
- *  interrupt is disabled in Interrupt Control Unit (ICU), and CPU
- *  interrupt is enabled while ISR runs.
- *  If ISR determines that the corresponding device generated the
- *  interrupt, ISR must program the device to stop that interrupt.
- *  Then, ISR should do minimum I/O operation and return control
- *  as quickly as possible. ISR will run within a context of the
- *  thread running when interrupt occurs. So, only few kernel
- *  services are available within ISR.
+ *  ISR is started by a hardware interrupt. If ISR determines that the
+ *  corresponding device generated the interrupt, ISR must program the device
+ *  to stop that interrupt.  Then, ISR should do minimum I/O operation and
+ *  return control as quickly as possible. Only limited kernel services are
+ *  available within ISR.
  *
  * - Interrupt Service Thread (IST)
  *
- *  IST is automatically activated if ISR returns INT_CONTINUE. It
- *  will be called when the system enters safer condition than ISR.
- *  A device driver should use IST to do heavy I/O operation as much
- *  as possible. Since ISR for the same IRQ line may be invoked
- *  during IST, the shared data, resources, and device registers
- *  must be synchronized by using irq_lock(). IST does not have to
- *  be reentrant because it is not interrupted by same IST itself.
+ *  IST is automatically activated if ISR returns INT_CONTINUE. It will be
+ *  called when the system enters safer condition than ISR. A device driver
+ *  should use IST or DPC to do heavy I/O operation as much as possible. IST
+ *  does not have to be reentrant because it is not interrupted by same IST
+ *  itself. Note that DPC must not sleep as all other DPC will be blocked.
+ *
+ * TODO: interrupt sharing
+ *	 use memory barrier to avoid spinlock in irq_handler?
  */
 
 #include <irq.h>
@@ -63,11 +60,13 @@
 #include <arch.h>
 #include <assert.h>
 #include <debug.h>
+#include <event.h>
 #include <kmem.h>
 #include <sch.h>
 #include <sections.h>
 #include <stddef.h>
 #include <string.h>
+#include <sync.h>
 #include <thread.h>
 
 struct irq {
@@ -81,19 +80,17 @@ struct irq {
 	struct event	istevt;		    /* event for ist */
 };
 
-/* forward declarations */
-static void
-irq_thread(void *);
+static void irq_thread(void *);
 
 /* IRQ descriptor table */
 static struct irq *irq_table[CONFIG_IRQS] __fast_bss;
+static struct spinlock lock __fast_bss;
 
 /*
  * irq_attach - attach ISR and IST to the specified interrupt.
  *
  * Returns irq handle, or NULL on failure.  The interrupt of
  * attached irq will be unmasked (enabled) in this routine.
- * TODO: Interrupt sharing is not supported, for now.
  */
 struct irq *
 irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
@@ -103,17 +100,11 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 
 	assert(isr != NULL);
 	assert(vector < CONFIG_IRQS);
+	assert(!interrupt_running());
 
-	sch_lock();
-	if (irq_table[vector] != NULL) {
-		sch_unlock();
-		dbg("IRQ%d BUSY\n", vector);
+	if ((irq = kmem_alloc(sizeof(*irq), MA_FAST)) == NULL)
 		return NULL;
-	}
-	if ((irq = kmem_alloc(sizeof(*irq), MA_FAST)) == NULL) {
-		sch_unlock();
-		return NULL;
-	}
+
 	memset(irq, 0, sizeof(*irq));
 	irq->vector = vector;
 	irq->isr = isr;
@@ -128,35 +119,42 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 		    interrupt_to_ist_priority(prio), "ist", MA_FAST);
 		if (irq->thread == NULL) {
 			kmem_free(irq);
-			sch_unlock();
 			return NULL;
 		}
 		event_init(&irq->istevt, "interrupt", ev_SLEEP);
 	}
+
+	const int s = spinlock_lock_irq_disable(&lock);
+	if (irq_table[vector] != NULL) {
+		spinlock_unlock_irq_restore(&lock, s);
+		thread_terminate(irq->thread);
+		kmem_free(irq);
+		dbg("IRQ%d BUSY\n", vector);
+		return NULL;
+	}
 	irq_table[vector] = irq;
 	interrupt_setup(vector, mode);
 	interrupt_unmask(vector, prio);
+	spinlock_unlock_irq_restore(&lock, s);
 
-	sch_unlock();
 	dbg("IRQ%d attached priority=%d\n", vector, prio);
 	return irq;
 }
 
 /*
- * Detach an interrupt handler from the interrupt chain.
- * The detached interrupt will be masked off if nobody
- * attaches to it, anymore.
+ * irq_detach - detach ISR and IST from interrupt.
  */
 void
 irq_detach(struct irq *irq)
 {
 	assert(irq);
 	assert(irq->vector < CONFIG_IRQS);
+	assert(!interrupt_running());
 
-	sch_lock();
+	const int s = spinlock_lock_irq_disable(&lock);
 	interrupt_mask(irq->vector);
 	irq_table[irq->vector] = NULL;
-	sch_unlock();
+	spinlock_unlock_irq_restore(&lock, s);
 
 	if (irq->thread != NULL)
 		thread_terminate(irq->thread);
@@ -164,7 +162,7 @@ irq_detach(struct irq *irq)
 }
 
 /*
- * Disable IRQ.
+ * irq_disable - disable all hardware interrupts.
  *
  * All H/W interrupts are masked off.
  * Current interrupt state is returned and must be passed to irq_restore.
@@ -179,7 +177,7 @@ irq_disable(void)
 }
 
 /*
- * Restore IRQ.
+ * irq_restore - restore hardware interrupt state.
  *
  * Resture interrupt state to original state before irq_disable call.
  */
@@ -190,8 +188,7 @@ irq_restore(int s)
 }
 
 /*
- * Interrupt service thread.
- * This is a common dispatcher to all interrupt threads.
+ * irq_thread - interrupt service thread.
  */
 static void
 irq_thread(void *arg)
@@ -236,12 +233,14 @@ irq_dump(void)
 	info("========\n");
 	info(" irq count\n");
 	info(" --- ----------\n");
+	const int s = spinlock_lock_irq_disable(&lock);
 	for (size_t vector = 0; vector < ARRAY_SIZE(irq_table); vector++) {
 		const struct irq *irq = irq_table[vector];
 		if (!irq || irq->isrreq == 0)
 			continue;
 		info(" %3d %10d\n", vector, irq->isrreq);
 	}
+	spinlock_unlock_irq_restore(&lock, s);
 }
 
 /*
@@ -258,7 +257,10 @@ irq_handler(int vector)
 	struct irq *irq;
 	int rc;
 
+	const int s = spinlock_lock_irq_disable(&lock);
 	irq = irq_table[vector];
+	spinlock_unlock_irq_restore(&lock, s);
+
 	if (irq == NULL)
 		return;		/* Ignore stray interrupt */
 	assert(irq->isr);
@@ -280,10 +282,13 @@ irq_handler(int vector)
 	}
 }
 
+/*
+ * irq_init - initialise interrupt processing
+ */
 void
 irq_init(void)
 {
-	/* Start interrupt processing. */
+	spinlock_init(&lock);
 	interrupt_init();
 	interrupt_enable();
 }
