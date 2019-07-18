@@ -81,8 +81,18 @@ interrupt_to_ist_priority(int prio)
 bool
 interrupt_from_userspace(void)
 {
+	assert(interrupt_running());
+
 	/* userspace threads are unprivileged */
 	int control;
 	asm("mrs %0, control" : "=r"(control));
 	return control & CONTROL_NPRIV;
+}
+
+bool
+interrupt_running(void)
+{
+	int ipsr;
+	asm("mrs %0, ipsr" : "=r" (ipsr));
+	return ipsr != 0;
 }

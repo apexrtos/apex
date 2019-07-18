@@ -89,6 +89,7 @@ void		interrupt_setup(int, int);
 void		interrupt_init(void);
 int		interrupt_to_ist_priority(int);
 bool		interrupt_from_userspace(void);
+bool		interrupt_running(void);
 void		early_console_init(void);
 void		early_console_print(const char *, size_t);
 void		machine_init(struct bootargs *);
