@@ -121,6 +121,7 @@ struct thread  *kthread_create(void (*)(void *), void *, int, const char *,
 
 #if defined(__cplusplus)
 } /* extern "C" */
+#undef noreturn
 #endif
 
 #endif /* !thread_h */
