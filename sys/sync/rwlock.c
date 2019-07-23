@@ -5,25 +5,25 @@
  * - Always wakes up all blocked writers when read lock is released
  * - Readers starve writers
  * - No priority inheritance
+ * - Read lock cannot be upgraded to write lock
+ * - Write lock is not recursive
  *
  * However, it is still useful for cases where there are lots of readers and
  * few writers.
  *
- * REVISIT: reimplement this using atomics rather than mutex/cond.
+ * REVISIT: optimise using atomic variable for state.
+ *	    SMP: spin before going to sleep.
  */
 
 #include <sync.h>
 
 #include <assert.h>
-#include <debug.h>
-#include <errno.h>
 #include <stdalign.h>
-#include <thread.h>
+#include <wait.h>
 
 struct rwlock_private {
-	struct mutex mutex;
-	struct cond cond;
-	struct thread *writer;
+	struct spinlock lock;
+	struct event event;
 	/*
 	 * state == 0, unlocked
 	 * state > 0, reading
@@ -41,8 +41,8 @@ void
 rwlock_init(struct rwlock *o)
 {
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
-	mutex_init(&p->mutex);
-	cond_init(&p->cond);
+	spinlock_init(&p->lock);
+	event_init(&p->event, "rwlock", ev_LOCK);
 	p->state = 0;
 }
 
@@ -55,24 +55,16 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	/* ignore if we currently hold write lock */
-	if (p->writer == thread_cur())
-		return 0;
-
-	if ((err = mutex_lock_interruptible(&p->mutex)) < 0)
-		return err;
+	spinlock_lock(&p->lock);
 
 	/* state < 0 while writing */
-	while (p->state < 0) {
-		if ((err = cond_wait_interruptible(&p->cond, &p->mutex)) < 0) {
-			mutex_unlock(&p->mutex);
-			return err;
-		}
-	}
+	err = wait_event_lock(p->event, p->state >= 0, &p->lock);
+	if (!err)
+		++p->state;
 
-	++p->state;
+	spinlock_unlock(&p->lock);
 
-	return mutex_unlock(&p->mutex);
+	return err;
 }
 
 /*
@@ -81,24 +73,20 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 int
 rwlock_read_unlock(struct rwlock *o)
 {
-	int err;
+
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	/* ignore if we currently hold write lock */
-	if (p->writer == thread_cur())
-		return 0;
+	spinlock_lock(&p->lock);
 
-	if (p->state <= 0)
-		return DERR(-EINVAL);
-
-	if ((err = mutex_lock(&p->mutex)) < 0)
-		return err;
+	assert(p->state > 0);
 
 	/* if no more readers, signal any waiting writers */
 	if (!--p->state)
-		cond_broadcast(&p->cond);
+		sch_wakeup(&p->event, 0);
 
-	return mutex_unlock(&p->mutex);
+	spinlock_unlock(&p->lock);
+
+	return 0;
 }
 
 /*
@@ -110,24 +98,16 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	if ((err = mutex_lock_interruptible(&p->mutex)) < 0)
-		return err;
+	spinlock_lock(&p->lock);
 
-	if (p->writer != thread_cur()) {
-		/* state == 0, no writers or readers */
-		while (p->state) {
-			if ((err = cond_wait_interruptible(&p->cond, &p->mutex)) < 0) {
-				mutex_unlock(&p->mutex);
-				return err;
-			}
-		}
+	/* state == 0, no writers or readers */
+	err = wait_event_lock(p->event, p->state == 0, &p->lock);
+	if (!err)
+		--p->state;
 
-		p->writer = thread_cur();
-	}
+	spinlock_unlock(&p->lock);
 
-	--p->state;
-
-	return mutex_unlock(&p->mutex);
+	return err;
 }
 
 /*
@@ -136,20 +116,17 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 int
 rwlock_write_unlock(struct rwlock *o)
 {
-	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	if (p->state >= 0)
-		return DERR(-EINVAL);
+	spinlock_lock(&p->lock);
 
-	if ((err = mutex_lock(&p->mutex)) < 0)
-		return err;
+	assert(p->state < 0);
 
-	/* signal any waiting readers or writers if no more recursion */
-	if (!++p->state) {
-		p->writer = 0;
-		cond_broadcast(&p->cond);
-	}
+	/* signal any waiting readers or writers */
+	if (!++p->state)
+		sch_wakeup(&p->event, 0);
 
-	return mutex_unlock(&p->mutex);
-};
+	spinlock_unlock(&p->lock);
+
+	return 0;
+}

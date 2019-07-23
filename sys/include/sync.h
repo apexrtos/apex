@@ -60,7 +60,7 @@ struct mutex {
 
 struct rwlock {
 	union {
-		char storage[52];
+		char storage[24];
 		unsigned align;
 	};
 };
