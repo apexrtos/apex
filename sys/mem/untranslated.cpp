@@ -20,12 +20,14 @@
 int
 vm_read(as *as, void *l, const void *r, size_t s)
 {
-	interruptible_lock lck(u_access_lock);
-	if (auto r = lck.lock(); r < 0)
+	if (auto r = as_transfer_begin(as); r < 0)
 		return r;
-	if (!u_access_okfor(as, r, s, PROT_READ))
+	if (!u_access_okfor(as, r, s, PROT_READ)) {
+		as_transfer_end(as);
 		return DERR(-EFAULT);
+	}
 	memcpy(l, r, s);
+	as_transfer_end(as);
 	return s;
 }
 
@@ -35,12 +37,14 @@ vm_read(as *as, void *l, const void *r, size_t s)
 int
 vm_write(as *as, const void *l, void *r, size_t s)
 {
-	interruptible_lock lck(u_access_lock);
-	if (auto r = lck.lock(); r < 0)
+	if (auto r = as_transfer_begin(as); r < 0)
 		return r;
-	if (!u_access_okfor(as, r, s, PROT_WRITE))
+	if (!u_access_okfor(as, r, s, PROT_WRITE)) {
+		as_transfer_end(as);
 		return DERR(-EFAULT);
+	}
 	memcpy(r, l, s);
+	as_transfer_end(as);
 	return s;
 }
 
@@ -50,14 +54,15 @@ vm_write(as *as, const void *l, void *r, size_t s)
 int
 vm_copy(as *as, void *dst, const void *src, size_t s)
 {
-	interruptible_lock lck(u_access_lock);
-	if (auto r = lck.lock(); r < 0)
+	if (auto r = as_transfer_begin(as); r < 0)
 		return r;
-	if (!u_access_okfor(as, src, s, PROT_READ))
+	if (!u_access_okfor(as, src, s, PROT_READ) ||
+	    !u_access_okfor(as, dst, s, PROT_WRITE)) {
+		as_transfer_end(as);
 		return DERR(-EFAULT);
-	if (!u_access_okfor(as, dst, s, PROT_WRITE))
-		return DERR(-EFAULT);
+	}
 	memcpy(dst, src, s);
+	as_transfer_end(as);
 	return s;
 }
 
