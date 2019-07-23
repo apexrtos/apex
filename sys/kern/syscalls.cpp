@@ -13,11 +13,21 @@
 #include <thread.h>
 #include <time.h>
 #include <version.h>
+#include <vm.h>
 
 void
 sc_exit()
 {
-	thread_terminate(thread_cur());
+	struct thread *th = thread_cur();
+
+	if (th->clear_child_tid) {
+		const int zero = 0;
+		vm_write(th->task->as, &zero, th->clear_child_tid, sizeof zero);
+		futex(th->task, th->clear_child_tid, FUTEX_PRIVATE | FUTEX_WAKE,
+		    1, 0, 0);
+	}
+
+	thread_terminate(th);
 }
 
 void

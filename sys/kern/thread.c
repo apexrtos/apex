@@ -52,7 +52,6 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <task.h>
-#include <vm.h>
 
 #define THREAD_MAGIC   0x5468723f      /* 'Thr?' */
 
@@ -151,27 +150,15 @@ thread_createfor(struct task *task, struct as *as, struct thread **thp,
 
 /*
  * Stop execution of the specified thread
+ *
+ * Can be called under interrupt.
  */
 void
 thread_terminate(struct thread *th)
 {
-	sch_lock();
-
-	assert(thread_valid(th));
-
 	sch_stop(th);
 	sig_thread(th, 0);		/* signal 0 is special */
-
-	if (th->clear_child_tid) {
-		const int zero = 0;
-		vm_write(th->task->as, &zero, th->clear_child_tid, sizeof zero);
-		futex(th->task, th->clear_child_tid, FUTEX_PRIVATE | FUTEX_WAKE,
-		    1, 0, 0);
-	}
-
 	context_terminate(th);
-
-	sch_unlock();
 }
 
 /*
