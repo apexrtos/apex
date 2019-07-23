@@ -46,7 +46,7 @@ struct thread;
 
 struct cond {
 	union {
-		char storage[32];
+		char storage[16];
 		unsigned align;
 	};
 };
@@ -60,7 +60,7 @@ struct mutex {
 
 struct rwlock {
 	union {
-		char storage[68];
+		char storage[52];
 		unsigned align;
 	};
 };

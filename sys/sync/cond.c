@@ -33,22 +33,13 @@
 
 #include <sync.h>
 
-#include <access.h>
 #include <assert.h>
-#include <debug.h>
-#include <errno.h>
-#include <kernel.h>
+#include <event.h>
 #include <sch.h>
 #include <stdalign.h>
-#include <stddef.h>
-#include <thread.h>
-#include <timer.h>
 
 struct cond_private {
-	struct mutex *mutex;	/* mutex associated with this condition */
-	unsigned wait;		/* # waiting threads */
-	unsigned signal;	/* # of signals */
-	struct event event;	/* event */
+	struct event event;
 };
 
 static_assert(sizeof(struct cond_private) == sizeof(struct cond), "");
@@ -65,9 +56,6 @@ cond_init(struct cond *c)
 {
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
-	cp->mutex = NULL;
-	cp->wait = 0;
-	cp->signal = 0;
 	event_init(&cp->event, "condition", ev_COND);
 }
 
@@ -83,58 +71,28 @@ cond_wait_interruptible(struct cond *c, struct mutex *m)
 /*
  * cond_timedwait_interruptible - Wait on a condition for a specified time.
  *
- * If the thread receives any exception while waiting CV, this
- * routine returns immediately with EINTR.
+ * If a signal is received while waiting on the condition EINTR will be
+ * returned.
  */
 int
 cond_timedwait_interruptible(struct cond *c, struct mutex *m, uint64_t nsec)
 {
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
-	/* can't wait with recursively locked mutex */
-	if (mutex_count(m) > 1)
-		return DERR(-EDEADLK);
+	int r;
 
-	int rc, err = 0;
-
-	sch_lock();
-
-	/* multiple threads can't wait with different mutexes */
-	if ((cp->mutex != NULL) && (cp->mutex != m)) {
-		sch_unlock();
-		return DERR(-EINVAL);
-	}
-
-	/* unlock mutex and store */
+	/* wait for signal or broadcast */
+	if ((r = sch_prepare_sleep(&cp->event, nsec)) < 0)
+		return r;
 	mutex_unlock(m);
-	cp->mutex = m;
-
-	/* wait for signal */
-	++cp->wait;
-	rc = sch_nanosleep(&cp->event, nsec);
-	--cp->wait;
-
-	/* reacquire mutex */
-	if ((err = mutex_lock_interruptible(m)))
-		goto out;
-
-	/* received signal */
-	if (cp->signal) {
-		--cp->signal;
-		goto out;
-	}
-
-	/* sleep timed out or was interrupted */
-	assert(rc < 0);
-	err = rc;
-
-out:
-	sch_unlock();
-	return err;
+	r = sch_continue_sleep();
+	mutex_lock(m);
+	return r;
 }
 
 /*
  * cond_signal - Unblock one thread that is blocked on the specified CV.
+ *
  * The thread which has highest priority will be unblocked.
  */
 int
@@ -142,13 +100,7 @@ cond_signal(struct cond *c)
 {
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
-	sch_lock();
-	if (cp->signal < cp->wait) {
-		++cp->signal;
-		sch_wakeone(&cp->event);
-	}
-	sch_unlock();
-
+	sch_wakeone(&cp->event);
 	return 0;
 }
 
@@ -160,13 +112,7 @@ cond_broadcast(struct cond *c)
 {
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
-	sch_lock();
-	if (cp->signal < cp->wait) {
-		cp->signal = cp->wait;
-		sch_wakeup(&cp->event, 0);
-	}
-	sch_unlock();
-
+	sch_wakeup(&cp->event, 0);
 	return 0;
 }
 
