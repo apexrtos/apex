@@ -51,8 +51,8 @@ struct iovec;
 struct devio {
 	int	(*open)(struct file *);
 	int	(*close)(struct file *);
-	ssize_t	(*read)(struct file *, const struct iovec *, size_t);
-	ssize_t	(*write)(struct file *, const struct iovec *, size_t);
+	ssize_t	(*read)(struct file *, const struct iovec *, size_t, off_t);
+	ssize_t	(*write)(struct file *, const struct iovec *, size_t, off_t);
 	int	(*ioctl)(struct file *, u_long, void *);
 	int	(*event)(int);
 };

@@ -10,7 +10,6 @@
 #include <fcntl.h>
 #include <fs/file.h>
 #include <fs/util.h>
-#include <fs/vnode.h>
 #include <ioctl.h>
 #include <memory>
 #include <mutex>
@@ -1127,23 +1126,23 @@ tty_close(file *f)
  * tty_read_iov - read data from a tty
  */
 ssize_t
-tty_read(file *f, void *buf, size_t len)
+tty_read(file *f, void *buf, size_t len, off_t offset)
 {
 	tty *t = static_cast<tty *>(f->f_data);
 	return t->read(f, buf, len);
 }
 
 ssize_t
-tty_read_iov(file *f, const iovec *iov, size_t count)
+tty_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
-	return for_each_iov(f, iov, count, tty_read);
+	return for_each_iov(f, iov, count, offset, tty_read);
 }
 
 /*
  * tty_write_iov - write data to a tty
  */
 ssize_t
-tty_write(file *f, void *buf, size_t len)
+tty_write(file *f, void *buf, size_t len, off_t offset)
 {
 	tty *t = static_cast<tty *>(f->f_data);
 	return t->write(f, buf, len);
@@ -1151,9 +1150,9 @@ tty_write(file *f, void *buf, size_t len)
 }
 
 ssize_t
-tty_write_iov(file *f, const iovec *iov, size_t count)
+tty_write_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
-	return for_each_iov(f, iov, count, tty_write);
+	return for_each_iov(f, iov, count, offset, tty_write);
 }
 
 /*

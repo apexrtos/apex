@@ -64,8 +64,8 @@ static struct spinlock device_list_lock;
 
 static int devfs_open(struct file *, int, mode_t);
 static int devfs_close(struct file *);
-static ssize_t devfs_read(struct file *, const struct iovec *, size_t);
-static ssize_t devfs_write(struct file *, const struct iovec *, size_t);
+static ssize_t devfs_read(struct file *, const struct iovec *, size_t, off_t);
+static ssize_t devfs_write(struct file *, const struct iovec *, size_t, off_t);
 static int devfs_ioctl(struct file *, u_long, void *);
 static int devfs_readdir(struct file *, struct dirent *, size_t);
 static int devfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
@@ -183,7 +183,8 @@ devfs_close(struct file *fp)
 }
 
 static ssize_t
-devfs_read(struct file *fp, const struct iovec *iov, size_t count)
+devfs_read(struct file *fp, const struct iovec *iov, size_t count,
+    off_t offset)
 {
 	struct device *dev = fp->f_vnode->v_data;
 
@@ -199,7 +200,7 @@ devfs_read(struct file *fp, const struct iovec *iov, size_t count)
 	++dev->busy;
 	vn_unlock(fp->f_vnode);
 
-	int r = (*dev->devio->read)(fp, iov, count);
+	int r = (*dev->devio->read)(fp, iov, count, offset);
 
 	vn_lock(fp->f_vnode);
 	--dev->busy;
@@ -208,7 +209,8 @@ devfs_read(struct file *fp, const struct iovec *iov, size_t count)
 }
 
 static ssize_t
-devfs_write(struct file *fp, const struct iovec *iov, size_t count)
+devfs_write(struct file *fp, const struct iovec *iov, size_t count,
+    off_t offset)
 {
 	struct device *dev = fp->f_vnode->v_data;
 
@@ -224,7 +226,7 @@ devfs_write(struct file *fp, const struct iovec *iov, size_t count)
 	++dev->busy;
 	vn_unlock(fp->f_vnode);
 
-	int r = (*dev->devio->write)(fp, iov, count);
+	int r = (*dev->devio->write)(fp, iov, count, offset);
 
 	vn_lock(fp->f_vnode);
 	--dev->busy;

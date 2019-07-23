@@ -181,7 +181,7 @@ next:
 }
 
 static ssize_t
-arfs_read(struct file *fp, void *buf, size_t size)
+arfs_read(struct file *fp, void *buf, size_t size, off_t offset)
 {
 	const struct vnode *vp = fp->f_vnode;
 	const struct mount *mp = vp->v_mount;
@@ -191,36 +191,25 @@ arfs_read(struct file *fp, void *buf, size_t size)
 	afsdbg("arfs_read: start size=%d\n", size);
 
 	/* Check if current file position is already end of file. */
-	if (fp->f_offset >= vp->v_size)
+	if (offset >= vp->v_size)
 		return 0;
 
 	/* Get the actual read size. */
-	if (vp->v_size - fp->f_offset < size)
-		size = vp->v_size - fp->f_offset;
+	if (vp->v_size - offset < size)
+		size = vp->v_size - offset;
 
 	/* Read data */
-	if ((res = kpread(mp->m_devfd, buf, size, off + fp->f_offset)) < 0)
+	if ((res = kpread(mp->m_devfd, buf, size, off + offset)) < 0)
 		return res;
 
-	fp->f_offset += res;
 	return res;
 }
 
 static ssize_t
-arfs_read_iov(struct file *fp, const struct iovec *iov, size_t count)
+arfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
+    off_t offset)
 {
-	size_t read = 0;
-	ssize_t res = 0;
-
-
-	while (count--) {
-		if ((res = arfs_read(fp, iov->iov_base, iov->iov_len)) <= 0)
-			break;
-		read += res;
-		++iov;
-	}
-
-	return (read > 0) ? (ssize_t)read : res;
+	return for_each_iov(fp, iov, count, offset, arfs_read);
 }
 
 static int

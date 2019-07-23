@@ -166,7 +166,7 @@ pipe_close(struct file *fp)
  * pipe_read
  */
 ssize_t
-pipe_read(struct file *fp, void *buf, size_t size)
+pipe_read(struct file *fp, void *buf, size_t size, off_t offset)
 {
 	int err = 0;
 	size_t read = 0;	/* bytes read so far */
@@ -225,7 +225,7 @@ pipe_read(struct file *fp, void *buf, size_t size)
  * pipe_write
  */
 ssize_t
-pipe_write(struct file *fp, void *buf, size_t size)
+pipe_write(struct file *fp, void *buf, size_t size, off_t offset)
 {
 	int err = 0;
 	size_t written = 0;	/* bytes written so far */

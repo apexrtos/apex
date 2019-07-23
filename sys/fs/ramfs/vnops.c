@@ -58,8 +58,8 @@ static char ramfs_id;
  * - don't duplicate tests guaranteed by vfs
  */
 
-static ssize_t ramfs_read_iov(struct file *, const struct iovec *, size_t);
-static ssize_t ramfs_write_iov(struct file *, const struct iovec *, size_t);
+static ssize_t ramfs_read_iov(struct file *, const struct iovec *, size_t, off_t);
+static ssize_t ramfs_write_iov(struct file *, const struct iovec *, size_t, off_t);
 static int ramfs_readdir(struct file *, struct dirent *, size_t);
 static int ramfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
 static int ramfs_mknod(struct vnode *, const char *, size_t, int, mode_t);
@@ -266,38 +266,36 @@ ramfs_mknod(struct vnode *dvp, const char *name, size_t name_len, int flags, mod
 }
 
 static ssize_t
-ramfs_read(struct file *fp, void *buf, size_t size)
+ramfs_read(struct file *fp, void *buf, size_t size, off_t offset)
 {
 	struct vnode *vp = fp->f_vnode;
 	struct ramfs_node *np = fp->f_vnode->v_data;
-	off_t off;
 
 	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
 		return -EINVAL;
 
-	off = fp->f_offset;
-	if (off >= vp->v_size)
+	if (offset >= vp->v_size)
 		return 0;
 
-	if (vp->v_size - off < size)
-		size = vp->v_size - off;
+	if (vp->v_size - offset < size)
+		size = vp->v_size - offset;
 
-	memcpy(buf, np->rn_buf + off, size);
+	memcpy(buf, np->rn_buf + offset, size);
 
-	fp->f_offset += size;
 	return size;
 }
 
 static ssize_t
-ramfs_read_iov(struct file *fp, const struct iovec *iov, size_t count)
+ramfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
+    off_t offset)
 {
-	return for_each_iov(fp, iov, count, ramfs_read);
+	return for_each_iov(fp, iov, count, offset, ramfs_read);
 }
 
 static ssize_t
-ramfs_write(struct file *fp, void *buf, size_t size)
+ramfs_write(struct file *fp, void *buf, size_t size, off_t offset)
 {
-	off_t file_pos, end_pos;
+	off_t end_pos;
 	size_t new_size;
 	struct ramfs_node *np = fp->f_vnode->v_data;
 	struct vnode *vp = fp->f_vnode;
@@ -308,10 +306,9 @@ ramfs_write(struct file *fp, void *buf, size_t size)
 
 	/* Check if the file position exceeds the end of file. */
 	end_pos = vp->v_size;
-	file_pos = (fp->f_flags & O_APPEND) ? end_pos : fp->f_offset;
-	if (file_pos + size > (size_t)end_pos) {
+	if (offset + size > (size_t)end_pos) {
 		/* Expand the file size before writing to it */
-		end_pos = file_pos + size;
+		end_pos = offset + size;
 		if (end_pos > np->rn_bufsize) {
 			/*
 			 * We allocate the data buffer in page boundary.
@@ -331,24 +328,24 @@ ramfs_write(struct file *fp, void *buf, size_t size)
 				page_free(virt_to_phys(np->rn_buf),
 				    np->rn_bufsize, &ramfs_id);
 			}
-			if (vp->v_size < (size_t)file_pos) /* sparse file */
+			if (vp->v_size < (size_t)offset) /* sparse file */
 				memset((char *)new_buf + vp->v_size, 0,
-				       file_pos - vp->v_size);
+				       offset - vp->v_size);
 			np->rn_buf = new_buf;
 			np->rn_bufsize = new_size;
 		}
 		np->rn_size = end_pos;
 		vp->v_size = end_pos;
 	}
-	memcpy(np->rn_buf + file_pos, buf, size);
-	fp->f_offset += size;
+	memcpy(np->rn_buf + offset, buf, size);
 	return size;
 }
 
 static ssize_t
-ramfs_write_iov(struct file *fp, const struct iovec *iov, size_t count)
+ramfs_write_iov(struct file *fp, const struct iovec *iov, size_t count,
+    off_t offset)
 {
-	return for_each_iov(fp, iov, count, ramfs_write);
+	return for_each_iov(fp, iov, count, offset, ramfs_write);
 }
 
 static int

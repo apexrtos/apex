@@ -8,7 +8,6 @@
 #include <fs.h>
 #include <fs/file.h>
 #include <fs/util.h>
-#include <fs/vnode.h>
 #include <kernel.h>
 #include <kmem.h>
 #include <string.h>
@@ -19,32 +18,27 @@ static const char *archive_addr;
 static size_t archive_size;
 
 static ssize_t
-bootdisk_read(struct file *f, void *buf, size_t len)
+bootdisk_read(struct file *f, void *buf, size_t len, off_t offset)
 {
-	const size_t off = f->f_offset;
-
-	rdbg("bootdisk_read: buf=%p len=%zu off=%jx\n", buf, len, off);
+	rdbg("bootdisk_read: buf=%p len=%zu off=%jx\n", buf, len, offset);
 
 	/* Check overrun */
-	if ((size_t)off > archive_size)
+	if (offset > archive_size)
 		return DERR(-EIO);
-	if ((size_t)off + len > archive_size)
-		len = archive_size - off;
+	if (archive_size - offset < len)
+		len = archive_size - offset;
 
 	/* Copy data */
-	memcpy(buf, archive_addr + off, len);
-
-	vn_lock(f->f_vnode);
-	f->f_offset += len;
-	vn_unlock(f->f_vnode);
+	memcpy(buf, archive_addr + offset, len);
 
 	return len;
 }
 
 static ssize_t
-bootdisk_read_iov(struct file *f, const struct iovec *iov, size_t count)
+bootdisk_read_iov(struct file *f, const struct iovec *iov, size_t count,
+    off_t offset)
 {
-	return for_each_iov(f, iov, count, bootdisk_read);
+	return for_each_iov(f, iov, count, offset, bootdisk_read);
 }
 
 /*

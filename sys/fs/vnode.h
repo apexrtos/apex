@@ -81,8 +81,8 @@ struct vattr {
  */
 typedef	int (*vnop_open_fn)	(struct file *, int flags, mode_t);
 typedef	int (*vnop_close_fn)	(struct file *);
-typedef	ssize_t (*vnop_read_fn)	(struct file *, const struct iovec *, size_t);
-typedef	ssize_t (*vnop_write_fn)(struct file *, const struct iovec *, size_t);
+typedef	ssize_t (*vnop_read_fn)	(struct file *, const struct iovec *, size_t, off_t);
+typedef	ssize_t (*vnop_write_fn)(struct file *, const struct iovec *, size_t, off_t);
 typedef	int (*vnop_seek_fn)	(struct file *, off_t);
 typedef	int (*vnop_ioctl_fn)	(struct file *, u_long, void *);
 typedef	int (*vnop_fsync_fn)	(struct file *);
@@ -120,8 +120,8 @@ struct vnops {
  */
 #define VOP_OPEN(FP, F, M)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_open)(FP, F, M)
 #define VOP_CLOSE(FP)		    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_close)(FP)
-#define VOP_READ(FP, I, C)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_read)(FP, I, C)
-#define VOP_WRITE(FP, I, C)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_write)(FP, I, C)
+#define VOP_READ(FP, I, C, O)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_read)(FP, I, C, O)
+#define VOP_WRITE(FP, I, C, O)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_write)(FP, I, C, O)
 #define VOP_SEEK(FP, OFF)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_seek)(FP, OFF)
 #define VOP_IOCTL(FP, C, A)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_ioctl)(FP, C, A)
 #define VOP_FSYNC(FP)		    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_fsync)(FP)

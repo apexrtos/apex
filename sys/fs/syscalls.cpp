@@ -75,8 +75,7 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 		if (!count)
 			return ret;
 		uiov += c;
-		if (offset >= 0)
-			offset += r;
+		offset += r;
 	}
 }
 
@@ -538,10 +537,16 @@ sc_readlinkat(int dirfd, const char *path, char *buf, size_t len)
 	return readlinkat(dirfd, path, buf, len);
 }
 
+static ssize_t
+do_readv(int fd, const struct iovec *iov, int count, off_t offset)
+{
+	return readv(fd, iov, count);
+}
+
 ssize_t
 sc_readv(int fd, const struct iovec *iov, int count)
 {
-	return do_iov(fd, iov, count, -1, preadv, PROT_WRITE);
+	return do_iov(fd, iov, count, 0, do_readv, PROT_WRITE);
 }
 
 #if UINTPTR_MAX == 0xffffffff
@@ -585,8 +590,14 @@ sc_write(int fd, const void *buf, size_t len)
 	return write(fd, buf, len);
 }
 
+static ssize_t
+do_writev(int fd, const struct iovec *iov, int count, off_t offset)
+{
+	return writev(fd, iov, count);
+}
+
 ssize_t
 sc_writev(int fd, const struct iovec *iov, int count)
 {
-	return do_iov(fd, iov, count, -1, pwritev, PROT_READ);
+	return do_iov(fd, iov, count, 0, do_writev, PROT_READ);
 }

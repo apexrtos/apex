@@ -326,7 +326,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 				.iov_base = link_buf,
 				.iov_len = link_buf_size,
 			};
-			err = VOP_READ(&f, &iov, 1);
+			err = VOP_READ(&f, &iov, 1, 0);
 			VOP_CLOSE(&f);
 			if (err != tgt_len) {
 				VOP_CLOSE(&f);
@@ -1193,12 +1193,14 @@ out:
  * read
  */
 static ssize_t
-do_readv(struct file *fp, const struct iovec *iov, int count)
+do_readv(struct file *fp, const struct iovec *iov, int count, off_t offset,
+    bool update_offset)
 {
 	ssize_t res;
 	struct vnode *vp = fp->f_vnode;
 
-	vdbgsys("readv: fp=%p iov=%p count=%d\n", fp, iov, count);
+	vdbgsys("readv: fp=%p iov=%p count=%d offset=%lld\n",
+	    fp, iov, count, offset);
 
 	if (!flags_allow_read(fp->f_flags)) {
 		/* no read permissions */
@@ -1208,12 +1210,13 @@ do_readv(struct file *fp, const struct iovec *iov, int count)
 
 	switch (IFTODT(vp->v_mode)) {
 	case DT_FIFO:
-		res = for_each_iov(fp, iov, count, pipe_read);
+		res = for_each_iov(fp, iov, count, offset, pipe_read);
 		break;
 	case DT_CHR:
+		update_offset = false;
 	case DT_BLK:
 	case DT_REG:
-		res = VOP_READ(fp, iov, count);
+		res = VOP_READ(fp, iov, count, offset);
 		break;
 	case DT_DIR:
 		res = -EISDIR;
@@ -1227,36 +1230,12 @@ do_readv(struct file *fp, const struct iovec *iov, int count)
 		break;
 	}
 
+	if (update_offset && res > 0)
+		fp->f_offset += res;
+
 out:
 	vn_unlock(vp);
 	return res;
-}
-
-static ssize_t
-do_preadv(struct file *fp, const struct iovec *iov, int count, off_t offset)
-{
-	/*
-	 * -ve offset from normal read calls.
-	 * validated in syscalls
-	 */
-	if (offset >= 0) {
-		int err;
-		struct vnode *vp = fp->f_vnode;
-
-		if (S_ISFIFO(vp->v_mode)) {
-			vn_unlock(vp);
-			return DERR(-ESPIPE);
-		}
-
-		/* set file offset */
-		if ((err = VOP_SEEK(fp, offset)) < 0) {
-			vn_unlock(vp);
-			return err;
-		}
-		fp->f_offset = offset;
-	}
-
-	return do_readv(fp, iov, count);
 }
 
 ssize_t
@@ -1277,7 +1256,8 @@ readv(int fd, const struct iovec *iov, int count)
 	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
 		return (ssize_t)fp;
 
-	return do_readv(fp, iov, count);
+	const bool update_offset = true;
+	return do_readv(fp, iov, count, fp->f_offset, update_offset);
 }
 
 ssize_t
@@ -1298,7 +1278,8 @@ preadv(int fd, const struct iovec *iov, int count, off_t offset)
 	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
 		return (ssize_t)fp;
 
-	return do_preadv(fp, iov, count, offset);
+	const bool update_offset = false;
+	return do_readv(fp, iov, count, offset, update_offset);
 }
 
 ssize_t
@@ -1319,7 +1300,8 @@ kpreadv(int fd, const struct iovec *iov, int count, off_t offset)
 	if ((fp = task_file_interruptible(&kern_task, fd)) > (struct file *)-4096UL)
 		return (ssize_t)fp;
 
-	return do_preadv(fp, iov, count, offset);
+	const bool update_offset = false;
+	return do_readv(fp, iov, count, offset, update_offset);
 }
 
 ssize_t
@@ -1346,21 +1328,25 @@ vn_preadv(struct vnode *vp, const struct iovec *iov, int count, off_t offset)
 	};
 
 	vn_lock(vp);
-	return do_preadv(&f, iov, count, offset);
+
+	const bool update_offset = false;
+	return do_readv(&f, iov, count, offset, update_offset);
 }
 
 /*
  * write
  */
 static ssize_t
-do_writev(struct file *fp, const struct iovec *iov, int count)
+do_writev(struct file *fp, const struct iovec *iov, int count, off_t offset,
+    bool update_offset)
 {
 	ssize_t res;
 	struct vnode *vp = fp->f_vnode;
 
 	/* console driver calls write.. */
 #if !defined(CONFIG_CONSOLE)
-	 vdbgsys("writev: fp=%p iov=%p count=%d\n", fp, iov, count);
+	 vdbgsys("writev: fp=%p iov=%p count=%d, offset=%lld\n",
+	     fp, iov, count, offset);
 #endif
 
 	if (count < 0) {
@@ -1375,12 +1361,13 @@ do_writev(struct file *fp, const struct iovec *iov, int count)
 
 	switch (IFTODT(vp->v_mode)) {
 	case DT_FIFO:
-		res = for_each_iov(fp, iov, count, pipe_write);
+		res = for_each_iov(fp, iov, count, offset, pipe_write);
 		break;
 	case DT_CHR:
+		update_offset = false;
 	case DT_BLK:
 	case DT_REG:
-		res = VOP_WRITE(fp, iov, count);
+		res = VOP_WRITE(fp, iov, count, offset);
 		break;
 	case DT_DIR:
 		res = -EISDIR;
@@ -1394,38 +1381,13 @@ do_writev(struct file *fp, const struct iovec *iov, int count)
 		break;
 	}
 
+	if (update_offset && res > 0)
+		fp->f_offset = offset + res;
+
 out:
 	vn_unlock(vp);
 
 	return res;
-}
-
-static ssize_t
-do_pwritev(struct file *fp, const struct iovec *iov, int count, off_t offset)
-{
-	/*
-	 * -ve offset from normal write calls.
-	 * validated in syscalls
-	 */
-	if (offset >= 0) {
-		int err;
-		struct vnode *vp = fp->f_vnode;
-
-		/* offset is ignored when O_APPEND has been specified */
-		if (offset != 0 && (fp->f_flags & O_APPEND)) {
-			vn_unlock(vp);
-			return DERR(-EINVAL);
-		}
-
-		/* set file offset */
-		if ((err = VOP_SEEK(fp, offset)) < 0) {
-			vn_unlock(vp);
-			return err;
-		}
-		fp->f_offset = offset;
-	}
-
-	return do_writev(fp, iov, count);
 }
 
 ssize_t
@@ -1449,7 +1411,12 @@ writev(int fd, const struct iovec *iov, int count)
 	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
 		return (ssize_t)fp;
 
-	return do_writev(fp, iov, count);
+	/* append sets file position to end before writing */
+	const off_t offset = fp->f_flags & O_APPEND ? fp->f_vnode->v_size
+						    : fp->f_offset;
+
+	const bool update_offset = true;
+	return do_writev(fp, iov, count, offset, update_offset);
 }
 
 ssize_t
@@ -1473,7 +1440,8 @@ pwritev(int fd, const struct iovec *iov, int count, off_t offset)
 	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
 		return (ssize_t)fp;
 
-	return do_pwritev(fp, iov, count, offset);
+	const bool update_offset = false;
+	return do_writev(fp, iov, count, offset, update_offset);
 }
 
 ssize_t
@@ -1494,7 +1462,8 @@ kpwritev(int fd, const struct iovec *iov, int count, off_t offset)
 	if ((fp = task_file_interruptible(&kern_task, fd)) > (struct file *)-4096UL)
 		return (ssize_t)fp;
 
-	return do_pwritev(fp, iov, count, offset);
+	const bool update_offset = false;
+	return do_writev(fp, iov, count, offset, update_offset);
 }
 
 /*
@@ -2287,7 +2256,7 @@ symlinkat(const char *target, int dirfd, const char *path)
 		.iov_base = (void*)target,
 		.iov_len = target_len,
 	};
-	if ((err = VOP_WRITE(&f, &iov, 1)) != target_len) {
+	if ((err = VOP_WRITE(&f, &iov, 1, 0)) != target_len) {
 		if (err >= 0)
 			err = DERR(-EIO);
 		goto out2;
@@ -2335,7 +2304,7 @@ readlinkat(int dirfd, const char *path, char *buf, size_t len)
 		.iov_base = buf,
 		.iov_len = len,
 	};
-	res = VOP_READ(&f, &iov, 1);
+	res = VOP_READ(&f, &iov, 1, 0);
 	if (res >= 0 && res != MIN(f.f_vnode->v_size, len))
 		res = DERR(-EIO);
 

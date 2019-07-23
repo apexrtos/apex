@@ -23,18 +23,18 @@ static struct semaphore sem;
  * read
  */
 static ssize_t console_read(struct file *file, const struct iovec *iov,
-    size_t count)
+    size_t count, off_t offset)
 {
-	return kpreadv(fd, iov, count, -1);
+	return kpreadv(fd, iov, count, offset);
 }
 
 /*
  * write
  */
 static ssize_t console_write(struct file *file, const struct iovec *iov,
-    size_t count)
+    size_t count, off_t offset)
 {
-	return kpwritev(fd, iov, count, -1);
+	return kpwritev(fd, iov, count, offset);
 }
 
 /*
