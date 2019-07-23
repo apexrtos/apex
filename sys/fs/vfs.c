@@ -1179,10 +1179,8 @@ lseek(int fd, off_t off, int whence)
 	}
 
 	/* set file offset */
-	if ((err = VOP_SEEK(fp, x + off)) == 0) {
-		err = off;
-		fp->f_offset = off;
-	}
+	if ((err = VOP_SEEK(fp, x + off)) == 0)
+		err = fp->f_offset = x + off;
 
 out:
 	vn_unlock(vp);
