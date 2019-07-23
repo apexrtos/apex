@@ -42,6 +42,7 @@
 
 #include <sync.h>
 
+#include <arch.h>
 #include <assert.h>
 #include <debug.h>
 #include <errno.h>
@@ -136,6 +137,9 @@ mutex_lock_slowpath(struct mutex *m)
 int
 mutex_lock_interruptible(struct mutex *m)
 {
+	assert(!sch_locks());
+	assert(!interrupt_running());
+
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
 #if defined(CONFIG_DEBUG)
@@ -212,6 +216,8 @@ mutex_unlock_slowpath(struct mutex *m)
 int
 mutex_unlock(struct mutex *m)
 {
+	assert(!interrupt_running());
+
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
 #if defined(CONFIG_DEBUG)

@@ -1,5 +1,6 @@
 #include <sync.h>
 
+#include <arch.h>
 #include <irq.h>
 #include <sch.h>
 #include <thread.h>
@@ -24,6 +25,7 @@ spinlock_lock(struct spinlock *s)
 	sch_lock();
 #if defined(CONFIG_DEBUG)
 	assert(!s->owner);
+	assert(!interrupt_running());
 	s->owner = thread_cur();
 	++thread_cur()->spinlock_locks;
 #endif
@@ -34,6 +36,7 @@ spinlock_unlock(struct spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
 	assert(s->owner == thread_cur());
+	assert(!interrupt_running());
 	s->owner = 0;
 	--thread_cur()->spinlock_locks;
 #endif

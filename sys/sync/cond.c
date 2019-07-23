@@ -33,6 +33,7 @@
 
 #include <sync.h>
 
+#include <arch.h>
 #include <assert.h>
 #include <event.h>
 #include <sch.h>
@@ -77,6 +78,9 @@ cond_wait_interruptible(struct cond *c, struct mutex *m)
 int
 cond_timedwait_interruptible(struct cond *c, struct mutex *m, uint64_t nsec)
 {
+	assert(!sch_locks());
+	assert(!interrupt_running());
+
 	struct cond_private *cp = (struct cond_private*)c->storage;
 
 	int r;

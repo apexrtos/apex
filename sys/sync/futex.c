@@ -1,6 +1,7 @@
 #include <futex.h>
 
 #include <access.h>
+#include <arch.h>
 #include <debug.h>
 #include <errno.h>
 #include <kernel.h>
@@ -209,6 +210,8 @@ futex_requeue(struct task *t, int *uaddr, int val, int val2, int *uaddr2)
 int
 futex(struct task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
+	assert(!interrupt_running());
+
 	if ((op & FUTEX_OP_MASK) == FUTEX_REQUEUE && !u_addressfor(t->as, uaddr2))
 		return DERR(-EFAULT);
 
@@ -221,6 +224,7 @@ futex(struct task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
 
 	switch (op & FUTEX_OP_MASK) {
 	case FUTEX_WAIT:
+		assert(!sch_locks());
 		return futex_wait(t, uaddr, val, val2);
 	case FUTEX_WAKE:
 		return futex_wake(t, uaddr, val);

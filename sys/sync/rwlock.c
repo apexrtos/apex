@@ -17,6 +17,7 @@
 
 #include <sync.h>
 
+#include <arch.h>
 #include <assert.h>
 #include <stdalign.h>
 #include <wait.h>
@@ -52,6 +53,9 @@ rwlock_init(struct rwlock *o)
 int
 rwlock_read_lock_interruptible(struct rwlock *o)
 {
+	assert(!interrupt_running());
+	assert(!sch_locks());
+
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
@@ -59,8 +63,12 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 
 	/* state < 0 while writing */
 	err = wait_event_lock(p->event, p->state >= 0, &p->lock);
-	if (!err)
+	if (!err) {
 		++p->state;
+#if defined(CONFIG_DEBUG)
+		++thread_cur()->rwlock_locks;
+#endif
+	}
 
 	spinlock_unlock(&p->lock);
 
@@ -73,6 +81,7 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 int
 rwlock_read_unlock(struct rwlock *o)
 {
+	assert(!interrupt_running());
 
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
@@ -83,7 +92,9 @@ rwlock_read_unlock(struct rwlock *o)
 	/* if no more readers, signal any waiting writers */
 	if (!--p->state)
 		sch_wakeup(&p->event, 0);
-
+#if defined(CONFIG_DEBUG)
+	--thread_cur()->rwlock_locks;
+#endif
 	spinlock_unlock(&p->lock);
 
 	return 0;
@@ -95,6 +106,9 @@ rwlock_read_unlock(struct rwlock *o)
 int
 rwlock_write_lock_interruptible(struct rwlock *o)
 {
+	assert(!interrupt_running());
+	assert(!sch_locks());
+
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
@@ -102,8 +116,12 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 
 	/* state == 0, no writers or readers */
 	err = wait_event_lock(p->event, p->state == 0, &p->lock);
-	if (!err)
+	if (!err) {
 		--p->state;
+#if defined(CONFIG_DEBUG)
+		++thread_cur()->rwlock_locks;
+#endif
+	}
 
 	spinlock_unlock(&p->lock);
 
@@ -116,6 +134,8 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 int
 rwlock_write_unlock(struct rwlock *o)
 {
+	assert(!interrupt_running());
+
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
 	spinlock_lock(&p->lock);
@@ -125,7 +145,9 @@ rwlock_write_unlock(struct rwlock *o)
 	/* signal any waiting readers or writers */
 	if (!++p->state)
 		sch_wakeup(&p->event, 0);
-
+#if defined(CONFIG_DEBUG)
+	--thread_cur()->rwlock_locks;
+#endif
 	spinlock_unlock(&p->lock);
 
 	return 0;

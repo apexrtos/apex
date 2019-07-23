@@ -632,6 +632,9 @@ sig_deliver(int rval)
 	 */
 #if defined(CONFIG_DEBUG)
 	assert(!th->mutex_locks);
+	assert(!th->spinlock_locks);
+	assert(!th->rwlock_locks);
+	assert(!sch_locks());
 #endif
 
 	return rval;

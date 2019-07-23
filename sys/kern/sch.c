@@ -304,6 +304,8 @@ sch_switch(void)
 		 */
 #if defined(CONFIG_DEBUG)
 		assert(!prev->mutex_locks);
+		assert(!prev->spinlock_locks);
+		assert(!prev->rwlock_locks);
 #endif
 		sch_wakeup(&prev->task->thread_event, 0);
 		list_remove(&prev->task_link);

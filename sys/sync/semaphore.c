@@ -1,5 +1,6 @@
 #include <sync.h>
 
+#include <arch.h>
 #include <assert.h>
 #include <errno.h>
 #include <event.h>
@@ -52,6 +53,9 @@ semaphore_post(struct semaphore *s)
 int
 semaphore_wait_interruptible(struct semaphore *s)
 {
+	assert(!sch_locks());
+	assert(!interrupt_running());
+
 	int r;
 	struct private *p = (struct private *)s->storage;
 
