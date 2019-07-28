@@ -67,8 +67,9 @@ static struct list	expire_list;	/* list of expired timers */
 static uint64_t
 time_remain(uint64_t expire)
 {
-	if (expire < monotonic)
-		return expire - monotonic;
+	uint64_t t = monotonic;
+	if (expire > t)
+		return expire - t;
 	return 0;
 }
 
