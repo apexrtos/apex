@@ -48,7 +48,6 @@
 #include <sig.h>
 #include <stdalign.h>
 #include <stddef.h>
-#include <stdnoreturn.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <task.h>
@@ -250,7 +249,6 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 	struct thread *th;
 	void *sp;
 
-	assert(sch_locks() > 0);
 	assert(name);
 
 	/*
@@ -265,7 +263,9 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 	sp = arch_kstack_align((char *)th->kstack + CONFIG_KSTACK_SIZE);
 	context_init_kthread(&th->ctx, sp, entry, arg);
 	/* add new threads to end of list (idle_thread at head) */
+	sch_lock();
 	list_insert(list_last(&kern_task.threads), &th->task_link);
+	sch_unlock();
 
 	/*
 	 * Start scheduling of this thread.
