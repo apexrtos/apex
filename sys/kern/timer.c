@@ -223,18 +223,11 @@ timer_stop(struct timer *tmr)
 uint64_t
 timer_delay(uint64_t nsec)
 {
-	struct timer *tmr;
-	u_long remain = 0;
-	int rc;
-
-	if ((rc = sch_prepare_sleep(&delay_event, nsec ?: 1)) == 0)
-		rc = sch_continue_sleep();
-
-	if (rc != -ETIMEDOUT) {
-		tmr = &thread_cur()->timeout;
-		remain = time_remain(tmr->expire);
-	}
-	return remain;
+	if (sch_prepare_sleep(&delay_event, nsec ?: 1))
+		return nsec;
+	if (sch_continue_sleep() != -ETIMEDOUT)
+		return time_remain(thread_cur()->timeout.expire);
+	return 0;
 }
 
 /*
