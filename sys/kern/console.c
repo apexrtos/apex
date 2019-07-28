@@ -94,11 +94,9 @@ console_init(void)
 	syslog_output(console_start);
 	console_start();
 
-	sch_lock();
-	if (!kthread_create(&console_thread, NULL, PRI_BACKGROUND, "console",
+	if (!kthread_create(&console_thread, NULL, PRI_SIGNAL, "console",
 	    MA_NORMAL))
 		panic("console_init");
-	sch_unlock();
 
 	device_create(&io, "console", DF_CHR, NULL);
 
