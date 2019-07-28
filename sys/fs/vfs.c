@@ -14,6 +14,7 @@
 #include "util.h"
 #include "vnode.h"
 #include <alloca.h>
+#include <arch.h>
 #include <assert.h>
 #include <compiler.h>
 #include <debug.h>
@@ -38,6 +39,11 @@
  * Page ownership identifier for VFS
  */
 static char vfs_id;
+
+/*
+ * Semaphore for cleaning up zombie tasks
+ */
+static struct semaphore exit_sem;
 
 /*
  * Flags on file member of task (low 2 bits of pointer)
@@ -731,6 +737,35 @@ fs_closefp(struct file *fp)
 }
 
 /*
+ * fs_thread - filesystem worker thread
+ */
+static void
+fs_thread(void *arg)
+{
+	struct task *t;
+
+	while (true) {
+		semaphore_wait_interruptible(&exit_sem);
+
+		/* find next zombie task */
+		sch_lock();
+		list_for_each_entry(t, &kern_task.link, link) {
+			if (t->state != PS_ZOMB)
+				continue;
+			if (!t->cwdfp)
+				continue;
+			break;
+		}
+		sch_unlock();
+
+		if (t == &kern_task)
+			continue;
+
+		fs_exit(t);
+	}
+}
+
+/*
  * fs_init - Initialise data structures and file systems.
  */
 void
@@ -738,6 +773,9 @@ fs_init(void)
 {
 	mount_init();
 	vnode_init();
+	semaphore_init(&exit_sem);
+
+	kthread_create(&fs_thread, NULL, PRI_SIGNAL, "fs", MA_NORMAL);
 
 	/*
 	 * Initialize each file system.
@@ -789,6 +827,8 @@ fs_shutdown(void)
 
 /*
  * fs_exit - Called when a task terminates
+ *
+ * Can be called under interrupt.
  */
 void
 fs_exit(struct task *t)
@@ -796,21 +836,34 @@ fs_exit(struct task *t)
 	struct file *fp;
 	int fd;
 
+	/*
+	 * Defer to worker thread if called from interrupt
+	 */
+	if (interrupt_running()) {
+		semaphore_post(&exit_sem);
+		return;
+	}
+
 	task_lock(t);
 
 	/*
 	 * Close all files opened by task.
 	 */
 	for (fd = 0; fd < ARRAY_SIZE(t->file); fd++) {
-		if ((fp = task_getfp(t, fd)))
+		if ((fp = task_getfp(t, fd))) {
 			fs_closefp(fp);
+			t->file[fd] = 0;
+		}
 	}
 
 	/*
 	 * Close working directory.
 	 */
-	vn_lock(t->cwdfp->f_vnode);
-	fs_closefp(t->cwdfp);
+	if (t->cwdfp) {
+		vn_lock(t->cwdfp->f_vnode);
+		fs_closefp(t->cwdfp);
+		t->cwdfp = 0;
+	}
 
 	task_unlock(t);
 }

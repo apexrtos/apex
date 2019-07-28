@@ -89,7 +89,6 @@
 #include <assert.h>
 #include <debug.h>
 #include <errno.h>
-#include <fs.h>
 #include <irq.h>
 #include <kernel.h>
 #include <sched.h>
@@ -734,14 +733,6 @@ sch_testexit(void)
 		return false;
 	}
 	interrupt_enable();
-
-	/* cleanup filesystem if this is the last thread in the task
-	 *
-	 * REVISIT: This function can be called from an exception handler which
-	 *	    probably causes subtle filesystem bugs.
-	 */
-	if (list_only_entry(&active_thread->task_link))
-		fs_exit(active_thread->task);
 
 	/* reap zombie threads */
 	interrupt_disable();

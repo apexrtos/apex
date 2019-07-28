@@ -31,6 +31,8 @@
 
 /*
  * proc_exit - exit a process
+ *
+ * Can be called under interrupt.
  */
 void
 proc_exit(struct task *task, int status)
@@ -98,6 +100,11 @@ proc_exit(struct task *task, int status)
 	}
 
 	sch_unlock();
+
+	/*
+	 * Notify filesystem of exit
+	 */
+	fs_exit(task);
 }
 
 /*
@@ -194,6 +201,7 @@ again:
 				 */
 				futexes_destroy(task_futexes(task));
 				list_remove(&task->link);
+				fs_exit(task);
 				as_modify_begin(task->as);
 				as_destroy(task->as);
 				task->magic = 0;
