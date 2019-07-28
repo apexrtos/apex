@@ -329,50 +329,6 @@ sch_active(void)
 }
 
 /*
- * sch_sleep - sleep the current thread until a wakeup
- * is performed on the specified event.
- */
-int
-sch_sleep(struct event *evt)
-{
-	return sch_nanosleep(evt, 0);
-}
-
-/*
- * sch_nanosleep - sleep the current thread until a wakeup
- * is performed on the specified event.
- *
- * This routine returns a sleep result. If the thread is
- * woken by sch_wakeup() or sch_wakeone(), it returns 0.
- * Otherwise, it will return the result value which is passed
- * by sch_unsleep().
- *
- * sch_sleep() is also defined as a wrapper for
- * sch_nanosleep() without timeout. Note that all sleep
- * requests are interruptible with this kernel.
- *
- * sch_sleep() & sch_nanosleep() must be called with interrupts
- * enabled and preemption disabled. If you need more advanced
- * functionality use the wait_* funcions.
- */
-int
-sch_nanosleep(struct event *evt, uint64_t nsec)
-{
-	int ret;
-
-	assert(locks == 1);
-
-	if ((ret = sch_prepare_sleep(evt, nsec)))
-		return ret;
-
-	sch_unlock();
-	ret = sch_continue_sleep();
-	sch_lock();
-
-	return ret;
-}
-
-/*
  * sch_wakeup - wake up all threads sleeping on event.
  *
  * A thread can have sleep and suspend state simultaneously.
@@ -478,11 +434,14 @@ sch_requeue(struct event *l, struct event *r)
 /*
  * sch_prepare_sleep - prepare to sleep on an event
  *
+ * If nsec == 0 sch_continue_sleep will sleep without timeout.
+ *
  * On success, must be followed by sch_continue_sleep or sch_cancel_sleep.
  */
 int
 sch_prepare_sleep(struct event *evt, uint64_t nsec)
 {
+	assert(!interrupt_running());
 	assert(evt);
 
 	const int s = irq_disable();
@@ -510,6 +469,10 @@ sch_prepare_sleep(struct event *evt, uint64_t nsec)
  * sch_continue_sleep - sleep on prepared event
  *
  * Must be called after successful sch_prepare_sleep.
+ *
+ * This routine returns a sleep result. If the thread is woken by sch_wakeone()
+ * it returns 0. Otherwise, it will return the result value which is passed to
+ * sch_unsleep() or sch_wakeup().
  */
 int
 sch_continue_sleep()

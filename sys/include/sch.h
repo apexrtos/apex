@@ -56,8 +56,6 @@ extern "C" {
  */
 void		sch_switch(void);
 struct thread  *sch_active(void);
-int		sch_sleep(struct event *);
-int		sch_nanosleep(struct event *, uint64_t);
 unsigned	sch_wakeup(struct event *, int);
 struct thread  *sch_wakeone(struct event *);
 struct thread  *sch_requeue(struct event *, struct event *);
@@ -87,19 +85,6 @@ void	        sch_init(void);
 
 #if defined(__cplusplus)
 } /* extern "C" */
-
-namespace a {
-
-class sch_lock {
-public:
-	void lock() const { ::sch_lock(); }
-	void unlock() const { ::sch_unlock(); }
-};
-
-} /* namespace a */
-
-inline constexpr a::sch_lock global_sch_lock{};
-
 #endif /* __cplusplus */
 
 #endif /* !sch_h */
