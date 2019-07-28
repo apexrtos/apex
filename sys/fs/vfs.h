@@ -36,6 +36,10 @@ struct mount;
 struct task;
 struct vnode;
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 int	 lookup_t(struct task *, int, const char *, struct vnode **,
 		  const char **, size_t *, int);
 int	 lookup_t_dir(struct task *, int, const char *, struct vnode **,
@@ -52,5 +56,9 @@ void	 vfs_unbusy(struct mount *);
 void	 mount_dump(void);
 void	 vnode_dump(void);
 void	 file_dump(void);
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif /* !vfs_h */
