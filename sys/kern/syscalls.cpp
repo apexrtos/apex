@@ -102,17 +102,22 @@ sc_nanosleep(const timespec *req, timespec *rem)
 	interruptible_lock l(u_access_lock);
 	if (auto r = l.lock(); r < 0)
 		return r;
-	if (!u_access_ok(req, sizeof *req, PROT_READ) ||
-	    (rem && !u_access_ok(rem, sizeof *rem, PROT_WRITE)))
+	if (!u_access_ok(req, sizeof *req, PROT_READ))
 		return DERR(-EFAULT);
 	const uint64_t ns = ts_to_ns(req);
 	if (!ns)
 		return 0;
+	l.unlock();
 	const uint64_t r = timer_delay(ns);
 	if (!r)
 		return 0;
-	if (rem)
+	if (rem) {
+		if (auto r = l.lock(); r < 0)
+			return r;
+		if (!u_access_ok(rem, sizeof *rem, PROT_WRITE))
+			return DERR(-EFAULT);
 		ns_to_ts(r, rem);
+	}
 	return -EINTR_NORESTART;
 }
 
