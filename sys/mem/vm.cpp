@@ -134,47 +134,12 @@ seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
 }
 
 /*
- * mmapfor - map memory into task address space
+ * do_munmapfor - unmap memory from locked address space
+ *
+ * Must be called with address space write lock held.
  */
-void *
-mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
-    long attr)
-{
-	int err;
-	std::unique_ptr<vnode> vn;
-	const bool fixed = flags & MAP_FIXED;
-	const bool anon = flags & MAP_ANONYMOUS;
-	const bool priv = flags & MAP_PRIVATE;
-	const bool shared = flags & MAP_SHARED;
-
-	if ((uintptr_t)addr & PAGE_MASK || len & PAGE_MASK || off & PAGE_MASK ||
-	    priv == shared)
-		return (void*)DERR(-EINVAL);
-	if (!anon) {
-		int oflg;
-		if ((oflg = oflags(prot, flags)) < 0)
-			return (void*)oflg;
-		/* REVISIT: do we need to check if file is executable? */
-		vn.reset(vn_open(fd, oflg));
-		if (!vn.get())
-			return (void*)DERR(-EBADF);
-	}
-
-	interruptible_lock l(a->lock.write());
-	if (err = l.lock(); err < 0)
-		return (void*)err;
-
-	if (fixed && (err = munmapfor(a, addr, len)) < 0)
-		return (void*)err;
-
-	return as_map(a, addr, len, prot, flags, std::move(vn), off, attr);
-}
-
-/*
- * munmapfor - unmap memory in address space
- */
-int
-munmapfor(as *a, void *const vaddr, const size_t ulen)
+static int
+do_munmapfor(as *a, void *const vaddr, const size_t ulen)
 {
 	int err = 0;
 
@@ -182,10 +147,6 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 		return DERR(-EINVAL);
 	if (!ulen)
 		return 0;
-
-	interruptible_lock l(a->lock.write());
-	if (err = l.lock(); err < 0)
-		return err;
 
 	const auto uaddr = (char*)vaddr;
 	const auto uend = uaddr + ulen;
@@ -242,6 +203,70 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 	}
 
 	return err;
+
+}
+
+/*
+ * do_mmapfor - map memory into locked address space
+ *
+ * Must be called with address space write lock held.
+ */
+static void *
+do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
+    off_t off, long attr)
+{
+	int err;
+	std::unique_ptr<vnode> vn;
+	const bool fixed = flags & MAP_FIXED;
+	const bool anon = flags & MAP_ANONYMOUS;
+	const bool priv = flags & MAP_PRIVATE;
+	const bool shared = flags & MAP_SHARED;
+
+	if ((uintptr_t)addr & PAGE_MASK || len & PAGE_MASK || off & PAGE_MASK ||
+	    priv == shared)
+		return (void*)DERR(-EINVAL);
+	if (!anon) {
+		int oflg;
+		if ((oflg = oflags(prot, flags)) < 0)
+			return (void*)oflg;
+		/* REVISIT: do we need to check if file is executable? */
+		vn.reset(vn_open(fd, oflg));
+		if (!vn.get())
+			return (void*)DERR(-EBADF);
+	}
+
+	if (fixed && (err = do_munmapfor(a, addr, len)) < 0)
+		return (void*)err;
+
+	return as_map(a, addr, len, prot, flags, std::move(vn), off, attr);
+}
+
+
+/*
+ * mmapfor - map memory into task address space
+ */
+void *
+mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
+    long attr)
+{
+	interruptible_lock l(a->lock.write());
+	if (int err = l.lock(); err < 0)
+		return (void*)err;
+
+	return do_mmapfor(a, addr, len, prot, flags, fd, off, attr);
+}
+
+/*
+ * munmapfor - unmap memory in address space
+ */
+int
+munmapfor(as *a, void *const vaddr, const size_t ulen)
+{
+	interruptible_lock l(a->lock.write());
+	if (int err = l.lock(); err < 0)
+		return err;
+
+	return do_munmapfor(a, vaddr, ulen);
 }
 
 /*
@@ -433,13 +458,13 @@ sc_brk(void *addr)
 
 	/* shrink */
 	if (addr < a->brk)
-		if (auto r = munmapfor(a, addr,
+		if (auto r = do_munmapfor(a, addr,
 		    (uintptr_t)a->brk - (uintptr_t)addr); r < 0)
 			return (void*)r;
 
 	/* grow */
 	if (addr > a->brk)
-		if (auto r = mmapfor(a, a->brk,
+		if (auto r = do_mmapfor(a, a->brk,
 		    (uintptr_t)addr - (uintptr_t)a->brk,
 		    PROT_READ | PROT_WRITE,
 		    MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE,
