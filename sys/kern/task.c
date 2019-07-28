@@ -414,10 +414,10 @@ task_dump(void)
 		task = list_entry(i, struct task, link);
 		nthreads = 0;
 		j = list_first(&task->threads);
-		do {
+		while (j != &task->threads) {
 			nthreads++;
 			j = list_next(j);
-		} while (j != &task->threads);
+		}
 
 		info(" %p%c    %3d %4d %08x %s %10p %9d %s\n",
 		       task, (task == task_cur()) ? '*' : ' ', nthreads,
