@@ -435,7 +435,8 @@ kmem_check(void)
 	struct page_hdr *pg;
 	struct block_hdr *blk;
 
-	spinlock_lock(&kmem_lock);
+	spinlock_assert_locked(&kmem_lock);
+
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
 		head = &kmem_pages[type];
 		for (n = list_first(head); n != head; n = list_next(n)) {
@@ -450,7 +451,6 @@ kmem_check(void)
 			}
 		}
 	}
-	spinlock_unlock(&kmem_lock);
 #endif
 }
 
