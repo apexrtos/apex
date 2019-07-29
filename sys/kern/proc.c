@@ -190,11 +190,14 @@ again:
 				/*
 				 * Wait for child threads to finish
 				 */
-				if (!list_empty(&task->threads)) {
+				const k_sigset_t sig_mask = sig_block_all();
+				while (!list_empty(&task->threads)) {
+					sch_prepare_sleep(&task->thread_event, 0);
 					sch_unlock();
-					sch_yield();
-					goto again;
+					sch_continue_sleep();
+					sch_lock();
 				}
+				sig_restore(&sig_mask);
 
 				/*
 				 * Free child resources

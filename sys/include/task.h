@@ -66,6 +66,7 @@ struct task {
 	struct event	child_event;	    /* child exited event */
 	int		termsig;	    /* signal to parent on terminate */
 	struct thread  *vfork;		    /* vfork thread to wake */
+	struct event	thread_event;	    /* thread exited event */
 
 	/* File System State */
 	struct mutex	fs_lock;	    /* lock for file system data */

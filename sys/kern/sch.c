@@ -95,6 +95,7 @@
 #include <sections.h>
 #include <sig.h>
 #include <stddef.h>
+#include <task.h>
 #include <thread.h>
 #include <types.h>
 
@@ -305,6 +306,7 @@ sch_switch(void)
 #if defined(CONFIG_DEBUG)
 		assert(!prev->mutex_locks);
 #endif
+		sch_wakeup(&prev->task->thread_event, 0);
 		list_remove(&prev->task_link);
 		list_insert(&zombie_list, &prev->task_link);
 	}
