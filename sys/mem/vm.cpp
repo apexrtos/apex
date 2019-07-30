@@ -86,7 +86,7 @@ static bool
 seg_extend(seg *s, void *addr, size_t len, int prot, vnode *vn, off_t off,
     long attr)
 {
-	if (s->prot != prot || (char*)s->base + len != addr ||
+	if (s->prot != prot || (char*)s->base + s->len != addr ||
 	    s->attr != attr || s->vn != vn || (vn && s->off + s->len != off))
 		return false;
 	s->len += len;
