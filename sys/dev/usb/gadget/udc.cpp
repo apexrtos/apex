@@ -54,7 +54,7 @@ udc::udc(std::string_view name, const size_t endpoints)
 , speed_irq_{Speed::High}
 , setup_buf_{nullptr}
 {
-	assert(endpoints_ < 16);
+	assert(endpoints_ <= 16);
 }
 
 /*
