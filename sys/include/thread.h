@@ -107,7 +107,7 @@ int	        thread_name(struct thread *, const char *);
 int		thread_id(struct thread *);
 struct thread  *thread_find(int);
 void	        thread_terminate(struct thread *);
-void		thread_free(struct thread *);
+void		thread_zombie(struct thread *);
 noreturn void	thread_idle(void);
 void	        thread_dump(void);
 void	        thread_check(void);

@@ -49,6 +49,7 @@
 #include <stdalign.h>
 #include <stddef.h>
 #include <string.h>
+#include <sync.h>
 #include <sys/mman.h>
 #include <task.h>
 
@@ -64,6 +65,8 @@
 #endif	/* !CONFIG_KSTACK_CHECK */
 
 __fast_bss struct thread idle_thread;
+__fast_data static struct list zombie_list = LIST_INIT(zombie_list);
+static struct spinlock zombie_lock;
 
 /*
  * Allocate a new thread and attach a kernel stack to it.
@@ -90,6 +93,39 @@ thread_alloc(long mem_attr)
 	KSTACK_CHECK_INIT(th);
 #endif
 	return th;
+}
+
+/*
+ * Free thread memory
+ */
+static void
+thread_free(struct thread *th)
+{
+	assert(th->state & TH_ZOMBIE);
+	assert(th->magic == THREAD_MAGIC);
+
+	th->magic = 0;
+	context_free(&th->ctx);
+	kmem_free(th->kstack);
+	kmem_free(th);
+}
+
+/*
+ * Free zombie threads
+ */
+static void
+thread_reap_zombies()
+{
+	int s = spinlock_lock_irq_disable(&zombie_lock);
+	while (!list_empty(&zombie_list)) {
+		struct thread *th = list_entry(list_first(&zombie_list),
+			struct thread, task_link);
+		list_remove(&th->task_link);
+		spinlock_unlock_irq_restore(&zombie_lock, s);
+		thread_free(th);
+		s = spinlock_lock_irq_disable(&zombie_lock);
+	}
+	spinlock_unlock_irq_restore(&zombie_lock, s);
 }
 
 /*
@@ -122,6 +158,8 @@ thread_createfor(struct task *task, struct as *as, struct thread **thp,
 {
 	int r;
 	struct thread *th;
+
+	thread_reap_zombies();
 
 	if ((th = thread_alloc(mem_attr)) == NULL)
 		return DERR(-ENOMEM);
@@ -161,17 +199,16 @@ thread_terminate(struct thread *th)
 }
 
 /*
- * Free thread memory
+ * Queue zombie thread for deletion
+ *
+ * Can be called under interrupt.
  */
 void
-thread_free(struct thread *th)
+thread_zombie(struct thread *th)
 {
-	assert(th->state & TH_ZOMBIE);
-
-	th->magic = 0;
-	context_free(&th->ctx);
-	kmem_free(th->kstack);
-	kmem_free(th);
+	const int s = spinlock_lock_irq_disable(&zombie_lock);
+	list_insert(&zombie_list, &th->task_link);
+	spinlock_unlock_irq_restore(&zombie_lock, s);
 }
 
 /*
@@ -250,6 +287,8 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 	void *sp;
 
 	assert(name);
+
+	thread_reap_zombies();
 
 	/*
 	 * If there is not enough core for the new thread,
@@ -369,4 +408,5 @@ thread_init(void)
 	KSTACK_CHECK_INIT(&idle_thread);
 #endif
 	thread_check();
+	spinlock_init(&zombie_lock);
 }

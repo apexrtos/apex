@@ -117,7 +117,6 @@ static struct event	dpc_event;	/* event for DPC */
 /* currently active thread */
 extern struct thread idle_thread;
 __attribute__((used)) __fast_data struct thread *active_thread = &idle_thread;
-__fast_data static struct list zombie_list = LIST_INIT(zombie_list);
 __fast_bss static int resched;
 __fast_bss static int locks;
 
@@ -308,7 +307,7 @@ sch_switch(void)
 #endif
 		sch_wakeup(&prev->task->thread_event, 0);
 		list_remove(&prev->task_link);
-		list_insert(&zombie_list, &prev->task_link);
+		thread_zombie(prev);
 	}
 
 	/*
@@ -733,18 +732,6 @@ sch_testexit(void)
 	if (!(active_thread->state & TH_EXIT)) {
 		interrupt_enable();
 		return false;
-	}
-	interrupt_enable();
-
-	/* reap zombie threads */
-	interrupt_disable();
-	while (!list_empty(&zombie_list)) {
-		struct thread *th = list_entry(list_first(&zombie_list),
-			struct thread, task_link);
-		list_remove(&th->task_link);
-		interrupt_enable();
-		thread_free(th);
-		interrupt_disable();
 	}
 
 	/* mark thread as zombie */
