@@ -61,7 +61,7 @@ fproc(tty *t, int io)
  * cdc_acm::cdc_acm
  */
 cdc_acm::cdc_acm(gadget::udc &u)
-: function{u, 3, 2}
+: function{u, 2, 2}
 , t_{nullptr}
 , running_{false}
 , line_coding_{115200, 0, 0, 8}
