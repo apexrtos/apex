@@ -185,7 +185,6 @@ mutex_unlock_slowpath(struct mutex *m)
 		return 0;
 	}
 
-
 	if (!(atomic_load_explicit(
 	    &mp->owner,
 	    memory_order_relaxed) & MUTEX_WAITERS)) {
@@ -195,16 +194,16 @@ mutex_unlock_slowpath(struct mutex *m)
 	}
 
 	/* wake up one waiter and set new owner */
+	struct thread *waiter = sch_wakeone(&mp->event);
 	atomic_store_explicit(
 	    &mp->owner,
-	    (intptr_t)sch_wakeone(&mp->event),
+	    (intptr_t)waiter | (event_waiting(&mp->event) ? MUTEX_WAITERS : 0),
 	    memory_order_relaxed
 	);
-	mp->count = 1;
-	assert(atomic_load_explicit(&mp->owner, memory_order_relaxed));
 
-	if (event_waiting(&mp->event))
-		atomic_fetch_or_explicit(&mp->owner, MUTEX_WAITERS, memory_order_relaxed);
+	/* waiter can be interrupted */
+	if (waiter)
+		mp->count = 1;
 
 	spinlock_unlock(&mp->lock);
 	return 0;
