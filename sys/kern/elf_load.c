@@ -118,6 +118,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	const intptr_t text_end = PAGE_ALIGN(text_ph.p_vaddr + text_ph.p_memsz);
 	const intptr_t data_start = PAGE_TRUNC(data_ph.p_vaddr);
 	const intptr_t data_end = PAGE_ALIGN(data_ph.p_vaddr + data_ph.p_memsz);
+	const size_t data_size = data_end - data_start;
 
 	/* expect data to be after text */
 	if (data_start < text_end)
@@ -145,11 +146,11 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	void *const data_vaddr = data_start + (dyn ? base : 0);
 
 	/* map data */
-	if ((data = mmapfor(a, data_vaddr, data_end - data_start,
+	if ((data = mmapfor(a, data_vaddr, data_size,
 	    ph_flags_to_prot(&data_ph), flags, fd, PAGE_TRUNC(data_ph.p_offset),
 	    MA_NORMAL)) > (void*)-4096UL)
 		return (int)data;
-	vm_init_brk(a, dyn ? data + data_end : (void*)data_end);
+	vm_init_brk(a, dyn ? data + data_size : (void*)data_end);
 
 	/* unmap any text-to-data hole */
 	if ((err = munmapfor(a, (void *)text_end, data_start - text_end)) < 0)
