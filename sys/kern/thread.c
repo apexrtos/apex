@@ -101,7 +101,6 @@ thread_alloc(long mem_attr)
 static void
 thread_free(struct thread *th)
 {
-	assert(th->state & TH_ZOMBIE);
 	assert(th->magic == THREAD_MAGIC);
 
 	th->magic = 0;
@@ -122,6 +121,7 @@ thread_reap_zombies()
 			struct thread, task_link);
 		list_remove(&th->task_link);
 		spinlock_unlock_irq_restore(&zombie_lock, s);
+		assert(th->state & TH_ZOMBIE);
 		thread_free(th);
 		s = spinlock_lock_irq_disable(&zombie_lock);
 	}
@@ -172,7 +172,6 @@ thread_createfor(struct task *task, struct as *as, struct thread **thp,
 	th->task = task;
 	void *const ksp = arch_kstack_align(th->kstack + CONFIG_KSTACK_SIZE);
 	if ((r = context_init_uthread(&th->ctx, as, ksp, sp, entry, arg)) < 0) {
-		th->state = TH_ZOMBIE;
 		thread_free(th);
 		return r;
 	}
