@@ -239,21 +239,20 @@ int
 task_destroy(struct task *task)
 {
 	assert(task != task_cur());
+	assert(list_empty(&task->threads));
 
 	sch_lock();
-
-	assert(list_empty(&task->threads));
+	list_remove(&task->link);
+	sch_unlock();
 
 	if (task->as) {
 		as_modify_begin(task->as);
 		as_destroy(task->as);
 	}
 	task->magic = 0;
-	list_remove(&task->link);
 	free(task->path);
 	free(task);
 
-	sch_unlock();
 	return 0;
 }
 
