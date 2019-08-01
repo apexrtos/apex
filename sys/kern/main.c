@@ -64,7 +64,6 @@ boot_thread(void *arg);
 void
 kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 {
-	sch_lock();
 #if defined(CONFIG_EARLY_CONSOLE)
 	early_console_init();
 #endif
@@ -93,8 +92,9 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 		(*p)();
 
 	/*
-	 * Initialize kernel core.
+	 * Initialise kernel core.
 	 */
+	irq_init();
 	vm_init();
 	task_init();
 	thread_init();
@@ -102,21 +102,19 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	timer_init();
 
 	/*
-	 * Enable interrupt and initialise drivers.
+	 * Initialise drivers.
 	 */
-	irq_init();
 	device_init();
 	null_init();
 	zero_init();
 	machine_driver_init(&args);
 	fs_init();
+	machine_ready();
 
 	/*
 	 * Create boot thread and start scheduler.
 	 */
 	kthread_create(&boot_thread, &args, PRI_DEFAULT, "boot", MA_NORMAL);
-	machine_ready();
-	sch_unlock();
 	thread_idle();
 }
 
