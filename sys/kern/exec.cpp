@@ -84,13 +84,6 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	if (auto r = thread_createfor(t, as.get(), &main, sp, MA_NORMAL, entry,
 	    0); r < 0)
 		return (thread *)r;
-	sig_exec(t);
-	task_path(t, path);
-	thread_name(main, "main");
-
-	/* notify file system */
-	fd.close();
-	fs_exec(t);
 
 	/* terminate all other threads in current task */
 	struct thread *th;
@@ -98,6 +91,36 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 		if (th != main)
 			thread_terminate(th);
 	}
+
+	/* wait for threads to finish */
+	sch_lock();
+	const k_sigset_t sig_mask = sig_block_all();
+	bool done;
+	while (true) {
+		done = true;
+		list_for_each_entry(th, &t->threads, task_link) {
+			if (th == thread_cur() || th == main)
+				continue;
+			done = false;
+			break;
+		}
+		if (done)
+			break;
+		sch_prepare_sleep(&t->thread_event, 0);
+		sch_unlock();
+		sch_continue_sleep();
+		sch_lock();
+	}
+	sig_restore(&sig_mask);
+	sch_unlock();
+
+	thread_name(main, "main");
+	sig_exec(t);
+	task_path(t, path);
+
+	/* notify file system */
+	fd.close();
+	fs_exec(t);
 
 	/* switch to new address space */
 	if (t == task_cur())
@@ -141,7 +164,6 @@ validate_args(const char *const args[])
 int
 sc_execve(const char *path, const char *const argv[], const char *const envp[])
 {
-	std::lock_guard l(global_sch_lock);
 	if (auto r = as_modify_begin(task_cur()->as); r < 0)
 		return r;
 
