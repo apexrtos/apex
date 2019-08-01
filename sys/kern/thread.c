@@ -175,10 +175,20 @@ thread_createfor(struct task *task, struct as *as, struct thread **thp,
 		thread_free(th);
 		return r;
 	}
-	/* add new threads to end of list (master thread at head) */
+
 	sch_lock();
+
+	/* can't add thread to zombie task */
+	if (task->state == PS_ZOMB) {
+		sch_unlock();
+		thread_free(th);
+		return DERR(-EOWNERDEAD);
+	}
+
+	/* add new threads to end of list (master thread at head) */
 	list_insert(list_last(&task->threads), &th->task_link);
 	sch_start(th);
+
 	sch_unlock();
 
 	return 0;
