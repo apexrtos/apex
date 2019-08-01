@@ -202,14 +202,16 @@ again:
 				/*
 				 * Free child resources
 				 */
-				futexes_destroy(task_futexes(task));
 				list_remove(&task->link);
+				sch_unlock();
 				fs_exit(task);
+				futexes_destroy(task_futexes(task));
 				as_modify_begin(task->as);
 				as_destroy(task->as);
 				task->magic = 0;
 				free(task->path);
 				free(task);
+				sch_lock();
 				break;
 			}
 		}
@@ -222,6 +224,7 @@ again:
 	if (!have_children)
 		err = -ECHILD;
 	else if (cpid) {
+		sch_unlock();
 		if ((err = u_access_begin()) < 0)
 			goto out;
 		if (ustatus && !u_access_ok(ustatus, sizeof *ustatus, PROT_WRITE))
@@ -231,6 +234,7 @@ again:
 			*ustatus = status;
 		}
 		u_access_end();
+		sch_lock();
 	} else if (options & WNOHANG) {
 		/*
 		 * No child exited, but caller has asked us not to block
@@ -240,9 +244,11 @@ again:
 		/*
 		 * Wait for a signal or child exit
 		 */
-		if (!(err = sch_sleep(&task_cur()->child_event))) {
+		if (!(err = sch_prepare_sleep(&task_cur()->child_event, 0))) {
 			sch_unlock();
-			goto again;
+			if (!(err = sch_continue_sleep()))
+				goto again;
+			sch_lock();
 		}
 	}
 
