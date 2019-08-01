@@ -250,7 +250,7 @@ sleep_expire(void *arg)
  * the current thread is inserted into the tail of the run
  * queue.
  */
-void
+__fast_text void
 sch_switch(void)
 {
 	assert(!interrupt_enabled());
