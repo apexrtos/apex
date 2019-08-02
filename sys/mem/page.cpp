@@ -371,6 +371,7 @@ page_alloc(size_t len, long attr, void *owner)
  *		  'addr' of size 'len' with state 'st'
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
+ * extending an existing allocation is supported.
  * returns 0 on failure, physical address otherwise.
  */
 static phys *
@@ -385,18 +386,20 @@ page_reserve(region &r, phys *const addr, const size_t len,
 	const auto begin = page_num(r, addr);
 	const auto end = page_num(r, addr + len - 1) + 1;
 
-	/* verify that range is free */
-	for (auto i = begin; i != end; ++i)
-		if (r.pages[i].state != PG_FREE)
-			return 0;
+	/* check that range is free or overlaps existing allocation */
+	for (auto i = begin; i != end; ++i) {
+		if (r.pages[i].state == st && r.pages[i].owner == owner)
+			continue;
+		if (r.pages[i].state == PG_FREE)
+			continue;
+		return 0;
+	}
 
 	/* reserve pages */
-	for (auto i = begin; i != end;) {
-		const auto size = end - i;
-		const auto o = std::min<size_t>(
-		    page_to_max_order(r, i), floor_log2(size));
-		do_alloc(r, i, o, st, owner);
-		i += 1 << o;
+	for (auto i = begin; i != end; ++i) {
+		if (r.pages[i].state != PG_FREE)
+			continue;
+		do_alloc(r, i, 0, st, owner);
 	}
 
 	return page_addr(r, begin);
