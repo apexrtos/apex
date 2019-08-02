@@ -18,6 +18,7 @@
 
 /*
  * TODO: shared mappings
+ *	 mmap can leave address space inconsistent on OOM
  */
 
 struct seg {
@@ -139,7 +140,7 @@ seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
  * Must be called with address space write lock held.
  */
 static int
-do_munmapfor(as *a, void *const vaddr, const size_t ulen)
+do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
 {
 	int err = 0;
 
@@ -160,7 +161,9 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen)
 			break;
 		if (s->base >= uaddr && send <= uend) {
 			/* entire segment */
-			err = as_unmap(a, s->base, s->len, s->vn, s->off);
+			if (!remap)
+				err = as_unmap(a, s->base, s->len, s->vn,
+				    s->off);
 			list_remove(&s->link);
 			if (s->vn)
 				vn_close(s->vn);
@@ -171,8 +174,9 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen)
 			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
 				return DERR(-ENOMEM);
 			s->len = uaddr - (char*)s->base;
-			err = as_unmap(a, uaddr, ulen, s->vn, s->off + s->len);
-
+			if (!remap)
+				err = as_unmap(a, uaddr, ulen, s->vn,
+				    s->off + s->len);
 			*ns = *s;
 			ns->base = uend;
 			ns->len = send - uend;
@@ -186,12 +190,15 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen)
 		} else if (s->base < uaddr) {
 			/* end of segment */
 			const auto l = uaddr - (char*)s->base;
-			err = as_unmap(a, uaddr, s->len - l, s->vn, s->off + l);
+			if (!remap)
+				err = as_unmap(a, uaddr, s->len - l, s->vn,
+				    s->off + l);
 			s->len = l;
 		} else if (s->base < uend) {
 			/* start of segment */
 			const auto l = uend - (char*)s->base;
-			err = as_unmap(a, s->base, l, s->vn, s->off);
+			if (!remap)
+				err = as_unmap(a, s->base, l, s->vn, s->off);
 			if (s->vn)
 				s->off += l;
 			s->base = (char*)s->base + l;
@@ -215,9 +222,7 @@ static void *
 do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
     off_t off, long attr)
 {
-	int err;
 	std::unique_ptr<vnode> vn;
-	const bool fixed = flags & MAP_FIXED;
 	const bool anon = flags & MAP_ANONYMOUS;
 	const bool priv = flags & MAP_PRIVATE;
 	const bool shared = flags & MAP_SHARED;
@@ -234,9 +239,6 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 		if (!vn.get())
 			return (void*)DERR(-EBADF);
 	}
-
-	if (fixed && (err = do_munmapfor(a, addr, len)) < 0)
-		return (void*)err;
 
 	return as_map(a, addr, len, prot, flags, std::move(vn), off, attr);
 }
@@ -266,7 +268,7 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 	if (int err = l.lock(); err < 0)
 		return err;
 
-	return do_munmapfor(a, vaddr, ulen);
+	return do_munmapfor(a, vaddr, ulen, false);
 }
 
 /*
@@ -459,7 +461,7 @@ sc_brk(void *addr)
 	/* shrink */
 	if (addr < a->brk)
 		if (auto r = do_munmapfor(a, addr,
-		    (uintptr_t)a->brk - (uintptr_t)addr); r < 0)
+		    (uintptr_t)a->brk - (uintptr_t)addr, false); r < 0)
 			return (void*)r;
 
 	/* grow */
@@ -682,6 +684,14 @@ int
 as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
     int flags, std::unique_ptr<vnode> vn, off_t off, long attr)
 {
+	int err;
+	const bool fixed = flags & MAP_FIXED;
+
+	/* remove any existing mappings */
+	if (fixed && (err = do_munmapfor(a, pages.get(), len, true)) < 0)
+		return err;
+
+	/* find insertion point */
 	seg *s;
 	list_for_each_entry(s, &a->segs, link) {
 		if (s->base > pages.get())
@@ -689,12 +699,14 @@ as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
 	}
 	s = list_entry(list_prev(&s->link), seg, link);
 
+	/* attempt to extend existing segment */
 	if (!list_end(&a->segs, &s->link) &&
 	    seg_extend(s, pages.get(), len, prot, vn.get(), off, attr)) {
 		pages.release();
 		return 0;
 	}
 
+	/* insert new segment */
 	return seg_insert(s, std::move(pages), len, prot,
 	    std::move(vn), off, attr);
 }
