@@ -402,8 +402,14 @@ sigrestore(struct context *ctx, k_sigset_t *ss, const bool info)
 		unv->r11 = uuc->uc_mcontext.arm_fp;
 		uef->r12 = uuc->uc_mcontext.arm_ip;
 		uef->lr = uuc->uc_mcontext.arm_lr;
-		uef->ra = uuc->uc_mcontext.arm_pc;
-		uef->xpsr = uuc->uc_mcontext.arm_cpsr;
+		if (uef->ra != uuc->uc_mcontext.arm_pc) {
+			uef->ra = uuc->uc_mcontext.arm_pc;
+			/*
+			 * If we are returning to a different instruction the
+			 * old instruction continuation bits are not valid.
+			 */
+			uef->xpsr = uuc->uc_mcontext.arm_cpsr & ~EPSR_ICI_IT;
+		}
 		*ss = (k_sigset_t){
 			.__bits[0] = uuc->uc_sigmask.__bits[0],
 			.__bits[1] = uuc->uc_sigmask.__bits[1],

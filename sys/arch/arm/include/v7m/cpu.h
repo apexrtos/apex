@@ -12,6 +12,7 @@
  * EPSR register
  */
 #define EPSR_T		(1 << 24)   /* Thumb mode */
+#define EPSR_ICI_IT	0x0600fc00  /* If-Then/Instruction-Continuation */
 
 /*
  * EXC_RETURN
