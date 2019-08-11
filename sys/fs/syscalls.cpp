@@ -517,7 +517,7 @@ sc_read(int fd, void *buf, size_t len)
 		return r;
 	if (!u_access_ok(buf, len, PROT_WRITE))
 		return DERR(-EFAULT);
-	return pread(fd, buf, len, -1);
+	return read(fd, buf, len);
 }
 
 ssize_t
