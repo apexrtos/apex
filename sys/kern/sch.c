@@ -81,6 +81,8 @@
  *  - SCHED_FIFO   First in-first-out
  *  - SCHED_RR     Round robin (SCHED_FIFO + timeslice)
  *  - SCHED_OTHER  Another scheduling (not supported)
+ *
+ * TODO: look at combining resched & locks into single atomic?
  */
 
 #include <sch.h>
