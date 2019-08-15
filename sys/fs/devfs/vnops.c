@@ -367,7 +367,7 @@ device_create(const struct devio *io, const char *name, int flags, void *info)
 		spinlock_unlock(&device_list_lock);
 		return 0;
 	}
-	strlcpy(dev->name, name, len + 1);
+	strcpy(dev->name, name);
 	dev->flags = flags;
 	dev->vnode = NULL;
 	dev->busy = 0;
