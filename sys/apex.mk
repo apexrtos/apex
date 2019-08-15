@@ -4,12 +4,13 @@
 
 TYPE := exec
 TARGET := apex
-CFLAGS += -nostartfiles -nostdlib -static
-CFLAGS += -Wframe-larger-than=384
-CFLAGS += -fno-pie -no-pie
-CFLAGS += -z max-page-size=32
-CFLAGS += $(CONFIG_APEX_CFLAGS)
-CXXFLAGS += $(CFLAGS) -nostdinc++ -fno-exceptions -fno-use-cxa-atexit -std=gnu++17 -fconcepts
+FLAGS := -nostartfiles -nostdlib -static
+FLAGS += -Wframe-larger-than=384
+FLAGS += -fno-pie -no-pie
+FLAGS += -z max-page-size=32
+FLAGS += $(CONFIG_APEX_CFLAGS)
+CFLAGS += $(FLAGS)
+CXXFLAGS += $(FLAGS) -nostdinc++ -fno-exceptions -fno-use-cxa-atexit -std=gnu++17 -fconcepts
 DEFS += -DKERNEL -D_GNU_SOURCE
 LIBS := ../libc++/libc++.a ../libcxxrt/libcxxrt.a ../libc/libc.a -lgcc
 

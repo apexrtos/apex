@@ -3,3 +3,5 @@
  */
 makeoption CFLAGS += -mthumb
 makeoption CFLAGS += -Xlinker --thumb-entry=_start
+makeoption CXXFLAGS += -mthumb
+makeoption CXXFLAGS += -Xlinker --thumb-entry=_start
