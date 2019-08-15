@@ -75,6 +75,8 @@ extern "C" {
 #endif
 
 struct device  *device_create(const struct devio *, const char *, int, void *);
+struct device  *device_reserve(const char *, bool indexed);
+void		device_attach(struct device *, const struct devio *, int, void *);
 void		device_hide(struct device *);
 bool		device_busy(struct device *);
 void		device_destroy(struct device *);

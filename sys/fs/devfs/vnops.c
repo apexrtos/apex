@@ -50,6 +50,7 @@
 #include <fs/mount.h>
 #include <fs/util.h>
 #include <fs/vnode.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -292,7 +293,8 @@ devfs_readdir(struct file *fp, struct dirent *buf, size_t len)
 		else if (d->flags & DF_BLK)
 			t = DT_BLK;
 
-		if (dirbuf_add(&buf, &remain, 0, fp->f_offset, t, d->name))
+		if (d->devio &&
+		    dirbuf_add(&buf, &remain, 0, fp->f_offset, t, d->name))
 			break;
 
 		++fp->f_offset;
@@ -316,7 +318,7 @@ devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 	spinlock_lock(&device_list_lock);
 	list_for_each_entry(dev, &device_list, link) {
 		if (name_len >= ARRAY_SIZE(dev->name) || dev->name[name_len] ||
-		    strncmp(dev->name, name, name_len))
+		    !dev->devio || strncmp(dev->name, name, name_len))
 			continue;
 		vp->v_data = dev;
 		vp->v_mode = ((dev->flags & DF_CHR) ? S_IFCHR : S_IFBLK) |
@@ -342,13 +344,14 @@ device_init(void)
 	spinlock_init(&device_list_lock);
 }
 
+/*
+ * device_create - create a device and add to device list
+ */
 struct device *
 device_create(const struct devio *io, const char *name, int flags, void *info)
 {
 	struct device *dev;
 	size_t len;
-
-	dbg("Create /dev/%s\n", name);
 
 	len = strlen(name);
 	if (len == 0 || len >= ARRAY_SIZE(dev->name))	/* Invalid name? */
@@ -377,6 +380,42 @@ device_create(const struct devio *io, const char *name, int flags, void *info)
 
 	spinlock_unlock(&device_list_lock);
 	return dev;
+}
+
+/*
+ * device_reserve - reserve a device name
+ */
+struct device *
+device_reserve(const char *name, bool indexed)
+{
+	struct device *dev;
+	char namei[ARRAY_SIZE(dev->name)];
+
+	if (!indexed)
+		return device_create(NULL, name, 0, NULL);
+
+	for (size_t i = 0; i < 100; ++i) {
+		snprintf(namei, ARRAY_SIZE(namei), "%s%d", name, i);
+		if ((dev = device_create(NULL, namei, 0, NULL)))
+			return dev;
+	}
+
+	return NULL;
+}
+
+/*
+ * device_attach - attach reserved device name to device instance
+ */
+void
+device_attach(struct device *dev, const struct devio *io, int flags, void *info)
+{
+	spinlock_lock(&device_list_lock);
+	assert(!dev->devio);
+
+	dev->flags = flags;
+	dev->devio = io;
+	dev->info = info;
+	spinlock_unlock(&device_list_lock);
 }
 
 /*
