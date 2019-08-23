@@ -62,7 +62,7 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 	spinlock_lock(&p->lock);
 
 	/* state < 0 while writing */
-	err = wait_event_lock(p->event, p->state >= 0, &p->lock);
+	err = wait_event_interruptible_lock(p->event, p->state >= 0, &p->lock);
 	if (!err) {
 		++p->state;
 #if defined(CONFIG_DEBUG)
@@ -115,7 +115,7 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 	spinlock_lock(&p->lock);
 
 	/* state == 0, no writers or readers */
-	err = wait_event_lock(p->event, p->state == 0, &p->lock);
+	err = wait_event_interruptible_lock(p->event, p->state == 0, &p->lock);
 	if (!err) {
 		--p->state;
 #if defined(CONFIG_DEBUG)

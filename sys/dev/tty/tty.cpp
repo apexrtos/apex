@@ -310,7 +310,8 @@ tty::write(file *f, const void *buf, size_t len)
 		if (it != end) {
 			/* sleep until output queue drains */
 			std::unique_lock tl{txq_lock_};
-			auto rc = wait_event_lock(output_, tl, [&] {
+			auto rc = wait_event_interruptible_lock(output_, tl,
+			    [&] {
 				return txq_.size() <= txq_.capacity() / 2;
 			});
 			if (rc < 0)
@@ -853,7 +854,7 @@ int
 tty::tx_wait()
 {
 	std::unique_lock tl{txq_lock_};
-	return wait_event_lock(complete_, tl, [&] {
+	return wait_event_interruptible_lock(complete_, tl, [&] {
 		return txq_.empty();
 	});
 }
