@@ -72,6 +72,7 @@ mutex_init(struct mutex *m)
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
 	atomic_store_explicit(&mp->owner, 0, memory_order_relaxed);
+	spinlock_init(&mp->lock);
 	mp->count = 0;
 	event_init(&mp->event, "mutex", ev_LOCK);
 }
