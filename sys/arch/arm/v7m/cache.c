@@ -14,6 +14,8 @@
  *
  * Cortex-M7 has a Harvard architecture cache. We need to flush the data
  * cache & invalidate the instruction cache.
+ *
+ * Architecture requirements dictate that branch predictor must be invalidated.
  */
 void
 cache_coherent_exec(const void *p, size_t len)
@@ -31,6 +33,8 @@ cache_coherent_exec(const void *p, size_t len)
 		write32(&CBP->DCCMVAU, (uintptr_t)l);
 	for (const void *l = start; l != end; l += CONFIG_ICACHE_LINE_SIZE)
 		write32(&CBP->ICIMVAU, (uintptr_t)l);
+	/* invalidate branch predictor */
+	write32(&CBP->BPIALL, 0);
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");
 	/* flush instruction pipeline */
