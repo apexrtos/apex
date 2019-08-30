@@ -41,15 +41,15 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 	if (!u_access_ok(uiov, sizeof(*uiov) * count, PROT_READ))
 		return DERR(-EFAULT);
 	ssize_t ret = 0;
+	const iovec *uiov_end = uiov + count;
 	while (1) {
 		std::array<iovec, 16> iov;
 		ssize_t l = 0;
-		const auto c = std::min<size_t>(count, iov.size());
 		size_t d = 0;
-		for (size_t i = 0; i < c; ++i) {
+		while (uiov != uiov_end && d != iov.size()) {
 			/* make sure iov can't change under our feet */
-			iov[d] = read_once(uiov + i);
-			if (!iov[d].iov_base)
+			iov[d] = read_once(uiov++);
+			if (!iov[d].iov_base || !iov[d].iov_len)
 				continue;
 			if (!u_access_ok(iov[d].iov_base, iov[d].iov_len, prot))
 				return DERR(-EFAULT);
@@ -57,6 +57,12 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 			if ((size_t)(SSIZE_MAX - l) < iov[d].iov_len)
 				return DERR(-EINVAL);
 			l += iov[d].iov_len;
+			/* combine adjacent iovs */
+			if (d && static_cast<char *>(iov[d - 1].iov_base) +
+			    iov[d - 1].iov_len == iov[d].iov_base) {
+				iov[d - 1].iov_len += iov[d].iov_len;
+				continue;
+			}
 			++d;
 		}
 		const ssize_t r = fn(fd, iov.data(), d, offset);
@@ -71,10 +77,8 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 		if (r < l)
 			return ret;
 		assert(r == l);
-		count -= c;
-		if (!count)
+		if (uiov == uiov_end)
 			return ret;
-		uiov += c;
 		offset += r;
 	}
 }
