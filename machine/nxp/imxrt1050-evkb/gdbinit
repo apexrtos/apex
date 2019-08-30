@@ -41,6 +41,8 @@ elif os.environ['DEBUGGER'] == 'trace32':
 	gdb.execute('mon b::system.jtagclock 20MHz')
 	gdb.execute('mon b::tronchip.set mmerr off')    # Don't trap on MemManage
 	gdb.execute('mon b::tronchip.set nocperr off')  # Don't trap on NOCP
+	gdb.execute('mon b::system.option imaskhll on')
+	gdb.execute('mon b::system.option imaskasm on')
 	gdb.execute('mon b::map.bonchip 0x60000000--0x7EFFFFFF')	# ROM
 	gdb.execute('mon b::system.mode attach')
 	gdb.execute('mon b::break')
