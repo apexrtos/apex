@@ -65,6 +65,9 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 			}
 			++d;
 		}
+		/* catch ssize_t overflow */
+		if ((SSIZE_MAX - ret) < l)
+			return DERR(-EINVAL);
 		const ssize_t r = fn(fd, iov.data(), d, offset);
 		if (r == 0)
 			return ret;
