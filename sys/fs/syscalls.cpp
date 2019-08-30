@@ -69,13 +69,8 @@ do_iov(int fd, const iovec *uiov, int count, off_t offset,
 		if ((SSIZE_MAX - ret) < l)
 			return DERR(-EINVAL);
 		const ssize_t r = fn(fd, iov.data(), d, offset);
-		if (r == 0)
-			return ret;
-		if (r < 0) {
-			if (ret)
-				return ret;
-			return r;
-		}
+		if (r < 0)
+			return ret ? ret : r;
 		ret += r;
 		if (r < l)
 			return ret;
