@@ -101,3 +101,17 @@ cache_flush_invalidate(const void *p, size_t len)
 	asm volatile("dsb");
 #endif
 }
+
+/*
+ * Test if address range covers whole data cache lines
+ */
+bool
+cache_aligned(const void *p, size_t len)
+{
+#if defined(CONFIG_CACHE)
+	const int mask = CONFIG_DCACHE_LINE_SIZE - 1;
+	return !((uintptr_t)p & mask || len & mask);
+#else
+	return true;
+#endif
+}

@@ -111,6 +111,7 @@ void		cache_flush(const void *, size_t);
 void		cache_invalidate(const void *, size_t);
 void		cache_flush_invalidate(const void *, size_t);
 bool		cache_coherent_range(const void *, size_t);
+bool		cache_aligned(const void *, size_t);
 void		memory_barrier(void);
 void		read_memory_barrier(void);
 void		write_memory_barrier(void);
