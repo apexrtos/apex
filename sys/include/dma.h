@@ -8,8 +8,6 @@ extern "C" {
 #endif
 
 void *dma_alloc(size_t);
-void dma_cache_flush(const void *, size_t);
-void dma_cache_invalidate(const void *, size_t);
 
 #if defined(__cplusplus)
 }

@@ -29,9 +29,6 @@ char dma_id;
 void *
 dma_alloc(size_t len)
 {
-#if defined(CONFIG_CACHE) && !defined(CONFIG_CACHE_COHERENT_DMA)
-	len = ALIGNn(len, CONFIG_DCACHE_LINE_SIZE);
-#endif
 	if (len > CONFIG_PAGE_SIZE)
 		return nullptr;
 
@@ -52,24 +49,3 @@ dma_alloc(size_t len)
 	return phys_to_virt(p);
 }
 
-/*
- * Flush cache if necessary for DMA transfer.
- */
-void
-dma_cache_flush(const void *p, size_t len)
-{
-#if !defined(CONFIG_CACHE_COHERENT_DMA)
-	cache_flush(p, len);
-#endif
-}
-
-/*
- * Invalidate cache if necessary after DMA transfer.
- */
-void
-dma_cache_invalidate(const void *p, size_t len)
-{
-#if !defined(CONFIG_CACHE_COHERENT_DMA)
-	cache_invalidate(p, len);
-#endif
-}

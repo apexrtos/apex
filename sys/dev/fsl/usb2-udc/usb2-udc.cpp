@@ -1192,7 +1192,7 @@ fsl_usb2_transaction::start(const size_t max_packet_len,
 	dtd_tail_->token.ioc = 1;
 
 	if (dir == ch9::Direction::DeviceToHost)
-		dma_cache_flush(buf(), len());
+		cache_flush(buf(), len());
 
 	started();
 
@@ -1203,7 +1203,7 @@ void
 fsl_usb2_transaction::transferred(size_t bytes, ch9::Direction dir)
 {
 	if (bytes && dir == ch9::Direction::HostToDevice)
-		dma_cache_invalidate(buf(), bytes);
+		cache_invalidate(buf(), bytes);
 }
 
 void
