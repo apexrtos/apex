@@ -1193,6 +1193,11 @@ fsl_usb2_transaction::start(const size_t max_packet_len,
 
 	if (dir == ch9::Direction::DeviceToHost)
 		cache_flush(buf(), len());
+	else {
+		assert(cache_aligned(buf(), len()) ||
+		    cache_coherent_range(buf(), len()));
+		cache_invalidate(buf(), len());
+	}
 
 	started();
 
