@@ -443,6 +443,7 @@ sch_requeue(struct event *l, struct event *r)
 int
 sch_prepare_sleep(struct event *evt, uint64_t nsec)
 {
+	assert(!(active_thread->state & TH_SLEEP));
 	assert(!interrupt_running());
 	assert(evt);
 
