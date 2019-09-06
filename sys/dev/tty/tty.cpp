@@ -1173,7 +1173,7 @@ extern "C" {
 /*
  * tty_create - create a tty device
  *
- * rx_bufsiz: receive buffer size, power of 2 <= CONFIG_PAGE_SIZE
+ * rx_bufsiz: receive buffer size, power of 2 <= PAGE_SIZE
  * rx_bufmin: minimum number of receive buffers
  * tproc: routine to configure hardware
  * oproc: routine to start output
@@ -1185,19 +1185,19 @@ tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
     tty_tproc tproc, tty_oproc oproc, tty_iproc iproc, tty_fproc fproc,
     void *data)
 {
-	if (rx_bufsiz > CONFIG_PAGE_SIZE || CONFIG_PAGE_SIZE % rx_bufsiz)
+	if (rx_bufsiz > PAGE_SIZE || PAGE_SIZE % rx_bufsiz)
 		return (tty *)DERR(-EINVAL);
-	const size_t rx_sz = ALIGNn(rx_bufsiz * rx_bufmin, CONFIG_PAGE_SIZE);
+	const size_t rx_sz = ALIGNn(rx_bufsiz * rx_bufmin, PAGE_SIZE);
 
 	std::unique_ptr<phys> rxp{page_alloc(rx_sz, attr, &tty_id),
 	    {rx_sz, &tty_id}};
 	std::unique_ptr<phys> txp{page_alloc_order(1, attr, &tty_id),
-	    {CONFIG_PAGE_SIZE, &tty_id}};
+	    {PAGE_SIZE, &tty_id}};
 	if (!rxp.get() || !txp.get())
 		return (tty *)DERR(-ENOMEM);
 	const size_t rx_bufcnt = rx_sz / rx_bufsiz;
 	std::unique_ptr<tty> t{std::make_unique<tty>(rx_bufcnt, rx_bufsiz,
-	    std::move(rxp), CONFIG_PAGE_SIZE, std::move(txp), tproc, oproc,
+	    std::move(rxp), PAGE_SIZE, std::move(txp), tproc, oproc,
 	    iproc, fproc, data)};
 	if (!t.get())
 		return (tty *)DERR(-ENOMEM);

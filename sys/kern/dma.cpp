@@ -29,12 +29,12 @@ char dma_id;
 void *
 dma_alloc(size_t len)
 {
-	if (len > CONFIG_PAGE_SIZE)
+	if (len > PAGE_SIZE)
 		return nullptr;
 
 	/* find page with free space >= len */
 	for (auto p : pages) {
-		if (CONFIG_PAGE_SIZE - p.alloc < len)
+		if (PAGE_SIZE - p.alloc < len)
 			continue;
 		auto r = phys_to_virt(p.page + p.alloc);
 		p.alloc += len;

@@ -422,7 +422,7 @@ void*
 sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 {
 	return mmapfor(task_cur()->as, addr, len, prot, flags, fd,
-	    (off_t)pgoff * CONFIG_PAGE_SIZE, MA_NORMAL);
+	    (off_t)pgoff * PAGE_SIZE, MA_NORMAL);
 }
 
 /*
@@ -514,8 +514,8 @@ as_create(pid_t pid)
 	list_init(&a->segs);
 
 #if defined(CONFIG_MMU)
-	a->base = CONFIG_PAGE_SIZE;
-	a->len = CONFIG_USER_LIMIT - CONFIG_PAGE_SIZE;
+	a->base = PAGE_SIZE;
+	a->len = CONFIG_USER_LIMIT - PAGE_SIZE;
 	if (auto r = mmu_newmap(&a->pgd, pid); r < 0)
 		return r;
 #else

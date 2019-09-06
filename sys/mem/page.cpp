@@ -58,7 +58,7 @@ struct region {
 	size_t usable;		/* Total usable bytes in region */
 	size_t free;		/* Total free bytes in region */
 	size_t size;		/* Total size of region */
-	size_t nr_orders;	/* size = CONFIG_PAGE_SIZE * 2^nr_orders */
+	size_t nr_orders;	/* size = PAGE_SIZE * 2^nr_orders */
 	size_t nr_pages;	/* Number of pages in pages array */
 	page *pages;		/* Page descriptors */
 	list *blocks;		/* Linked list of free blocks for each order */
@@ -185,7 +185,7 @@ static size_t
 page_num(const region &r, const phys *addr)
 {
 	assert(addr >= r.base && addr < (r.base + r.size));
-	return (addr - r.base) / CONFIG_PAGE_SIZE;
+	return (addr - r.base) / PAGE_SIZE;
 }
 
 /*
@@ -195,7 +195,7 @@ static phys *
 page_addr(const region &r, const size_t page)
 {
 	assert(page < r.nr_pages);
-	return r.base + page * CONFIG_PAGE_SIZE;
+	return r.base + page * PAGE_SIZE;
 }
 
 /*
@@ -263,7 +263,7 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
 	assert(st != PG_FREE);
 	assert(o < r.nr_orders);
 
-	const size_t len = CONFIG_PAGE_SIZE << o;
+	const size_t len = PAGE_SIZE << o;
 
 	/* holes & system memory can never be released */
 	if (st == PG_HOLE || st == PG_SYSTEM)
@@ -357,11 +357,11 @@ page_alloc(size_t len, long attr, void *owner)
 	if (len == 0)
 		return 0;
 	len = PAGE_ALIGN(len);
-	const auto order = ceil_log2(len) - floor_log2(CONFIG_PAGE_SIZE);
+	const auto order = ceil_log2(len) - floor_log2(PAGE_SIZE);
 	const auto addr = page_alloc_order(order, attr, owner);
 	if (addr == 0)
 		return 0;
-	const auto excess = (CONFIG_PAGE_SIZE << order) - len;
+	const auto excess = (PAGE_SIZE << order) - len;
 	page_free(addr, excess, owner);
 	return addr + excess;
 }
@@ -455,7 +455,7 @@ page_free(region &r, const size_t page, const size_t o)
 		p.owner = nullptr;
 	}
 
-	r.free += CONFIG_PAGE_SIZE << o;
+	r.free += PAGE_SIZE << o;
 
 	/* update buddy allocator */
 	block_free(r, page, o);
@@ -678,9 +678,9 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 		r.base = TRUNCn(r.begin, 1 << size_order);
 		r.size = ALIGNn(r.end, 1 << size_order) - r.base;
 		const size_t max_order = ceil_log2(r.size);
-		r.nr_orders = max_order - floor_log2(CONFIG_PAGE_SIZE) + 1;
+		r.nr_orders = max_order - floor_log2(PAGE_SIZE) + 1;
 		r.nr_pages = 1 << (r.nr_orders - 1);
-		r.size = r.nr_pages * CONFIG_PAGE_SIZE;
+		r.size = r.nr_pages * PAGE_SIZE;
 		r.usable = r.size;
 		r.free = r.size;
 

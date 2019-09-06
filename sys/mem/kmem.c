@@ -115,20 +115,20 @@ struct page_hdr {
 
 #define BLKHDR_SIZE	(sizeof(struct block_hdr))
 #define PGHDR_SIZE	(sizeof(struct page_hdr))
-#define MAX_ALLOC_SIZE	(size_t)(CONFIG_PAGE_SIZE - PGHDR_SIZE)
+#define MAX_ALLOC_SIZE	(size_t)(PAGE_SIZE - PGHDR_SIZE)
 
 #define MIN_BLOCK_SIZE	(BLKHDR_SIZE + 16)
-#define MAX_BLOCK_SIZE	(uint16_t)(CONFIG_PAGE_SIZE - (PGHDR_SIZE - BLKHDR_SIZE))
+#define MAX_BLOCK_SIZE	(uint16_t)(PAGE_SIZE - (PGHDR_SIZE - BLKHDR_SIZE))
 
 /* macro to point the page header from specific address */
 #define PAGE_TOP(n)	(struct page_hdr *) \
-			    ((uintptr_t)(n) & (uintptr_t)~(CONFIG_PAGE_SIZE - 1))
+			    ((uintptr_t)(n) & (uintptr_t)~(PAGE_SIZE - 1))
 
 /* index of free block list */
 #define BLKIDX(b)	((u_int)((b)->size) >> 4)
 
 /* number of free block list */
-#define NR_BLOCK_LIST	(CONFIG_PAGE_SIZE / ALIGN_SIZE)
+#define NR_BLOCK_LIST	(PAGE_SIZE / ALIGN_SIZE)
 
 /**
  * Array of the head block of free block list.
@@ -410,7 +410,7 @@ kmem_free(void *ptr)
 		}
 		list_remove(&pg->link);
 		pg->magic = 0;
-		page_free(virt_to_phys(pg), CONFIG_PAGE_SIZE, &kern_task);
+		page_free(virt_to_phys(pg), PAGE_SIZE, &kern_task);
 	}
 	spinlock_unlock(&kmem_lock);
 }

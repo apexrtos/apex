@@ -159,7 +159,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	/* map stack with optional guard page */
 	const size_t stack_size = PAGE_ALIGN(stack_ph.p_memsz);
 #if defined(CONFIG_MMU) || defined(CONFIG_MPU)
-	const size_t guard_size = CONFIG_PAGE_SIZE;
+	const size_t guard_size = PAGE_SIZE;
 #else
 	const size_t guard_size = 0;
 #endif
@@ -179,7 +179,7 @@ elf_load(struct as *a, int fd, void (**entry)(void), unsigned auxv[AUX_CNT],
 	*auxv++ = AT_PHDR;	*auxv++ = (uintptr_t)(base + eh.e_phoff);
 	*auxv++ = AT_PHENT;	*auxv++ = sizeof(Phdr);
 	*auxv++ = AT_PHNUM;	*auxv++ = eh.e_phnum;
-	*auxv++ = AT_PAGESZ;	*auxv++ = CONFIG_PAGE_SIZE;
+	*auxv++ = AT_PAGESZ;	*auxv++ = PAGE_SIZE;
 	*auxv++ = AT_BASE;	*auxv++ = (uintptr_t)base;
 	*auxv++ = AT_ENTRY;	*auxv++ = text_load_offset + eh.e_entry;
 	*auxv++ = AT_UID;	*auxv++ = 500;
