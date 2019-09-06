@@ -86,6 +86,7 @@ endif
 include sys/dev/null/include.mk
 include sys/dev/zero/include.mk
 include sys/dev/tty/include.mk
+include sys/dev/block/include.mk
 
 # Architecture specific kernel sources
 ARCHDIR := arch/$(CONFIG_ARCH)
