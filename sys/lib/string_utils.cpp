@@ -72,3 +72,19 @@ int parse_options(std::string_view s,
 	}
 	return flush();
 }
+
+char *hr_size_fmt(uint64_t sz, char *buf, size_t bufsz)
+{
+	if (sz < 1024) {
+		snprintf(buf, bufsz, "%uB", (unsigned)sz);
+		return buf;
+	}
+	const char *s = "KMGTPE";
+	while (sz >= 1024 * 1024) {
+		sz /= 1024;
+		++s;
+	}
+	snprintf(buf, bufsz, "%u.%02u%ciB", (unsigned)(sz / 1024),
+	    (unsigned)(((sz % 1024) * 100) / 1024), *s);
+	return buf;
+}

@@ -26,4 +26,9 @@ void strtok(std::string_view s, std::string_view t,
 int parse_options(std::string_view s,
     std::function<int(std::string_view, std::string_view)> fn);
 
+/*
+ * format a size as human readable
+ */
+char *hr_size_fmt(uint64_t sz, char *buf, size_t bufsz);
+
 #endif
