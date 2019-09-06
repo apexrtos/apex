@@ -119,7 +119,6 @@ usb_gadget_init()
 		.read = nullptr,
 		.write = nullptr,
 		.ioctl = gadget_ioctl,
-		.event = nullptr,
 	};
 	device_create(&io, "usbgadget", DF_CHR, NULL);
 }
