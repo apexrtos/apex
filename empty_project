@@ -1,12 +1,14 @@
 /*
  * Compiler
  */
-makeoption CFLAGS += -g
-makeoption CFLAGS += -pipe
-makeoption CFLAGS += -Wall
-makeoption CFLAGS += -O2
-makeoption CFLAGS += -flto=jobserver -fuse-linker-plugin
-makeoption CFLAGS += -Xlinker --gc-sections
+makeoption COMMON_FLAGS += -g
+makeoption COMMON_FLAGS += -pipe
+makeoption COMMON_FLAGS += -Wall
+makeoption COMMON_FLAGS += -O2
+makeoption COMMON_FLAGS += -flto -fuse-linker-plugin
+makeoption COMMON_FLAGS += -Xlinker --gc-sections
+makeoption CFLAGS += $(CONFIG_COMMON_FLAGS)
+makeoption CXXFLAGS += $(CONFIG_COMMON_FLAGS)
 makeoption SSTRIP := y
 
 /*
