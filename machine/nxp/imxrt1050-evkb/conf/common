@@ -44,6 +44,8 @@ memory KERNEL_NULL_GUARD_SIZE 1024
 driver sys/dev/usb				// Generic USB support
 driver sys/dev/usb/gadget()			// USB gadget userspace interface
 driver sys/dev/usb/gadget/function/cdc_acm()	// USB abstract control model function
+driver sys/dev/mmc				// Generic SD/MMC support
+driver sys/dev/regulator/voltage		// Generic voltage regulator support
 driver sys/dev/gpio				// Generic GPIO support
 
 /*
@@ -54,6 +56,34 @@ driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio2", .base = 0x401bc000, .irqs = {
 driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio3", .base = 0x401c0000, .irqs = {84, 85}, .ipl = IPL_MIN}
 driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio4", .base = 0x401c4000, .irqs = {86, 87}, .ipl = IPL_MIN}
 driver sys/dev/fsl/imxrt10xx-gpio{.name = "gpio5", .base = 0x400c0000, .irqs = {88, 89}, .ipl = IPL_MIN}
+
+/*
+ * On/Off Switchable SD Card power supply
+ *
+ * On IMXRT1050-EVKB this is broken as the card detect circuit is tied to this
+ * same power supply. Switching the supply off means that a card can no longer
+ * be detected. This is fixed in MIMXRT1060-EVK.
+ */
+#if defined(CONFIG_BOARD_IMXRT1050EVKB)
+driver1 sys/dev/regulator/voltage/fixed{.name = "VSD_3V3", .voltage = 3.3}
+#elif defined(CONFIG_BOARD_MIMXRT1060EVK)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B1_03, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 5, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B1_03, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_50MHz, .ODE = ODE_Open_Drain_Enabled, .PKE = PKE_Pull_Keeper_Disabled, .HYS = HYS_Hysteresis_Disabled }.r)
+driver1 sys/dev/regulator/voltage/gpio{.name = "VSD_3V3", \
+	.gpios = {{"gpio1", 19}}, \
+	.states = {{0x0, 0.0}, {0x1, 3.3}}, .startup = 0}
+#else
+#error Unknown Board
+#endif
+
+/*
+ * 1.8/3.3V Switchable SD Card I/O supply
+ */
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_B1_14, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 5, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_B1_14, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_50MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Disabled, .HYS = HYS_Hysteresis_Disabled }.r)
+driver1 sys/dev/regulator/voltage/gpio{.name = "NVCC_SD", \
+	.gpios = {{"gpio2", 30}}, \
+	.states = {{0x1, 1.8}, {0x0, 3.3}}, .startup = 1}
 
 /*
  * REVISIT: NXP documentation says "24 MHz XTALOSC can be the external
@@ -85,6 +115,41 @@ machcfg write32(&CCM_ANALOG->PLL_USB1_SET, (union ccm_analog_pll_usb){ .EN_USB_C
 machcfg write32(&PMU->REG_3P0, (union pmu_reg_3p0){ .OUTPUT_TRG = 0x17, .BO_OFFSET = 0x7, .ENABLE_ILIMIT = 1, .ENABLE_BO = 1, .ENABLE_LINREG = 1 }.r)
 driver1 sys/dev/fsl/imx-usbphy{ .base = 0x400d9000, .analog_base = 0x400d81a0, .d_cal = 0x0c, .txcal45dp = 0x06, .txcal45dn = 0x06 }
 driver2 sys/dev/fsl/usb2-udc{ .name = "udc0", .base = 0x402e0000, .irq = 113, .ipl = IPL_MIN }
+
+/*
+ * USDHC1 is connected to microSD card slot
+ * GPIO_SD_B0_00 as SD1_CMD
+ * GPIO_SD_B0_01 as SD1_CLK
+ * GPIO_SD_B0_02 as SD1_D0
+ * GPIO_SD_B0_03 as SD1_D1
+ * GPIO_SD_B0_04 as SD1_D2
+ * GPIO_SD_B0_05 as SD1_D3
+ * GPIO_B1_12 as SD_CD_SW
+ * GPIO_B1_14 as SD0_VSELECT (3.3V/1.8V i/o supply, see NVCC_SD)
+ */
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_SD_B0_00, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 0, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_SD_B0_00, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Fast, .DSE = DSE_R0_7, .SPEED = SPEED_200MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Enabled }.r)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_SD_B0_01, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 0, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_SD_B0_01, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Fast, .DSE = DSE_R0_7, .SPEED = SPEED_200MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Disabled, .HYS = HYS_Hysteresis_Disabled }.r)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_SD_B0_02, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 0, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_SD_B0_02, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Fast, .DSE = DSE_R0_7, .SPEED = SPEED_200MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Enabled }.r)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_SD_B0_03, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 0, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_SD_B0_03, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Fast, .DSE = DSE_R0_7, .SPEED = SPEED_200MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Enabled }.r)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_SD_B0_04, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 0, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_SD_B0_04, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Fast, .DSE = DSE_R0_7, .SPEED = SPEED_200MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Enabled }.r)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_SD_B0_05, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 0, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_SD_B0_05, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Fast, .DSE = DSE_R0_7, .SPEED = SPEED_200MHz, .ODE = ODE_Open_Drain_Disabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .PUS = PUS_100K_Pull_Down, .HYS = HYS_Hysteresis_Enabled }.r)
+pincfg write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_B1_12, (union iomuxc_sw_mux_ctl){ .MUX_MODE = 6, .SION = SION_Software_Input_On_Disabled }.r)
+pincfg write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_B1_12, (union iomuxc_sw_pad_ctl){ .SRE = SRE_Slow, .DSE = DSE_R0_6, .SPEED = SPEED_50MHz, .ODE = ODE_Open_Drain_Enabled, .PKE = PKE_Pull_Keeper_Enabled, .PUE = PUE_Keeper, .HYS = HYS_Hysteresis_Enabled }.r)
+pincfg write32(&IOMUXC->USDHC1_CD_B_SELECT_INPUT, 2);
+driver2 sys/dev/fsl/usdhc{ \
+	.mmc = {.name = "usdhc0", .removable = true, .data_lines = 4, \
+	    .power_stable_delay_ms = 1, .power_off_delay_ms = 1, \
+	    .vcc_supply = {"VSD_3V3"}, .vio_supply = {"NVCC_SD"}, \
+	    .vccq_supply = {"VSD_3V3"}, .load_capacitance_pf = 15, \
+	    .max_rate = 198e6}, \
+	.base = 0x402c0000, .clock = 198e6, .irq = 110, .ipl = IPL_MIN, \
+}
 
 /*
  * Include helpful "make gdb" rule
