@@ -42,7 +42,7 @@ dma_alloc(size_t len)
 	}
 
 	/* allocate new page */
-	auto p = page_alloc_order(0, MA_FAST | MA_DMA | MA_CACHE_COHERENT, &dma_id);
+	auto p = page_alloc_order(0, MA_DMA | MA_CACHE_COHERENT, &dma_id);
 	if (!p)
 		return nullptr;
 	pages.push_back({len, p});
