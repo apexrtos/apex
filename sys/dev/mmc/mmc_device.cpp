@@ -1,0 +1,479 @@
+#include "mmc_device.h"
+
+#include "host.h"
+#include "mmc_block.h"
+#include <debug.h>
+#include <dev/regulator/voltage/regulator.h>
+#include <device.h>
+#include <errno.h>
+#include <string_utils.h>
+
+namespace mmc::mmc {
+
+/*
+ * device::device
+ */
+device::device(host *h)
+: ::mmc::device{h, mmc::tuning_cmd_index}
+{ }
+
+/*
+ * device::~device
+ */
+device::~device()
+{
+	info("%s: MMC device %.*s detached\n",
+	    h_->name(), cid_.pnm().size(), cid_.pnm().data());
+}
+
+/*
+ * device::init
+ */
+int
+device::init()
+{
+	/* Get OCR by sending operating conditions with zero voltage window. */
+	if (auto r = send_op_cond(h_, 0, ocr_); r < 0) {
+		dbg("%s: MMC get OCR failed\n", h_->name());
+		return r;
+	}
+
+	/* Switch to low voltage supply if card & host support it. */
+	if (ocr_.v_170_195() && h_->vcc()->supports(1.70, 1.95) &&
+	    h_->vio()->supports(1.70, 1.95) && h_->vcc()->get() > 1.95) {
+		dbg("%s: MMC switching to 1.8V\n", h_->name());
+		if (auto r = h_->power_cycle(1.8); r < 0)
+			return r;
+	}
+
+	const auto supply = h_->vcc()->get();
+
+	/* Check that device is compatible with our supply voltage. */
+	if (!ocr_.supply_compatible(supply)) {
+		info("%s: MMC device voltage incompatible\n", h_->name());
+		return -ENOTSUP;
+	}
+
+	/* Initialise device. This can take up to 1 second. */
+	for (const auto begin = timer_monotonic_coarse();;) {
+		timer_delay(10e6);
+
+		if (auto r = send_op_cond(h_, supply, ocr_); r < 0) {
+			dbg("%s: MMC SEND_OP_COND failed\n", h_->name());
+			return r;
+		}
+
+		const auto dt = timer_monotonic_coarse() - begin;
+
+		if (!ocr_.busy()) {
+			dbg("%s: MMC device took %ums to initialise\n",
+			    h_->name(), (unsigned)(dt / 1e6));
+			break;
+		}
+
+		if (dt > 1e9) {
+			info("%s: MMC initialisation timeout\n", h_->name());
+			return -ETIMEDOUT;
+		}
+	}
+
+	if (auto r = all_send_cid(h_, cid_); r < 0) {
+		dbg("%s: MMC ALL_SEND_CID failed\n", h_->name());
+		return r;
+	}
+
+	if (auto r = set_relative_addr(h_, rca_); r < 0) {
+		dbg("%s: MMC SET_RELATIVE_ADDR failed\n", h_->name());
+		return r;
+	}
+
+	if (auto r = send_csd(h_, rca_, csd_); r < 0) {
+		dbg("%s: MMC SEND_CSD failed\n", h_->name());
+		return r;
+	}
+
+	if (csd_.csd_structure() < 2 || csd_.spec_vers() < 4) {
+		info("%s: legacy MMC devices not supported\n", h_->name());
+		return -ENOTSUP;
+	}
+
+	/* Note: we do not support unlocking devices. An error is returned here
+	 * if the device is locked. */
+	if (auto r = select_deselect_card(h_, rca_); r < 0) {
+		dbg("%s: MMC SELECT/DESELECT_CARD failed\n", h_->name());
+		return r;
+	}
+
+	if (auto r = send_ext_csd(h_, ext_csd_); r < 0) {
+		dbg("%s: MMC SEND_EXT_CSD failed\n", h_->name());
+		return r;
+	}
+
+	/* Determine maximum bus width. */
+	h_->running_bus_test(true);
+	unsigned bus_width = 1;
+	for (unsigned w = 4; w <= h_->data_lines(); w *= 2) {
+		h_->set_bus_width(w);
+		if (bus_test(h_, rca_, w) == 0)
+			bus_width = w;
+	}
+	h_->set_bus_width(1);
+	h_->running_bus_test(false);
+
+	/* True if vccq and vio are connected and separate from vcc. */
+	const bool use_vccq = h_->vccq()->equal(h_->vio()) &&
+	    !h_->vccq()->equal(h_->vcc());
+
+	/* Host supports 1.2V i/o and vccq is connected to device. */
+	const bool io_1v2 = use_vccq && h_->vio()->supports(1.1, 1.3);
+
+	/* Host supports 1.8V i/o and vccq is connected to device, or device
+	 * has already been switched to 1.8V VCC. */
+	const bool running_1v8 = h_->vcc()->get() <= 1.95;
+	const bool io_1v8 = (use_vccq && h_->vio()->supports(1.70, 1.95)) ||
+	    running_1v8;
+
+	/* DDR modes are only supported for 4- and 8-bit bus. */
+	const bool ddr_ok = bus_width >= 4;
+
+	/* Host & device support enhanced strobe. */
+	const bool es_ok = ext_csd_.strobe_support() == 0x1 &&
+	    h_->supports_enhanced_strobe();
+
+	/* Determine ideal operating mode for device */
+	unsigned long mode_rate;
+	bool enh_strobe = false;
+	auto try_mode = [&](device_type m, unsigned long max) {
+		if (!h_->supports(m) || !ext_csd_.device_type().is_set(m))
+			return false;
+		mode_ = m;
+		mode_rate = max;
+		return true;
+	};
+	if (ddr_ok && io_1v2 && try_mode(device_type::hs400_1v2, 400e6))
+		enh_strobe = es_ok;
+	else if (ddr_ok && io_1v8 && try_mode(device_type::hs400_1v8, 400e6))
+		enh_strobe = es_ok;
+	else if (io_1v2 && try_mode(device_type::hs200_1v2, 200e6));
+	else if (io_1v8 && try_mode(device_type::hs200_1v8, 200e6));
+	else if (ddr_ok && io_1v2 && try_mode(device_type::ddr52_1v2, 104e6));
+	else if (ddr_ok && try_mode(device_type::ddr52_1v8_3v3, 104e6));
+	else if (try_mode(device_type::sdr52, 52e6));
+	else if (try_mode(device_type::sdr26, 26e6));
+	else {
+		info("%s: MMC no compatible bus mode\n", h_->name());
+		return -ENOTSUP;
+	}
+
+	/* Determine ideal drive strength & maximum data rate
+	 * depending on total load capacitance & device capabilities. */
+	unsigned long hw_rate = 0;
+	driver_strength drive;
+	auto try_drive = [&](driver_strength v) {
+		if (!ext_csd_.driver_strength().is_set(v))
+			return;
+		const unsigned long max = h_->rate_limit(output_impedance(v));
+		if (!hw_rate || max >= mode_rate) {
+			hw_rate = max;
+			drive = v;
+		}
+	};
+	if (hs_mode(mode_)) {
+		try_drive(driver_strength::type_1_33_ohm);
+		try_drive(driver_strength::type_4_40_ohm);
+		try_drive(driver_strength::type_0_50_ohm);
+		try_drive(driver_strength::type_2_66_ohm);
+		try_drive(driver_strength::type_3_100_ohm);
+	} else
+		try_drive(driver_strength::type_0_50_ohm);
+	if (!hw_rate) {
+		info("%s: MMC bad drive strength support\n", h_->name());
+		return -ENOTSUP;
+	}
+
+	/* Maximum data rate is the minimum of what the hardware supports and
+	 * the selected operating mode. */
+	const bool ddr = ddr_mode(mode_);
+	const unsigned long clk = std::min(hw_rate, mode_rate) / (ddr ? 2 : 1);
+
+	/* Switch signalling voltage if necessary. */
+	if (mode_ == device_type::hs400_1v2 ||
+	    mode_ == device_type::hs200_1v2 ||
+	    mode_ == device_type::ddr52_1v2) {
+		dbg("%s: MMC switching to 1.2V signalling\n", h_->name());
+		if (auto r = h_->set_vio(1.1, 1.3, 0); r < 0) {
+			dbg("%s: MMC voltage switch failed\n", h_->name());
+			return r;
+		}
+	} else if (!running_1v8 && (mode_ == device_type::hs400_1v8 ||
+	    mode_ == device_type::hs200_1v8 ||
+	    (io_1v8 && mode_ == device_type::ddr52_1v8_3v3))) {
+		dbg("%s: MMC switching to 1.8V signalling\n", h_->name());
+		if (auto r = h_->set_vio(1.70, 1.95, 0); r < 0) {
+			dbg("%s: MMC voltage switch failed\n", h_->name());
+			return r;
+		}
+	}
+
+	/* REVISIT: For now we just set maximum power class and hope that the
+	 * device accepts it. All tested devices don't seem to care. */
+	if (auto r = ext_csd_.write(h_, rca_,
+	    ext_csd::offset::power_class, 15); r < 0) {
+		dbg("%s: MMC SWITCH POWER_CLASS failed\n", h_->name());
+		return r;
+	}
+
+	/* Set drive strength & timing interface. */
+	if (auto r = ext_csd_.write(h_, rca_,
+	    ext_csd::offset::hs_timing,
+	    static_cast<int>(drive) << 4 | timing_interface(mode_));
+	    r < 0) {
+		dbg("%s: MMC SWITCH HS_TIMING failed\n", h_->name());
+		return r;
+	}
+
+	/* Switch bus width. */
+	if (bus_width > 1) {
+		dbg("%s: MMC switching to %u-bit bus%s\n", h_->name(),
+		    bus_width, enh_strobe ? " with enhanced strobe" : "");
+		if (auto r = ext_csd_.write(h_, rca_,
+		    ext_csd::offset::bus_width,
+		    enh_strobe << 7 | bus_mode(mode_, bus_width));
+		    r < 0) {
+			dbg("%s: SWITCH BUS_WIDTH failed\n", h_->name());
+			return r;
+		}
+		h_->set_bus_width(bus_width);
+	}
+
+	/* Configure device clock. */
+	const unsigned long devclk = h_->set_device_clock(clk,
+	    ddr ? clock_mode::ddr : clock_mode::sdr, enh_strobe);
+	dbg("%s: MMC clock %luMHz%s (requested %luMHz)\n", h_->name(),
+	    devclk / 1000000, ddr ? " DDR" : " SDR", clk / 1000000);
+
+	/* Check background operations handshake state. */
+	if (ext_csd_.bkops_support() && ext_csd_.bkops_en() & 0x1)
+	    warning("%s: WARNING: MMC MAN_BKOPS_EN handshake enabled. This is "
+	        "NOT SUPPORTED.\n", h_->name());
+
+	/* Calculate sector size. */
+	if (ocr_.access_mode() == access_mode::byte) {
+		sector_size_ = 1;
+	} else {
+		switch (ext_csd_.data_sector_size()) {
+		case 0:
+			sector_size_ = 512;
+			break;
+		case 1:
+			sector_size_ = 4096;
+			break;
+		default:
+			return DERR(-ENOTSUP);
+		}
+	}
+
+	/* Enable cache. */
+	if (ext_csd_.cache_size()) {
+		dbg("%s: MMC switching on cache\n", h_->name());
+		if (auto r = ext_csd_.write(h_, rca_,
+		    ext_csd::offset::cache_ctrl, 0x1);
+		    r < 0) {
+			dbg("%s: SWITCH CACHE_CTRL failed\n", h_->name());
+			return r;
+		}
+	}
+
+	/* Refresh ext_csd after changes. */
+	if (auto r = send_ext_csd(h_, ext_csd_); r < 0) {
+		dbg("%s: MMC SEND_EXT_CSD failed\n", h_->name());
+		return r;
+	}
+
+	info("%s: MMC device %.*s attached in %s%s mode at address %u\n",
+	    h_->name(), cid_.pnm().size(), cid_.pnm().data(), to_string(mode_),
+	    enh_strobe ? " Enhanced Strobe" : "", rca_);
+
+	info("%s: Hardware reset %s\n", h_->name(),
+	    to_string(ext_csd_.rst_n_function()));
+	info("%s: %luKiB cache, %s\n", h_->name(),
+	    ext_csd_.cache_size() / 8, to_string(ext_csd_.cache_ctrl()));
+
+	return add_partitions();
+}
+
+/*
+ * device::read
+ */
+ssize_t
+device::read(partition p, const iovec *iov, size_t iov_off, size_t len,
+    off_t off)
+{
+	if (off % sector_size_ || len % sector_size_)
+		return DERR(-EINVAL);
+
+	std::lock_guard l{*h_};
+
+	const size_t am = ocr_.access_mode() == access_mode::sector ? 512 : 1;
+
+	if (auto r = switch_partition(p); r < 0)
+		return r;
+
+	size_t rd = 0;
+	while (rd != len) {
+		/* REVISIT: hard coded transfer block size of 512b for now. */
+		/* see READ_BL_LEN and h->max_block_len */
+		/* in DDR mode must be 512b */
+		auto r = read_multiple_block(h_, iov, iov_off + rd, len - rd,
+		    512, (off + rd) / am);
+		if (r < 0)
+			return r;
+		if (r % sector_size_)
+			return DERR(-EIO);
+		rd += r;
+	}
+
+	return len;
+}
+
+/*
+ * device::write
+ */
+ssize_t
+device::write(partition p, const iovec *iov, size_t iov_off, size_t len,
+    off_t off)
+{
+	if (off % sector_size_ || len % sector_size_)
+		return DERR(-EINVAL);
+
+	std::lock_guard l{*h_};
+
+	const size_t am = ocr_.access_mode() == access_mode::sector ? 512 : 1;
+
+	if (auto r = switch_partition(p); r < 0)
+		return r;
+
+	size_t wr = 0;
+	while (wr != len) {
+		/* REVISIT: hard coded transfer block size of 512b for now. */
+		/* see WRITE_BL_LEN and h->max_block_len */
+		/* in DDR mode must be 512b */
+		auto r = write_multiple_block(h_, iov, iov_off + wr, len - wr,
+		    512, (off + wr) / am);
+		if (r < 0)
+			return r;
+		if (r % sector_size_)
+			return DERR(-EIO);
+		wr += r;
+	}
+
+	return len;
+}
+
+/*
+ * device::ioctl
+ */
+int
+device::ioctl(partition p, unsigned long cmd, void *arg)
+{
+	return DERR(-ENOSYS);
+}
+
+/*
+ * device::v_mode
+ */
+device::mode_t
+device::v_mode() const
+{
+	return mode_;
+}
+
+/*
+ * device::switch_partition
+ */
+int
+device::switch_partition(partition p)
+{
+	const unsigned config = ext_csd_.partition_config();
+	if ((config & 7) == static_cast<unsigned>(p))
+		return 0;
+
+	return ext_csd_.write(h_, rca_, ext_csd::offset::partition_config,
+	    (config & ~7) | static_cast<int>(p));
+}
+
+/*
+ * device::add_partitions
+ */
+int
+device::add_partitions()
+{
+	char b[32];
+	::device *root, *dev;
+
+	if (!(root = device_reserve("mmcblk", true)))
+		return DERR(-ENOMEM);
+
+	const auto usr_gp_scale = ext_csd_.hc_wp_grp_size() *
+	    ext_csd_.hc_erase_grp_size() * 512 * 1024ull;
+	const auto user_sz = ext_csd_.sec_count() * 512ull;
+	const auto usr_enh = ext_csd_.partitions_attribute(partition::user);
+	if (usr_enh) {
+		const auto enh_sz = ext_csd_.enh_size_mult() * usr_gp_scale;
+		const auto enh_start = ext_csd_.enh_start_addr() *
+		    (ocr_.access_mode() == access_mode::sector ? 512ull : 1ull);
+		info("%s: user partition %s %s (enhanced 0x%08llx -> 0x%08llx)\n",
+		    h_->name(), root->name, hr_size_fmt(user_sz, b, 32),
+		    enh_start, enh_start + enh_sz);
+	} else
+		info("%s: user partition %s %s\n", h_->name(),
+		    root->name, hr_size_fmt(user_sz, b, 32));
+	partitions_.emplace_back(this, root, partition::user, user_sz);
+
+	if (ext_csd_.boot_size_mult()) {
+		const auto sz = ext_csd_.boot_size_mult() * 128 * 1024ul;
+		snprintf(b, 32, "%sboot", root->name);
+		if (!(dev = device_reserve(b, true)))
+			return DERR(-ENOMEM);
+		info("%s: boot partition 1 %s %s\n", h_->name(),
+		    dev->name, hr_size_fmt(sz, b, 32));
+		partitions_.emplace_back(this, dev, partition::boot1, sz);
+		snprintf(b, 32, "%sboot", root->name);
+		if (!(dev = device_reserve(b, true)))
+			return DERR(-ENOMEM);
+		info("%s: boot partition 2 %s %s\n", h_->name(),
+		    dev->name, hr_size_fmt(sz, b, 32));
+		partitions_.emplace_back(this, dev, partition::boot2, sz);
+	}
+
+	if (ext_csd_.rpmb_size_mult()) {
+		const auto sz = ext_csd_.rpmb_size_mult() * 128 * 1024ul;
+		snprintf(b, 32, "%srpmb", root->name);
+		if (!(dev = device_reserve(b, false)))
+			return DERR(-ENOMEM);
+		info("%s: rpmb partition %s %s\n", h_->name(),
+		    dev->name, hr_size_fmt(sz, b, 32));
+		partitions_.emplace_back(this, dev, partition::rpmb, sz);
+	};
+
+	for (auto p : {partition::gp1, partition::gp2, partition::gp3,
+	    partition::gp4}) {
+		const auto sz = ext_csd_.gp_size_mult_gpp(p) * usr_gp_scale;
+		if (!sz)
+			continue;
+		snprintf(b, 32, "%sgp", root->name);
+		if (!(dev = device_reserve(b, true)))
+			return DERR(-ENOMEM);
+		auto ext = ext_csd_.ext_partitions_attribute(p);
+		info("%s: gp partition %d %s %s%s%s%s\n", h_->name(),
+		    static_cast<int>(p) - 3, dev->name, hr_size_fmt(sz, b, 32),
+		    ext_csd_.partitions_attribute(p) ? " (enhanced)" : "",
+		    ext == ext_partitions_attribute::system_code ? " (system code)" : "",
+		    ext == ext_partitions_attribute::non_persistent ? " (non-persistent)" : "");
+		partitions_.emplace_back(this, dev, p, sz);
+	}
+
+	return 0;
+}
+
+}
