@@ -120,6 +120,9 @@ cdc_acm::tx_queue()
 			return;
 		auto &t = tx_.back();
 		t->set_buf(p, len);
+		/* The CDC-ACM standard does not require termination, but
+		 * the Windows 10 host side driver does. */
+		t->set_zero_length_termination(tty_tx_empty(t_));
 		if (auto r = udc().queue(endpoint_offset() + 1,
 		    ch9::Direction::DeviceToHost, t.get()); r < 0)
 			break;
