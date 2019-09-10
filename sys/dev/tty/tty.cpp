@@ -66,6 +66,7 @@ public:
 	void rx_overflow();
 	int tx_getc();
 	size_t tx_getbuf(size_t, const void **);
+	bool tx_empty();
 	void tx_advance(size_t);
 	void tx_complete();
 
@@ -562,6 +563,18 @@ tty::tx_getbuf(const size_t maxlen, const void **buf)
 	*buf = &*txq_pos_;
 	txq_pos_ += len;
 	return len;
+}
+
+/*
+ * tty::tx_empty - test if transmit buffer is empty
+ *
+ * Interrupt safe.
+ */
+bool
+tty::tx_empty()
+{
+	std::lock_guard tl{txq_lock_};
+	return txq_pos_ == txq_.end();
 }
 
 /*
@@ -1360,6 +1373,17 @@ size_t
 tty_tx_getbuf(tty *t, const size_t maxlen, const void **buf)
 {
 	return t->tx_getbuf(maxlen, buf);
+}
+
+/*
+ * tty_tx_empty - test if transmit buffer is empty
+ *
+ * Interrupt safe.
+ */
+bool
+tty_tx_empty(tty *t)
+{
+	return t->tx_empty();
 }
 
 /*

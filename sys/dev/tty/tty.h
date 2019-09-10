@@ -66,6 +66,7 @@ void	    tty_rx_overflow(struct tty *);
 
 int	    tty_tx_getc(struct tty *);
 size_t	    tty_tx_getbuf(struct tty *, size_t, const void **);
+bool	    tty_tx_empty(struct tty *);
 void	    tty_tx_advance(struct tty *, size_t);
 void	    tty_tx_complete(struct tty *);
 
