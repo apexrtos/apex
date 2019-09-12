@@ -124,6 +124,7 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_setitimer] = sc_setitimer,
 	[SYS_setpgid] = setpgid,
 	[SYS_setsid] = setsid,
+	[SYS_settimeofday] = sc_settimeofday,
 	[SYS_sigreturn] = sc_sigreturn,
 	[SYS_stat64] = sc_stat,
 	[SYS_statfs64] = sc_statfs,

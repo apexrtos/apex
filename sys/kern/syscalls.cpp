@@ -131,8 +131,11 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 		return DERR(-EFAULT);
 	switch (id) {
 	case CLOCK_REALTIME:
+		ns_to_ts(timer_realtime(), ts);
+		return 0;
 	case CLOCK_REALTIME_COARSE:
-		/* TODO(time): real time */
+		ns_to_ts(timer_realtime_coarse(), ts);
+		return 0;
 	case CLOCK_MONOTONIC:
 		/* TODO(time): monotonic with adjustments */
 		ns_to_ts(timer_monotonic(), ts);
@@ -155,6 +158,20 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 	default:
 		return DERR(-EINVAL);
 	}
+}
+
+int
+sc_settimeofday(const struct timeval *tv, const struct timezone *tz)
+{
+	if (tz)
+		return DERR(-EINVAL);
+
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_access_ok(tv, sizeof *tv, PROT_READ))
+		return DERR(-EFAULT);
+	return timer_realtime_set(tv_to_ns(tv));
 }
 
 int

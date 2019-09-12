@@ -32,6 +32,7 @@
  *
  * TODO:
  * - monotonic should not be volatile
+ * - realtime_offset should not be volatile
  * - replace irq_disable/irq_restore with spinlock (required for SMP)
  */
 
@@ -54,6 +55,7 @@
 #include <thread.h>
 
 static volatile uint64_t monotonic __fast_bss;	/* nanoseconds elapsed since bootup */
+static volatile uint64_t realtime_offset;	/* monotonic + realtime_offset = realtime */
 
 static struct event	timer_event;	/* event to wakeup a timer thread */
 static struct event	delay_event;	/* event for the thread delay */
@@ -373,6 +375,37 @@ uint64_t
 timer_monotonic_coarse(void)
 {
 	return monotonic;
+}
+
+/*
+ * Set real time
+ */
+int
+timer_realtime_set(uint64_t ns)
+{
+	uint64_t m = monotonic;
+	if (ns < m)
+		return DERR(-EINVAL);
+	realtime_offset = ns - m;
+	return 0;
+}
+
+/*
+ * Return real time
+ */
+uint64_t
+timer_realtime(void)
+{
+	return timer_monotonic() + realtime_offset;
+}
+
+/*
+ * Return real time (coarse, fast version)
+ */
+uint64_t
+timer_realtime_coarse(void)
+{
+	return monotonic + realtime_offset;
 }
 
 /*

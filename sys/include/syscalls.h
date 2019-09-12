@@ -7,6 +7,7 @@
 
 struct utsname;
 struct timespec;
+struct timezone;
 typedef int clockid_t;
 
 #if defined(__cplusplus)
@@ -20,6 +21,7 @@ int sc_uname(struct utsname *);
 int sc_reboot(unsigned long, unsigned long, int, void *);
 int sc_nanosleep(const struct timespec *, struct timespec *);
 int sc_clock_gettime(clockid_t, struct timespec *);
+int sc_settimeofday(const struct timeval *, const struct timezone *);
 int sc_gettid();
 
 #if defined(__cplusplus)

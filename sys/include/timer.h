@@ -68,6 +68,9 @@ uint64_t    timer_delay(uint64_t);
 void	    timer_tick(int);
 uint64_t    timer_monotonic(void);
 uint64_t    timer_monotonic_coarse(void);
+int	    timer_realtime_set(uint64_t);
+uint64_t    timer_realtime(void);
+uint64_t    timer_realtime_coarse(void);
 void	    timer_init(void);
 
 /*
