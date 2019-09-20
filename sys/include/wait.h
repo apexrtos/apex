@@ -123,7 +123,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 #define wait_event(event, condition) \
 ({ \
 	const k_sigset_t __sig_mask = sig_block_all(); \
-	const int __r = wait_event_interruptible(e, condition); \
+	const int __r = wait_event_interruptible(event, condition); \
 	sig_restore(&__sig_mask); \
 	return __r; \
 })
@@ -161,7 +161,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 #define wait_event_timeout(event, condition, ns) \
 ({ \
 	const k_sigset_t __sig_mask = sig_block_all(); \
-	const int __r = wait_event_timeout(e, condition, ns); \
+	const int __r = wait_event_timeout(event, condition, ns); \
 	sig_restore(&__sig_mask); \
 	return __r; \
 })
@@ -186,7 +186,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 #define wait_event_lock(event, condition, lock) \
 ({ \
 	const k_sigset_t __sig_mask = sig_block_all(); \
-	const int __r = wait_event_lock(e, condition, lock); \
+	const int __r = wait_event_lock(event, condition, lock); \
 	sig_restore(&__sig_mask); \
 	return __r; \
 })
@@ -211,7 +211,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 #define wait_event_lock_irq(event, condition, lock, irq_state) \
 ({ \
 	const k_sigset_t __sig_mask = sig_block_all(); \
-	const int __r = wait_event_lock_irq(e, condition, lock, irq_state); \
+	const int __r = wait_event_lock_irq(event, condition, lock, irq_state); \
 	sig_restore(&__sig_mask); \
 	return __r; \
 })
