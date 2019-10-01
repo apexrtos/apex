@@ -1,6 +1,7 @@
 #include "tty.h"
 
 #include "buffer_queue.h"
+#include <access.h>
 #include <arch.h>
 #include <conf/config.h>
 #include <debug.h>
@@ -14,6 +15,7 @@
 #include <memory>
 #include <mutex>
 #include <sch.h>
+#include <sys/mman.h>
 #include <sys/ttydefaults.h>
 #include <task.h>
 #include <termios.h>
@@ -244,8 +246,12 @@ tty::read(file *f, void *buf, const size_t len)
 			return r;
 		rl.unlock();
 		sl.unlock();
-		if (auto r = sch_continue_sleep(); r)
-			return r;
+		auto ua = u_access_suspend();
+		auto rc = sch_continue_sleep();
+		if (auto r = u_access_resume(ua, buf, len, PROT_WRITE); r)
+			rc = r;
+		if (rc)
+			return rc;
 		sl.lock();
 		rl.lock();
 	}
@@ -298,6 +304,11 @@ tty::write(file *f, const void *buf, size_t len)
 	const char *end = begin + len;
 	const char *it = begin;
 
+	auto rval = [&](int rc) {
+		assert(rc < 0);
+		return it == begin ? rc : it - begin;
+	};
+
 	while (it != end) {
 		std::unique_lock sl{state_lock_};
 		it += output(it, end - it, false);
@@ -310,13 +321,14 @@ tty::write(file *f, const void *buf, size_t len)
 
 		if (it != end) {
 			/* sleep until output queue drains */
-			std::unique_lock tl{txq_lock_};
-			auto rc = wait_event_interruptible_lock(output_, tl,
-			    [&] {
-				return txq_.size() <= txq_.capacity() / 2;
-			});
-			if (rc < 0)
-				return it == begin ? rc : it - begin;
+			if (auto r = sch_prepare_sleep(&output_, 0); r)
+				return rval(r);
+			auto ua = u_access_suspend();
+			auto rc = sch_continue_sleep();
+			if (auto r = u_access_resume(ua, buf, len, PROT_WRITE); r)
+				rc = r;
+			if (rc)
+				return rval(rc);
 		}
 	}
 	return it - begin;
@@ -336,8 +348,13 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 	}
 	case TCSETSW:
 	case TCSETSF: {
-		if (int r = tx_wait(); r < 0)
-			return r;
+		auto ua = u_access_suspend();
+		auto rc = tx_wait();
+		if (auto r = u_access_resume(ua, arg, sizeof(termios),
+		    PROT_WRITE); r)
+			rc = r;
+		if (rc)
+			return rc;
 		std::lock_guard sl{state_lock_};
 		if (cmd == TCSETSF)
 			flush(TCIFLUSH);
