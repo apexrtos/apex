@@ -195,10 +195,6 @@ task_create(struct task *parent, int vm_option, struct task **child)
 		err = DERR(-EINVAL);
 		break;
 	}
-	if (err < 0) {
-		task_destroy(task);
-		goto out;
-	}
 
 	/*
 	 * Fill initial task data.
@@ -214,6 +210,11 @@ task_create(struct task *parent, int vm_option, struct task **child)
 	event_init(&task->child_event, "child", ev_SLEEP);
 	event_init(&task->thread_event, "thread", ev_SLEEP);
 	list_insert(&kern_task.link, &task->link);
+
+	if (err < 0) {
+		task_destroy(task);
+		goto out;
+	}
 
 	/*
 	 * Register init task
