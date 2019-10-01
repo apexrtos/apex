@@ -222,6 +222,27 @@ u_access_end()
 }
 
 bool
+u_access_suspend()
+{
+	if (!as_transfer_running(task_cur()->as))
+		return false;
+	as_transfer_end(task_cur()->as);
+	return true;
+}
+
+int
+u_access_resume(bool suspended, const void *u_addr, size_t len, int prot)
+{
+	if (!suspended)
+		return 0;
+	if (auto r = as_transfer_begin(task_cur()->as); r)
+		return r;
+	if (!u_access_ok(u_addr, len, prot))
+		return DERR(-EFAULT);
+	return 0;
+}
+
+bool
 u_fault()
 {
 	return false;

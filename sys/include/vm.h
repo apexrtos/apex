@@ -30,6 +30,7 @@ void		    as_destroy(struct as *);
 void		    as_reference(struct as *);
 int		    as_transfer_begin(struct as *);
 void		    as_transfer_end(struct as *);
+bool		    as_transfer_running(struct as *);
 int		    as_modify_begin(struct as *);
 void		    as_modify_end(struct as *);
 void		    as_switch(struct as *);

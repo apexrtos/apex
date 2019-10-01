@@ -24,6 +24,8 @@ bool	k_access_ok(const void *, size_t, int);
  */
 int	u_access_begin(void);
 void	u_access_end(void);
+bool	u_access_suspend(void);
+int	u_access_resume(bool, const void *, size_t, int);
 
 /*
  * User access fault detection

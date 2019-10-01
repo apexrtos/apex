@@ -588,6 +588,15 @@ as_transfer_end(as *a)
 }
 
 /*
+ * as_transfer_running - query status of transfer to address space memory
+ */
+bool
+as_transfer_running(as *a)
+{
+	return a->lock.read().locked();
+}
+
+/*
  * as_modify_begin - start transaction which will modify address space
  */
 int
