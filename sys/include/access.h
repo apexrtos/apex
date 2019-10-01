@@ -23,7 +23,7 @@ bool	k_access_ok(const void *, size_t, int);
  * User access locking
  */
 int	u_access_begin(void);
-int	u_access_end(void);
+void	u_access_end(void);
 
 /*
  * User access fault detection
@@ -46,7 +46,7 @@ namespace a {
 class u_access {
 public:
 	int interruptible_lock() const { return u_access_begin(); }
-	int unlock() const { return u_access_end(); }
+	void unlock() const { u_access_end(); }
 };
 
 } /* namespace a */

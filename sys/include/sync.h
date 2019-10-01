@@ -103,9 +103,9 @@ int	       cond_broadcast(struct cond *);
 
 void	       rwlock_init(struct rwlock *);
 int	       rwlock_read_lock_interruptible(struct rwlock *);
-int	       rwlock_read_unlock(struct rwlock *);
+void	       rwlock_read_unlock(struct rwlock *);
 int	       rwlock_write_lock_interruptible(struct rwlock *);
-int	       rwlock_write_unlock(struct rwlock *);
+void	       rwlock_write_unlock(struct rwlock *);
 
 void	       spinlock_init(struct spinlock *);
 void	       spinlock_lock(struct spinlock *);
@@ -155,12 +155,12 @@ protected:
 class rwlock_read : public rwlock {
 public:
 	int interruptible_lock() { return rwlock_read_lock_interruptible(&m_); }
-	int unlock() { return rwlock_read_unlock(&m_); }
+	void unlock() { rwlock_read_unlock(&m_); }
 };
 class rwlock_write : public rwlock {
 public:
 	int interruptible_lock() { return rwlock_write_lock_interruptible(&m_); }
-	int unlock() { return rwlock_write_unlock(&m_); }
+	void unlock() { rwlock_write_unlock(&m_); }
 };
 inline rwlock_read &rwlock::read() { return static_cast<rwlock_read&>(*this); }
 inline rwlock_write &rwlock::write() { return static_cast<rwlock_write&>(*this); }

@@ -581,10 +581,10 @@ as_transfer_begin(as *a)
 /*
  * as_transfer_end - finish transfer to address space memory
  */
-int
+void
 as_transfer_end(as *a)
 {
-	return a->lock.read().unlock();
+	a->lock.read().unlock();
 }
 
 /*
@@ -599,10 +599,10 @@ as_modify_begin(as *a)
 /*
  * as_modify_end - finish transaction which modified address space
  */
-int
+void
 as_modify_end(as *a)
 {
-	return a->lock.write().unlock();
+	a->lock.write().unlock();
 }
 
 /*

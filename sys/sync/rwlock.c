@@ -78,7 +78,7 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 /*
  * rwlock_read_unlock
  */
-int
+void
 rwlock_read_unlock(struct rwlock *o)
 {
 	assert(!interrupt_running());
@@ -96,8 +96,6 @@ rwlock_read_unlock(struct rwlock *o)
 	--thread_cur()->rwlock_locks;
 #endif
 	spinlock_unlock(&p->lock);
-
-	return 0;
 }
 
 /*
@@ -131,7 +129,7 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 /*
  * rwlock_write_unlock
  */
-int
+void
 rwlock_write_unlock(struct rwlock *o)
 {
 	assert(!interrupt_running());
@@ -149,6 +147,4 @@ rwlock_write_unlock(struct rwlock *o)
 	--thread_cur()->rwlock_locks;
 #endif
 	spinlock_unlock(&p->lock);
-
-	return 0;
 }

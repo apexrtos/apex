@@ -215,10 +215,10 @@ u_access_begin()
 	return as_transfer_begin(task_cur()->as);
 }
 
-int
+void
 u_access_end()
 {
-	return as_transfer_end(task_cur()->as);
+	as_transfer_end(task_cur()->as);
 }
 
 bool
