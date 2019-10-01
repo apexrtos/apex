@@ -99,6 +99,23 @@ rwlock_read_unlock(struct rwlock *o)
 }
 
 /*
+ * rwlock_read_locked
+ */
+bool
+rwlock_read_locked(struct rwlock *o)
+{
+	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+
+	spinlock_lock(&p->lock);
+
+	bool r =  p->state > 0;
+
+	spinlock_unlock(&p->lock);
+
+	return r;
+}
+
+/*
  * rwlock_write_lock_interruptible
  */
 int
@@ -147,4 +164,21 @@ rwlock_write_unlock(struct rwlock *o)
 	--thread_cur()->rwlock_locks;
 #endif
 	spinlock_unlock(&p->lock);
+}
+
+/*
+ * rwlock_write_locked
+ */
+bool
+rwlock_write_locked(struct rwlock *o)
+{
+	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+
+	spinlock_lock(&p->lock);
+
+	bool r =  p->state < 0;
+
+	spinlock_unlock(&p->lock);
+
+	return r;
 }
