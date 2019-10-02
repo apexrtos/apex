@@ -341,7 +341,7 @@ sch_active(void)
 unsigned
 sch_wakeup(struct event *evt, int result)
 {
-	int n;
+	int n = 0;
 	struct queue *q;
 	struct thread *th;
 
