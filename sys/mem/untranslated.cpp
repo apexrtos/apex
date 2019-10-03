@@ -88,7 +88,7 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
 	const auto fixed = flags & MAP_FIXED;
 
 	std::unique_ptr<phys> pages(fixed
-	    ? page_reserve((phys*)addr, len, as)
+	    ? page_reserve((phys*)addr, len, attr, as)
 	    : page_alloc(len, attr, as),
 	    {len, as});
 

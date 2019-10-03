@@ -8,9 +8,10 @@ struct bootargs;
 /*
  * Page allocation flags
  */
+#define PAF_REALLOC 0x20000000		    /* extend existing allocation */
 #define PAF_MAPPED 0x40000000		    /* page is part of a vm mapping */
 #define PAF_NO_SPEED_FALLBACK 0x80000000    /* do not use alternate speed */
-#define PAF_MASK 0xc0000000
+#define PAF_MASK 0xe0000000
 
 struct meminfo {
 	phys *base;		    /* start address */
@@ -24,7 +25,7 @@ extern "C" {
 
 phys   *page_alloc_order(size_t order, long ma_paf, void *);
 phys   *page_alloc(size_t, long ma_paf, void *);
-phys   *page_reserve(phys *, size_t, void *);
+phys   *page_reserve(phys *, size_t, long paf, void *);
 int	page_free(phys *, size_t, void *);
 bool	page_valid(phys *, size_t, void *);
 long	page_attr(phys *, size_t len);

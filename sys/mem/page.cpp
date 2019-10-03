@@ -376,7 +376,7 @@ page_alloc(size_t len, long attr, void *owner)
  */
 static phys *
 page_reserve(region &r, phys *const addr, const size_t len,
-    const PG_STATE st, void *owner)
+    const PG_STATE st, long attr, void *owner)
 {
 	assert(st == PG_HOLE || st == PG_SYSTEM || st == PG_FIXED);
 	if (len == 0)
@@ -388,9 +388,10 @@ page_reserve(region &r, phys *const addr, const size_t len,
 
 	/* check that range is free or overlaps existing allocation */
 	for (auto i = begin; i != end; ++i) {
-		if (r.pages[i].state == st && r.pages[i].owner == owner)
-			continue;
 		if (r.pages[i].state == PG_FREE)
+			continue;
+		if (r.pages[i].state == st && r.pages[i].owner == owner &&
+		    attr & PAF_REALLOC)
 			continue;
 		return 0;
 	}
@@ -413,12 +414,12 @@ page_reserve(region &r, phys *const addr, const size_t len,
  * returns 0 on failure, physical address otherwise.
  */
 static phys *
-page_reserve(phys *addr, size_t len, const PG_STATE st, void *owner)
+page_reserve(phys *addr, size_t len, const PG_STATE st, long attr, void *owner)
 {
 	auto *r = find_region(addr, len);
 	if (!r)
 		return 0;
-	return page_reserve(*r, addr, len, st, owner);
+	return page_reserve(*r, addr, len, st, attr, owner);
 }
 
 /*
@@ -429,13 +430,15 @@ page_reserve(phys *addr, size_t len, const PG_STATE st, void *owner)
  * returns 0 on failure, physical address otherwise.
  */
 phys *
-page_reserve(phys *addr, size_t len, void *owner)
+page_reserve(phys *addr, size_t len, long attr, void *owner)
 {
+	const auto st = attr & PAF_MAPPED ? PG_MAPPED : PG_FIXED;
+
 	auto *r = find_region(addr, len);
 	if (!r)
 		return 0;
 	std::lock_guard l(r->lock);
-	return page_reserve(*r, addr, len, PG_FIXED, owner);
+	return page_reserve(*r, addr, len, st, attr, owner);
 }
 
 /*
@@ -695,9 +698,9 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 		list_insert(&r.blocks[r.nr_orders - 1], &r.pages[0].link);
 
 		/* reserve pages without physical backing */
-		if (!page_reserve(r, r.base, r.begin - r.base, PG_HOLE, nullptr))
+		if (!page_reserve(r, r.base, r.begin - r.base, PG_HOLE, 0, nullptr))
 			panic("bad meminfo");
-		if (!page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, nullptr))
+		if (!page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, 0, nullptr))
 			panic("bad meminfo");
 
 		dbg("page_init: region %zu: %p -> %p covering %p -> %p\n",
@@ -714,7 +717,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 
 	/* reserve unusable memory */
 	for_each_reserved_region([&](phys *p, size_t len) {
-		auto r = page_reserve(p, len, PG_SYSTEM, &kern_task);
+		auto r = page_reserve(p, len, PG_SYSTEM, 0, &kern_task);
 		/* reservation can fail for ROM addresses or other unmappable
 		 * memory */
 		dbg("page_init: reserve %p -> %p %s\n", p, p + len,
@@ -722,7 +725,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	});
 
 	/* reserve memory allocated for region & page structures */
-	if (!page_reserve(m_begin, m_alloc - m_begin, PG_SYSTEM, &page_id))
+	if (!page_reserve(m_begin, m_alloc - m_begin, PG_SYSTEM, 0, &page_id))
 		panic("bug");
 
 	/* initialise regions_by_speed */

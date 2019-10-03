@@ -255,6 +255,9 @@ mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
 	if (int err = l.lock(); err < 0)
 		return (void*)err;
 
+	/* mmap replaces existing mappings */
+	attr |= PAF_REALLOC;
+
 	return do_mmapfor(a, addr, len, prot, flags, fd, off, attr);
 }
 
