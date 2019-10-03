@@ -325,7 +325,7 @@ tty::write(file *f, const void *buf, size_t len)
 				return rval(r);
 			auto ua = u_access_suspend();
 			auto rc = sch_continue_sleep();
-			if (auto r = u_access_resume(ua, buf, len, PROT_WRITE); r)
+			if (auto r = u_access_resume(ua, buf, len, PROT_READ); r)
 				rc = r;
 			if (rc)
 				return rval(rc);
