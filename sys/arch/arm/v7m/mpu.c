@@ -229,9 +229,9 @@ again:;
 
 	/* configure MPU */
 	const uintptr_t region_base = (uintptr_t)addr & -(1UL << order);
+	write32(&MPU->RNR, victim);
+	write32(&MPU->RASR, 0);
 	write32(&MPU->RBAR, (union mpu_rbar){
-		.REGION = victim,
-		.VALID = 1,
 		.ADDR = region_base >> 5,
 	}.r);
 	write32(&MPU->RASR, prot_to_rasr(seg_prot(seg)) | (union mpu_rasr){
