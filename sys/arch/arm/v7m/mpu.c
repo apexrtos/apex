@@ -91,7 +91,6 @@ mpu_init(const struct mmumap *map, size_t count, int flags)
 
 	write32(&MPU->CTRL, (union mpu_ctrl){
 		.PRIVDEFENA = !!(flags & MPU_ENABLE_DEFAULT_MAP),
-		.HFNMIENA = 1,
 		.ENABLE = 1,
 	}.r);
 
