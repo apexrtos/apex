@@ -88,6 +88,7 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_ioctl] = sc_ioctl,
 	[SYS_kill] = kill,
 	[SYS_lchown32] = sc_lchown,
+	[SYS_lstat64] = sc_lstat,
 	[SYS_mkdir] = sc_mkdir,
 	[SYS_mkdirat] = sc_mkdirat,
 	[SYS_mknod] = sc_mknod,

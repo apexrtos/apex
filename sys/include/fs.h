@@ -72,6 +72,7 @@ int	sc_getcwd(char *, size_t);
 int	sc_getdents(int, struct dirent *, size_t);
 int	sc_ioctl(int, int, void *);
 int	sc_lchown(const char *, uid_t, gid_t);
+int	sc_lstat(const char *, struct stat *);
 int	sc_llseek(int, long, long, off_t *, int);
 int	sc_mkdir(const char *, mode_t);
 int	sc_mkdirat(int, const char*, mode_t);

@@ -274,6 +274,12 @@ sc_lchown(const char *path, uid_t uid, gid_t gid)
 }
 
 int
+sc_lstat(const char *path, struct stat *st)
+{
+	return sc_fstatat(AT_FDCWD, path, st, AT_SYMLINK_NOFOLLOW);
+}
+
+int
 sc_llseek(int fd, long off0, long off1, off_t *result, int whence)
 {
 	interruptible_lock l(u_access_lock);
