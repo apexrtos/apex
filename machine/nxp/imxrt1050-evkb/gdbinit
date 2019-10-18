@@ -147,19 +147,21 @@ define sdflash
 if 'DEBUGGER' not in os.environ:
 	gdb.write('DEBUGGER is not set\n')
 elif os.environ['DEBUGGER'] == 'jlink':
-	gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin 0x20000000')
+	gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin 0x20002000')
 elif os.environ['DEBUGGER'] == 'trace32':
 	gdb.write('sdflash with trace32 is not supported yet')
 else:
 	gdb.write('Unknown debugger "' + os.environ['DEBUGGER'])
 	end
-	set $pc = *0x20000404
+	set $pc = 0x20002400
 	mon go
 	echo > Waiting for flash loader to start...\n
 	shell until $TOOLSDIR/blhost -u -- get-property 1 > /dev/null; do; done
-	echo > Configuring SD card in 4-bit mode, no reset, SDR104 timing...\n
-	shell $TOOLSDIR/blhost -u -- fill-memory 0x2000 4 0xd0000310
-	shell $TOOLSDIR/blhost -u -- configure-memory 0x120 0x2000
+	# Write an sd_config_t to RAM (see https://github.com/apexrtos/imxrt1060_flashloader/blob/master/source/memory/src/sd_memory.c")
+	echo > Configuring SD card: uSDHC1, 4-bit mode, no reset, SDR25 timing...\n
+	shell $TOOLSDIR/blhost -u -- fill-memory 0x20000000 4 0xD0001100
+	# Configure SD card (magic 0x120) using sd_config_t we just wrote
+	shell $TOOLSDIR/blhost -u -- configure-memory 0x120 0x20000000
 	echo > Erasing first 4MiB of SD card...\n
 	shell $TOOLSDIR/blhost -u -- flash-erase-region 0x0 0x400000 0x120
 	echo > Writing to SD card...\n
