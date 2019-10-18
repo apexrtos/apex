@@ -1,5 +1,5 @@
 /*
- * Memory layout for sdcard boot
+ * Memory layout for usdhc boot
  */
 memory LOAD_REGION_SIZE	0x400000
 memory LOAD_REGION_BASE (CONFIG_DRAM_BASE_PHYS + CONFIG_DRAM_SIZE - CONFIG_LOAD_REGION_SIZE)

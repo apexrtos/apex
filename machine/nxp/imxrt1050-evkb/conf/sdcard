@@ -1,7 +1,0 @@
-/*
- * IMXRT1050-EVKB sdcard configuration
- */
-include machine/nxp/imxrt1050-evkb/conf/board
-include machine/nxp/imxrt1050-evkb/conf/common
-include machine/nxp/imxrt1050-evkb/conf/sdcard_layout
-finalmk machine/nxp/imxrt1050-evkb/image/sdcard.mk

@@ -1,0 +1,7 @@
+/*
+ * MIMXRT1060-EVK usdhc configuration
+ */
+include machine/nxp/mimxrt1060-evk/conf/board
+include machine/nxp/imxrt1050-evkb/conf/common
+include machine/nxp/imxrt1050-evkb/conf/usdhc_layout
+finalmk machine/nxp/imxrt1050-evkb/image/usdhc.mk

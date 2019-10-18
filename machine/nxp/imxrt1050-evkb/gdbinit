@@ -174,7 +174,7 @@ define sdflash
 	echo > Erasing first 4MiB of SD card...\n
 	shell $TOOLSDIR/blhost -u -- flash-erase-region 0x0 0x400000 0x120
 	echo > Writing to SD card...\n
-	shell $TOOLSDIR/blhost -u -- write-memory 0x0 $BUILDDIR/($BOARD)_sdcard 0x120
+	shell $TOOLSDIR/blhost -u -- write-memory 0x0 $BUILDDIR/($BOARD)_usdhc 0x120
 	reset
 end
 document sdflash
