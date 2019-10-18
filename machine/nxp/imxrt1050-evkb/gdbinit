@@ -139,7 +139,7 @@ document flash
 	Write image to FlexSPI connected flash device
 end
 
-define sdflash
+define run_flashloader
 	reset
 
 	echo > Loading flash loader...\n
@@ -157,6 +157,15 @@ else:
 	mon go
 	echo > Waiting for flash loader to start...\n
 	shell until $TOOLSDIR/blhost -u -- get-property 1 > /dev/null; do; done
+end
+document run_flashloader
+	Usage: run_flashloader
+
+	Load ivt_flashloader.bin to RAM and runs it 
+end
+
+define sdflash
+	run_flashloader
 	# Write an sd_config_t to RAM (see https://github.com/apexrtos/imxrt1060_flashloader/blob/master/source/memory/src/sd_memory.c")
 	echo > Configuring SD card: uSDHC1, 4-bit mode, no reset, SDR25 timing...\n
 	shell $TOOLSDIR/blhost -u -- fill-memory 0x20000000 4 0xD0001100
