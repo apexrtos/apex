@@ -161,7 +161,7 @@ end
 document run_flashloader
 	Usage: run_flashloader
 
-	Load ivt_flashloader.bin to RAM and runs it 
+	Load ivt_flashloader.bin to RAM and run
 end
 
 define sdflash
