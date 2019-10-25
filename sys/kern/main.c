@@ -107,6 +107,7 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	device_init();
 	null_init();
 	zero_init();
+	kmsg_init();
 	machine_driver_init(&args);
 	fs_init();
 	machine_ready();

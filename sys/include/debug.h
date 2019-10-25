@@ -38,13 +38,14 @@ void		emergency(const char *fmt, ...)
 noreturn void	panic(const char *);
 void		backtrace();
 void		backtrace_thread(struct thread *);
-void		syslog_printf(int, const char *, ...)
+int		syslog_printf(int, const char *, ...)
 			__attribute__((format (printf, 2, 3)));
-void		syslog_vprintf(int, const char *, va_list);
+int		syslog_vprintf(int, const char *, va_list);
 void		syslog_output(void (*)(void));
 int		syslog_format(char *, size_t);
 void		syslog_panic(void);
 int		sc_syslog(int, char *, int);
+void		kmsg_init();
 
 #if defined(__cplusplus)
 } /* extern "C" */
