@@ -195,7 +195,7 @@ u_access_okfor(const struct as *a, const void *u_addr, size_t len, int access)
 	const auto seg = as_find_seg(a, u_addr);
 	if (!seg)
 		return false;
-	if ((char *)u_addr + len > seg_end(seg))
+	if ((uintptr_t)seg_end(seg) - (uintptr_t)u_addr < len)
 		return false;
 	if ((access & seg_prot(seg)) != access)
 		return false;
