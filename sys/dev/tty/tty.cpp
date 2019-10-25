@@ -230,6 +230,15 @@ tty::read(file *f, void *buf, const size_t len)
 		return rxq_cooked_ != rxq_.begin();
 	};
 
+	/*
+	 * REVISIT: must call u_access_suspend/u_access_resume unconditionally
+	 * in case handling a previous iov entry called u_access_suspend as the
+	 * task address space can change while access is suspended
+	 */
+	auto ua = u_access_suspend();
+	if (auto r = u_access_resume(ua, buf, len, PROT_WRITE); r)
+		return r;
+
 	std::unique_lock sl{state_lock_};
 	std::unique_lock rl{rxq_lock_};
 
@@ -313,6 +322,15 @@ tty::write(file *f, const void *buf, size_t len)
 		assert(rc < 0);
 		return it == begin ? rc : it - begin;
 	};
+
+	/*
+	 * REVISIT: must call u_access_suspend/u_access_resume unconditionally
+	 * in case handling a previous iov entry called u_access_suspend as the
+	 * task address space can change while access is suspended
+	 */
+	auto ua = u_access_suspend();
+	if (auto r = u_access_resume(ua, buf, len, PROT_READ); r)
+		return r;
 
 	while (it != end) {
 		std::unique_lock sl{state_lock_};
