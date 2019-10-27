@@ -242,6 +242,11 @@ tty::read(file *f, void *buf, const size_t len)
 
 	/* wait for input */
 	while (!rx_avail()) {
+		/*
+		 * REVISIT: The settings of MIN (c_cc[VMIN]) and TIME
+		 * (c_cc[VTIME]) should be used to determine the
+		 * circumstances in which a read(2) completes
+		 */
 		if (auto r = sch_prepare_sleep(&input_, 0); r)
 			return r;
 		rl.unlock();
