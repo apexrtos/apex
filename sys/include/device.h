@@ -53,6 +53,7 @@ struct devio {
 	int	(*close)(struct file *);
 	ssize_t	(*read)(struct file *, const struct iovec *, size_t, off_t);
 	ssize_t	(*write)(struct file *, const struct iovec *, size_t, off_t);
+	int	(*seek)(struct file *, off_t, int);
 	int	(*ioctl)(struct file *, u_long, void *);
 };
 

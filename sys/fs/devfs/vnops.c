@@ -67,6 +67,7 @@ static int devfs_open(struct file *, int, mode_t);
 static int devfs_close(struct file *);
 static ssize_t devfs_read(struct file *, const struct iovec *, size_t, off_t);
 static ssize_t devfs_write(struct file *, const struct iovec *, size_t, off_t);
+static int devfs_seek (struct file *, off_t, int);
 static int devfs_ioctl(struct file *, u_long, void *);
 static int devfs_readdir(struct file *, struct dirent *, size_t);
 static int devfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
@@ -79,7 +80,7 @@ static const struct vnops devfs_vnops = {
 	.vop_close = devfs_close,
 	.vop_read = devfs_read,
 	.vop_write = devfs_write,
-	.vop_seek = ((vnop_seek_fn)vop_nullop),
+	.vop_seek = devfs_seek,
 	.vop_ioctl = devfs_ioctl,
 	.vop_fsync = ((vnop_fsync_fn)vop_nullop),
 	.vop_readdir = devfs_readdir,
@@ -228,6 +229,31 @@ devfs_write(struct file *fp, const struct iovec *iov, size_t count,
 	vn_unlock(fp->f_vnode);
 
 	int r = (*dev->devio->write)(fp, iov, count, offset);
+
+	vn_lock(fp->f_vnode);
+	--dev->busy;
+
+	return r;
+}
+
+static int
+devfs_seek(struct file *fp, off_t off, int whence)
+{
+	struct device *dev = fp->f_vnode->v_data;
+
+	/*
+	 * Device may have been destroyed.
+	 */
+	if (!dev)
+		return -ENODEV;
+
+	if (!dev->devio->seek)
+		return DERR(-EIO);
+
+	++dev->busy;
+	vn_unlock(fp->f_vnode);
+
+	int r = (*dev->devio->seek)(fp, off, whence);
 
 	vn_lock(fp->f_vnode);
 	--dev->busy;
