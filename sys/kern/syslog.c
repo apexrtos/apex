@@ -27,6 +27,16 @@
 #include <wait.h>
 
 /*
+ * REVISIT: this code relies on well defined integer overflow behaviour which
+ * is technically undefined behaviour in C, but OK under gcc.
+ *
+ * We may need to revisit this assumption in future when supporting clang. See
+ * the following link for some more information.
+ *
+ * https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Integer-Overflow.html
+ */
+
+/*
  * ent - system log entry
  */
 struct ent {
