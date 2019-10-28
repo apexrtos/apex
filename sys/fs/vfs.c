@@ -1182,6 +1182,15 @@ mknod(const char *path, mode_t mode, dev_t dev)
 
 /*
  * lseek
+ *
+ * Incorporating Linux compatible extension for Seeking file data and holes.
+ *
+ * According to Linux Programmer's Manual:
+ * "In the simplest implementation, a filesystem can support the
+ * operations by making SEEK_HOLE always return the offset of the end
+ * of the file, and making SEEK_DATA always return offset (i.e., even
+ * if the location referred to by offset is a hole, it can be
+ * considered to consist of data that is a sequence of zeros)."
  */
 off_t
 lseek(int fd, off_t off, int whence)
@@ -1205,6 +1214,7 @@ lseek(int fd, off_t off, int whence)
 	off_t x;
 	switch (whence) {
 	case SEEK_SET:
+	case SEEK_DATA:
 		x = 0;
 		break;
 	case SEEK_CUR:
@@ -1212,6 +1222,9 @@ lseek(int fd, off_t off, int whence)
 		break;
 	case SEEK_END:
 		x = vp->v_size;
+		break;
+	case SEEK_HOLE:
+		x = vp->v_size - off;
 		break;
 	default:
 		err = DERR(-EINVAL);
