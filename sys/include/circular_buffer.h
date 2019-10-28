@@ -558,8 +558,8 @@ public:
 
 	template<class I> iterator insert(const_iterator pos, I b, I e)
 	{
-		/* memcpy trivially constructible objects */
-		if constexpr (std::is_trivially_constructible_v<T> &&
+		/* memcpy trivially copyable objects */
+		if constexpr (std::is_trivially_copyable_v<T> &&
 		    std::is_pointer_v<I> &&
 		    std::is_convertible_v<const T*, I>) {
 			const auto it = expand(pos.it_, e - b);
@@ -684,8 +684,8 @@ private:
 	/* construct or move count items from src to dst where src > dst */
 	void move_left(size_type dst, size_type src, size_type count)
 	{
-		/* memmove trivially constructible objects */
-		if constexpr (std::is_trivially_constructible_v<T>) {
+		/* memmove trivially copyable objects */
+		if constexpr (std::is_trivially_copyable_v<T>) {
 			while (count) {
 				const auto lin = std::min<size_type>(
 				    capacity_ - std::max(wrap(dst), wrap(src)),
@@ -698,7 +698,7 @@ private:
 			return;
 		}
 
-		/* construct/move nontrivially constructible objects */
+		/* construct/move nontrivially copyable objects */
 		ssize_type i = 0;
 		for (; i < std::min<ssize_type>(begin_ - dst, count); ++i)
 			new(&ref(dst + i)) T(std::move(ref(src + i)));
@@ -709,8 +709,8 @@ private:
 	/* construct or move count items from src to dst where src < dst */
 	void move_right(size_type dst, size_type src, size_type count)
 	{
-		/* memmove trivially constructible objects */
-		if constexpr (std::is_trivially_constructible_v<T>) {
+		/* memmove trivially copyable objects */
+		if constexpr (std::is_trivially_copyable_v<T>) {
 			src += count;
 			dst += count;
 			while (count) {
@@ -725,7 +725,7 @@ private:
 			return;
 		}
 
-		/* construct/move nontrivially constructible objects */
+		/* construct/move nontrivially copyable objects */
 		ssize_type i = count - 1;
 		for (; i >= std::max<ssize_type>(end_ - dst, 0); --i)
 			new(&ref(dst + i)) T(std::move(ref(src + i)));
