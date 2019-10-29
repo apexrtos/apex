@@ -83,7 +83,7 @@ typedef	int (*vnop_open_fn)	(struct file *, int flags, mode_t);
 typedef	int (*vnop_close_fn)	(struct file *);
 typedef	ssize_t (*vnop_read_fn)	(struct file *, const struct iovec *, size_t, off_t);
 typedef	ssize_t (*vnop_write_fn)(struct file *, const struct iovec *, size_t, off_t);
-typedef	int (*vnop_seek_fn)	(struct file *, off_t);
+typedef	int (*vnop_seek_fn)	(struct file *, off_t, int);
 typedef	int (*vnop_ioctl_fn)	(struct file *, u_long, void *);
 typedef	int (*vnop_fsync_fn)	(struct file *);
 typedef	int (*vnop_readdir_fn)	(struct file *, struct dirent *, size_t);
@@ -122,7 +122,7 @@ struct vnops {
 #define VOP_CLOSE(FP)		    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_close)(FP)
 #define VOP_READ(FP, I, C, O)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_read)(FP, I, C, O)
 #define VOP_WRITE(FP, I, C, O)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_write)(FP, I, C, O)
-#define VOP_SEEK(FP, OFF)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_seek)(FP, OFF)
+#define VOP_SEEK(FP, OFF, WHENCE)   ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_seek)(FP, OFF, WHENCE)
 #define VOP_IOCTL(FP, C, A)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_ioctl)(FP, C, A)
 #define VOP_FSYNC(FP)		    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_fsync)(FP)
 #define VOP_READDIR(FP, B, L)	    ((FP)->f_vnode->v_mount->m_op->vfs_vnops->vop_readdir)(FP, B, L)
