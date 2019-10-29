@@ -196,7 +196,7 @@ devfs_read(struct file *fp, const struct iovec *iov, size_t count,
 		return -ENODEV;
 
 	if (!dev->devio->read)
-		return -EIO;
+		return DERR(-EIO);
 
 	++dev->busy;
 	vn_unlock(fp->f_vnode);
@@ -222,7 +222,7 @@ devfs_write(struct file *fp, const struct iovec *iov, size_t count,
 		return -ENODEV;
 
 	if (!dev->devio->write)
-		return -EIO;
+		return DERR(-EIO);
 
 	++dev->busy;
 	vn_unlock(fp->f_vnode);
@@ -247,7 +247,7 @@ devfs_ioctl(struct file *fp, u_long cmd, void *arg)
 		return -ENODEV;
 
 	if (!dev->devio->ioctl)
-		return -EIO;
+		return DERR(-EIO);
 
 	++dev->busy;
 	vn_unlock(fp->f_vnode);
