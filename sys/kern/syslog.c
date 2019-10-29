@@ -20,10 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/param.h>
 #include <sys/time.h>
 #include <sync.h>
-#include <timer.h>
+#include <unistd.h>
 #include <wait.h>
 
 /*
@@ -49,8 +48,11 @@ struct ent {
 
 static char log[CONFIG_SYSLOG_SIZE] __attribute__((aligned(alignof(struct ent))));
 static atomic_long log_first_seq = 1, log_last_seq;
+static long clear_seq = 1;
 static struct ent *head = (struct ent *)log;
 static struct ent *tail = (struct ent *)log;
+static struct ent *clear_ent = (struct ent *)log;
+
 static struct event log_wait;
 static struct spinlock lock;	/* REVISIT: may need init for SMP */
 static struct kmsg_output {
@@ -389,8 +391,9 @@ sc_syslog(int type, char *buf, int len)
 		/* TODO: implement */
 		return DERR(-ENOSYS);
 	case 5: /* clear */
-		/* TODO: implement */
-		return DERR(-ENOSYS);
+		clear_seq = log_last_seq + 1;
+		clear_ent = read_once(&head);
+		return 0;
 	case 6: /* console off */
 		if (prev_conlev == -1)
 			prev_conlev = conlev;
@@ -551,6 +554,34 @@ kmsg_write_iov(struct file *file, const struct iovec *iov, size_t count,
 	return msg_len;
 }
 
+static int
+kmsg_seek(struct file *file, off_t offset, int whence)
+{
+	struct kmsg_output *kmsg = file->f_data;
+	if (!kmsg)
+		return -EBADF;
+
+	if (offset)
+		return -ESPIPE;
+
+	switch (whence) {
+	case SEEK_SET:
+		kmsg->seq = log_first_seq;
+		kmsg->ent = read_once(&tail);
+		return 0;
+	case SEEK_DATA:
+		kmsg->seq = clear_seq;
+		kmsg->ent = clear_ent;
+		return 0;
+	case SEEK_END:
+		clear_seq = log_last_seq + 1;
+		clear_ent = read_once(&head);
+		return 0;
+	default:
+		return -EINVAL;
+	}
+}
+
 /*
  * Device I/O table
  */
@@ -559,7 +590,7 @@ static struct devio kmsg_io = {
 	.close = kmsg_close,
 	.read = kmsg_read_iov,
 	.write = kmsg_write_iov,
-	/* REVISIT: implement seek - required for kmsg but also required more of sc_syslog to be implemented */
+	.seek = kmsg_seek,
 };
 
 /*
