@@ -29,8 +29,7 @@ ARCHDIR := arch/$(CONFIG_ARCH)
 include boot/$(ARCHDIR)/include.mk
 
 # Machine specific boot sources
-MACHINEDIR := $(CONFIG_APEXDIR)/machine/$(CONFIG_MACHINE)/boot
-include $(MACHINEDIR)/include.mk
+include $(CONFIG_MACHINEDIR)/boot/include.mk
 
 # C library
 $(APEX_SUBDIR)boot/errno_EXTRA_CFLAGS := -fno-lto

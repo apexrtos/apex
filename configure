@@ -211,6 +211,7 @@ parse_config()
 			machine=$rest
 			find_config MACHINE_IN machine "$machine"
 			parse_config "$MACHINE_IN"
+			machinedir=${MACHINE_IN%%/conf*}
 			;;
 		cpu)
 			[ "x$cpu" != x ] &&
@@ -343,6 +344,7 @@ main()
 		find_config MACHINE_IN machine "$machine"
 		machine=${machine%%/conf*}
 		parse_config "$MACHINE_IN"
+		machinedir=${MACHINE_IN%%/conf*}
 	fi
 
 	# Handle --project option
@@ -386,6 +388,7 @@ main()
 		echo "CONFIG_SRCDIR := $srcdir"
 		echo "CONFIG_APEXDIR := $apexdir"
 		echo "CONFIG_BUILDDIR := $builddir"
+		echo "CONFIG_MACHINEDIR := $machinedir"
 		echo "CONFIG_PROJECT := $project"
 		echo "CONFIG_MACHINE := $machine"
 		echo "CONFIG_CPU := $cpu"

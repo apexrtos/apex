@@ -14,7 +14,7 @@ INCLUDE := \
 
 SOURCES := \
 	boot_data.c \
-	$(CONFIG_APEXDIR)/machine/$(CONFIG_MACHINE)/image/dcd.cpp \
+	$(CONFIG_MACHINEDIR)/image/dcd.cpp \
 	ivt.c \
 
 IMG := bootimg

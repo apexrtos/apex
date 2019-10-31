@@ -93,8 +93,7 @@ ARCHDIR := arch/$(CONFIG_ARCH)
 include sys/$(ARCHDIR)/include.mk
 
 # Machine specific kernel sources
-MACHINEDIR := $(CONFIG_APEXDIR)/machine/$(CONFIG_MACHINE)/sys
-include $(MACHINEDIR)/include.mk
+include $(CONFIG_MACHINEDIR)/sys/include.mk
 
 # C library
 $(APEX_SUBDIR)sys/lib/errno_EXTRA_CFLAGS := -fno-lto
