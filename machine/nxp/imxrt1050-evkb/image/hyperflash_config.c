@@ -1,4 +1,4 @@
-#include <cpu/nxp/imxrt10xx/flexspi.h>
+#include <cpu/nxp/imxrt10xx/image/flexspi.h>
 
 /*
  * FlexSPI configuration for IS26KS512S hyperflash on IMXRT1050-EVKB and

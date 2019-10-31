@@ -1,4 +1,4 @@
-#include <cpu/nxp/imxrt10xx/ivt.h>
+#include "ivt.h"
 
 /*
  * Image Vector Table

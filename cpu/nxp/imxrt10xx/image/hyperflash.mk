@@ -4,7 +4,7 @@ DEFAULT := y
 TYPE := imxrt_boot
 TARGET := $(CONFIG_SRCDIR)/$(CONFIG_BOARD)_flexspi
 
-LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/flexspi_boot.ld
+LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/image/flexspi_boot.ld
 CFLAGS := -fno-pie -O2
 CXXFLAGS := -fno-pie -O2
 
@@ -14,12 +14,12 @@ INCLUDE := \
 
 SOURCES := \
 	xip_boot_data.c \
-	hyperflash_config.c \
-	dcd.cpp \
+	$(CONFIG_APEXDIR)/machine/$(CONFIG_MACHINE)/image/hyperflash_config.c \
+	$(CONFIG_APEXDIR)/machine/$(CONFIG_MACHINE)/image/dcd.cpp \
 	ivt.c \
 
 IMG := bootimg
 
-include cpu/nxp/imxrt10xx/imxrt_boot.mk
+include cpu/nxp/imxrt10xx/image/imxrt_boot.mk
 
 endif

@@ -1,4 +1,4 @@
-#include <cpu/nxp/imxrt10xx/dcd.h>
+#include <cpu/nxp/imxrt10xx/image/dcd.h>
 
 #include <cpu/nxp/imxrt10xx/ccm.h>
 #include <cpu/nxp/imxrt10xx/iomuxc.h>

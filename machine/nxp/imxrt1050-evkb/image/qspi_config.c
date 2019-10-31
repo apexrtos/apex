@@ -1,4 +1,4 @@
-#include <cpu/nxp/imxrt10xx/flexspi.h>
+#include <cpu/nxp/imxrt10xx/image/flexspi.h>
 
 /*
  * FlexSPI configuration for IS25WP064AJBLE QSPI flash on IMXRT1050-EVKB and

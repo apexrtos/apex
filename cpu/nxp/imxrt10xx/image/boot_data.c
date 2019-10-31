@@ -1,4 +1,4 @@
-#include <cpu/nxp/imxrt10xx/boot_data.h>
+#include "boot_data.h"
 
 #include <assert.h>
 #include <conf/config.h>

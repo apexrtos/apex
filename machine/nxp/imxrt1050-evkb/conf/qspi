@@ -4,5 +4,5 @@
 memory ROM_SIZE 0x800000
 include machine/nxp/imxrt1050-evkb/conf/board
 include machine/nxp/imxrt1050-evkb/conf/common
-include machine/nxp/imxrt1050-evkb/conf/flexspi_layout
-finalmk machine/nxp/imxrt1050-evkb/image/qspi.mk
+include cpu/nxp/imxrt10xx/image/flexspi_layout
+finalmk cpu/nxp/imxrt10xx/image/qspi.mk
