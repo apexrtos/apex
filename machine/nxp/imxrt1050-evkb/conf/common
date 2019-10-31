@@ -154,4 +154,4 @@ driver2 sys/dev/fsl/usdhc{ \
 /*
  * Include helpful "make gdb" rule
  */
-mk machine/nxp/imxrt1050-evkb/gdb.mk
+mk cpu/nxp/imxrt10xx/gdb.mk
