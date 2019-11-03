@@ -160,6 +160,21 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 	}
 }
 
+int sc_clock_settime(clockid_t id, struct timespec *ts)
+{
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_access_ok(ts, sizeof *ts, PROT_READ))
+		return DERR(-EFAULT);
+	switch (id) {
+	case CLOCK_REALTIME:
+		return timer_realtime_set(ts_to_ns(ts));
+	default:
+		return DERR(-EINVAL);
+	}
+}
+
 int
 sc_settimeofday(const struct timeval *tv, const struct timezone *tz)
 {

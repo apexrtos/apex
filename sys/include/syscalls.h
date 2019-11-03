@@ -21,6 +21,7 @@ int sc_uname(struct utsname *);
 int sc_reboot(unsigned long, unsigned long, int, void *);
 int sc_nanosleep(const struct timespec *, struct timespec *);
 int sc_clock_gettime(clockid_t, struct timespec *);
+int sc_clock_settime(clockid_t, struct timespec *);
 int sc_settimeofday(const struct timeval *, const struct timezone *);
 int sc_gettid();
 

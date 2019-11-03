@@ -56,6 +56,7 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_chmod] = sc_chmod,				/* stub */
 	[SYS_chown32] = sc_chown,
 	[SYS_clock_gettime] = sc_clock_gettime,		/* stub */
+	[SYS_clock_settime] = sc_clock_settime,
 	[SYS_clone] = sc_clone,
 	[SYS_close] = close,
 	[SYS_dup2] = dup2,
