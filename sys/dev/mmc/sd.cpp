@@ -54,6 +54,12 @@ cid::cid(void *p)
 	memcpy(r_.data(), p, r_.size());
 }
 
+void
+cid::clear()
+{
+	memset(r_.data(), 0, r_.size());
+}
+
 unsigned cid::mid() const	    { return bits(r_, 120, 127); }
 unsigned cid::oid() const	    { return bits(r_, 104, 119); }
 std::string_view cid::pnm() const   { return {(char *)(r_.data() + 3), 5}; }

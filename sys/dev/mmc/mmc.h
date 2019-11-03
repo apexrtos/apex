@@ -116,6 +116,8 @@ public:
 	cid();
 	cid(void *);
 
+	void clear();
+
 	unsigned mid() const;
 	unsigned bin() const;
 	unsigned cbx() const;

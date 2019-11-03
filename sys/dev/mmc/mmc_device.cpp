@@ -22,8 +22,9 @@ device::device(host *h)
  */
 device::~device()
 {
-	info("%s: MMC device %.*s detached\n",
-	    h_->name(), cid_.pnm().size(), cid_.pnm().data());
+	info("%s: MMC device %.*s%sdetached\n",
+	    h_->name(), cid_.pnm().size(), cid_.pnm().data(),
+	    *cid_.pnm().data() ? " " : "");
 }
 
 /*
@@ -32,6 +33,10 @@ device::~device()
 int
 device::init()
 {
+	h_->assert_owned();
+
+	cid_.clear();
+
 	/* Get OCR by sending operating conditions with zero voltage window. */
 	if (auto r = send_op_cond(h_, 0, ocr_); r < 0) {
 		dbg("%s: MMC get OCR failed\n", h_->name());

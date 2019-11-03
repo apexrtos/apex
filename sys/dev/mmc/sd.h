@@ -51,6 +51,8 @@ public:
 	cid();
 	cid(void *);
 
+	void clear();
+
 	unsigned mid() const;
 	unsigned oid() const;
 	std::string_view pnm() const;

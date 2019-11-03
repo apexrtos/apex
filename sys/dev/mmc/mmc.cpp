@@ -116,6 +116,12 @@ cid::cid(void *p)
 	memcpy(r_.data(), p, r_.size());
 }
 
+void
+cid::clear()
+{
+	memset(r_.data(), 0, r_.size());
+}
+
 unsigned cid::mid() const	    { return bits(r_, 120, 127); }
 unsigned cid::bin() const	    { return bits(r_, 114, 119); }
 unsigned cid::cbx() const	    { return bits(r_, 112, 113); }

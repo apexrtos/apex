@@ -22,8 +22,9 @@ card::card(host *h)
  */
 card::~card()
 {
-	info("%s: SD card %.*s detached\n",
-	    h_->name(), cid_.pnm().size(), cid_.pnm().data());
+	info("%s: SD card %.*s%sdetached\n",
+	    h_->name(), cid_.pnm().size(), cid_.pnm().data(),
+	    *cid_.pnm().data() ? " " : "");
 }
 
 /*
@@ -33,6 +34,8 @@ int
 card::init()
 {
 	h_->assert_owned();
+
+	cid_.clear();
 
 	const auto supply = h_->vcc()->get();
 
