@@ -2,11 +2,17 @@
 
 #include "host.h"
 #include "mmc_block.h"
+#include <access.h>
+#include <compiler.h>
 #include <debug.h>
 #include <dev/regulator/voltage/regulator.h>
 #include <device.h>
 #include <errno.h>
+#include <linux/major.h>
+#include <linux/mmc/ioctl.h>
 #include <string_utils.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
 
 namespace mmc::mmc {
 
@@ -381,7 +387,52 @@ device::write(partition p, const iovec *iov, size_t iov_off, size_t len,
 int
 device::ioctl(partition p, unsigned long cmd, void *arg)
 {
-	return DERR(-ENOSYS);
+	interruptible_lock ul(u_access_lock);
+	if (auto r = ul.lock(); r < 0)
+		return r;
+
+	std::lock_guard hl{*h_};
+
+	switch (cmd) {
+	case MMC_IOC_CMD: {
+		mmc_ioc_cmd *c = static_cast<mmc_ioc_cmd *>(arg);
+		if (!u_access_ok(c, sizeof *c, PROT_WRITE))
+			return DERR(-EFAULT);
+		switch (c->opcode) {
+		case 6: { /* switch */
+			const auto arg = read_once(&c->arg);
+			if (arg >> 24 != 3) /* write byte */
+				return DERR(-ENOTSUP);
+			return ext_csd_.write(h_, rca_,
+			    static_cast<ext_csd::offset>(arg >> 16 & 0xff),
+			    arg >> 8 & 0xff);
+		}
+		case 8: { /* send_ext_csd */
+			if (c->write_flag || c->blksz != ext_csd_.size() ||
+			    c->blocks != 1)
+				return DERR(-EINVAL);
+			void *p = reinterpret_cast<void *>(c->data_ptr);
+			if (!u_access_ok(p, ext_csd_.size(), PROT_WRITE))
+				return DERR(-EFAULT);
+			if (auto r = send_ext_csd(h_, ext_csd_); r < 0)
+				return r;
+			memcpy(p, ext_csd_.data(), ext_csd_.size());
+			return 0;
+		}
+		case 13: { /* send_status */
+			device_status s;
+			if (auto r = send_status(h_, rca_, s); r < 0)
+				return r;
+			c->response[0] = s.raw();
+			return 0;
+		}
+		default:
+			return DERR(-ENOTSUP);
+		}
+	}
+	default:
+		return DERR(-ENOSYS);
+	}
 }
 
 /*

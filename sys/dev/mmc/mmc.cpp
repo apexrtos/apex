@@ -23,6 +23,12 @@ device_status::device_status(void *p)
 		dbg("device_status error %x\n", r_);
 }
 
+uint32_t
+device_status::raw() const
+{
+	return r_;
+}
+
 bool device_status::address_out_of_range() const    { return bits(r_, 31); }
 bool device_status::address_misalign() const	    { return bits(r_, 30); }
 bool device_status::block_len_error() const	    { return bits(r_, 29); }
@@ -659,6 +665,9 @@ ext_csd::write(host *h, unsigned rca, ext_csd::offset off, uint8_t value)
 	const uint32_t access = 3; /* write byte */
 	const uint32_t cmd_set = 0; /* normal */
 	const uint32_t index = static_cast<uint32_t>(off);
+
+	if (index > 255)
+		return DERR(-EINVAL);
 
 	command cmd{6,
 	    access << 24 | index << 16 | value << 8 | cmd_set,

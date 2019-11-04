@@ -41,6 +41,8 @@ public:
 	device_status();
 	device_status(void *);
 
+	uint32_t raw() const;
+
 	bool address_out_of_range() const;
 	bool address_misalign() const;
 	bool block_len_error() const;
