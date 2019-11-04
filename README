@@ -153,7 +153,6 @@ MUSL_CONFIG += --enable-visibility --enable-debug
 COMMON_CONFIG += CFLAGS="-g0 -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"
 COMMON_CONFIG += --disable-nls
 COMMON_CONFIG += --with-debug-prefix-map=\$(CURDIR)=
-LINUX_VER =
 ~~~~
 
 
