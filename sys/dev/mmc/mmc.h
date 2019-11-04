@@ -448,7 +448,6 @@ int set_relative_addr(host *h, unsigned rca);
 int send_csd(host *h, unsigned rca, csd &);
 int send_ext_csd(host *h, ext_csd &);
 int select_deselect_card(host *, unsigned rca);
-int write_ext_csd(host *, unsigned rca, ext_csd::offset, uint8_t value);
 int send_status(host *, unsigned rca, device_status &);
 int bus_test(host *, unsigned rca, unsigned bus_width);
 ssize_t read_single_block(host *h, const iovec *, size_t iov_off, size_t len,
