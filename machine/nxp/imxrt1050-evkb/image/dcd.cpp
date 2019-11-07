@@ -374,14 +374,14 @@ constexpr struct dcd {
 				.ACT2RW = 2,
 				.RFRC = 9,
 				.WRC = 1,
-				.CKEOFF = 5,
+				.CKEOFF = 0,
 				.ACT2PRE = 6,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, SDRAMCR2)),
 			bswap((semc::semc_sdramcr2){{
-				.SRRC = 32,
+				.SRRC = 10,
 				.REF2REF = 9,
-				.ACT2ACT = 1,
+				.ACT2ACT = 9,
 				.ITO = 0,
 			}}),
 
@@ -533,9 +533,9 @@ constexpr struct dcd {
 			bswap((semc::semc_sdramcr3){{
 				.REN = 1,
 				.REBL = 4,
-				.PRESCALE = 10,
-				.RT = 33,
-				.UT = 80,
+				.PRESCALE = 11,
+				.RT = 30,
+				.UT = 60,
 			}}),
 		};
 	} cmd9;
