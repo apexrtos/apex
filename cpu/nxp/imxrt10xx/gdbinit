@@ -187,7 +187,7 @@ define mmcflash
 	run_flashloader
 	# Write an mmc_config_t to RAM (see https://github.com/apexrtos/imxrt1060_flashloader/blob/master/source/memory/src/mmc_memory.c")
 	echo > Configuring MMC device: uSDHC1, 4 bit DDR, Normal Speed, Boot partition 1...\n
-	shell $TOOLSDIR/blhost -u -- fill-memory 0x20000000 0x4 0xC1111110
+	shell $TOOLSDIR/blhost -u -- fill-memory 0x20000000 0x4 0xC1111111
 	shell $TOOLSDIR/blhost -u -- fill-memory 0x20000004 0x4 0x00000000
 	# Configure MMC device (magic 0x121) using mmc_config_t we just wrote
 	shell $TOOLSDIR/blhost -u -- configure-memory 0x121 0x20000000
