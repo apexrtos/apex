@@ -114,7 +114,7 @@ struct semc {
 			uint32_t PS : 1;
 			uint32_t : 3;
 			uint32_t BL : 3;
-			uint32_t : 1;
+			uint32_t COL8 : 1; /* For IMXRT106x only. RSV for IMXRT105x */
 			uint32_t COL : 2;
 			uint32_t CL : 2;
 			uint32_t : 12;
