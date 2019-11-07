@@ -153,7 +153,7 @@ constexpr uint32_t bswap(semc::semc_ipcr0 v)
 
 constexpr uint32_t bswap(semc::semc_ipcr1 v)
 {
-	return bswap(v.DATASZ);
+	return bswap(v.DATSZ);
 }
 
 constexpr uint32_t bswap(semc::semc_ipcr2 v)
@@ -392,7 +392,7 @@ constexpr struct dcd {
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, IPCR1)),
 			bswap((semc::semc_ipcr1){{
-				.DATASZ = 2,
+				.DATSZ = 2,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, IPCR2)),
 			bswap((semc::semc_ipcr2){{

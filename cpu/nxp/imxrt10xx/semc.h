@@ -177,7 +177,7 @@ struct semc {
 	} IPCR0;
 	union semc_ipcr1 {
 		struct {
-			uint32_t DATASZ : 3;
+			uint32_t DATSZ : 3;
 			uint32_t : 29;
 		};
 		uint32_t r;
