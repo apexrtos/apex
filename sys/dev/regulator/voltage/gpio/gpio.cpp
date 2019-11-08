@@ -20,7 +20,7 @@ public:
 private:
 	float v_get() const override;
 	int v_set(float, float) override;
-	int v_supports(float, float) const override;
+	bool v_supports(float, float) const override;
 
 	int find(float, float) const;
 
@@ -102,7 +102,7 @@ gpio_reg::v_set(float voltage_min, float voltage_max)
 /*
  * gpio_reg::v_supports
  */
-int
+bool
 gpio_reg::v_supports(float voltage_min, float voltage_max) const
 {
 	return find(voltage_min, voltage_max) >= 0;

@@ -16,7 +16,7 @@ public:
 private:
 	float v_get() const override;
 	int v_set(float, float) override;
-	int v_supports(float, float) const override;
+	bool v_supports(float, float) const override;
 
 	const float voltage_;
 };
@@ -44,18 +44,18 @@ fixed::v_get() const
 int
 fixed::v_set(float min_voltage, float max_voltage)
 {
-	return v_supports(min_voltage, max_voltage);
+	if (!v_supports(min_voltage, max_voltage))
+		return -ENOTSUP;
+	return 0;
 }
 
 /*
  * fixed::v_supports
  */
-int
+bool
 fixed::v_supports(float min_voltage, float max_voltage) const
 {
-	if (voltage_ < min_voltage || voltage_ > max_voltage)
-		return -ENOTSUP;
-	return 0;
+	return voltage_ >= min_voltage && voltage_ <= max_voltage;
 }
 
 }

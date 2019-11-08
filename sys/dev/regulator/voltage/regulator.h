@@ -17,7 +17,7 @@ public:
 
 	float get() const;
 	int set(float min_voltage, float max_voltage);
-	int supports(float min_voltage, float max_voltage) const;
+	bool supports(float min_voltage, float max_voltage) const;
 	bool equal(const voltage *) const;
 
 	const std::string &name() const;
@@ -25,7 +25,7 @@ public:
 private:
 	virtual float v_get() const = 0;
 	virtual int v_set(float min_voltage, float max_voltage) = 0;
-	virtual int v_supports(float voltage_min, float voltage_max) const = 0;
+	virtual bool v_supports(float voltage_min, float voltage_max) const = 0;
 
 	const std::string name_;
 

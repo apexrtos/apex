@@ -45,9 +45,9 @@ voltage::set(float min_voltage, float max_voltage)
  * voltage::supports - check if regulator supports an output voltage between
  *		       voltage_min and voltage_max.
  *
- * If a suitable voltage is not supported an error code will be returned.
+ * Returns true if a suitable voltage is supported.
  */
-int
+bool
 voltage::supports(float min_voltage, float max_voltage) const
 {
 	return v_supports(min_voltage, max_voltage);
