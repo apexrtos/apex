@@ -14,8 +14,7 @@ enum iomuxc_sw_mux_ctl_sion {
 
 union iomuxc_sw_mux_ctl {
 	struct {
-		uint32_t MUX_MODE : 3;
-		uint32_t : 1;
+		uint32_t MUX_MODE : 4;
 		enum iomuxc_sw_mux_ctl_sion SION : 1;
 		uint32_t : 27;
 	};
