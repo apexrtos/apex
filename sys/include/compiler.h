@@ -130,9 +130,18 @@ write_once(T *p, const T &v)
 #define unlikely(x) __builtin_expect((!!(x)),0)
 
 /*
+ * Copy symbol attributes (GCC 9+)
+ */
+#if __has_attribute(copy)
+#define ATTR_COPY(x) __attribute__((copy(x)))
+#else
+#define ATTR_COPY(x)
+#endif
+
+/*
  * Create create a weak alias (from musl).
  */
 #define weak_alias(old, new) \
-	extern __typeof(old) new __attribute__((weak, alias(#old)))
+	extern __typeof(old) new __attribute__((weak, alias(#old))) ATTR_COPY(old)
 
 #endif
