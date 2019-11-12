@@ -448,9 +448,17 @@ private:
 constexpr bool hs400_support = false;
 constexpr bool hs400_es_support = false;
 fsl_usdhc::fsl_usdhc(const fsl_usdhc_desc &d, const regs::host_ctrl_cap cap)
-: mmc::host{d.mmc, cap.SDR104_SUPPORT, cap.DDR50_SUPPORT, cap.SDR50_SUPPORT,
-    hs400_es_support, hs400_support, cap.SDR104_SUPPORT, cap.DDR50_SUPPORT,
-    cap.SDR50_SUPPORT, cap.USE_TUNING_SDR50, 512u << cap.MBL}
+: mmc::host{d.mmc,
+	    cap.SDR104_SUPPORT ? true : false,
+	    cap.DDR50_SUPPORT ? true : false,
+	    cap.SDR50_SUPPORT ? true : false,
+	    hs400_es_support,
+	    hs400_support,
+	    cap.SDR104_SUPPORT ? true : false,
+	    cap.DDR50_SUPPORT ? true : false,
+	    cap.SDR50_SUPPORT ? true : false,
+	    cap.USE_TUNING_SDR50 ? true : false,
+	    512u << cap.MBL}
 , tuning_{false}
 , r_{reinterpret_cast<regs *>(d.base)}
 , clock_{d.clock}
