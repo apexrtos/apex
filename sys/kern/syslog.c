@@ -41,7 +41,7 @@
 struct ent {
 	uint64_t nsec;		/* timestamp in nanoseconds */
 	long seq;		/* sequence number of message - safe to roll over */
-	size_t len_term;	/* length of msg including null terminator */
+	size_t len_term;	/* length of msg including null terminator, 0: wrap */
 	long priority;		/* syslog facility and priority */
 	char msg[];		/* message text */
 };
@@ -105,7 +105,7 @@ advance(struct ent **p)
 
 	*p = (struct ent *)ALIGNn((char *)*p + sizeof(**p) + len,
 	    alignof(**p));
-	if ((*p)->len_term == SIZE_MAX || (char *)(*p + 1) >= (log + sizeof(log)))
+	if ((char *)(*p + 1) >= (log + sizeof(log)))
 		*p = (struct ent *)log;
 }
 
@@ -133,7 +133,9 @@ log_trim(void)
 	struct ent *entry = tail;
 	++log_first_seq;
 	advance(&tail);
-	entry->len_term = 0;
+	if (!tail->len_term) /* sentinel: wrap */
+		tail = (struct ent *)log;
+	entry->len_term = -1;
 }
 
 /*
@@ -164,7 +166,7 @@ check_len:
 			 * not enough space to end of log - wrap head
 			 * back to start
 			 */
-			head->len_term = SIZE_MAX;	/* special marker: skip last entry */
+			head->len_term = 0;	/* sentinel: wrap */
 			head = (struct ent *)log;
 			if (tail == head) /* catch wrap to completely full */
 				log_trim();
@@ -275,8 +277,13 @@ syslog_format(char *buf, const size_t len)
 			kmsg->ent = read_once(&tail);
 			continue; /* process updated kmsg state */
 		}
-		if (entry.seq != kmsg->seq)
-			break;	/* entry not valid yet? */
+		if (entry.seq != kmsg->seq) { /* entry not valid */
+			if (!entry.len_term) { /* sentinel: wrap */
+				kmsg->ent = (struct ent *)log;
+				continue;
+			} else
+				break; /* still being written... */
+		}
 		if (LOG_PRI(entry.priority) < conlev) {
 			struct timeval tv;
 			ns_to_tv(entry.nsec, &tv);
@@ -318,8 +325,12 @@ kmsg_format(char *buf, const size_t len, struct kmsg_output *kmsg)
 		return -EPIPE;	/* Linux compatible */
 	}
 
-	if (entry.seq != kmsg->seq)
-		return -EAGAIN;	/* entry not valid yet... */
+	if (entry.seq != kmsg->seq) { /* entry not valid */
+		if (!entry.len_term) /* sentinel: wrap */
+			kmsg->ent = (struct ent *)log;
+		else
+			return -EAGAIN;	/* still being written... */
+	}
 
 	int n = snprintf(buf, len, "%lu,%lu,%llu,-; ",
 			 entry.priority, entry.seq, entry.nsec / 1000);
