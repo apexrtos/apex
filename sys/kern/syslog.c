@@ -46,7 +46,7 @@ struct ent {
 	char msg[];		/* message text */
 };
 
-static char log[CONFIG_SYSLOG_SIZE] __attribute__((aligned(alignof(struct ent))));
+static alignas(struct ent) char log[CONFIG_SYSLOG_SIZE];
 static atomic_long log_first_seq = 1, log_last_seq;
 static long clear_seq = 1;
 static struct ent *head = (struct ent *)log;
