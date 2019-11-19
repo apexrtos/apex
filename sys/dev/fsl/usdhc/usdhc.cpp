@@ -815,6 +815,8 @@ fsl_usdhc::v_run_command(mmc::command &c)
 	sch_prepare_sleep(&event_, 1e9);
 	write32(&r_->CMD_XFR_TYP, cmd_xfr_typ.r);
 	if (auto r = sch_continue_sleep(); r < 0) {
+		dbg("fsl_usdhc::v_run_command %d arg %x failed %d\n",
+		    c.index(), c.argument(), r);
 		sig_restore(&sig_mask);
 		/* Issue reset to recover from errors. */
 		write32(&r_->SYS_CTRL, [&]{
