@@ -38,6 +38,14 @@ static ssize_t console_write(struct file *file, const struct iovec *iov,
 }
 
 /*
+ * ioctl
+ */
+int console_ioctl(struct file *file, unsigned long cmd, void *data)
+{
+	return kioctl(fd, cmd, data);
+}
+
+/*
  * Console writer thread
  */
 static void
@@ -74,6 +82,7 @@ console_init(void)
 	static struct devio io = {
 		.read = console_read,
 		.write = console_write,
+		.ioctl = console_ioctl,
 	};
 
 	/* TODO: configurable console device */
