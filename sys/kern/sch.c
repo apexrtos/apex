@@ -447,6 +447,9 @@ sch_prepare_sleep(struct event *evt, uint64_t nsec)
 	assert(!interrupt_running());
 	assert(evt);
 
+	/* disable preemption */
+	sch_lock();
+
 	const int s = irq_disable();
 
 	if (sig_unblocked_pending(active_thread)) {
@@ -481,14 +484,19 @@ int
 sch_continue_sleep()
 {
 	assert(interrupt_enabled());
-	assert(!locks);
+	assert(locks == 1);
 
 	interrupt_disable();
+
+	/* enable preemption atomically with interrupts disabled */
+	locks = 0;
+
 	/* if we are still going to sleep, sleep now! */
 	if (active_thread->state & TH_SLEEP) {
 		resched = RESCHED_SWITCH;
 		arch_schedule();
 	}
+
 	interrupt_enable();
 
 	/* if this assertion fires the CPU port is broken */
@@ -504,6 +512,7 @@ void
 sch_cancel_sleep(void)
 {
 	sch_unsleep(active_thread, 0);
+	sch_unlock();
 }
 
 /*
