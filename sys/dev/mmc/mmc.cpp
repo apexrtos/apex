@@ -706,6 +706,16 @@ go_idle_state(host *h)
 }
 
 /*
+ * stop_transmission
+ */
+int
+stop_transmission(host *h)
+{
+	command cmd{12, 0, command::response_type::r1b};
+	return h->run_command(cmd, 0);
+}
+
+/*
  * app_cmd
  */
 int

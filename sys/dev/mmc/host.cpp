@@ -136,6 +136,10 @@ host::run_command(command &c, unsigned rca)
 		if (auto r = run_cmd(); r >= 0 || r == -EINTR)
 			return r;
 
+		/* Issue stop command to return to tran state. */
+		if (c.data_size() > 0)
+			mmc::stop_transmission(this);
+
 		/* Commands fail in weird and wonderful ways if the bus isn't
 		 * correctly tuned. Try to recover by tuning bus. */
 		if (!device_)

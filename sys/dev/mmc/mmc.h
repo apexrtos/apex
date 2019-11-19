@@ -443,6 +443,7 @@ private:
  * MMC Device Commands
  */
 int go_idle_state(host *);
+int stop_transmission(host *);
 int app_cmd(host *, unsigned rca);
 int send_op_cond(host *h, float supply_v, ocr &);
 int all_send_cid(host *, cid &);
