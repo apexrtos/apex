@@ -95,8 +95,10 @@ class runflashloader(gdb.Command):
 		sys.stdout = sys.__stdout__
 		if flashloaderConnected == 0:
 			print("> Flash loader failed! No target device detected on USB")
+			return 1
 		else:
 			print("> Flash loader running")
+			return 0
 
 	def invoke(self, args, from_tty):
 		self.execute()
@@ -110,7 +112,8 @@ class sdflash(gdb.Command):
 		sdCardConfigurationKey = 0x120
 
 		# load flashloader into memory and execute it
-		runflashloader.execute(self)
+		if runflashloader.execute(self) != 0:
+			return
 
 		# Write an sd_config_t to RAM (see https://github.com/apexrtos/imxrt1060_flashloader/blob/master/source/memory/src/sd_memory.c")
 		print("> Configuring SD card: uSDHC1, 4-bit mode, no reset, SDR25 timing... ")
@@ -160,7 +163,8 @@ class mmcflash(gdb.Command):
 		mmcConfigurationKey = 0x121
 
 		# load flashloader into memory and execute it
-		runflashloader.execute(self)
+		if runflashloader.execute(self) != 0:
+			return
 
 		# Write an mmc_config_t to RAM (see https://github.com/apexrtos/imxrt1060_flashloader/blob/master/source/memory/src/mmc_memory.c")
 		print("> Configuring MMC device: " + flashloader_mmcpartition[args][1] + "... ")
