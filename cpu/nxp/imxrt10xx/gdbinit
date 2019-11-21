@@ -71,13 +71,15 @@ class runflashloader(gdb.Command):
 	def __init__(self):
 		super(runflashloader, self).__init__ ("runflashloader", gdb.COMMAND_USER)
 	def execute(self):
-		flashloaderAddress = 0x20002000
-		ivtOffset = 0x400
+		flashloaderAddress = 0x20000000
+		# Location in the bin file where the IVT specifies the start address of the flashloader
+		ivtEntryAddressOffset = 0x404
 		reset.execute(self)
 		print("> Loading flash loader...")
 		gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin ' + str(flashloaderAddress))
 		print("> Executing flash loader...")
-		gdb.execute('set $pc = ' + str(flashloaderAddress + ivtOffset))
+		# Set the PC to the start address of the flashloader
+		gdb.execute('set $pc = *' + str(flashloaderAddress + ivtEntryAddressOffset))
 		gdb.execute('mon go')
 		print("> Waiting for flash loader to start...")
 		# Wait for flash loader to start and USB to enumerate
