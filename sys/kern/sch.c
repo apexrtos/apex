@@ -492,10 +492,10 @@ sch_continue_sleep()
 	locks = 0;
 
 	/* if we are still going to sleep, sleep now! */
-	if (active_thread->state & TH_SLEEP) {
+	if (active_thread->state & TH_SLEEP)
 		resched = RESCHED_SWITCH;
+	if (resched)
 		arch_schedule();
-	}
 
 	interrupt_enable();
 
