@@ -447,9 +447,6 @@ sch_prepare_sleep(struct event *evt, uint64_t nsec)
 	assert(!interrupt_running());
 	assert(evt);
 
-	/* disable preemption */
-	sch_lock();
-
 	const int s = irq_disable();
 
 	if (sig_unblocked_pending(active_thread)) {
@@ -465,6 +462,9 @@ sch_prepare_sleep(struct event *evt, uint64_t nsec)
 	if (nsec != 0)
 		timer_callout(&active_thread->timeout, nsec, 0,
 		    &sleep_expire, active_thread);
+
+	/* disable preemption */
+	sch_lock();
 
 	irq_restore(s);
 
