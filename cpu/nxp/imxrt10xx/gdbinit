@@ -66,6 +66,39 @@ class reset(gdb.Command):
 	def invoke(self, args, from_tty):
 		self.execute()
 
+class loadbin(gdb.Command):
+	"""Load binary image to target device"""
+	def __init__(self):
+		super().__init__("loadbin", gdb.COMMAND_USER)
+	def execute(self, filename, addr):
+		if 'DEBUGGER' not in os.environ:
+			gdb.write('DEBUGGER is not set\n')
+		elif os.environ['DEBUGGER'] == 'jlink':
+			gdb.execute('mon loadbin ' + filename + ' ' + hex(addr))
+		elif os.environ['DEBUGGER'] == 'trace32':
+			gdb.execute('mon b::data.load.binary ' + filename + ' ' + hex(addr))
+		else:
+			gdb.write('Unknown debugger "' + os.environ['DEBUGGER'])
+	def invoke(self, args, from_tty):
+		args = args.split()
+		self.execute(args[0], int(args[1], 0))
+
+class freerun(gdb.Command):
+	"""Detach debugger and allow target to run"""
+	def __init__(self):
+		super().__init__("freerun", gdb.COMMAND_USER)
+	def execute(self):
+		if 'DEBUGGER' not in os.environ:
+			gdb.write('DEBUGGER is not set\n')
+		elif os.environ['DEBUGGER'] == 'jlink':
+			gdb.execute('mon go')
+		elif os.environ['DEBUGGER'] == 'trace32':
+			gdb.execute('mon b::go')
+		else:
+			gdb.write('Unknown debugger "' + os.environ['DEBUGGER'])
+	def invoke(self, args, from_tty):
+		self.execute()
+
 class runflashloader(gdb.Command):
 	"""Load flash loader into RAM and execute it"""
 	def __init__(self):
@@ -76,11 +109,11 @@ class runflashloader(gdb.Command):
 		ivtEntryAddressOffset = 0x404
 		reset.execute(self)
 		print("> Loading flash loader...")
-		gdb.execute('mon loadbin ' + os.environ['TOOLSDIR'] + '/ivt_flashloader.bin ' + str(flashloaderAddress))
-		print("> Executing flash loader...")
+		loadbin.execute(self, os.environ['TOOLSDIR'] + '/ivt_flashloader.bin ', flashloaderAddress)
 		# Set the PC to the start address of the flashloader
-		gdb.execute('set $pc = *' + str(flashloaderAddress + ivtEntryAddressOffset))
-		gdb.execute('mon go')
+		gdb.execute('set $pc = *' + hex(flashloaderAddress + ivtEntryAddressOffset))
+		print("> Executing flash loader...")
+		freerun.execute(self);
 		print("> Waiting for flash loader to start...")
 		# Wait for flash loader to start and USB to enumerate
 		# Attempt to connect to flash loader for 250ms * 40 = 10seconds
@@ -195,6 +228,8 @@ class mmcflash(gdb.Command):
 		reset.execute(self)
 
 reset()
+loadbin()
+freerun()
 runflashloader()
 sdflash()
 mmcflash()
