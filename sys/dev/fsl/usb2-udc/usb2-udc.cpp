@@ -623,6 +623,14 @@ int
 fsl_usb2_udc::v_start()
 {
 	v_reset();
+
+	/* start controller */
+	write32(&r_->USBCMD, [&]{
+		auto v = read32(&r_->USBCMD);
+		v.RS = 1;
+		return v.r;
+	}());
+
 	return 0;
 }
 
@@ -630,6 +638,13 @@ void
 fsl_usb2_udc::v_stop()
 {
 	std::lock_guard l{lock_};
+
+	/* stop controller */
+	write32(&r_->USBCMD, [&]{
+		auto v = read32(&r_->USBCMD);
+		v.RS = 0;
+		return v.r;
+	}());
 
 	/* issue controller reset */
 	write32(&r_->USBCMD, []{
@@ -671,11 +686,10 @@ fsl_usb2_udc::v_reset()
 		return v.r;
 	}());
 
-	/* start controller */
+	/* set interrupt threshold to immediate */
 	write32(&r_->USBCMD, [&]{
 		auto v = read32(&r_->USBCMD);
 		v.ITC = 0;
-		v.RS = 1;
 		return v.r;
 	}());
 
