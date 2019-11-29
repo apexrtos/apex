@@ -416,7 +416,7 @@ define fn_process_mkfile
     SSTRIP := $(CONFIG_SSTRIP)
 
     # remember MAKEFILE_LIST before including mk file
-    prev := $$(realpath $$(MAKEFILE_LIST))
+    prev := $$(abspath $$(MAKEFILE_LIST))
 
     # include mk file
     include $(1)
@@ -426,7 +426,7 @@ define fn_process_mkfile
     CXXFLAGS += $$(DEFS)
 
     # directory containing mk file we just processed
-    mk_dir := $$(dir $$(firstword $$(filter-out $$(prev),$$(realpath $$(MAKEFILE_LIST)))))
+    mk_dir := $$(dir $$(firstword $$(filter-out $$(prev),$$(abspath $$(MAKEFILE_LIST)))))
 
     # mk_dir is empty if a makefile is included twice
     ifneq ($$(mk_dir),)
