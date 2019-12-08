@@ -99,12 +99,6 @@ machine_driver_init(struct bootargs *bootargs)
 }
 
 void
-machine_ready(void)
-{
-	/* nothing to do for now */
-}
-
-void
 machine_idle(void)
 {
 	/* nothing to do for now */
@@ -174,7 +168,7 @@ early_console_init(void)
 		.HYS = HYS_Hysteresis_Disabled,
 	}.r);
 
-	fsl_lpuart_early_init(LPUART1, 24000000, CONFIG_CONSOLE_CFLAG);
+	fsl_lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
 }
 
 void

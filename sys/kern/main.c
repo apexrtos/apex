@@ -29,7 +29,6 @@
 
 #include <arch.h>
 #include <bootargs.h>
-#include <console.h>
 #include <debug.h>
 #include <dev/null/null.h>
 #include <dev/zero/zero.h>
@@ -102,60 +101,10 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	timer_init();
 
 	/*
-	 * Initialise drivers.
-	 */
-	device_init();
-	null_init();
-	zero_init();
-	kmsg_init();
-	machine_driver_init(&args);
-	fs_init();
-	machine_ready();
-
-	/*
-	 * Create boot thread and start scheduler.
+	 * Create boot thread then run idle loop.
 	 */
 	kthread_create(&boot_thread, &args, PRI_DEFAULT, "boot", MA_NORMAL);
 	thread_idle();
-}
-
-static void
-mount_fs(struct bootargs *args)
-{
-	/*
-	 * Root file system is always RAMFS
-	 */
-	if (mount(NULL, "/", "ramfs", 0, NULL) < 0)
-		panic("failed to create root file system");
-
-	/*
-	 * Initialise kernel task file system state
-	 */
-	fs_kinit();
-
-	/*
-	 * Create dev directory
-	 */
-	if (mkdir("/dev", 0) < 0)
-		panic("failed to create /dev directory");
-
-	/*
-	 * Create boot directory
-	 */
-	if (mkdir("/boot", 0) < 0)
-		panic("failed to create /boot directory");
-
-	/*
-	 * Mount devfs
-	 */
-	if (mount(NULL, "/dev", "devfs", 0, NULL) < 0)
-		panic("failed to mount /dev");
-
-	/*
-	 * Mount /boot file system according to config options
-	 */
-	if (mount(CONFIG_BOOTDEV, "/boot", CONFIG_BOOTFS, 0, NULL) < 0)
-		panic("failed to mount /boot");
 }
 
 static void
@@ -210,11 +159,46 @@ boot_thread(void *arg)
 {
 	struct bootargs *args = arg;
 
-	mount_fs(args);
-#if defined(CONFIG_CONSOLE)
-	console_init();
-#endif
+	/*
+	 * Initialise filesystem.
+	 */
+	fs_init();
+	if (mount(NULL, "/", "ramfs", 0, NULL) < 0)
+		panic("failed to create root file system");
+	fs_kinit();
+	if (mkdir("/dev", 0) < 0)
+		panic("failed to create /dev directory");
+	if (mount(NULL, "/dev", "devfs", 0, NULL) < 0)
+		panic("failed to mount /dev");
+
+	/*
+	 * Initialise drivers.
+	 */
+	null_init();
+	zero_init();
+	kmsg_init();
+	machine_driver_init(args);
+
+	/*
+	 * Create boot directory.
+	 */
+	if (mkdir("/boot", 0) < 0)
+		panic("failed to create /boot directory");
+
+	/*
+	 * Mount /boot file system according to config options.
+	 */
+	if (mount(CONFIG_BOOTDEV, "/boot", CONFIG_BOOTFS, 0, NULL) < 0)
+		panic("failed to mount /boot");
+
+	/*
+	 * Run init process.
+	 */
 	run_init();
+
+	/*
+	 * Terminate boot thread.
+	 */
 	thread_terminate(thread_cur());
 	sch_testexit();
 }

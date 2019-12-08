@@ -80,7 +80,6 @@ void		device_attach(struct device *, const struct devio *, int, void *);
 void		device_hide(struct device *);
 bool		device_busy(struct device *);
 void		device_destroy(struct device *);
-void		device_init(void);
 
 #if defined(__cplusplus)
 }

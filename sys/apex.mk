@@ -32,7 +32,6 @@ SOURCES := \
     fs/vfs.c \
     fs/vnode.c \
     kern/clone.cpp \
-    kern/console.c \
     kern/debug.c \
     kern/dma.cpp \
     kern/elf_load.c \

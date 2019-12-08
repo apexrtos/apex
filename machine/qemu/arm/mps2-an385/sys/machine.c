@@ -33,12 +33,6 @@ machine_driver_init(struct bootargs *bootargs)
 }
 
 void
-machine_ready(void)
-{
-	/* nothing to do for now */
-}
-
-void
 machine_idle(void)
 {
 	/* nothing to do for now */
@@ -72,7 +66,7 @@ void
 early_console_init(void)
 {
 	/* QEMU doesn't care about baud rate */
-	arm_mps2_uart_early_init(UART0, CONFIG_CONSOLE_CFLAG);
+	arm_mps2_uart_early_init(UART0, CONFIG_EARLY_CONSOLE_CFLAG);
 }
 
 void

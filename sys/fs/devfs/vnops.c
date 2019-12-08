@@ -63,6 +63,7 @@
 static struct list device_list;
 static struct spinlock device_list_lock;
 
+static int devfs_init(void);
 static int devfs_open(struct file *, int, mode_t);
 static int devfs_close(struct file *);
 static ssize_t devfs_read(struct file *, const struct iovec *, size_t, off_t);
@@ -98,14 +99,23 @@ static const struct vnops devfs_vnops = {
  * File system operations
  */
 static const struct vfsops devfs_vfsops = {
-	((vfsop_init_fn)vfs_nullop),	/* init */
-	((vfsop_mount_fn)vfs_nullop),	/* mount */
-	((vfsop_umount_fn)vfs_nullop),	/* unmount */
-	((vfsop_sync_fn)vfs_nullop),	/* sync */
-	((vfsop_vget_fn)vfs_nullop),	/* vget */
-	((vfsop_statfs_fn)vfs_nullop),	/* statfs */
-	&devfs_vnops,			/* vnops */
+	.vfs_init = devfs_init,
+	.vfs_mount = ((vfsop_mount_fn)vfs_nullop),
+	.vfs_umount = ((vfsop_umount_fn)vfs_nullop),
+	.vfs_sync = ((vfsop_sync_fn)vfs_nullop),
+	.vfs_vget = ((vfsop_vget_fn)vfs_nullop),
+	.vfs_statfs = ((vfsop_statfs_fn)vfs_nullop),
+	.vfs_vnops = &devfs_vnops,
 };
+
+static int
+devfs_init(void)
+{
+	list_init(&device_list);
+	spinlock_init(&device_list_lock);
+
+	return 0;
+}
 
 static int
 devfs_open(struct file *fp, int flags, mode_t mode)
@@ -358,16 +368,6 @@ devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 	spinlock_unlock(&device_list_lock);
 
 	return -ENOENT;
-}
-
-/*
- * Device operations
- */
-void
-device_init(void)
-{
-	list_init(&device_list);
-	spinlock_init(&device_list_lock);
 }
 
 /*

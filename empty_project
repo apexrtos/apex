@@ -17,14 +17,13 @@ makeoption SSTRIP := y
 option SYSLOG_SIZE 4096
 option DEBUG		    // Print debug messages and turn on debug checks
 option INFO		    // Print informative messages
-option EARLY_CONSOLE	    // Enable early console for debug output
 option BOOT_CONSOLE	    // Enable boot console for debug output
-option CONSOLE		    // Enable console
+option EARLY_CONSOLE	    // Enable early kernel console for debug output
+option EARLY_CONSOLE_CFLAG  (B115200 | CS8)
 option KSTACK_CHECK	    // Kernel stack checking
 option KMEM_CHECK	    // Kernel memory checking
 option THREAD_CHECK	    // Kernel thread checking
 option CONSOLE_LOGLEVEL	    (LOG_DEBUG)
-option CONSOLE_CFLAG	    (B115200 | CS8 | CREAD)
 
 /*
  * Operating system version

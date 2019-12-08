@@ -2,18 +2,14 @@
  * console.c - console driver
  */
 
-#include "console.h"
+#include "init.h"
 
-#include <arch.h>
 #include <debug.h>
 #include <device.h>
 #include <fcntl.h>
 #include <fs.h>
 #include <ioctl.h>
-#include <sch.h>
-#include <stddef.h>
 #include <sync.h>
-#include <termios.h>
 #include <thread.h>
 
 static int fd;
@@ -74,30 +70,26 @@ console_start(void)
 /*
  * Initialise
  */
-int
-console_init(void)
+void
+console_init(const char *dev, tcflag_t cflag)
 {
-	int err;
-
 	static struct devio io = {
 		.read = console_read,
 		.write = console_write,
 		.ioctl = console_ioctl,
 	};
 
-	/* TODO: configurable console device */
-
-	fd = kopen("/dev/ttyS0", O_RDWR);
+	fd = kopen(dev, O_RDWR);
 	if (fd < 0)
-		return fd;
+		panic("console_init");
 
 	/* Configure console baud rate, etc. */
 	struct termios tio;
-	if ((err = kioctl(fd, TCGETS, &tio)) < 0)
-		return err;
-	tio.c_cflag = CONFIG_CONSOLE_CFLAG;
-	if ((err = kioctl(fd, TCSETS, &tio)) < 0)
-		return err;
+	if (kioctl(fd, TCGETS, &tio))
+		panic("console_init");
+	tio.c_cflag = cflag;
+	if (kioctl(fd, TCSETS, &tio) < 0)
+		panic("console_init");
 
 	semaphore_init(&sem);
 	syslog_output(console_start);
@@ -107,7 +99,6 @@ console_init(void)
 	    MA_NORMAL))
 		panic("console_init");
 
-	device_create(&io, "console", DF_CHR, NULL);
-
-	return 0;
+	if (!device_create(&io, "console", DF_CHR, NULL))
+		panic("console_init");
 }

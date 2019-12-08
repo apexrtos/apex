@@ -94,7 +94,6 @@ void		early_console_init(void);
 void		early_console_print(const char *, size_t);
 void		machine_init(struct bootargs *);
 void		machine_driver_init(struct bootargs *);
-void		machine_ready(void);
 void		machine_idle(void);
 void		machine_reset(void);
 void		machine_poweroff(void);
