@@ -516,7 +516,7 @@ sc_setitimer(int timer, const struct itimerval *n, struct itimerval *o)
 			ns_to_tv(time_remain(t->itimer_real.expire), &old.it_value);
 			ns_to_tv(t->itimer_real.interval, &old.it_interval);
 		}
-		const u_long ns = tv_to_ns(&n->it_value);
+		const uint_fast64_t ns = tv_to_ns(&n->it_value);
 		if (!ns)
 			timer_stop(&t->itimer_real);
 		else
