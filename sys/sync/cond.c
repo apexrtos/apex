@@ -76,7 +76,8 @@ cond_wait_interruptible(struct cond *c, struct mutex *m)
  * returned.
  */
 int
-cond_timedwait_interruptible(struct cond *c, struct mutex *m, uint64_t nsec)
+cond_timedwait_interruptible(struct cond *c, struct mutex *m,
+			     uint_fast64_t nsec)
 {
 	assert(!sch_locks());
 	assert(!interrupt_running());

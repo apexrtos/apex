@@ -215,7 +215,7 @@ pipe_read(struct file *fp, void *buf, size_t size, off_t offset)
 		p->rd += len;
 		read += len;
 		size -= len;
-		buf = (uint8_t *)buf + len;
+		buf = (char *)buf + len;
 	}
 
 	return (read > 0) ? (ssize_t)read : err;
@@ -273,7 +273,7 @@ pipe_write(struct file *fp, void *buf, size_t size, off_t offset)
 		p->wr += len;
 		written += len;
 		size -= len;
-		buf = (uint8_t *)buf + len;
+		buf = (char *)buf + len;
 	}
 
 	return (written > 0) ? (ssize_t)written : err;

@@ -40,7 +40,7 @@ bits(const std::array<std::byte, N> &buf, size_t bit)
 }
 
 inline unsigned long
-bits(const uint64_t r, size_t begin, size_t end)
+bits(const uintmax_t r, size_t begin, size_t end)
 {
 	const size_t size = end - begin + 1;
 	const uint32_t mask = (size < 32 ? 1ul << size : 0) - 1;
@@ -49,7 +49,7 @@ bits(const uint64_t r, size_t begin, size_t end)
 }
 
 inline unsigned long
-bits(const uint64_t r, size_t bit)
+bits(const uintmax_t r, size_t bit)
 {
 	return (r >> bit) & 1;
 }

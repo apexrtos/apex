@@ -54,8 +54,8 @@
 #include <task.h>
 #include <thread.h>
 
-static volatile uint64_t monotonic __fast_bss;	/* nanoseconds elapsed since bootup */
-static volatile uint64_t realtime_offset;	/* monotonic + realtime_offset = realtime */
+static volatile uint_fast64_t monotonic __fast_bss; /* nanoseconds elapsed since bootup */
+static volatile uint_fast64_t realtime_offset;	    /* monotonic + realtime_offset = realtime */
 
 static struct event	timer_event;	/* event to wakeup a timer thread */
 static struct event	delay_event;	/* event for the thread delay */
@@ -66,10 +66,10 @@ static struct list	expire_list;	/* list of expired timers */
  * Get remaining nanoseconds to the expiration time.
  * Return 0 if time already passed.
  */
-static uint64_t
-time_remain(uint64_t expire)
+static uint_fast64_t
+time_remain(uint_fast64_t expire)
 {
-	uint64_t t = monotonic;
+	uint_fast64_t t = monotonic;
 	if (expire > t)
 		return expire - t;
 	return 0;
@@ -102,7 +102,7 @@ timer_insert(struct timer *tmr)
 /*
  * Convert from timespec to nanoseconds
  */
-uint64_t
+uint_fast64_t
 ts_to_ns(const struct timespec *ts)
 {
 	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
@@ -112,7 +112,7 @@ ts_to_ns(const struct timespec *ts)
  * Convert from nanoseconds to timespec
  */
 void
-ns_to_ts(uint64_t ns, struct timespec *ts)
+ns_to_ts(uint_fast64_t ns, struct timespec *ts)
 {
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
@@ -129,7 +129,7 @@ ns_to_ts(uint64_t ns, struct timespec *ts)
 /*
  * Convert from timeval to nanoseconds
  */
-uint64_t
+uint_fast64_t
 tv_to_ns(const struct timeval *tv)
 {
 	return tv->tv_sec * 1000000000ULL + tv->tv_usec * 1000ULL;
@@ -139,7 +139,7 @@ tv_to_ns(const struct timeval *tv)
  * Convert from nanoseconds to timeval
  */
 void
-ns_to_tv(uint64_t ns, struct timeval *tv)
+ns_to_tv(uint_fast64_t ns, struct timeval *tv)
 {
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
@@ -161,12 +161,12 @@ ns_to_tv(uint64_t ns, struct timeval *tv)
  * If nsec == 1 we call out after the next tick.
  */
 void
-timer_callout(struct timer *tmr, uint64_t nsec, uint64_t interval,
+timer_callout(struct timer *tmr, uint_fast64_t nsec, uint_fast64_t interval,
 	      void (*func)(void *), void *arg)
 {
 	assert(tmr);
 
-	const uint64_t period = 1000000000 / CONFIG_HZ;
+	const uint_fast64_t period = 1000000000 / CONFIG_HZ;
 
 	const int s = irq_disable();
 	if (tmr->active)
@@ -222,8 +222,8 @@ timer_stop(struct timer *tmr)
  *
  * If nsec <= 1 we delay until the next tick.
  */
-uint64_t
-timer_delay(uint64_t nsec)
+uint_fast64_t
+timer_delay(uint_fast64_t nsec)
 {
 	if (sch_prepare_sleep(&delay_event, nsec ?: 1))
 		return nsec;
@@ -285,7 +285,7 @@ timer_thread(void *arg)
  * reload if configured to do so.
  */
 __fast_text static void
-run_itimer(struct itimer *it, uint32_t ns, int sig)
+run_itimer(struct itimer *it, uint_fast32_t ns, int sig)
 {
 	/* disabled */
 	if (!it->remain)
@@ -319,7 +319,7 @@ timer_tick(int ticks)
 	/*
 	 * Convert elapsed time to nanoseconds
 	 */
-	const uint32_t ns = ticks * 1000000000 / CONFIG_HZ;
+	const uint_fast32_t ns = ticks * 1000000000 / CONFIG_HZ;
 
 	/*
 	 * Bump time.
@@ -359,11 +359,11 @@ timer_tick(int ticks)
 /*
  * Return monotonic time
  */
-uint64_t
+uint_fast64_t
 timer_monotonic(void)
 {
 	const int s = irq_disable();
-	const uint64_t r = monotonic + clock_ns_since_tick();
+	const uint_fast64_t r = monotonic + clock_ns_since_tick();
 	irq_restore(s);
 	return r;
 }
@@ -371,7 +371,7 @@ timer_monotonic(void)
 /*
  * Return monotonic time (coarse, fast version)
  */
-uint64_t
+uint_fast64_t
 timer_monotonic_coarse(void)
 {
 	return monotonic;
@@ -381,9 +381,9 @@ timer_monotonic_coarse(void)
  * Set real time
  */
 int
-timer_realtime_set(uint64_t ns)
+timer_realtime_set(uint_fast64_t ns)
 {
-	uint64_t m = monotonic;
+	uint_fast64_t m = monotonic;
 	if (ns < m)
 		return DERR(-EINVAL);
 	realtime_offset = ns - m;
@@ -393,7 +393,7 @@ timer_realtime_set(uint64_t ns)
 /*
  * Return real time
  */
-uint64_t
+uint_fast64_t
 timer_realtime(void)
 {
 	return timer_monotonic() + realtime_offset;
@@ -402,7 +402,7 @@ timer_realtime(void)
 /*
  * Return real time (coarse, fast version)
  */
-uint64_t
+uint_fast64_t
 timer_realtime_coarse(void)
 {
 	return monotonic + realtime_offset;

@@ -46,7 +46,7 @@ int
 wait_event_interruptible_timeout(event &e, int ns, auto condition)
 {
 	assert(ns > 0);
-	const uint64_t expire = timer_monotonic_coarse() + ns;
+	const uint_fast64_t expire = timer_monotonic_coarse() + ns;
 	while (!condition()) {
 		if (auto r = sch_prepare_sleep(&e, ns); r)
 			return r;
@@ -137,7 +137,7 @@ wait_event_lock(event &e, auto &lock, auto condition)
 ({ \
 	int __rc, __ret = ns; \
 	assert(__ret > 0); \
-	const uint64_t __expire = timer_monotonic_coarse() + __ret; \
+	const uint_fast64_t __expire = timer_monotonic_coarse() + __ret; \
 	while (!(condition)) { \
 		if ((__rc = sch_prepare_sleep(&(event), __ret))) { \
 			__ret = __rc; \

@@ -41,43 +41,44 @@ struct timeval;
 struct timer {
 	struct list	link;		/* linkage on timer chain */
 	int		active;		/* true if active */
-	uint64_t	expire;		/* expire time (nsec) */
-	uint64_t	interval;	/* time interval (nsec) */
+	uint_fast64_t	expire;		/* expire time (nsec) */
+	uint_fast64_t	interval;	/* time interval (nsec) */
 	void	      (*func)(void *);	/* function to call */
 	void	       *arg;		/* function argument */
 };
 
 struct itimer {
-	uint64_t remain;		/* remaining time, 0 if disabled */
-	uint64_t interval;		/* reload interval, 0 if disabled */
+	uint_fast64_t remain;		/* remaining time, 0 if disabled */
+	uint_fast64_t interval;		/* reload interval, 0 if disabled */
 };
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-uint64_t    ts_to_ns(const struct timespec *);
-void	    ns_to_ts(uint64_t, struct timespec *);
-uint64_t    tv_to_ns(const struct timeval *);
-void	    ns_to_tv(uint64_t, struct timeval *);
+uint_fast64_t ts_to_ns(const struct timespec *);
+void	      ns_to_ts(uint_fast64_t, struct timespec *);
+uint_fast64_t tv_to_ns(const struct timeval *);
+void	      ns_to_tv(uint_fast64_t, struct timeval *);
 
-void	    timer_callout(struct timer *, uint64_t, uint64_t, void (*)(void *), void *);
-void	    timer_redirect(struct timer *, void (*)(void *), void *);
-void	    timer_stop(struct timer *);
-uint64_t    timer_delay(uint64_t);
-void	    timer_tick(int);
-uint64_t    timer_monotonic(void);
-uint64_t    timer_monotonic_coarse(void);
-int	    timer_realtime_set(uint64_t);
-uint64_t    timer_realtime(void);
-uint64_t    timer_realtime_coarse(void);
-void	    timer_init(void);
+void	      timer_callout(struct timer *, uint_fast64_t, uint_fast64_t,
+			  void (*)(void *), void *);
+void	      timer_redirect(struct timer *, void (*)(void *), void *);
+void	      timer_stop(struct timer *);
+uint_fast64_t timer_delay(uint_fast64_t);
+void	      timer_tick(int);
+uint_fast64_t timer_monotonic(void);
+uint_fast64_t timer_monotonic_coarse(void);
+int	      timer_realtime_set(uint_fast64_t);
+uint_fast64_t timer_realtime(void);
+uint_fast64_t timer_realtime_coarse(void);
+void	      timer_init(void);
 
 /*
  * Syscalls
  */
-int	    sc_getitimer(int, struct itimerval *);
-int	    sc_setitimer(int, const struct itimerval *, struct itimerval *);
+int	      sc_getitimer(int, struct itimerval *);
+int	      sc_setitimer(int, const struct itimerval *, struct itimerval *);
 
 #if defined(__cplusplus)
 }

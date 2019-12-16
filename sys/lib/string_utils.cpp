@@ -73,7 +73,7 @@ int parse_options(std::string_view s,
 	return flush();
 }
 
-char *hr_size_fmt(uint64_t sz, char *buf, size_t bufsz)
+char *hr_size_fmt(uintmax_t sz, char *buf, size_t bufsz)
 {
 	if (sz < 1024) {
 		snprintf(buf, bufsz, "%uB", (unsigned)sz);

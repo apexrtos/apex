@@ -29,6 +29,6 @@ int parse_options(std::string_view s,
 /*
  * format a size as human readable
  */
-char *hr_size_fmt(uint64_t sz, char *buf, size_t bufsz);
+char *hr_size_fmt(uintmax_t sz, char *buf, size_t bufsz);
 
 #endif

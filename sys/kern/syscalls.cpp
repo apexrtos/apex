@@ -104,11 +104,11 @@ sc_nanosleep(const timespec *req, timespec *rem)
 		return r;
 	if (!u_access_ok(req, sizeof *req, PROT_READ))
 		return DERR(-EFAULT);
-	const uint64_t ns = ts_to_ns(req);
+	const uint_fast64_t ns = ts_to_ns(req);
 	if (!ns)
 		return 0;
 	l.unlock();
-	const uint64_t r = timer_delay(ns);
+	const uint_fast64_t r = timer_delay(ns);
 	if (!r)
 		return 0;
 	if (rem) {

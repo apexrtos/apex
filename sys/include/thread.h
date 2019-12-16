@@ -54,7 +54,7 @@ struct thread {
 	int		prio;		/* current priority */
 	int		baseprio;	/* base priority */
 	int		timeleft;	/* remaining nanoseconds to run */
-	uint64_t	time;		/* total running time (nanoseconds) */
+	uint_fast64_t	time;		/* total running time (nanoseconds) */
 	struct event   *slpevt;		/* sleep event */
 	int		slpret;		/* sleep result code */
 	struct timer	timeout;	/* thread timer */

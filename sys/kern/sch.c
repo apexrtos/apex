@@ -441,7 +441,7 @@ sch_requeue(struct event *l, struct event *r)
  * On success, must be followed by sch_continue_sleep or sch_cancel_sleep.
  */
 int
-sch_prepare_sleep(struct event *evt, uint64_t nsec)
+sch_prepare_sleep(struct event *evt, uint_fast64_t nsec)
 {
 	assert(!(active_thread->state & TH_SLEEP));
 	assert(!interrupt_running());
@@ -641,7 +641,7 @@ sch_suspend_resume(struct thread *suspend, struct thread *resume)
  * Check quantum expiration, and mark a rescheduling flag.
  */
 __fast_text void
-sch_elapse(uint32_t nsec)
+sch_elapse(uint_fast32_t nsec)
 {
 	const int s = irq_disable();
 

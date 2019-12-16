@@ -97,7 +97,8 @@ void	       mutex_assert_locked(const struct mutex *);
 bool	       cond_valid(const struct cond *);
 void	       cond_init(struct cond *);
 int	       cond_wait_interruptible(struct cond *, struct mutex *);
-int	       cond_timedwait_interruptible(struct cond *, struct mutex *, uint64_t);
+int	       cond_timedwait_interruptible(struct cond *, struct mutex *,
+					    uint_fast64_t);
 int	       cond_signal(struct cond *);
 int	       cond_broadcast(struct cond *);
 

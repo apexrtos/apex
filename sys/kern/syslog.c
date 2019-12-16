@@ -39,7 +39,7 @@
  * ent - system log entry
  */
 struct ent {
-	uint64_t nsec;		/* timestamp in nanoseconds */
+	uint_fast64_t nsec;	/* timestamp in nanoseconds */
 	long seq;		/* sequence number of message - safe to roll over */
 	size_t len_term;	/* length of msg including null terminator, 0: wrap */
 	long priority;		/* syslog facility and priority */
