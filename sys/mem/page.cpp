@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <bootargs.h>
 #include <cassert>
+#include <cstdio>
 #include <cstring>
 #include <debug.h>
 #include <elf.h>
@@ -768,16 +769,37 @@ void page_dump(void)
 		info("  free      %zu\n", r.free);
 		info("  nr_orders %zu\n", r.nr_orders);
 		info("  nr_pages  %zu\n", r.nr_pages);
-#if 0
-		info("  free blocks\n");
+
+		constexpr auto bufsz = 128;
+		char buf[bufsz], *s = buf;
 		for (int j = r.nr_orders - 2; j >= 0; --j) {
-			info("    order %d: ", j);
+			int n = 0;
 			page *p;
 			list_for_each_entry(p, r.blocks + j, link)
-				info("%zu ", p - r.pages);
-			info("\n");
+				++n;
+			s += snprintf(s, buf + bufsz - s, "%d ", n);
 		}
-#endif
+		s[-1] = 0;
+		info("  available %s\n", buf);
+
+		info("  allocated\n");
+		for (size_t j = 0; j < r.nr_pages; ++j) {
+			const page *begin = r.pages + j;
+
+			if (begin->state == PG_FREE)
+				continue;
+
+			const page *end = begin;
+
+			while (end->state == begin->state &&
+			       end->owner == begin->owner)
+				++end;
+
+			info("    %d[%d]: %d %p\n", j, end - begin,
+			     begin->state, begin->owner);
+
+			j += end - begin - 1;
+		}
 	}
 }
 
