@@ -292,48 +292,71 @@ ramfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
 	return for_each_iov(fp, iov, count, offset, ramfs_read);
 }
 
+static int
+ramfs_grow(struct ramfs_node *np, off_t new_size)
+{
+	void *new_buf = NULL;
+
+	if (new_size <= np->rn_bufsize)
+		return 0;
+
+	/*
+	 * We allocate small files using malloc. Once a file grows to more
+	 * than half a page in size we switch to using page_alloc.
+	 */
+	if (new_size > PAGE_SIZE / 2) {
+		new_size = PAGE_ALIGN(new_size);
+		phys *const p = page_alloc(new_size, MA_NORMAL, &ramfs_id);
+		if (!p)
+			return -1;
+		new_buf = phys_to_virt(p);
+	} else {
+		/* try not to fragment malloc too much */
+		new_size = ALIGNn(new_size, 32);
+		new_buf = malloc(new_size);
+		if (!new_buf)
+			return -1;
+	}
+
+	/* copy file data to new buffer */
+	if (np->rn_size != 0)
+		memcpy(new_buf, np->rn_buf, np->rn_size);
+
+	/* free old buffer */
+	if (np->rn_buf) {
+		if (np->rn_bufsize > PAGE_SIZE / 2)
+			page_free(virt_to_phys(np->rn_buf), np->rn_bufsize,
+				  &ramfs_id);
+		else
+			free(np->rn_buf);
+	}
+
+	np->rn_buf = new_buf;
+	np->rn_bufsize = new_size;
+
+	return 0;
+}
+
 static ssize_t
 ramfs_write(struct file *fp, void *buf, size_t size, off_t offset)
 {
-	off_t end_pos;
-	size_t new_size;
 	struct ramfs_node *np = fp->f_vnode->v_data;
 	struct vnode *vp = fp->f_vnode;
-	void *new_buf;
 
 	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
 		return -EINVAL;
 
 	/* Check if the file position exceeds the end of file. */
-	end_pos = vp->v_size;
-	if (offset + size > (size_t)end_pos) {
+	if (offset + size > vp->v_size) {
 		/* Expand the file size before writing to it */
-		end_pos = offset + size;
-		if (end_pos > np->rn_bufsize) {
-			/*
-			 * We allocate the data buffer in page boundary.
-			 * So that we can reduce the memory allocation unless
-			 * the file size exceeds next page boundary.
-			 * This will prevent the memory fragmentation by
-			 * many alloc/free calls.
-			 */
-			new_size = PAGE_ALIGN(end_pos);
-			phys *const p = page_alloc(new_size, MA_NORMAL,
-			    &ramfs_id);
-			if (!p)
-				return -EIO;
-			new_buf = phys_to_virt(p);
-			if (np->rn_size != 0) {
-				memcpy(new_buf, np->rn_buf, vp->v_size);
-				page_free(virt_to_phys(np->rn_buf),
-				    np->rn_bufsize, &ramfs_id);
-			}
-			if (vp->v_size < (size_t)offset) /* sparse file */
-				memset((char *)new_buf + vp->v_size, 0,
-				       offset - vp->v_size);
-			np->rn_buf = new_buf;
-			np->rn_bufsize = new_size;
-		}
+		const off_t end_pos = offset + size;
+		if (ramfs_grow(np, end_pos) < 0)
+			return -EIO;
+
+		/* zero sparse file data */
+		if (vp->v_size < offset)
+			memset(np->rn_buf + vp->v_size, 0, offset - vp->v_size);
+
 		np->rn_size = end_pos;
 		vp->v_size = end_pos;
 	}
