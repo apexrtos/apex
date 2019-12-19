@@ -48,7 +48,7 @@ static void
 console_thread(void *unused)
 {
 	int len;
-	char buf[256];
+	char buf[2048];
 	while (true) {
 		semaphore_wait_interruptible(&sem);
 		while ((len = syslog_format(buf, sizeof buf)) > 0)
