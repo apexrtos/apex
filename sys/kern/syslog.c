@@ -289,12 +289,20 @@ syslog_format(char *buf, const size_t len)
 			ns_to_tv(entry.nsec, &tv);
 			int n = snprintf(buf, rem, "[%5lu.%06lu] ", tv.tv_sec, tv.tv_usec);
 			size_t l = entry.len_term - 1;
-			if (n < 0 || (n + l) > rem)
-				break; /* won't fit */
+			bool trunc = false;
+			if (n < 0 || (n + l) > rem) {
+				if (rem < len)
+					break; /* won't fit in this buffer, try again */
+				/* won't fit in empty buffer, truncate */
+				l = rem - n;
+				trunc = true;
+			}
 
 			memcpy(buf + n, kmsg->ent->msg, l); /* strip '\0' */
 			if (log_first_seq - kmsg->seq > 0)
 				continue; /* overrun while consuming entry, so skip */
+			if (trunc)
+				memcpy(buf + n + l - 4, "...\n", 4);
 
 			l += n;
 			buf += l;
