@@ -244,7 +244,7 @@ tty::read(file *f, void *buf, const size_t len)
 
 	/* tstchar calls with a NULL buffer */
 	if (f->f_flags & O_NONBLOCK && !rx_avail())
-		return DERR(-EAGAIN);
+		return -EAGAIN;
 
 	if (!buf)
 		return DERR(-EFAULT);
