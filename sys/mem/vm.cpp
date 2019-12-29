@@ -303,6 +303,8 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 			continue;
 		if (s->base >= uend)
 			break;
+		if (s->prot == prot)
+			continue;
 		if (s->base >= uaddr && send <= uend) {
 			/* entire segment */
 			err = as_mprotect(a, s->base, s->len, prot);
