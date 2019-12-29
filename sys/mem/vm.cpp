@@ -447,6 +447,70 @@ sc_mprotect(void *addr, size_t len, int prot)
 }
 
 /*
+ * sc_madvise
+ */
+int
+sc_madvise(void *vaddr, size_t ulen, int advice)
+{
+	if ((uintptr_t)vaddr & PAGE_MASK || ulen & PAGE_MASK)
+		return DERR(-EINVAL);
+	if (!ulen)
+		return 0;
+
+	switch (advice) {
+	case POSIX_MADV_NORMAL:
+	case POSIX_MADV_RANDOM:
+	case POSIX_MADV_SEQUENTIAL:
+	case POSIX_MADV_WILLNEED:
+		return 0;
+	case POSIX_MADV_DONTNEED:
+		break;
+	default:
+		return DERR(-EINVAL);
+	}
+
+	int err;
+	as *a = task_cur()->as;
+
+	interruptible_lock l(a->lock.write());
+	if (err = l.lock(); err < 0)
+		return err;
+
+	const auto uaddr = (char*)vaddr;
+	const auto uend = uaddr + ulen;
+
+	seg *s;
+	list_for_each_entry(s, &a->segs, link) {
+		const auto send = (char*)s->base + s->len;
+		if (send <= uaddr)
+			continue;
+		if (s->base >= uend)
+			break;
+		if (s->base >= uaddr && send <= uend) {
+			/* entire segment */
+			err = as_madvise(a, s, s->base, s->len, advice);
+		} else if (s->base < uaddr && send > uend) {
+			/* part of segment */
+			err = as_madvise(a, s, uaddr, ulen, advice);
+			break;
+		} else if (s->base < uaddr) {
+			/* end of segment */
+			const auto l = uaddr - (char*)s->base;
+			err = as_madvise(a, s, uaddr, s->len - l, advice);
+		} else if (s->base < uend) {
+			/* start of segment */
+			const auto l = uend - (char*)s->base;
+			err = as_madvise(a, s, s->base, l, advice);
+		} else
+			panic("BUG");
+		if (err < 0)
+			break;
+	}
+
+	return err;
+}
+
+/*
  * sc_brk
  */
 void *
@@ -687,6 +751,15 @@ int
 seg_prot(const seg *s)
 {
 	return s->prot;
+}
+
+/*
+ * seg_vnode - get vnode backing segment
+ */
+vnode *
+seg_vnode(seg *s)
+{
+	return s->vn;
 }
 
 /*

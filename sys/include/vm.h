@@ -6,6 +6,7 @@
 struct as;
 struct iovec;
 struct seg;
+struct vnode;
 
 #if defined(__cplusplus)
 extern "C" {
@@ -40,13 +41,12 @@ void		   *seg_begin(const struct seg *);
 void		   *seg_end(const struct seg *);
 size_t		    seg_size(const struct seg *);
 int		    seg_prot(const struct seg *);
+struct vnode	   *seg_vnode(struct seg *);
 
 #if defined(__cplusplus)
 } /* extern "C" */
 
 #include <memory>
-
-struct vnode;
 
 /*
  * MMU interface
@@ -55,6 +55,7 @@ void	   *as_map(as *, void *, size_t, int, int, std::unique_ptr<vnode>,
 		   off_t, long mem_attr);
 int	    as_unmap(as *, void *, size_t, vnode *, off_t);
 int	    as_mprotect(as *, void *, size_t, int);
+int	    as_madvise(as *, seg *, void *, size_t, int);
 int	    as_insert(as *, std::unique_ptr<phys>, size_t, int, int,
 		      std::unique_ptr<vnode>, off_t, long mem_attr);
 
