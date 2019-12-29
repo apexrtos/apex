@@ -18,16 +18,16 @@
  * vm_read - read data from address space
  */
 int
-vm_read(as *as, void *l, const void *r, size_t s)
+vm_read(as *a, void *l, const void *r, size_t s)
 {
-	if (auto r = as_transfer_begin(as); r < 0)
+	if (auto r = as_transfer_begin(a); r < 0)
 		return r;
-	if (!u_access_okfor(as, r, s, PROT_READ)) {
-		as_transfer_end(as);
+	if (!u_access_okfor(a, r, s, PROT_READ)) {
+		as_transfer_end(a);
 		return DERR(-EFAULT);
 	}
 	memcpy(l, r, s);
-	as_transfer_end(as);
+	as_transfer_end(a);
 	return s;
 }
 
@@ -35,16 +35,16 @@ vm_read(as *as, void *l, const void *r, size_t s)
  * vm_write - write data to address space
  */
 int
-vm_write(as *as, const void *l, void *r, size_t s)
+vm_write(as *a, const void *l, void *r, size_t s)
 {
-	if (auto r = as_transfer_begin(as); r < 0)
+	if (auto r = as_transfer_begin(a); r < 0)
 		return r;
-	if (!u_access_okfor(as, r, s, PROT_WRITE)) {
-		as_transfer_end(as);
+	if (!u_access_okfor(a, r, s, PROT_WRITE)) {
+		as_transfer_end(a);
 		return DERR(-EFAULT);
 	}
 	memcpy(r, l, s);
-	as_transfer_end(as);
+	as_transfer_end(a);
 	return s;
 }
 
@@ -52,17 +52,17 @@ vm_write(as *as, const void *l, void *r, size_t s)
  * vm_copy - copy data in address space
  */
 int
-vm_copy(as *as, void *dst, const void *src, size_t s)
+vm_copy(as *a, void *dst, const void *src, size_t s)
 {
-	if (auto r = as_transfer_begin(as); r < 0)
+	if (auto r = as_transfer_begin(a); r < 0)
 		return r;
-	if (!u_access_okfor(as, src, s, PROT_READ) ||
-	    !u_access_okfor(as, dst, s, PROT_WRITE)) {
-		as_transfer_end(as);
+	if (!u_access_okfor(a, src, s, PROT_READ) ||
+	    !u_access_okfor(a, dst, s, PROT_WRITE)) {
+		as_transfer_end(a);
 		return DERR(-EFAULT);
 	}
 	memcpy(dst, src, s);
-	as_transfer_end(as);
+	as_transfer_end(a);
 	return s;
 }
 
@@ -70,10 +70,10 @@ vm_copy(as *as, void *dst, const void *src, size_t s)
  * as_switch - switch to address space
  */
 void
-as_switch(as *as)
+as_switch(as *a)
 {
 #if defined(CONFIG_MPU)
-	mpu_switch(as);
+	mpu_switch(a);
 #endif
 }
 
@@ -81,16 +81,16 @@ as_switch(as *as)
  * as_map - map memory into address space
  */
 void *
-as_map(struct as *as, void *addr, size_t len, int prot, int flags,
+as_map(as *a, void *addr, size_t len, int prot, int flags,
     std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	int r = 0;
 	const auto fixed = flags & MAP_FIXED;
 
 	std::unique_ptr<phys> pages(fixed
-	    ? page_reserve((phys*)addr, len, attr, as)
-	    : page_alloc(len, attr, as),
-	    {len, as});
+	    ? page_reserve((phys*)addr, len, attr, a)
+	    : page_alloc(len, attr, a),
+	    {len, a});
 
 	if (!pages.get())
 		return (void *)-ENOMEM;
@@ -105,12 +105,12 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
 	if (prot & PROT_EXEC)
 		cache_coherent_exec(addr, len);
 
-	if ((r = as_insert(as, std::move(pages), len, prot, flags,
+	if ((r = as_insert(a, std::move(pages), len, prot, flags,
 	    std::move(vn), off, attr)) < 0)
 		return (void*)r;
 
 #if defined(CONFIG_MPU)
-	if (as == task_cur()->as)
+	if (a == task_cur()->as)
 		mpu_map(addr, len, prot);
 #endif
 
@@ -123,28 +123,28 @@ as_map(struct as *as, void *addr, size_t len, int prot, int flags,
  * nommu cannot mark pages as dirty.
  */
 int
-as_unmap(struct as *as, void *addr, size_t len, vnode *vn, off_t off)
+as_unmap(as *a, void *addr, size_t len, vnode *vn, off_t off)
 {
 #if defined(DEBUG)
 	memset(addr, 0, len);
 #endif
 
 #if defined(CONFIG_MPU)
-	if (as == task_cur()->as)
+	if (a == task_cur()->as)
 		mpu_unmap(addr, len);
 #endif
 
-	return page_free((phys*)addr, len, as);
+	return page_free((phys*)addr, len, a);
 }
 
 /*
  * as_mprotect - set protection flags on memory in address space
  */
 int
-as_mprotect(struct as *as, void *addr, size_t len, int prot)
+as_mprotect(as *a, void *addr, size_t len, int prot)
 {
 #if defined(CONFIG_MPU)
-	if (as == task_cur()->as)
+	if (a == task_cur()->as)
 		mpu_protect(addr, len, prot);
 #endif
 
@@ -190,7 +190,7 @@ u_access_ok(const void *u_addr, size_t len, int access)
 }
 
 bool
-u_access_okfor(const struct as *a, const void *u_addr, size_t len, int access)
+u_access_okfor(const as *a, const void *u_addr, size_t len, int access)
 {
 	const auto seg = as_find_seg(a, u_addr);
 	if (!seg)
@@ -261,7 +261,7 @@ u_address(const void *u_addr)
 }
 
 bool
-u_addressfor(const struct as *a, const void *u_addr)
+u_addressfor(const as *a, const void *u_addr)
 {
 	return as_find_seg(a, u_addr);
 }
