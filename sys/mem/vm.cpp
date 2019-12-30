@@ -17,8 +17,13 @@
 #include <types.h>
 
 /*
- * TODO: shared mappings
- *	 mmap can leave address space inconsistent on OOM
+ * TODO:
+ *  - shared mappings
+ *  - mprotect can leave address space inconsistent on OOM. This can be
+ *    fixed by splitting and inserting segments before making changes.
+ *  - mmap can leave address space inconsistent on OOM. This is because
+ *    the munmap in as_insert can succeed, leaving existing pages allocated,
+ *    but the subsequent seg_insert may fail.
  */
 
 struct seg {
