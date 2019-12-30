@@ -81,20 +81,6 @@ do_vm_io(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc, fn f
 }
 
 /*
- * seg_extend - try to extend segment
- */
-static bool
-seg_extend(seg *s, void *addr, size_t len, int prot, vnode *vn, off_t off,
-    long attr)
-{
-	if (s->prot != prot || (char*)s->base + s->len != addr ||
-	    s->attr != attr || s->vn != vn || (vn && s->off + s->len != off))
-		return false;
-	s->len += len;
-	return true;
-}
-
-/*
  * oflags - calculate required oflags from map flags & protection
  */
 static int
@@ -132,6 +118,31 @@ seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
 	ns->vn = vn.release();
 	list_insert(&prev->link, &ns->link);
 	return 0;
+}
+
+/*
+ * seg_combine - combine contiguous segments
+ */
+static void
+seg_combine(as *a)
+{
+	assert(!list_empty(&a->segs));
+
+	seg *p = list_entry(list_first(&a->segs), seg, link), *s, *tmp;
+	list_for_each_entry_safe(s, tmp, list_next(&a->segs), link) {
+		if (p->prot != s->prot || seg_end(p) != s->base ||
+		    p->attr != s->attr || p->vn != s->vn ||
+		    (p->vn && p->off + p->len != s->off)) {
+			p = s;
+			continue;
+		}
+		/* segments are contiguous, combine */
+		p->len += s->len;
+		if (s->vn)
+			vn_close(s->vn);
+		list_remove(&s->link);
+		kmem_free(s);
+	}
 }
 
 /*
@@ -210,7 +221,6 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
 	}
 
 	return err;
-
 }
 
 /*
@@ -388,6 +398,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 			break;
 	}
 
+	seg_combine(a);
 	return err;
 }
 
@@ -786,14 +797,11 @@ as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
 	}
 	s = list_entry(list_prev(&s->link), seg, link);
 
-	/* attempt to extend existing segment */
-	if (!list_end(&a->segs, &s->link) &&
-	    seg_extend(s, pages.get(), len, prot, vn.get(), off, attr)) {
-		pages.release();
-		return 0;
-	}
-
 	/* insert new segment */
-	return seg_insert(s, std::move(pages), len, prot,
-	    std::move(vn), off, attr);
+	if ((err = seg_insert(s, std::move(pages), len, prot, std::move(vn),
+	    off, attr)) < 0)
+		return err;
+
+	seg_combine(a);
+	return 0;
 }
