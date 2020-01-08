@@ -80,7 +80,7 @@ public:
 		}());
 		write32(&WATER, [&]{
 			decltype(WATER) v{};
-			v.RXWATER = rxfifo_size() - 1;
+			v.RXWATER = 1;
 			v.TXWATER = 0;
 			return v.r;
 		}());
