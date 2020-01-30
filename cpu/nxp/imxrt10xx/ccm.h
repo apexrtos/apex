@@ -217,7 +217,7 @@ struct ccm {
 			enum ccm_cg aips_tz1 : 2;
 			enum ccm_cg aips_tz2 : 2;
 			enum ccm_cg mqs : 2;
-			enum ccm_cg flexspi_exsc : 2;
+			enum ccm_cg flexspi_exsc : 2; /* For IMXRT105x only. RSV for IMXRT106x */
 			enum ccm_cg sim_main : 2;
 			enum ccm_cg dcp : 2;
 			enum ccm_cg lpuart3 : 2;
@@ -250,7 +250,7 @@ struct ccm {
 			enum ccm_cg lpuart4 : 2;
 			enum ccm_cg gpio1 : 2;
 			enum ccm_cg csu : 2;
-			enum ccm_cg : 2;
+			enum ccm_cg gpio5: 2; /* For IMXRT106x only. RSV for IMXRT105x */
 		};
 		uint32_t r;
 	} CCGR1;
@@ -359,7 +359,27 @@ struct ccm {
 		};
 		uint32_t r;
 	} CCGR6;
-	uint32_t : 32;
+	union ccm_ccgr7 {
+		struct {
+			enum ccm_cg enet2 : 2;
+			enum ccm_cg flexspi2 : 2;
+			enum ccm_cg axbs : 2;
+			enum ccm_cg can3 : 2;
+			enum ccm_cg can3_serial : 2;
+			enum ccm_cg aips_lite : 2;
+			enum ccm_cg flexio3 : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+			enum ccm_cg : 2;
+		};
+		uint32_t r;
+	} CCGR7; /* For IMXRT106x only. RSV for IMXRT105x */
 	uint32_t CMEOR;
 };
 static_assert(sizeof(struct ccm) == 0x8c, "");
