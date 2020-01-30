@@ -258,7 +258,7 @@ struct ccm {
 		struct {
 			enum ccm_cg ocram_exsc : 2;
 			enum ccm_cg csi : 2;
-			enum ccm_cg iomuxc : 2;
+			enum ccm_cg iomuxc_snvs : 2;
 			enum ccm_cg lpi2c1 : 2;
 			enum ccm_cg lpi2c2 : 2;
 			enum ccm_cg lpi2c3 : 2;
@@ -305,7 +305,7 @@ struct ccm {
 			enum ccm_cg sim_m7 : 2;
 			enum ccm_cg tsc_dig : 2;
 			enum ccm_cg sim_m : 2;
-			enum ccm_cg sim_emxs : 2;
+			enum ccm_cg sim_ems : 2;
 			enum ccm_cg pwm1 : 2;
 			enum ccm_cg pwm2 : 2;
 			enum ccm_cg pwm3 : 2;
