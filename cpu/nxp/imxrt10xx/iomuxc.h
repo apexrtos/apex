@@ -575,8 +575,116 @@ struct iomuxc {
 	uint32_t XBAR1_IN25_SELECT_INPUT;
 	uint32_t XBAR1_IN19_SELECT_INPUT;
 	uint32_t XBAR1_IN21_SELECT_INPUT;
+	/* Below - For IMXRT106x only. RSV for IMXRT105x */
+	union {
+		union iomuxc_sw_mux_ctl SW_MUX_CTL_2[22];
+		struct {
+			union {
+				union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0[14];
+				struct {
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_00;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_01;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_02;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_03;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_04;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_05;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_06;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_07;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_08;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_09;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_10;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_11;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_12;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_13;
+				};
+			};
+			union {
+				union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1[8];
+				struct {
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_00;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_01;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_02;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_03;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_04;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_05;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_06;
+					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_07;
+				};
+			};
+		};
+	};
+	union {
+		union iomuxc_sw_pad_ctl SW_PAD_CTL_2[22];
+		struct {
+			union {
+				union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0[14];
+				struct {
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_00;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_01;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_02;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_03;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_04;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_05;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_06;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_07;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_08;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_09;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_10;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_11;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_12;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_13;
+				};
+			};
+			union {
+				union iomuxc_sw_mux_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1[8];
+				struct {
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_00;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_01;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_02;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_03;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_04;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_05;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_06;
+					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_07;
+				};
+			};
+		};
+	};
+	uint32_t ENET2_IPG_CLK_RMII_SELECT_INPUT;
+	uint32_t ENET2_IPP_IND_MAC0_MDIO_SELECT_INPUT;
+	uint32_t ENET2_IPP_IND_MAC0_RXDATA_SELECT_INPUT_0;
+	uint32_t ENET2_IPP_IND_MAC0_RXDATA_SELECT_INPUT_1;
+	uint32_t ENET2_IPP_IND_MAC0_RXEN_SELECT_INPUT;
+	uint32_t ENET2_IPP_IND_MAC0_RXERR_SELECT_INPUT;
+	uint32_t ENET2_IPP_IND_MAC0_TIMER_SELECT_INPUT_0;
+	uint32_t ENET2_IPP_IND_MAC0_TXCLK_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_DQS_FA_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FA_BIT0_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FA_BIT1_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FA_BIT2_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FA_BIT3_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FB_BIT0_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FB_BIT1_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FB_BIT2_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_IO_FB_BIT3_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_SCK_FA_SELECT_INPUT;
+	uint32_t FLEXSPI2_IPP_IND_SCK_FB_SELECT_INPUT;
+	uint32_t GPT1_IPP_IND_CAPIN1_SELECT_INPUT;
+	uint32_t GPT1_IPP_IND_CAPIN2_SELECT_INPUT;
+	uint32_t GPT1_IPP_IND_CLKIN_SELECT_INPUT;
+	uint32_t GPT2_IPP_IND_CAPIN1_SELECT_INPUT;
+	uint32_t GPT2_IPP_IND_CAPIN2_SELECT_INPUT;
+	uint32_t GPT2_IPP_IND_CLKIN_SELECT_INPUT;
+	uint32_t SAI3_IPG_CLK_SAI_MCLK_SELECT_INPUT_2;
+	uint32_t SAI3_IPP_IND_SAI_RXBCLK_SELECT_INPUT;
+	uint32_t SAI3_IPP_IND_SAI_RXDATA_SELECT_INPUT_0;
+	uint32_t SAI3_IPP_IND_SAI_RXSYNC_SELECT_INPUT;
+	uint32_t SAI3_IPP_IND_SAI_TXBCLK_SELECT_INPUT;
+	uint32_t SAI3_IPP_IND_SAI_TXSYNC_SELECT_INPUT;
+	uint32_t SEMC_I_IPP_IND_DQS4_SELECT_INPUT;
+	uint32_t CANFD_IPP_IND_CANRX_SELECT_INPUT;
 };
-static_assert(sizeof(struct iomuxc) == 0x65c, "");
+static_assert(sizeof(struct iomuxc) == 0x790, "");
 
 union iomuxc_gpr_gpr16 {
 	struct {
