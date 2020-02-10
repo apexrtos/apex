@@ -35,6 +35,13 @@ enum ccm_cbcmr_lpspi_clk_sel {
 	LPSPI_CLK_SEL_PLL2_PFD2,
 };
 
+enum ccm_cmcmr_flexspi2_clk_sel {
+	FLEXSPI2_CLK_SEL_PLL2_PFD2,
+	FLEXSPI2_CLK_SEL_PLL3_PFD0,
+	FLEXSPI2_CLK_SEL_PLL3_PFD1,
+	FLEXSPI2_CLK_SEL_PLL2
+};
+
 enum ccm_cbcmr_periph_clk2_sel {
 	PERIPH_CLK2_SEL_PLL3_SW_CLK,
 	PERIPH_CLK2_SEL_OSC_CLK,
@@ -141,7 +148,9 @@ struct ccm {
 		struct {
 			uint32_t : 4;
 			enum ccm_cbcmr_lpspi_clk_sel LPSPI_CLK_SEL : 2;
-			uint32_t : 6;
+			uint32_t : 2;
+			enum ccm_cmcmr_flexspi2_clk_sel FLEXSPL2_CLK_SEL : 2; /* For IMXRT106x only. RSV for IMXRT105x */
+			uint32_t : 2;
 			enum ccm_cbcmr_periph_clk2_sel PERIPH_CLK2_SEL : 2;
 			enum ccm_cbcmr_trace_clk_sel TRACE_CLK_SEL : 2;
 			uint32_t : 2;
@@ -149,7 +158,7 @@ struct ccm {
 			uint32_t : 3;
 			uint32_t LCDIF_PODF : 3;
 			uint32_t LPSPI_PODF : 3;
-			uint32_t : 3;
+			uint32_t FLEXSPI2_PODF : 3; /* For IMXRT106x only. RSV for IMXRT105x */
 		};
 		uint32_t r;
 	} CBCMR;
