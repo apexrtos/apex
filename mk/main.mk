@@ -181,7 +181,7 @@ define fn_elf_rule
     # include built object flags
     -include $(tgt).elfflags
 
-    $$(eval $$(call fn_process_sources))
+    $$(eval $$(fn_process_sources))
 
     # switch compilers for C/C++
     ifeq ($$($(tgt)_CXX_SOURCES),)
@@ -201,7 +201,7 @@ endef
 define fn_exec_rule
     # fn_exec_rule
 
-    $$(eval $$(call fn_elf_rule))
+    $$(eval $$(fn_elf_rule))
     $(tgt): $(tgt).elf
 	cp $$< $$@
     ifeq ($$($(tgt)_SSTRIP),)
@@ -231,7 +231,7 @@ define fn_binary_rule
     # include built object flags
     -include $(tgt).binflags
 
-    $$(eval $$(call fn_elf_rule))
+    $$(eval $$(fn_elf_rule))
     $$(eval $$(call fn_flags_rule,$(tgt).binflags,$$($(tgt)_BINFLAGS)))
     $(tgt): $(tgt).elf $(tgt).binflags
 	$$($(tgt)_OBJCOPY) $$($(tgt)_BINFLAGS) -O binary $$< $$@
@@ -246,7 +246,7 @@ define fn_prog_rule
     CFLAGS += $(CONFIG_USER_CFLAGS)
     CXXFLAGS += $(CONFIG_USER_CFLAGS)
 
-    $$(eval $$(call fn_exec_rule))
+    $$(eval $$(fn_exec_rule))
 endef
 
 #
@@ -261,7 +261,7 @@ define fn_lib_rule
     # include built object flags
     -include $(tgt).libflags
 
-    $$(eval $$(call fn_process_sources))
+    $$(eval $$(fn_process_sources))
     $$(eval $$(call fn_flags_rule,$(tgt).libflags,$$($(tgt)_OBJS)))
     $(tgt): $$($(tgt)_OBJS) $(tgt).libflags
 	rm -f $$@
@@ -278,7 +278,7 @@ define fn_klib_rule
     # include built object flags
     -include $(tgt).klibflags
 
-    $$(eval $$(call fn_process_sources))
+    $$(eval $$(fn_process_sources))
     $$(eval $$(call fn_flags_rule,$(tgt).klibflags,$$($(tgt)_OBJS)))
     $(tgt): $$($(tgt)_OBJS) $(tgt).klibflags
 	rm -f $$@
@@ -443,10 +443,10 @@ define fn_process_mkfile
             ifeq ($$(origin fn_$$(TYPE)_rule),undefined)
                 $$(error no rule for TYPE=$$(TYPE))
             endif
-            $$(eval $$(call fn_$$(TYPE)_rule))
+            $$(eval $$(fn_$$(TYPE)_rule))
 
             # clean
-            $$(eval $$(call fn_clean_rule))
+            $$(eval $$(fn_clean_rule))
 
             $$(tgt)_rule_exists := y
         endif
