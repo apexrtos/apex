@@ -295,6 +295,14 @@ device::init()
 		}
 	}
 
+	/* eMMC 6.2.5: ERASE_GROUP_DEF must be set to access partitions */
+	if (auto r = ext_csd_.write(h_, rca_,
+				    ext_csd::offset::erase_group_def, 0x1);
+	    r < 0) {
+		dbg("%s: SWITCH ERASE_GROUP_DEF failed\n", h_->name());
+		return r;
+	}
+
 	/* Refresh ext_csd after changes. */
 	if (auto r = send_ext_csd(h_, ext_csd_); r < 0) {
 		dbg("%s: MMC SEND_EXT_CSD failed\n", h_->name());
