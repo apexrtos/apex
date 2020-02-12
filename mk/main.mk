@@ -84,7 +84,7 @@ endef
 #
 # Rule to check & update flags
 #
-# Synopsis $(call fn_flags_rule,<flags_file>,<flags>)
+# Synopsis $(eval $(call fn_flags_rule,<flags_file>,<flags>)
 #
 define fn_flags_rule
     # fn_flags_rule
