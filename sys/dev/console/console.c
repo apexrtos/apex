@@ -8,8 +8,8 @@
 #include <device.h>
 #include <fcntl.h>
 #include <fs.h>
-#include <ioctl.h>
 #include <sync.h>
+#include <sys/ioctl.h>
 #include <thread.h>
 
 static int fd;

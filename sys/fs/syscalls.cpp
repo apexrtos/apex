@@ -10,8 +10,8 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <ioctl.h>
 #include <limits.h>
+#include <linux/ioctl.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/mount.h>

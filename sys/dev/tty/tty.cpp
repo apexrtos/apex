@@ -11,10 +11,10 @@
 #include <fcntl.h>
 #include <fs/file.h>
 #include <fs/util.h>
-#include <ioctl.h>
 #include <memory>
 #include <mutex>
 #include <sch.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/ttydefaults.h>
 #include <task.h>
