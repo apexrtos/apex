@@ -50,8 +50,6 @@ constexpr devio block_io = {
 	.ioctl = block_ioctl,
 };
 
-constexpr auto bufsz = CONFIG_PAGE_SIZE;
-
 }
 
 namespace block {
@@ -94,8 +92,8 @@ device::open()
 
 	if (nopens_++)
 		return 0;
-	std::unique_ptr<phys> buf{page_alloc(bufsz, MA_NORMAL | MA_DMA, this),
-	    {bufsz, this}};
+	std::unique_ptr<phys> buf{page_alloc(PAGE_SIZE, MA_NORMAL | MA_DMA, this),
+	    {PAGE_SIZE, this}};
 	if (!buf)
 		return DERR(-ENOMEM);
 	if (auto r = v_open(); r < 0)
