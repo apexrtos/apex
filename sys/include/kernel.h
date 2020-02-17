@@ -32,6 +32,7 @@
 
 #include <assert.h>
 #include <conf/config.h>
+#include <stdalign.h>
 #include <sys/include/types.h>
 
 /*
@@ -88,6 +89,11 @@ virt_to_phys(const void *va)
 #define ALIGN(p)    ALIGNn(p, 8)
 #define TRUNC(p)    TRUNCn(p, 8)
 #endif
+
+/*
+ * Test if pointer has approprate alignment for type
+ */
+#define ALIGNED(p, t) (!((uintptr_t)(p) & (alignof(t) - 1)))
 
 /*
  * Calculate integer logarithm of an integer
