@@ -474,7 +474,6 @@ fsl_usdhc::fsl_usdhc(const fsl_usdhc_desc &d, const regs::host_ctrl_cap cap)
 		panic("Incompatible Hardware");
 
 	/* Disable all interrupts until controller is reset. */
-	write32(&r_->INT_STATUS_EN, 0);
 	write32(&r_->INT_SIGNAL_EN, 0);
 
 	event_init(&event_, "usdhc", event::ev_IO);
@@ -489,7 +488,6 @@ fsl_usdhc::v_reset()
 	retuning_required_ = false;
 
 	/* disable all interrupts */
-	write32(&r_->INT_STATUS_EN, 0);
 	write32(&r_->INT_SIGNAL_EN, 0);
 
 	/* issue controller reset */
@@ -554,7 +552,7 @@ fsl_usdhc::v_reset()
 	int_mask.DMAE = 1;
 
 	/* configure interrupts */
-	write32(&r_->INT_STATUS_EN, int_mask.r);
+	write32(&r_->INT_STATUS_EN, 0xffffffff);
 	write32(&r_->INT_SIGNAL_EN, int_mask.r);
 }
 
@@ -799,7 +797,6 @@ fsl_usdhc::v_run_command(mmc::command &c)
 		return DERR(-EINVAL);
 	}
 
-	write32(&r_->INT_STATUS_EN, int_mask.r);
 	write32(&r_->MIX_CTRL, mix_ctrl.r);
 	write32(&r_->CMD_ARG, c.argument());
 
@@ -809,6 +806,8 @@ fsl_usdhc::v_run_command(mmc::command &c)
 		write32(&r_->CMD_XFR_TYP, cmd_xfr_typ.r);
 		return 0;
 	}
+
+	write32(&r_->INT_SIGNAL_EN, int_mask.r);
 
 	/* Atomically start command & sleep on completion event. */
 	const k_sigset_t sig_mask = sig_block_all();
@@ -999,7 +998,6 @@ fsl_usdhc::do_tuning(const unsigned cmd_index)
 	regs::int_flags brr_mask{};
 	brr_mask.BRR = 1;
 	write32(&r_->INT_SIGNAL_EN, brr_mask.r);
-	write32(&r_->INT_STATUS_EN, brr_mask.r);
 
 	/* Request tuning data until hardware is happy. */
 	const k_sigset_t sig_mask = sig_block_all();
@@ -1015,7 +1013,6 @@ fsl_usdhc::do_tuning(const unsigned cmd_index)
 
 	/* Restore interrupt mask. */
 	write32(&r_->INT_SIGNAL_EN, int_mask.r);
-	write32(&r_->INT_STATUS_EN, int_mask.r);
 
 	/* Tuning failed if we are now using fixed clock. */
 	if (!read32(&r_->AUTOCMD12_ERR_STATUS).SMP_CLK_SEL)
