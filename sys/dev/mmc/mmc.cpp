@@ -1001,4 +1001,56 @@ write_multiple_block(host *h, const iovec *iov, size_t iov_off, size_t len,
 	    iov, iov_off, len, trfsz, addr);
 }
 
+/*
+ * erase_sequence - helper
+ */
+static int
+erase_sequence(host *h, size_t start_lba, size_t end_lba, unsigned arg)
+{
+	/* CMD35 & CMD36 don't use busy signalling, however they cannot be
+	 * issued while the device is in prg state so we use r1b response type
+	 * to wait for tran state before issuing the command */
+
+	/* set start lba */
+	command erase_group_start{35, start_lba, command::response_type::r1b};
+	if (auto r = h->run_command(erase_group_start, 0); r < 0)
+		return r;
+	if (device_status{erase_group_start.response().data()}.any_error())
+		return DERR(-EIO);
+
+	/* set end lba */
+	command erase_group_end{36, end_lba, command::response_type::r1b};
+	if (auto r = h->run_command(erase_group_end, 0); r < 0)
+		return r;
+	if (device_status{erase_group_end.response().data()}.any_error())
+		return DERR(-EIO);
+
+	/* issue erase */
+	command erase{38, arg, command::response_type::r1b};
+	if (auto r = h->run_command(erase, 0); r < 0)
+		return r;
+	if (device_status{erase.response().data()}.any_error())
+		return DERR(-EIO);
+
+	return 0;
+}
+
+/*
+ * discard
+ */
+int
+discard(host *h, size_t start_lba, size_t end_lba)
+{
+	return erase_sequence(h, start_lba, end_lba, 3);
+}
+
+/*
+ * trim
+ */
+int
+trim(host *h, size_t start_lba, size_t end_lba)
+{
+	return erase_sequence(h, start_lba, end_lba, 1);
+}
+
 }

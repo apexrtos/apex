@@ -25,6 +25,9 @@ private:
 	ssize_t v_read(const iovec *, size_t, size_t, off_t) override;
 	ssize_t v_write(const iovec *, size_t, size_t, off_t) override;
 	int v_ioctl(unsigned long, void *) override;
+	int v_zeroout(off_t, uint64_t) override;
+	int v_discard(off_t, uint64_t, bool secure) override;
+	bool v_discard_sets_to_zero() override;
 
 	mmc::device *const device_;
 	const partition partition_;

@@ -26,6 +26,9 @@ public:
 	ssize_t read(partition, const iovec *, size_t, size_t, off_t);
 	ssize_t write(partition, const iovec *, size_t, size_t, off_t);
 	int ioctl(partition, unsigned long, void *);
+	int zeroout(partition, off_t, uint64_t);
+	int discard(partition, off_t, uint64_t, bool secure);
+	bool discard_sets_to_zero();
 
 private:
 	static constexpr unsigned rca_ = 1;
@@ -39,6 +42,7 @@ private:
 
 	mode_t v_mode() const override;
 
+	int for_each_eg(off_t, uint64_t, std::function<int(size_t, size_t)>);
 	int switch_partition(partition);
 	int add_partitions();
 };

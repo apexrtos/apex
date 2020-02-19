@@ -64,4 +64,31 @@ block::v_ioctl(unsigned long cmd, void *arg)
 	return device_->ioctl(partition_, cmd, arg);
 }
 
+/*
+ * block::v_zeroout
+ */
+int
+block::v_zeroout(off_t off, uint64_t len)
+{
+	return device_->zeroout(partition_, off, len);
+}
+
+/*
+ * block::v_discard
+ */
+int
+block::v_discard(off_t off, uint64_t len, bool secure)
+{
+	return device_->discard(partition_, off, len, secure);
+}
+
+/*
+ * block::v_discard_sets_to_zero
+ */
+bool
+block::v_discard_sets_to_zero()
+{
+	return device_->discard_sets_to_zero();
+}
+
 }

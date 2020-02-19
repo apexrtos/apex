@@ -63,4 +63,31 @@ block::v_ioctl(unsigned long cmd, void *arg)
 	return card_->ioctl(cmd, arg);
 }
 
+/*
+ * block::v_zeroout
+ */
+int
+block::v_zeroout(off_t off, uint64_t len)
+{
+	return card_->zeroout(off, len);
+}
+
+/*
+ * block::v_discard
+ */
+int
+block::v_discard(off_t off, uint64_t len, bool secure)
+{
+	return card_->discard(off, len, secure);
+}
+
+/*
+ * block::v_discard_sets_to_zero
+ */
+bool
+block::v_discard_sets_to_zero()
+{
+	return card_->discard_sets_to_zero();
+}
+
 }

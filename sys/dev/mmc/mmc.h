@@ -468,6 +468,8 @@ ssize_t write_block(host *h, const iovec *, size_t iov_off, size_t len,
 		    size_t trfsz, size_t addr);
 ssize_t write_multiple_block(host *h, const iovec *, size_t iov_off,
 			     size_t len, size_t trfsz, size_t addr);
+int discard(host *, size_t start_lba, size_t end_lba);
+int trim(host *, size_t start_lba, size_t end_lba);
 
 constexpr unsigned tuning_cmd_index = 21;
 

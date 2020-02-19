@@ -444,6 +444,60 @@ device::ioctl(partition p, unsigned long cmd, void *arg)
 }
 
 /*
+ * device::zeroout
+ */
+int
+device::zeroout(partition p, off_t off, uint64_t len)
+{
+	std::unique_lock l{*h_};
+
+	if (ext_csd_.erased_mem_cont() != 0 ||
+	    !ext_csd_.sec_feature_support().is_set(sec_feature_support::sec_gb_cl_en))
+		return -ENOTSUP;
+
+	if (off % sector_size_ || len % sector_size_)
+		return DERR(-EINVAL);
+
+	/* trim one erase group at a time to allow for other i/o */
+	return for_each_eg(off, len, [&](size_t start_lba, size_t end_lba) {
+		l.unlock();
+		l.lock();
+		return trim(h_, start_lba, end_lba);
+	});
+}
+
+/*
+ * device::discard
+ */
+int
+device::discard(partition p, off_t off, uint64_t len, bool secure)
+{
+	std::unique_lock l{*h_};
+
+	/* TODO: support secure discard by using MMC secure trim? */
+	if (secure)
+		return -ENOTSUP;
+
+	/* discard one erase group at a time to allow for other i/o */
+	return for_each_eg(off, len, [&](size_t start_lba, size_t end_lba) {
+		l.unlock();
+		l.lock();
+		return mmc::discard(h_, start_lba, end_lba);
+	});
+}
+
+/*
+ * device::discard_sets_to_zero
+ */
+bool
+device::discard_sets_to_zero()
+{
+	std::unique_lock l{*h_};
+
+	return ext_csd_.erased_mem_cont() == 0;
+}
+
+/*
  * device::v_mode
  */
 device::mode_t
@@ -451,6 +505,45 @@ device::v_mode() const
 {
 	return mode_;
 }
+
+/*
+ * for_each_eg
+ *
+ * Run operation for each erase group in range
+ */
+int
+device::for_each_eg(off_t off, uint64_t len,
+		    std::function<int(size_t, size_t)> fn)
+{
+	/* default to 4MiB if device doesn't report an erase group size */
+	const auto eg_size = ext_csd_.hc_erase_grp_size() * 524288UL ?:
+							4 * 1024 * 1024;
+
+	/* do_op - run fn, adjust off & len */
+	auto do_op = [&](uint64_t e) {
+		auto s = std::min(len, e);
+		if (auto r = fn(off / sector_size_,
+				(off + s) / sector_size_ - 1); r < 0)
+			return r;
+		off += s;
+		len -= s;
+
+		return 0;
+	};
+
+	/* align operations with erase group */
+	if (auto align = off % eg_size; align)
+		if (auto r = do_op(eg_size - align); r < 0)
+			return r;
+
+	/* run across remaining erase groups */
+	while (len)
+		if (auto r = do_op(eg_size); r < 0)
+			return r;
+
+	return 0;
+}
+
 
 /*
  * device::switch_partition

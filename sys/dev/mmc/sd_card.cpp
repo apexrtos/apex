@@ -277,6 +277,12 @@ card::init()
 	dbg("%s: SD clock %luMHz%s (requested %luMHz)\n", h_->name(),
 	    devclk / 1000000, ddr ? " DDR" : " SDR", clk / 1000000);
 
+	/* Get status. */
+	if (auto r = sd_status(h_, rca_, status_); r < 0) {
+		dbg("%s: SD SD_STATUS failed\n", h_->name());
+		return r;
+	}
+
 	/* Calculate sector size. */
 	sector_size_ = ocr_.ccs() ? 512 : 1;
 
@@ -288,11 +294,10 @@ card::init()
 	::device *dev;
 	if (!(dev = device_reserve("mmcblk", true)))
 		return DERR(-ENOMEM);
-	const auto size = csd_.c_size() * 524288ULL;
-	block_ = std::make_unique<block>(this, dev, size);
+	block_ = std::make_unique<block>(this, dev, size());
 
 	char b[32];
-	info("%s: %s %s\n", h_->name(), dev->name, hr_size_fmt(size, b, 32));
+	info("%s: %s %s\n", h_->name(), dev->name, hr_size_fmt(size(), b, 32));
 
 	return 0;
 }
@@ -359,12 +364,118 @@ card::ioctl(unsigned long cmd, void *arg)
 }
 
 /*
+ * card::zeroout
+ */
+int
+card::zeroout(off_t off, uint64_t len)
+{
+	std::unique_lock l{*h_};
+
+	if (scr_.data_stat_after_erase() != 0)
+		return -ENOTSUP;
+
+	if (off % sector_size_ || len % sector_size_)
+		return DERR(-EINVAL);
+
+	/* use fule to erase entire device if supported */
+	if (status_.fule_support() && off == 0 && len == size())
+		return fule(h_, 0, len / sector_size_ - 1);
+
+	/* erase one allocation unit at a time to allow for other i/o */
+	return for_each_au(off, len, [&](size_t start_lba, size_t end_lba){
+		l.unlock();
+		l.lock();
+		return sd::erase(h_, start_lba, end_lba);
+	});
+}
+
+/*
+ * card::discard
+ */
+int
+card::discard(off_t off, uint64_t len, bool secure)
+{
+	std::unique_lock l{*h_};
+
+	if (secure || !status_.discard_support())
+		return -ENOTSUP;
+
+	if (off % sector_size_ || len % sector_size_)
+		return DERR(-EINVAL);
+
+	/* discard one allocation unit at a time to allow for other i/o */
+	return for_each_au(off, len, [&](size_t start_lba, size_t end_lba) {
+		l.unlock();
+		l.lock();
+		return sd::discard(h_, start_lba, end_lba);
+	});
+}
+
+/*
+ * card::discard_sets_to_zero
+ */
+bool
+card::discard_sets_to_zero()
+{
+	return false;
+}
+
+/*
  * card::v_mode
  */
 card::mode_t
 card::v_mode() const
 {
 	return mode_;
+}
+
+/*
+ * for_each_au
+ *
+ * Run operation for each allocation unit in range.
+ */
+int
+card::for_each_au(off_t off, uint64_t len,
+		  std::function<int(size_t, size_t)> fn)
+{
+	/* default to 4MiB if card doesn't report an allocation unit size */
+	const auto au_size = au_size_bytes(status_.au_size()) ?: 4 * 1024 * 1024;
+
+	/* do_op - run fn, adjust off & len */
+	auto do_op = [&](uint64_t e) {
+		auto s = std::min(len, e);
+		if (auto r = fn(off / sector_size_,
+				(off + s) / sector_size_ - 1); r < 0)
+			return r;
+		off += s;
+		len -= s;
+
+		return 0;
+	};
+
+	/* align operations with allocation unit */
+	if (auto align = off % au_size; align)
+		if (auto r = do_op(au_size - align); r < 0)
+			return r;
+
+	/* run across remaining allocation units */
+	while (len)
+		if (auto r = do_op(au_size); r < 0)
+			return r;
+
+	return 0;
+}
+
+
+/*
+ * card::size
+ */
+uint64_t
+card::size() const
+{
+	h_->assert_owned();
+
+	return csd_.c_size() * 524288ULL;
 }
 
 }

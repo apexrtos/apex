@@ -307,6 +307,29 @@ unsigned status::performance_enhance() const	       { return bits(r_, 328, 335);
 bool status::discard_support() const		       { return bits(r_, 313); }
 bool status::fule_support() const		       { return bits(r_, 312); }
 
+unsigned long
+au_size_bytes(unsigned v)
+{
+	switch (v) {
+	case 0x1: return 16 * 1024;
+	case 0x2: return 32 * 1024;
+	case 0x3: return 64 * 1024;
+	case 0x4: return 128 * 1024;
+	case 0x5: return 256 * 1024;
+	case 0x6: return 512 * 1024;
+	case 0x7: return 1 * 1024 * 1024;
+	case 0x8: return 2 * 1024 * 1024;
+	case 0x9: return 4 * 1024 * 1024;
+	case 0xa: return 8 * 1024 * 1024;
+	case 0xb: return 12 * 1024 * 1024;
+	case 0xc: return 16 * 1024 * 1024;
+	case 0xd: return 24 * 1024 * 1024;
+	case 0xe: return 32 * 1024 * 1024;
+	case 0xf: return 64 * 1024 * 1024;
+	default: return 0;
+	}
+}
+
 /*
  * go_idle_state
  */
@@ -663,6 +686,67 @@ write_multiple_block(host *h, const iovec *iov, size_t iov_off, size_t len,
 {
 	return do_transfer(h, 25, command::data_direction::host_to_device,
 	    iov, iov_off, len, trfsz, addr);
+}
+
+/*
+ * erase_sequence - helper
+ */
+static int
+erase_sequence(host *h, size_t start_lba, size_t end_lba, unsigned arg)
+{
+	/* CMD32 & CMD33 don't use busy signalling, however they cannot be
+	 * issued while the card is in prg state so we use r1b response type
+	 * to wait for tran state before issuing the command */
+
+	/* set start lba */
+	command erase_wr_blk_start{32, start_lba, command::response_type::r1b};
+	if (auto r = h->run_command(erase_wr_blk_start, 0); r < 0)
+		return r;
+	if (card_status{erase_wr_blk_start.response().data()}.any_error())
+		return DERR(-EIO);
+
+	/* set end lba */
+	command erase_wr_blk_end{33, end_lba, command::response_type::r1b};
+	if (auto r = h->run_command(erase_wr_blk_end, 0); r < 0)
+		return r;
+	if (card_status{erase_wr_blk_end.response().data()}.any_error())
+		return DERR(-EIO);
+
+	/* issue erase */
+	command erase{38, arg, command::response_type::r1b};
+	if (auto r = h->run_command(erase, 0); r < 0)
+		return r;
+	if (card_status{erase.response().data()}.any_error())
+		return DERR(-EIO);
+
+	return 0;
+}
+
+/*
+ * erase
+ */
+int
+erase(host *h, size_t start_lba, size_t end_lba)
+{
+	return erase_sequence(h, start_lba, end_lba, 0);
+}
+
+/*
+ * discard
+ */
+int
+discard(host *h, size_t start_lba, size_t end_lba)
+{
+	return erase_sequence(h, start_lba, end_lba, 1);
+}
+
+/*
+ * fule
+ */
+int
+fule(host *h, size_t start_lba, size_t end_lba)
+{
+	return erase_sequence(h, start_lba, end_lba, 2);
 }
 
 }
