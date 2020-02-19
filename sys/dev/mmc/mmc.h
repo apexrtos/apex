@@ -238,6 +238,13 @@ enum class ext_partitions_attribute {
 	reserved = 3,
 };
 
+enum class sec_feature_support {
+	secure_er_en = 0,
+	sec_bd_blk_en = 2,
+	sec_gb_cl_en = 4,
+	sec_sanitize = 6,
+};
+
 class ext_csd final {
 public:
 	/* Writable registers in the modes segment. */
@@ -337,7 +344,7 @@ public:
 	unsigned min_perf_ddr_w_8_52() const;
 	unsigned min_perf_ddr_r_8_52() const;
 	unsigned trim_mult() const;
-	unsigned sec_feature_support() const;
+	bitfield<mmc::sec_feature_support> sec_feature_support() const;
 	unsigned sec_erase_mult() const;
 	unsigned sec_trim_mult() const;
 	unsigned boot_info() const;

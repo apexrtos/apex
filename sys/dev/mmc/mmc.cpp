@@ -442,7 +442,13 @@ unsigned ext_csd::pwr_cl_200_130() const	    { return bytes(r_, 236); }
 unsigned ext_csd::min_perf_ddr_w_8_52() const	    { return bytes(r_, 235); }
 unsigned ext_csd::min_perf_ddr_r_8_52() const	    { return bytes(r_, 234); }
 unsigned ext_csd::trim_mult() const		    { return bytes(r_, 232); }
-unsigned ext_csd::sec_feature_support() const	    { return bytes(r_, 231); }
+
+bitfield<sec_feature_support>
+ext_csd::sec_feature_support() const
+{
+	return bytes(r_, 231);
+}
+
 unsigned ext_csd::sec_erase_mult() const	    { return bytes(r_, 230); }
 unsigned ext_csd::sec_trim_mult() const		    { return bytes(r_, 229); }
 unsigned ext_csd::boot_info() const		    { return bytes(r_, 228); }
