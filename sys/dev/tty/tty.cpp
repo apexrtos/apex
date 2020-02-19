@@ -1237,7 +1237,7 @@ tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
 
 	std::unique_ptr<phys> rxp{page_alloc(rx_sz, attr, &tty_id),
 	    {rx_sz, &tty_id}};
-	std::unique_ptr<phys> txp{page_alloc_order(1, attr, &tty_id),
+	std::unique_ptr<phys> txp{page_alloc(PAGE_SIZE, attr, &tty_id),
 	    {PAGE_SIZE, &tty_id}};
 	if (!rxp.get() || !txp.get())
 		return (tty *)DERR(-ENOMEM);
