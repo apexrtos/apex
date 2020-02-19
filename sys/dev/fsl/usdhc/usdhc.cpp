@@ -691,7 +691,7 @@ fsl_usdhc::v_run_command(mmc::command &c)
 		/* According to the documentation CDIHB changing from 1 to 0 is
 		 * supposed to generate a transfer complete interrupt but that
 		 * doesn't seem to work in some cases. */
-		int retries = 10;
+		int retries = 1000;
 		while (read32(&r_->PRES_STATE).CDIHB && --retries)
 			timer_delay(1);
 		if (!retries) {
