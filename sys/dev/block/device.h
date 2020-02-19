@@ -31,6 +31,9 @@ private:
 	virtual ssize_t v_read(const iovec *, size_t, size_t, off_t) = 0;
 	virtual ssize_t v_write(const iovec *, size_t, size_t, off_t) = 0;
 	virtual int v_ioctl(unsigned long, void *) = 0;
+	virtual int v_zeroout(off_t, uint64_t) = 0;
+	virtual int v_discard(off_t, uint64_t, bool secure) = 0;
+	virtual bool v_discard_sets_to_zero() = 0;
 
 	ssize_t transfer(const iovec *, size_t, off_t, bool);
 	int fill(off_t);

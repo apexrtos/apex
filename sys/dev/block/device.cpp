@@ -7,6 +7,7 @@
 #include <fs/file.h>
 #include <fs/util.h>
 #include <kernel.h>
+#include <linux/fs.h>
 #include <sys/uio.h>
 #include <timer.h>
 
@@ -148,6 +149,78 @@ device::ioctl(unsigned long cmd, void *arg)
 	std::lock_guard l{mutex_};
 
 	assert(nopens_ > 0);
+
+	uint64_t *arg64 = static_cast<uint64_t *>(arg);
+	auto valid_range = [&]{
+		if (!ALIGNED(arg, uint64_t))
+			return DERR(false);
+		if (arg64[0] & PAGE_MASK || arg64[1] & PAGE_MASK)
+			return DERR(false);
+		if (arg64[0] > (uint64_t)size_)
+			return DERR(false);
+		if (arg64[1] > size_ - arg64[0])
+			return DERR(false);
+		return true;
+	};
+
+	switch (cmd) {
+	case BLKDISCARD:
+	case BLKSECDISCARD:
+		/* discard data, no read guarantees */
+		if (!valid_range())
+			return DERR(-EINVAL);
+		return v_discard(arg64[0], arg64[1], cmd == BLKSECDISCARD);
+	case BLKZEROOUT: {
+		/* discard data, guarantee read will return zeros */
+		if (!valid_range())
+			return DERR(-EINVAL);
+		if (auto r = v_zeroout(arg64[0], arg64[1]); r != -ENOTSUP)
+			return r;
+
+		/* device doesn't support zeroing, allocate a page of zeros */
+		std::unique_ptr<phys> p{page_alloc(PAGE_SIZE, MA_NORMAL | MA_DMA, this),
+		    {PAGE_SIZE, this}};
+		if (!p)
+			return DERR(-ENOMEM);
+		std::byte *z = static_cast<std::byte *>(phys_to_virt(p.get()));
+		memset(z, 0, PAGE_SIZE);
+
+		/* 256 iovs: 2k of stack, 1MiB zeroed with 4k pages */
+		constexpr auto iovs = 256;
+		iovec iov[iovs];
+		for (auto &i : iov) {
+			i.iov_base = z;
+			i.iov_len = PAGE_SIZE;
+		}
+
+		/* write zeros */
+		uint64_t off = arg64[0];
+		uint64_t len = arg64[1];
+		while (len) {
+			auto pages = std::min<uint64_t>(len / PAGE_SIZE, iovs);
+			auto r = write(iov, pages, off);
+			if (r < 0)
+				return r;
+			assert(!(r & PAGE_MASK));
+			off += r;
+			len -= r;
+		}
+
+		return 0;
+	}
+	case BLKDISCARDZEROES:
+		/* test if BLKDISCARD will zero out data */
+		if (!ALIGNED(arg, int))
+			return -EINVAL;
+		*static_cast<int *>(arg) = v_discard_sets_to_zero();
+		return 0;
+	case BLKGETSIZE64:
+		/* get device size in bytes */
+		if (!ALIGNED(arg, uint64_t))
+			return -EINVAL;
+		*arg64 = size_;
+		return 0;
+	}
 
 	return v_ioctl(cmd, arg);
 }

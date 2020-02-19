@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <linux/fs.h>
 #include <linux/ioctl.h>
 #include <stdio.h>
 #include <sys/mman.h>
@@ -253,7 +254,24 @@ sc_ioctl(int fd, int request, void *argp)
 			dir = _IOC_READ;
 			size = sizeof(int);
 			break;
+		case BLKDISCARD:
+		case BLKSECDISCARD:
+		case BLKZEROOUT:
+			dir = _IOC_READ;
+			size = sizeof(uint64_t[2]);
+			break;
+		case BLKDISCARDZEROES:
+			dir = _IOC_WRITE;
+			size = sizeof(int);
+			break;
 		}
+	}
+
+	/* fixup ioctls with incorrect size */
+	switch (request) {
+	case BLKGETSIZE64:
+		size = sizeof(uint64_t);
+		break;
 	}
 
 	if (dir != _IOC_NONE) {
