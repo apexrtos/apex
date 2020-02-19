@@ -246,6 +246,7 @@ int voltage_switch(host *);
 int all_send_cid(host *, cid &);
 int send_relative_addr(host *, unsigned &rca);
 int select_deselect_card(host *, unsigned rca);
+int send_status(host *, unsigned rca, card_status &);
 int send_csd(host *, unsigned rca, csd &);
 int send_scr(host *, unsigned rca, scr &);
 int set_bus_width(host *, unsigned rca, unsigned width);

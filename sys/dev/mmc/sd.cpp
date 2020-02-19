@@ -444,6 +444,27 @@ select_deselect_card(host *h, unsigned rca)
 }
 
 /*
+ * send_status
+ */
+int
+send_status(host *h, unsigned rca, card_status &s)
+{
+	const uint32_t stsr = 0; /* status query */
+
+	/* Technically send_status does not use busy signalling, but by
+	 * indicating that it does we guarantee any previous command is
+	 * completed before reading the status register. */
+	command cmd{13, rca << 16 | stsr << 15, command::response_type::r1b};
+
+	if (auto r = h->run_command(cmd, 0); r < 0)
+		return r;
+
+	s = card_status{cmd.response().data()};
+
+	return 0;
+}
+
+/*
  * send_csd
  */
 int
