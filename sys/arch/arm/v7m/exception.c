@@ -141,5 +141,11 @@ exc_NVIC(void)
 	int ipsr;
 	asm("mrs %0, ipsr" : "=r" (ipsr));
 	irq_handler(ipsr - 16);
+
+	/* guarantee that writes to peripheral registers complete before
+	 * returning from interrupt - this is so that an interrupt can't
+	 * spuriously re-trigger if the CPU returns from interrupt before the
+	 * write to clear a peripheral's interrupt flag register completes */
+	write_memory_barrier();
 }
 
