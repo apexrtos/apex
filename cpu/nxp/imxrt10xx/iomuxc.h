@@ -576,80 +576,50 @@ struct iomuxc {
 	uint32_t XBAR1_IN19_SELECT_INPUT;
 	uint32_t XBAR1_IN21_SELECT_INPUT;
 	/* Below - For IMXRT106x only. RSV for IMXRT105x */
-	union {
-		union iomuxc_sw_mux_ctl SW_MUX_CTL_2[22];
-		struct {
-			union {
-				union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0[14];
-				struct {
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_00;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_01;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_02;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_03;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_04;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_05;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_06;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_07;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_08;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_09;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_10;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_11;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_12;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B0_13;
-				};
-			};
-			union {
-				union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1[8];
-				struct {
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_00;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_01;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_02;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_03;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_04;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_05;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_06;
-					union iomuxc_sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SPI_B1_07;
-				};
-			};
-		};
-	};
-	union {
-		union iomuxc_sw_pad_ctl SW_PAD_CTL_2[22];
-		struct {
-			union {
-				union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0[14];
-				struct {
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_00;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_01;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_02;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_03;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_04;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_05;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_06;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_07;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_08;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_09;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_10;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_11;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_12;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B0_13;
-				};
-			};
-			union {
-				union iomuxc_sw_mux_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1[8];
-				struct {
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_00;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_01;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_02;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_03;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_04;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_05;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_06;
-					union iomuxc_sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SPI_B1_07;
-				};
-			};
-		};
-	};
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
+	uint32_t : 32;
 	uint32_t ENET2_IPG_CLK_RMII_SELECT_INPUT;
 	uint32_t ENET2_IPP_IND_MAC0_MDIO_SELECT_INPUT;
 	uint32_t ENET2_IPP_IND_MAC0_RXDATA_SELECT_INPUT_0;
