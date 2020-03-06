@@ -267,8 +267,8 @@ syslog_format(char *buf, const size_t len)
 		struct ent entry = read_once(kmsg->ent);
 		long overrun = log_first_seq - kmsg->seq;
 		if (overrun > 0) {
-			int n = snprintf(buf, rem, "%ld: *** lost %ld messages ***\n",
-					 log_first_seq - overrun, overrun);
+			int n = snprintf(buf, rem, "*** missed %ld messages\n",
+					 overrun);
 			if (n < 0 || n >= rem)
 				break;
 			buf += n;
