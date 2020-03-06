@@ -51,7 +51,7 @@ struct page {
 };
 
 struct region {
-	long attr;		/* Retion attributes, bitfield of MA_* */
+	long attr;		/* Region attributes, bitfield of MA_* */
 	a::spinlock lock;	/* For pages, blocks & bitmap */
 	phys *begin;		/* First physical address in region */
 	phys *end;		/* Last physical address in region + 1 */
