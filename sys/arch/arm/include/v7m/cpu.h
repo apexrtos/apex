@@ -55,7 +55,25 @@ struct scb {
 			uint32_t NMIPENDSET : 1;
 		};
 	} ICSR;
-	uint8_t todo1[0x1c];
+	uint32_t VTOR;
+	union scb_aircr {
+		uint32_t r;
+		struct {
+			uint32_t VECTRESET : 1;
+			uint32_t VECTCLRACTIVE : 1;
+			uint32_t SYSRESETREQ : 1;
+			uint32_t : 5;
+			uint32_t PRIGROUP : 3;
+			uint32_t : 4;
+			uint32_t ENDIANNESS : 1;
+			uint32_t VECTKEY : 16;
+		};
+	} AIRCR;
+	uint32_t SCR;
+	uint32_t CCR;
+	uint32_t SHPR1;
+	uint32_t SHPR2;
+	uint32_t SHPR3;
 	union scb_shcsr {
 		uint32_t r;
 		struct {
