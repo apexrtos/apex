@@ -124,9 +124,11 @@ machine_reset(void)
 	memory_barrier();
 
 	/* assert reset */
-	write32(&SRC->SCR, (union src_scr){
-		.CORE0_RST = 1,
+	write32(&SCB->AIRCR, (union scb_aircr){
+		.SYSRESETREQ = 1,
+		.VECTKEY = 0x05fa,
 	}.r);
+	memory_barrier();
 
 	while (1);
 }
