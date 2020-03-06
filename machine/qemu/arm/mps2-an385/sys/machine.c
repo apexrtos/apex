@@ -38,10 +38,12 @@ machine_idle(void)
 	/* nothing to do for now */
 }
 
-void
+noreturn void
 machine_reset(void)
 {
 	#warning implement
+
+	while (1);
 }
 
 void

@@ -104,7 +104,7 @@ machine_idle(void)
 	/* nothing to do for now */
 }
 
-void
+noreturn void
 machine_reset(void)
 {
 	/* wait for console messages to finish printing */
