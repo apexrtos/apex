@@ -63,13 +63,14 @@ static struct kmsg_output {
 static int conlev = CONFIG_CONSOLE_LOGLEVEL + 1;
 static const int min_conlev = LOG_WARNING + 1;
 
-static void early_console_output(void);
+static void console_print_all(void);
 static void (*log_output)(void) =
 #if defined(CONFIG_EARLY_CONSOLE)
-	early_console_output;
+	console_print_all;
 #else
 	0;
 #endif
+static void (*console_print)(const char *, size_t) = early_console_print;
 
 static_assert((sizeof(log) & (sizeof(log) - 1)) == 0,
     "SYSLOG_SIZE must be a power of 2");
@@ -95,6 +96,30 @@ console_printf(const char *fmt, ...)
 #endif
 
 /*
+ * panic_console_init - initialise panic console
+ *
+ * By default the early console is used.
+ */
+static void
+panic_console_init_default(void)
+{
+	early_console_init();
+}
+weak_alias(panic_console_init_default, panic_console_init);
+
+/*
+ * panic_console_print - print to panic console
+ *
+ * By default the early console is used.
+ */
+static void
+panic_console_print_default(const char *s, size_t len)
+{
+	early_console_print(s, len);
+}
+weak_alias(panic_console_print_default, panic_console_print);
+
+/*
  * advance - move pointer to next entry
  */
 static void
@@ -110,18 +135,18 @@ advance(struct ent **p)
 }
 
 /*
- * early_console_output - print any new messages to the console
+ * console_print_all - print new messages using console_print
  *
  * Must be interrupt save.
  */
 static void
-early_console_output(void)
+console_print_all(void)
 {
 	int len;
 	char buf[256];
 
 	while ((len = syslog_format(buf, sizeof(buf))) > 0)
-		early_console_print(buf, len);
+		console_print(buf, len);
 }
 
 /*
@@ -367,17 +392,15 @@ kmsg_format(char *buf, const size_t len, struct kmsg_output *kmsg)
 void
 syslog_panic(void)
 {
-	early_console_init();
-
-	early_console_print("\n*** syslog_panic\n", 18);
-
-#if !defined(CONFIG_EARLY_CONSOLE)
 	/* reset console output */
 	console_output.seq = 1;	   /* will report how many msg are dropped if panic is partial */
 	console_output.ent = (struct ent *)log;
-#endif
-	early_console_output();
-	syslog_output(early_console_output);
+
+	panic_console_init();
+	panic_console_print("\n*** syslog_panic\n", 18);
+	console_print = panic_console_print;
+	console_print_all();
+	syslog_output(console_print_all);
 }
 
 /*
