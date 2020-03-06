@@ -553,7 +553,8 @@ tty::rx_putc(char c)
 void
 tty::rx_overflow()
 {
-	dbg("tty: overflow!\n");
+	if (!(flags_ & flags::rx_overflow))
+		dbg("tty: overflow!\n");
 	flags_ |= flags::rx_overflow;
 
 	cook();
