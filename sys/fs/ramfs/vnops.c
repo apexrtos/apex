@@ -227,6 +227,7 @@ ramfs_unlink(struct vnode *dvp, struct vnode *vp)
 		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize, &ramfs_id);
 		np->rn_buf = NULL; /* incase remove_node fails */
 		np->rn_bufsize = 0;
+		np->rn_size = 0;
 	}
 	vp->v_size = 0;
 	return ramfs_remove_node(dvp->v_data, np);
@@ -243,6 +244,7 @@ ramfs_truncate(struct vnode *vp)
 		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize, &ramfs_id);
 		np->rn_buf = NULL;
 		np->rn_bufsize = 0;
+		np->rn_size = 0;
 	}
 	vp->v_size = 0;
 	return 0;
