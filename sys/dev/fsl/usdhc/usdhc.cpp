@@ -305,7 +305,9 @@ struct regs {
 			uint32_t TUNING_8BIT_EN : 1;
 			uint32_t TUNING_1BIT_EN : 1;
 			uint32_t TUNING_CMD_EN : 1;
-			uint32_t : 5;
+			uint32_t : 1;
+			uint32_t EN_BUSY_IRQ : 1;	/* UNDOCUMENTED */
+			uint32_t : 3;
 			uint32_t ACMD23_ARGU2_EN : 1;
 			uint32_t PART_DLL_DEBUG : 1;
 			uint32_t BUS_RST : 1;
@@ -533,6 +535,16 @@ fsl_usdhc::v_reset()
 		return v.r;
 	}());
 
+	/* This bit is not documented in the i.MX RT1060 reference manual as at
+	 * Rev. 2, 12/2019. Setting it makes the controller generate a transfer
+	 * complete interrupt when the command inhibit (CDIHB) bit changes from
+	 * 1 to 0 as manual suggests it should. */
+	write32(&r_->VEND_SPEC2, [&]{
+		auto v = read32(&r_->VEND_SPEC2);
+		v.EN_BUSY_IRQ = 1;
+		return v.r;
+	}());
+
 	/* Initialise interrupt mask. */
 	int_mask = 0u;
 	int_mask.CC = 1;
@@ -688,13 +700,10 @@ fsl_usdhc::v_run_command(mmc::command &c)
 	 * is still using data lines (most likely busy signalling) wait for
 	 * device to finish the previous command before starting this one. */
 	if (pres_state.CDIHB && c.uses_data_lines()) {
-		/* According to the documentation CDIHB changing from 1 to 0 is
-		 * supposed to generate a transfer complete interrupt but that
-		 * doesn't seem to work in some cases. */
-		int retries = 1000;
-		while (read32(&r_->PRES_STATE).CDIHB && --retries)
-			timer_delay(1);
-		if (!retries) {
+		const auto r = wait_event_timeout(event_, 1e9, [&] {
+			return !read32(&r_->PRES_STATE).CDIHB;
+		});
+		if (r < 0) {
 			/* issue reset to recover from errors */
 			write32(&r_->SYS_CTRL, [&]{
 				auto v = read32(&r_->SYS_CTRL);
