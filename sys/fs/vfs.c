@@ -2474,7 +2474,7 @@ renameat(int fromdirfd, const char *from, int todirfd, const char *to)
 	}
 
 	/* source & dest must be same file system */
-	if (fvp->v_mount != tvp->v_mount) {
+	if (tvp && fvp->v_mount != tvp->v_mount) {
 		err = -EXDEV;
 		goto out;
 	}
