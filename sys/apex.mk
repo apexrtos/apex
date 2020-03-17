@@ -5,7 +5,7 @@
 TYPE := exec
 TARGET := apex
 FLAGS := -nostartfiles -nostdlib -static
-FLAGS += -Wframe-larger-than=384
+FLAGS += -Wframe-larger-than=384 -Wundef
 FLAGS += -fno-pie -no-pie
 FLAGS += -z max-page-size=32
 FLAGS += $(CONFIG_APEX_CFLAGS)
