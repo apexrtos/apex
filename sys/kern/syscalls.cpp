@@ -12,6 +12,7 @@
 #include <task.h>
 #include <thread.h>
 #include <time.h>
+#include <time32.h>
 #include <version.h>
 #include <vm.h>
 
@@ -97,14 +98,14 @@ sc_reboot(unsigned long magic, unsigned long magic2, int cmd, void *arg)
 }
 
 int
-sc_nanosleep(const timespec *req, timespec *rem)
+sc_nanosleep(const timespec32 *req, timespec32 *rem)
 {
 	interruptible_lock l(u_access_lock);
 	if (auto r = l.lock(); r < 0)
 		return r;
 	if (!u_access_ok(req, sizeof *req, PROT_READ))
 		return DERR(-EFAULT);
-	const uint_fast64_t ns = ts_to_ns(req);
+	const uint_fast64_t ns = ts32_to_ns(req);
 	if (!ns)
 		return 0;
 	l.unlock();
@@ -116,7 +117,7 @@ sc_nanosleep(const timespec *req, timespec *rem)
 			return r;
 		if (!u_access_ok(rem, sizeof *rem, PROT_WRITE))
 			return DERR(-EFAULT);
-		ns_to_ts(r, rem);
+		ns_to_ts32(r, rem);
 	}
 	return -EINTR_NORESTART;
 }
@@ -160,7 +161,7 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 	}
 }
 
-int sc_clock_settime(clockid_t id, struct timespec *ts)
+int sc_clock_settime(clockid_t id, const timespec *ts)
 {
 	interruptible_lock l(u_access_lock);
 	if (auto r = l.lock(); r < 0)
@@ -170,6 +171,21 @@ int sc_clock_settime(clockid_t id, struct timespec *ts)
 	switch (id) {
 	case CLOCK_REALTIME:
 		return timer_realtime_set(ts_to_ns(ts));
+	default:
+		return DERR(-EINVAL);
+	}
+}
+
+int sc_clock_settime32(clockid_t id, const timespec32 *ts)
+{
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_access_ok(ts, sizeof *ts, PROT_READ))
+		return DERR(-EFAULT);
+	switch (id) {
+	case CLOCK_REALTIME:
+		return timer_realtime_set(ts32_to_ns(ts));
 	default:
 		return DERR(-EINVAL);
 	}

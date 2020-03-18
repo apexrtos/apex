@@ -53,6 +53,7 @@
 #include <sys/time.h>
 #include <task.h>
 #include <thread.h>
+#include <time32.h>
 
 static volatile uint_fast64_t monotonic __fast_bss; /* nanoseconds elapsed since bootup */
 static volatile uint_fast64_t realtime_offset;	    /* monotonic + realtime_offset = realtime */
@@ -108,11 +109,32 @@ ts_to_ns(const struct timespec *ts)
 	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
 }
 
+uint_fast64_t
+ts32_to_ns(const struct timespec32 *ts)
+{
+	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
+}
+
 /*
  * Convert from nanoseconds to timespec
  */
 void
 ns_to_ts(uint_fast64_t ns, struct timespec *ts)
+{
+	/* REVISIT: this crap shouldn't be required, but:
+	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
+#if UINTPTR_MAX == 0xffffffff
+	const lldiv_t res = lldiv(ns, 1000000000);
+	ts->tv_sec = res.quot;
+	ts->tv_nsec = res.rem;
+#else
+	ts->tv_sec = ns / 1000000000ULL;
+	ts->tv_nsec = ns % 1000000000ULL;
+#endif
+}
+
+void
+ns_to_ts32(uint_fast64_t ns, struct timespec32 *ts)
 {
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
@@ -431,7 +453,7 @@ timer_init(void)
  * sc_getitimer - get the value of an interval timer
  */
 int
-sc_getitimer(int timer, struct itimerval *o)
+sc_getitimer(int timer, struct k_itimerval *o)
 {
 	int err;
 
@@ -445,21 +467,34 @@ sc_getitimer(int timer, struct itimerval *o)
 		return DERR(-EFAULT);
 	}
 
+	struct timeval tmp;
 	struct task *t = task_cur();
 	const int s = irq_disable();
 
 	switch (timer) {
 	case ITIMER_PROF:
-		ns_to_tv(t->itimer_prof.remain, &o->it_value);
-		ns_to_tv(t->itimer_prof.interval, &o->it_interval);
+		ns_to_tv(t->itimer_prof.remain, &tmp);
+		o->it_value.tv_sec = tmp.tv_sec;
+		o->it_value.tv_usec = tmp.tv_usec;
+		ns_to_tv(t->itimer_prof.interval, &tmp);
+		o->it_interval.tv_sec = tmp.tv_sec;
+		o->it_interval.tv_usec = tmp.tv_usec;
 		break;
 	case ITIMER_VIRTUAL:
-		ns_to_tv(t->itimer_virtual.remain, &o->it_value);
-		ns_to_tv(t->itimer_virtual.interval, &o->it_interval);
+		ns_to_tv(t->itimer_virtual.remain, &tmp);
+		o->it_value.tv_sec = tmp.tv_sec;
+		o->it_value.tv_usec = tmp.tv_usec;
+		ns_to_tv(t->itimer_virtual.interval, &tmp);
+		o->it_interval.tv_sec = tmp.tv_sec;
+		o->it_interval.tv_usec = tmp.tv_usec;
 		break;
 	case ITIMER_REAL:
-		ns_to_tv(time_remain(t->itimer_real.expire), &o->it_value);
-		ns_to_tv(t->itimer_real.interval, &o->it_interval);
+		ns_to_tv(time_remain(t->itimer_real.expire), &tmp);
+		o->it_value.tv_sec = tmp.tv_sec;
+		o->it_value.tv_usec = tmp.tv_usec;
+		ns_to_tv(t->itimer_real.interval, &tmp);
+		o->it_interval.tv_sec = tmp.tv_sec;
+		o->it_interval.tv_usec = tmp.tv_usec;
 		break;
 	}
 
@@ -473,7 +508,7 @@ sc_getitimer(int timer, struct itimerval *o)
  * sc_setitimer - set the value of an interval timer
  */
 int
-sc_setitimer(int timer, const struct itimerval *n, struct itimerval *o)
+sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 {
 	if (timer < 0 || timer > ITIMER_PROF)
 		return DERR(-EINVAL);
@@ -490,46 +525,61 @@ sc_setitimer(int timer, const struct itimerval *n, struct itimerval *o)
 		sig_task((struct task *)tv, SIGALRM);
 	}
 
-	struct itimerval old;
+	struct timeval tmp;
 	struct task *t = task_cur();
 	const int s = irq_disable();
 
 	switch (timer) {
 	case ITIMER_PROF:
 		if (o) {
-			ns_to_tv(t->itimer_prof.remain, &old.it_value);
-			ns_to_tv(t->itimer_prof.interval, &old.it_interval);
+			ns_to_tv(t->itimer_prof.remain, &tmp);
+			o->it_value.tv_sec = tmp.tv_sec;
+			o->it_value.tv_usec = tmp.tv_usec;
+			ns_to_tv(t->itimer_prof.interval, &tmp);
+			o->it_interval.tv_sec = tmp.tv_sec;
+			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		t->itimer_prof.remain = tv_to_ns(&n->it_value);
-		t->itimer_prof.interval = tv_to_ns(&n->it_interval);
+		t->itimer_prof.remain = tv_to_ns(&(struct timeval)
+				{n->it_value.tv_sec, n->it_value.tv_usec});
+		t->itimer_prof.interval = tv_to_ns(&(struct timeval)
+				{n->it_interval.tv_sec, n->it_interval.tv_usec});
 		break;
 	case ITIMER_VIRTUAL:
 		if (o) {
-			ns_to_tv(t->itimer_virtual.remain, &old.it_value);
-			ns_to_tv(t->itimer_virtual.interval, &old.it_interval);
+			ns_to_tv(t->itimer_virtual.remain, &tmp);
+			o->it_value.tv_sec = tmp.tv_sec;
+			o->it_value.tv_usec = tmp.tv_usec;
+			ns_to_tv(t->itimer_virtual.interval, &tmp);
+			o->it_interval.tv_sec = tmp.tv_sec;
+			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		t->itimer_virtual.remain = tv_to_ns(&n->it_value);
-		t->itimer_virtual.interval = tv_to_ns(&n->it_interval);
+		t->itimer_virtual.remain = tv_to_ns(&(struct timeval)
+				{n->it_value.tv_sec, n->it_value.tv_usec});
+		t->itimer_virtual.interval = tv_to_ns(&(struct timeval)
+				{n->it_interval.tv_sec, n->it_interval.tv_usec});
 		break;
 	case ITIMER_REAL:
 		if (o) {
-			ns_to_tv(time_remain(t->itimer_real.expire), &old.it_value);
-			ns_to_tv(t->itimer_real.interval, &old.it_interval);
+			ns_to_tv(time_remain(t->itimer_real.expire), &tmp);
+			o->it_value.tv_sec = tmp.tv_sec;
+			o->it_value.tv_usec = tmp.tv_usec;
+			ns_to_tv(t->itimer_real.interval, &tmp);
+			o->it_interval.tv_sec = tmp.tv_sec;
+			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		const uint_fast64_t ns = tv_to_ns(&n->it_value);
+		const uint_fast64_t ns = tv_to_ns(&(struct timeval)
+				{n->it_value.tv_sec, n->it_value.tv_usec});
 		if (!ns)
 			timer_stop(&t->itimer_real);
 		else
 			timer_callout(&t->itimer_real, ns,
-			    tv_to_ns(&n->it_interval), alarm, t);
+			    tv_to_ns(&(struct timeval){n->it_interval.tv_sec,
+						       n->it_interval.tv_usec}),
+				     alarm, t);
 		break;
 	}
 
 	irq_restore(s);
-
-	if (o)
-		*o = old;
-
 	u_access_end();
 
 	return 0;

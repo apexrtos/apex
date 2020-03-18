@@ -34,7 +34,8 @@
 #include <list.h>
 #include <types.h>
 
-struct itimerval;
+struct k_itimerval;
+struct timespec32;
 struct timespec;
 struct timeval;
 
@@ -57,7 +58,9 @@ extern "C" {
 #endif
 
 uint_fast64_t ts_to_ns(const struct timespec *);
+uint_fast64_t ts32_to_ns(const struct timespec32 *);
 void	      ns_to_ts(uint_fast64_t, struct timespec *);
+void	      ns_to_ts32(uint_fast64_t, struct timespec32 *);
 uint_fast64_t tv_to_ns(const struct timeval *);
 void	      ns_to_tv(uint_fast64_t, struct timeval *);
 
@@ -77,8 +80,8 @@ void	      timer_init(void);
 /*
  * Syscalls
  */
-int	      sc_getitimer(int, struct itimerval *);
-int	      sc_setitimer(int, const struct itimerval *, struct itimerval *);
+int	      sc_getitimer(int, struct k_itimerval *);
+int	      sc_setitimer(int, const struct k_itimerval *, struct k_itimerval *);
 
 #if defined(__cplusplus)
 }

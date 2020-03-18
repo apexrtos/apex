@@ -55,8 +55,11 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_chdir] = sc_chdir,
 	[SYS_chmod] = sc_chmod,				/* stub */
 	[SYS_chown32] = sc_chown,
-	[SYS_clock_gettime] = sc_clock_gettime,		/* stub */
-	[SYS_clock_settime] = sc_clock_settime,
+	[SYS_clock_gettime64] = sc_clock_gettime,
+	[SYS_clock_settime64] = sc_clock_settime,
+#ifdef SYS_clock_settime32
+	[SYS_clock_settime32] = sc_clock_settime32,
+#endif
 	[SYS_clone] = sc_clone,
 	[SYS_close] = close,
 	[SYS_dup2] = dup2,
