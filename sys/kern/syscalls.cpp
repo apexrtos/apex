@@ -176,20 +176,6 @@ int sc_clock_settime(clockid_t id, struct timespec *ts)
 }
 
 int
-sc_settimeofday(const struct timeval *tv, const struct timezone *tz)
-{
-	if (tz)
-		return DERR(-EINVAL);
-
-	interruptible_lock l(u_access_lock);
-	if (auto r = l.lock(); r < 0)
-		return r;
-	if (!u_access_ok(tv, sizeof *tv, PROT_READ))
-		return DERR(-EFAULT);
-	return timer_realtime_set(tv_to_ns(tv));
-}
-
-int
 sc_gettid(void)
 {
 	return thread_id(thread_cur());
