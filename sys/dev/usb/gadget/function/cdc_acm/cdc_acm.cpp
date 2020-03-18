@@ -384,16 +384,14 @@ cdc_acm::v_write_descriptors(const Speed spd, std::span<std::byte> m)
 	hf.bcdCDC = htole16(cdc::version);
 	write_descriptor(hf);
 
-	struct {
-		cdc::union_functional_descriptor d;
-		uint8_t bSubordinateInterface;
-	} __attribute__((packed)) uf{};
-	uf.d.bFunctionLength = sizeof(uf);
-	uf.d.bDescriptorType = ch9::DescriptorType::CS_INTERFACE;
-	uf.d.bDescriptorSubtype = cdc::Function::Union;
-	uf.d.bControlInterface = interface_offset();
-	uf.bSubordinateInterface = interface_offset() + 1;
+	cdc::union_functional_descriptor uf;
+	uf.bFunctionLength = sizeof(uf) + 1;
+	uf.bDescriptorType = ch9::DescriptorType::CS_INTERFACE;
+	uf.bDescriptorSubtype = cdc::Function::Union;
+	uf.bControlInterface = interface_offset();
+	uint8_t bSubordinateInterface = interface_offset() + 1;
 	write_descriptor(uf);
+	write_descriptor(bSubordinateInterface);
 
 	cdc::pstn::call_management_functional_descriptor cmf{};
 	cmf.bFunctionLength = sizeof(cmf);
