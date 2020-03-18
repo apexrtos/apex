@@ -19,7 +19,7 @@
 void
 sc_exit()
 {
-	struct thread *th = thread_cur();
+	thread *th = thread_cur();
 
 	if (th->clear_child_tid) {
 		const int zero = 0;
