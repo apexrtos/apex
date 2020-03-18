@@ -200,6 +200,13 @@ sc_fstatfs(int fd, size_t bufsiz, struct statfs *stf)
 }
 
 int
+sc_statx(int dirfd, const char *path, int flags, unsigned mask, struct statx *sx)
+{
+	/* TODO: implement */
+	return -ENOSYS;
+}
+
+int
 sc_getcwd(char *buf, size_t len)
 {
 	interruptible_lock l(u_access_lock);

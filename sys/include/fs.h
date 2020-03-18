@@ -10,6 +10,7 @@ struct file;
 struct iovec;
 struct stat;
 struct statfs;
+struct statx;
 struct task;
 
 #if defined(__cplusplus)
@@ -89,6 +90,7 @@ int	sc_renameat(int, const char*, int, const char*);
 int	sc_rmdir(const char*);
 int	sc_stat(const char *, struct stat *);
 int	sc_statfs(const char *, size_t, struct statfs *);
+int	sc_statx(int, const char *, int, unsigned, struct statx *);
 int	sc_symlink(const char*, const char*);
 int	sc_symlinkat(const char*, int, const char*);
 int	sc_sync(void);

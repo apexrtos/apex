@@ -131,6 +131,7 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_sigreturn] = sc_sigreturn,
 	[SYS_stat64] = sc_stat,
 	[SYS_statfs64] = sc_statfs,
+	[SYS_statx] = sc_statx,			    /* stub */
 	[SYS_symlink] = sc_symlink,
 	[SYS_symlinkat] = sc_symlinkat,
 	[SYS_sync] = sc_sync,
