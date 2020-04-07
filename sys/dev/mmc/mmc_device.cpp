@@ -458,6 +458,9 @@ device::zeroout(partition p, off_t off, uint64_t len)
 	if (off % sector_size_ || len % sector_size_)
 		return DERR(-EINVAL);
 
+	if (auto r = switch_partition(p); r < 0)
+		return r;
+
 	/* trim one erase group at a time to allow for other i/o */
 	return for_each_eg(off, len, [&](size_t start_lba, size_t end_lba) {
 		l.unlock();
@@ -477,6 +480,9 @@ device::discard(partition p, off_t off, uint64_t len, bool secure)
 	/* TODO: support secure discard by using MMC secure trim? */
 	if (secure)
 		return -ENOTSUP;
+
+	if (auto r = switch_partition(p); r < 0)
+		return r;
 
 	/* discard one erase group at a time to allow for other i/o */
 	return for_each_eg(off, len, [&](size_t start_lba, size_t end_lba) {
