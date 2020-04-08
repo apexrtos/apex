@@ -198,8 +198,8 @@ composite::v_configuration_descriptors(size_t idx, const Speed spd)
 	std::lock_guard l{lock_};
 
 	assert(idx < configurations_.size());
-	auto len = configurations_[idx]->write_descriptors(spd, desc_);
-	return {data(desc_), static_cast<ptrdiff_t>(len)};
+	return {data(desc_),
+		configurations_[idx]->write_descriptors(spd, desc_)};
 }
 
 /*

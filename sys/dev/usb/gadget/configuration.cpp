@@ -178,7 +178,8 @@ configuration::write_descriptors(const Speed spd, std::span<std::byte> m)
 
 	/* function descriptors */
 	for (auto &f : functions_)
-		pos += f->write_descriptors(spd, {&pos[0], end(m) - pos});
+		pos += f->write_descriptors(spd, {&pos[0],
+					    static_cast<size_t>(end(m) - pos)});
 
 	return pos - begin(m);
 }
