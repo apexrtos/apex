@@ -86,9 +86,8 @@ driver1 sys/dev/regulator/voltage/gpio{.name = "NVCC_SD", \
 	.states = {{0x1, 1.8}, {0x0, 3.3}}, .startup = 1}
 
 /*
- * REVISIT: NXP documentation says "24 MHz XTALOSC can be the external
- * clock source of SYSTICK" however, experimentation (and the calibration
- * register) suggest that it is running at 100KHz.
+ * SYSTICK clock source: 24 MHz XTALOSC
+ * This is divided down to 100KHz before it reaches SYSTICK
  */
 driver-1 sys/dev/arm/armv7m-systick{.clock = 100000, .clksource = 0}
 
