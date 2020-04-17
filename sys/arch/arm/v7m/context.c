@@ -196,7 +196,9 @@ context_init_uthread(struct context *child, struct as *as, void *kstack_top,
 void
 context_restore_vfork(struct context *ctx, struct as *as)
 {
-	assert(ctx->vfork_eframe);
+	/* thread was not created by vfork so nothing to restore */
+	if (!ctx->vfork_eframe)
+		return;
 
 	/* restore userspace exception frame */
 	struct nvregs *unv = ctx->estack - sizeof(struct nvregs);
