@@ -12,6 +12,7 @@ TYPE := klib
 TARGET := libc.a
 CFLAGS += -ffreestanding
 CFLAGS += -Wno-parentheses -Wno-unused-function -Wno-unused-variable
+CFLAGS += -Wno-maybe-uninitialized
 CFLAGS += -fno-lto -ffunction-sections -fdata-sections
 
 INCLUDE := \
@@ -32,6 +33,8 @@ SOURCES := \
     src/math/fabs.c \
     src/math/fmod.c \
     src/math/fmodl.c \
+    src/math/frexp.c \
+    src/math/frexpl.c \
     src/math/scalbn.c \
     src/math/scalbnl.c \
     src/multibyte/btowc.c \
