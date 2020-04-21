@@ -95,8 +95,13 @@ _start:
 	isb
 #endif
 
-	/* enable branch predictor, instruction cache, data cache and 8 byte
-	 * stack alignment on exception */
+#ifdef CONFIG_FPU
+	/* enable access to FPU */
+	mov r0, 0xf00000                /* CP10, CP11 full access */
+	str r0, [r11, A_CPACR-A_SCS]
+#endif
+
+	/* enable branch predictor & set cache configuration */
 	movw r0, :lower16:CCR_VAL
 	movt r0, :upper16:CCR_VAL
 	str r0, [r11, A_CCR-A_SCS]
