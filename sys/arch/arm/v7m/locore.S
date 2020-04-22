@@ -151,8 +151,8 @@ v7m_entry:
 	moveq r1, 1			/* r1 = 1 (handler mode) */
 
 	/* dispatch exception */
-	mrs r2, ipsr			/* r0 = exception number */
-0:	tbb [pc, r2]			/* switch (r0) */
+	mrs r2, ipsr			/* r2 = exception number */
+0:	tbb [pc, r2]			/* switch (r2) */
 	.byte (0f-0b-4)/2
 	.byte (1f-0b-4)/2
 	.byte (2f-0b-4)/2
