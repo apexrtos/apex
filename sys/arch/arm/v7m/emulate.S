@@ -23,7 +23,6 @@ v7m_emulate:
 	 * If we are in handler mode SPSEL is 0 (main stack)
 	 */
 	tst lr, EXC_SPSEL
-	ite ne
 	mrsne r0, psp
 	moveq r0, sp			/* r0 = exception frame */
 

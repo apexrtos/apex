@@ -144,7 +144,6 @@ _start:
 .global v7m_entry
 v7m_entry:
 	tst lr, EXC_SPSEL
-	ittee ne
 	mrsne r0, psp			/* r0 = exception frame */
 	movne r1, 0			/* r1 = 0 (thread mode) */
 	moveq r0, sp			/* r0 = exception frame */
@@ -306,8 +305,7 @@ return_to_user:
 	/* If sigreturn returned -ERESTARTSYS a syscall was interrupted by a
 	   signal with SA_RESTART set. Adjust return address to restart. */
 	mov r1, -ERESTARTSYS
-	cmp r0, r1
-	iteee ne			/* if (r0 != -ERESTARTSYS) */
+	cmp r0, r1			/* if (r0 != -ERESTARTSYS) */
 	strne r0, [r2, EFRAME_R0]	/*	    then return r0 */
 	ldreq r1, [r2, EFRAME_RA]	/* else load return addr */
 	subeq r1, 2			/*	    back up by 2 */
@@ -362,8 +360,7 @@ exc_PendSV:
 	vldmia r1!, {s16-s31}		/* pop fpu_nvregs */
 #endif
 	ldr r0, [r1]			/* r0 = saved control register */
-	tst r0, CONTROL_NPRIV
-	itt ne				/* if (r0 & CONTROL_NPRIV) */
+	tst r0, CONTROL_NPRIV		/* if (r0 & CONTROL_NPRIV) */
 	movne r0, -EINTERRUPT_RETURN	/*	r0 = -EINTERRUPT_RETURN */
 	bne return_to_user		/*	goto return_to_user */
 

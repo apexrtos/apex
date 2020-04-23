@@ -14,6 +14,8 @@ ifneq ($(origin CONFIG_MPU),undefined)
 SOURCES += $(ARCHDIR)/$(CONFIG_SUBARCH)/mpu.c
 endif
 
+ASFLAGS += -mimplicit-it=thumb
+
 #
 # Automatically generate offsets for assembly files
 #
