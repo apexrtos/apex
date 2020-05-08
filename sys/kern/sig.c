@@ -762,7 +762,7 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 
 	trace("rt_sigaction flags %lx\n", kact.flags);
 
-	/* APEX only supports limited flags */
+	/* Apex only supports limited flags */
 	if ((kact.flags & (SA_RESTORER | SA_RESTART | SA_NODEFER | SA_SIGINFO)) !=
 	    kact.flags) {
 		ret = DERR(-ENOSYS);
@@ -770,7 +770,7 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 	}
 
 	/*
-	 * APEX requires userspace to specify a restore trampoline
+	 * Apex requires userspace to specify a restore trampoline
 	 */
 	if (!(kact.flags & SA_RESTORER)) {
 		ret = DERR(-EINVAL);

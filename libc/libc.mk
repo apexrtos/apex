@@ -1,8 +1,8 @@
 #
-# APEX C library for kernel & bootloader
+# Apex C library for kernel & bootloader
 #
 # All source files in this library have been copied from musl with minimal
-# modifications for use in APEX.
+# modifications for use in Apex.
 #
 # TODO: musl has architecture specific optimisations for some algorithms
 #	(incl memcpy). They might be worth supporting.

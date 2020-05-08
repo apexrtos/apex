@@ -1,5 +1,5 @@
 #
-# The APEX make system
+# The Apex make system
 #
 
 #
@@ -16,7 +16,7 @@ SED := sed
 # Extensions for C++ files
 CXX_EXT := cpp cc C cxx c++
 
-# Search path for sources & output (if apex is a subdir)
+# Search path for sources & output (if Apex is a subdir)
 ifeq ($(CONFIG_SRCDIR),$(CONFIG_APEXDIR))
     APEX_SUBDIR :=
     VPATH := $(CONFIG_SRCDIR)
@@ -323,7 +323,7 @@ endef
 # The resultant boot image is laid out as follows:
 # 1. Boot loader
 # 2. Zero terminated array of file sizes (32bit big endian)
-# 3. APEX kernel
+# 3. Apex kernel
 # 4. Boot files
 #
 define fn_bootimg_rule
@@ -467,7 +467,7 @@ ifneq ($(eval_available),y)
     $(error 'make' does not support $$(eval))
 endif
 
-# Make sure we are running in a configured APEX environment
+# Make sure we are running in a configured Apex environment
 ifeq ($(CONFIG_SRCDIR),)
     $(error Run 'configure' before 'make')
 endif

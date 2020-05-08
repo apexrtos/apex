@@ -127,7 +127,7 @@ int	       semaphore_wait_interruptible(struct semaphore *);
 namespace a {
 
 /*
- * a::mutex - apex c++ mutex wrapper
+ * a::mutex - Apex c++ mutex wrapper
  */
 class mutex {
 public:
@@ -142,7 +142,7 @@ private:
 };
 
 /*
- * a::rwlock - apex c++ rwlock wrapper
+ * a::rwlock - Apex c++ rwlock wrapper
  */
 class rwlock_read;
 class rwlock_write;
@@ -171,7 +171,7 @@ inline rwlock_read &rwlock::read() { return static_cast<rwlock_read&>(*this); }
 inline rwlock_write &rwlock::write() { return static_cast<rwlock_write&>(*this); }
 
 /*
- * a::spinlock - apex c++ spinlock wrapper
+ * a::spinlock - Apex c++ spinlock wrapper
  */
 class spinlock {
 public:
@@ -185,7 +185,7 @@ private:
 };
 
 /*
- * a::spinlock_irq - apex c++ irq disabling spinlock wrapper
+ * a::spinlock_irq - Apex c++ irq disabling spinlock wrapper
  */
 class spinlock_irq {
 public:
@@ -199,7 +199,7 @@ private:
 };
 
 /*
- * a::semaphore - apex c++ semaphore wrapper
+ * a::semaphore - Apex c++ semaphore wrapper
  */
 class semaphore {
 public:

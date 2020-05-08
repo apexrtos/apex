@@ -66,7 +66,7 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 #if defined(CONFIG_EARLY_CONSOLE)
 	early_console_init();
 #endif
-	info("APEX " VERSION_STRING " for " CONFIG_MACHINE_NAME "\n");
+	info("Apex " VERSION_STRING " for " CONFIG_MACHINE_NAME "\n");
 
 	dbg("Kernel arguments: 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
 	    (long)archive_addr, archive_size, machdep0, machdep1);

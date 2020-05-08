@@ -11,7 +11,7 @@
 #define _LIBCPP_CONFIG
 
 /*
- * APEX configuration
+ * Apex configuration
  */
 #define _LIBCPP_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
 #define _LIBCPP_HAS_MUSL_LIBC

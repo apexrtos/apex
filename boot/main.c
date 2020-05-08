@@ -105,7 +105,7 @@ loader_main(void)
 	/*
 	 * Print banner
 	 */
-	info("APEX boot loader v2.00\n");
+	info("Apex boot loader v2.00\n");
 
 	/*
 	 * Load program image

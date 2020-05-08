@@ -7,7 +7,7 @@
  * if SELF_TEST is defined.  You can use this free for any purpose.  It's in
  * the public domain.  It has no warranty.
  *
- * Adapted for use in APEX by Patrick Oppenlander on 29/7/2011.
+ * Adapted for use in Apex by Patrick Oppenlander on 29/7/2011.
  * The original source can be found here
  *   http://burtleburtle.net/bob/c/lookup3.c
  */

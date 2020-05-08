@@ -24,7 +24,7 @@ enum class DeviceState {
 	Address,
 	Configured,
 	Suspended,
-	Failed,		    /* apex: hardware failure or software bug */
+	Failed,		    /* Apex: hardware failure or software bug */
 };
 
 /*

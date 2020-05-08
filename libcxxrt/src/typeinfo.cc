@@ -85,7 +85,7 @@ extern "C" char* __cxa_demangle(const char* mangled_name,
 #if 0
 	char *demangled = __cxa_demangle_gnu3(mangled_name);
 #else
-	/* REVISIT: demangling is disabled for APEX due to missing architecture
+	/* REVISIT: demangling is disabled for Apex due to missing architecture
 	 *	    support. */
 	char *demangled = NULL;
 #endif

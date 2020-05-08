@@ -19,7 +19,7 @@
 #   include <cxxabi.h>
 #elif defined(LIBCXXRT)
 #   include <cxxabi.h>
-	/* no new handler fallback in apex
+	/* no new handler fallback in Apex
 #   include "support/runtime/new_handler_fallback.ipp" */
 #elif defined(__GLIBCXX__)
     // nothing to do

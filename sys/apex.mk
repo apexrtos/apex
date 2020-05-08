@@ -1,5 +1,5 @@
 #
-# APEX Kernel
+# Apex Kernel
 #
 
 TYPE := exec

@@ -2,7 +2,7 @@
 #define jhash3_h
 
 /*
- * Adapted for use in APEX by Patrick Oppenlander on 29/7/2011.
+ * Adapted for use in Apex by Patrick Oppenlander on 29/7/2011.
  * The original source can be found here
  *   http://burtleburtle.net/bob/c/lookup3.c
  *

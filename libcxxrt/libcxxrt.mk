@@ -1,5 +1,5 @@
 #
-# APEX C++ runtime support library
+# Apex C++ runtime support library
 #
 TYPE := klib
 TARGET := libcxxrt.a

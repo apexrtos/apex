@@ -60,7 +60,7 @@ host::host(const mmc_desc &d, bool sdr104, bool sdr50, bool ddr50,
 
 	/* Thread for rescanning bus after change events.
 	 *
-	 * This is required as apex doesn't have support for deferred
+	 * This is required as Apex doesn't have support for deferred
 	 * processing which can sleep yet.
 	 */
 	if (!(th_ = kthread_create(&th_fn_wrapper, this, PRI_DPC, d.name,

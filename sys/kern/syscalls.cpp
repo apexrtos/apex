@@ -56,7 +56,7 @@ sc_uname(utsname *u)
 		return r;
 	if (!u_access_ok(u, sizeof(*u), PROT_WRITE))
 		return DERR(-EFAULT);
-	strcpy(u->sysname, "APEX RTOS");
+	strcpy(u->sysname, "Apex RTOS");
 	strcpy(u->nodename, "apex");
 	strcpy(u->release, VERSION_STRING);
 	strcpy(u->version, CONFIG_UNAME_VERSION);

@@ -34,7 +34,7 @@
 /**
  * General design:
  *
- * The APEX scheduler is based on the algorithm known as priority based queue.
+ * The Apex scheduler is based on the algorithm known as priority based queue.
  * Each thread has its own priority assigned between 0 and 255. The lower
  * number means higher priority like BSD UNIX. The lowest priority (=255) is
  * used only for an idle thread.

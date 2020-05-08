@@ -15,7 +15,7 @@ static int
 clone_thread(unsigned long flags, void *sp, int *ptid, void *tls,
     int *ctid)
 {
-	/* These flags must be set for thread creation, APEX has no way to
+	/* These flags must be set for thread creation, Apex has no way to
 	   create a thread without these behaviours */
 	constexpr auto mandatory_flags =
 		CLONE_FILES |		/* share file descriptor table */

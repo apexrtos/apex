@@ -1,12 +1,12 @@
 /*
  * proc.c - process management routines.
  *
- * An APEX task maps loosely to a process. All processes are
+ * An Apex task maps loosely to a process. All processes are
  * tasks, but a task is not necessarily a process.
  *
  * Tasks which have no process mapping have pid == -1.
  *
- * APEX supports a single session only.
+ * Apex supports a single session only.
  */
 
 #include <proc.h>

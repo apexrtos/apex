@@ -439,7 +439,7 @@ endif
 MAKEFILE
 
 	$print
-	$print "APEX is configured. Now run 'make'."
+	$print "Apex is configured. Now run 'make'."
 }
 
 main "$@"

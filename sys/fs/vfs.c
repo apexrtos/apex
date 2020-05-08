@@ -1154,7 +1154,7 @@ mknodat(int dirfd, const char *path, mode_t mode, dev_t dev)
 		goto out;
 	}
 
-	/* APEX supports a limited set of node types */
+	/* Apex supports a limited set of node types */
 	switch (mode & S_IFMT) {
 	case S_IFDIR:
 	case S_IFREG:

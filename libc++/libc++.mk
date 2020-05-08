@@ -1,5 +1,5 @@
 #
-# APEX C++ library for kernel & bootloader
+# Apex C++ library for kernel & bootloader
 #
 
 TYPE := klib

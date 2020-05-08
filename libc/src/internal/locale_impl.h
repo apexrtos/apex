@@ -34,7 +34,7 @@ hidden char *__gettextdomain(void);
 #define C_LOCALE ((locale_t)&__c_locale)
 #define UTF8_LOCALE ((locale_t)&__c_dot_utf8_locale)
 
-/* APEX kernel uses C locale only. */
+/* Apex kernel uses C locale only. */
 #define CURRENT_UTF8 0
 
 #undef MB_CUR_MAX

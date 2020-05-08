@@ -6,10 +6,10 @@
 #include <endian.h>
 
 /*
- * The APEX executable boot image is assembled as follows:
+ * The Apex executable boot image is assembled as follows:
  * 1. Boot loader
  * 2. Zero terminated array of file sizes (32bit big endian)
- * 4. APEX kernel
+ * 4. Apex kernel
  * 3. Boot files
  */
 int

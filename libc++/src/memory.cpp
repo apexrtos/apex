@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "memory"
-#if 0 /* APEX mutex is not compatible with libstdc++ yet */
+#if 0 /* Apex mutex is not compatible with libstdc++ yet */
 #include "mutex"
 #include "thread"
 #if defined(__unix__) &&  defined(__ELF__) && defined(_LIBCPP_HAS_COMMENT_LIB_PRAGMA)
@@ -134,7 +134,7 @@ __shared_weak_count::__get_deleter(const type_info&) const _NOEXCEPT
 
 #endif  // _LIBCPP_NO_RTTI
 
-#if 0	/* no std::atomic<std::shared_ptr<T>> on APEX for now */
+#if 0	/* no std::atomic<std::shared_ptr<T>> on Apex for now */
 
 _LIBCPP_SAFE_STATIC static const std::size_t __sp_mut_count = 16;
 _LIBCPP_SAFE_STATIC static __libcpp_mutex_t mut_back[__sp_mut_count] =
