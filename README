@@ -1,18 +1,18 @@
-APEX
+Apex
 ====
 
-APEX is a real time operating system designed for use in small to medium scale
+Apex is a real time operating system designed for use in small to medium scale
 embedded systems. It implements a subset of the Linux syscall interface and
 uses the musl C library.
 
 This project initially borrowed heavily from the
 [Prex](http://prex.sourceforge.net) project, but ended up largely rewritten.
 
-APEX aims to be small, efficient and easy to understand. The main architectural
-difference from Prex is that APEX is a monolithic rather than a microkernel
+Apex aims to be small, efficient and easy to understand. The main architectural
+difference from Prex is that Apex is a monolithic rather than a microkernel
 system.
 
-APEX is under heavy development and should not be considered stable at this
+Apex is under heavy development and should not be considered stable at this
 time. Contributions, suggestions, comments and general feedback are welcome.
 
 
@@ -27,10 +27,10 @@ difficult to migrate an application to a new environment.
 
 For large embedded systems there is Linux.
 
-APEX tries to fit in between the two extremes, targeting systems where Linux is
+Apex tries to fit in between the two extremes, targeting systems where Linux is
 too large and excluding very small microcontrollers.
 
-Generally, systems with 1MiB of ROM & RAM are enough for the APEX kernel and a
+Generally, systems with 1MiB of ROM & RAM are enough for the Apex kernel and a
 rich set of userspace tools. Smaller systems can be targeted but will require
 more careful optimisation.
 
@@ -50,38 +50,12 @@ Providing a Linux compatible environment has a number of benefits:
   tools (such as valgrind).
 
 A (very) rough comparison of scale for a complete system:
-Property			| Traditional RTOS  | APEX	    | Linux
+Property			| Traditional RTOS  | Apex	    | Linux
 --------			| ----------------  | ----	    | -----
 Code size (kernel & userspace)  | < 0.5MiB	    | >= 0.5MiB	    | >= 4MiB
 Memory size			| < 0.5MiB	    | >= 0.5MiB	    | >= 4MiB
 Architecture support		| >= 8-bit	    | 32-bit(*)	    | runs on anything
 (*) 64-bit will be supported in the future.
-
-
-License
-=======
-
-APEX is royalty-free software.
-
-APEX includes source code from a variety of open source projects. Any files
-from other projects are royalty free and retain their original copyright
-notice.
-
-Any file without a copyright notice is an original work by the authors and is
-public domain.
-
-The standard BSD disclaimer applies:
-
-THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS "AS IS" AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
-ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 Architecture Support
@@ -136,7 +110,7 @@ aarch64		| virt		| Cortex-A53 (ARMv8-A)	| Future
 Toolchain
 =========
 
-APEX requires the excellent musl libc to build. By far the easiest way to get a
+Apex requires the excellent musl libc to build. By far the easiest way to get a
 musl libc toolchain is by using
 [musl-cross-make](https://github.com/richfelker/musl-cross-make).
 
@@ -149,7 +123,7 @@ GCC_CONFIG += --enable-languages=c,c++
 GCC_CONFIG += --disable-libquadmath --disable-decimal-float
 GCC_CONFIG += --enable-default-pie
 GCC_CONFIG += --enable-cxx-flags="-ffunction-sections"
-MUSL_CONFIG += --enable-visibility --enable-debug
+MUSL_CONFIG += --enable-debug
 COMMON_CONFIG += CFLAGS="-g0 -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"
 COMMON_CONFIG += --disable-nls
 COMMON_CONFIG += --with-debug-prefix-map=\$(CURDIR)=
@@ -178,7 +152,7 @@ for the emulated UART on the MPS2-AN385 board used in this example.
 Structure
 =========
 
-APEX is split into multiple repositories:
+Apex is split into multiple repositories:
 
 ~~~~
 https://github.com/apexrtos
@@ -187,17 +161,17 @@ https://github.com/apexrtos
 └── apex-tests                  test harnesses & projects
 ~~~~
 
-The top level of the APEX sources can be summarised as:
+The top level of the Apex sources can be summarised as:
 
 ~~~~
 apex
-├── boot                        APEX boot loader
+├── boot                        Apex boot loader
 ├── cpu                         CPU specific configuration & sources
 ├── libc                        C libary (for bootloader & kernel)
 ├── libc++                      C++ library (for bootloader & kernel)
 ├── machine                     machine/board support files
 ├── mk                          build system
-└── sys                         APEX kernel
+└── sys                         Apex kernel
     ├── arch                    architecture support
     ├── dev                     device drivers
     ├── fs                      file systems
@@ -210,12 +184,12 @@ apex
 Configuration & Build System
 ============================
 
-The APEX build is controlled by a set of configuration files which describe the
-project, machine and CPU to build for. These files can be located in the APEX
+The Apex build is controlled by a set of configuration files which describe the
+project, machine and CPU to build for. These files can be located in the Apex
 repository or in a project specific repository and can be freely mixed &
 matched.
 
-In APEX we use the following terms:
+In Apex we use the following terms:
 Term    | Meaning
 ----	| -------
 Project	| Userspace applications, init scripts, boot configuration, custom drivers, optional machine and/or CPU configuration.

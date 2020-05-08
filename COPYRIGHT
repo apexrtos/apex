@@ -1,0 +1,57 @@
+===============================================================================
+SPDX-License-Identifier: 0BSD
+
+Zero-Clause BSD (https://opensource.org/licenses/0BSD)
+
+Copyright 2018 Andrew Dennison, Patrick Oppenlander and others.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+===============================================================================
+
+This project is forked from Prex (http://prex.sourceforge.net) written by
+Kohsuke Ohtani. All remaining Prex files contain their original license &
+copyright notices.
+
+Authors & contributors to Apex include:
+
+Andrew Dennison
+Patrick Oppenlander
+Richard Tucker
+
+While not reflected in the git history, significant portitions of the "Initial
+apex refactor" commit were contributed by Andrew Dennison.
+
+Parts of this project are derived from other open source projects with
+compatible permissive licenses.
+
+The libcxxrt directory contains a fork of the PathScale implementation of the
+C++ ABI located at https://github.com/libcxxrt/libcxxrt. It is licensed under
+the BSD-2-Clause license.
+
+The libc++ directory contains a fork of of the LLVM C++ standard library
+located at https://git.llvm.org/git/libcxx. It is licensed under the Apache-2.0
+license.
+
+The cpu/nxp/imxrt10xx/tools/blhost file is copied from the MCUXpresso SDK for
+the i.MX RT1060 CPU available from https://mcuxpresso.nxp.com. The source code
+for this tool is licensed under the BSD-3-Clause license.
+
+The cpu/nxp/imxrt10xx/tools/ivt_flashloader.bin is built from a modified
+version of the MCUXpresso SDK for the i.MX RT1060 CPU located at
+https://github.com/apexrtos/imxrt1060_flashloader. The source code for this
+binary is licensed under the BSD-3-Clause license.
+
+All other files which have no copyright comments are original works written by
+one of the contributors listed above. Details on authorship of individual
+files can be found in the git version control history of the project. The
+omission of copyright and license comments in each file is in the interest of
+source tree size.
