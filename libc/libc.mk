@@ -4,9 +4,6 @@
 # All source files in this library have been copied from musl with minimal
 # modifications for use in Apex.
 #
-# TODO: musl has architecture specific optimisations for some algorithms
-#	(incl memcpy). They might be worth supporting.
-#
 
 TYPE := klib
 TARGET := libc.a
@@ -18,6 +15,7 @@ CFLAGS += -fno-lto -ffunction-sections -fdata-sections
 INCLUDE := \
 	$(CONFIG_BUILDDIR) \
 	$(CONFIG_APEXDIR)/sys/include \
+	arch/$(CONFIG_ARCH) \
 	src/internal \
 	src/include \
 
@@ -30,7 +28,6 @@ SOURCES := \
     src/locale/c_locale.c \
     src/math/copysign.c \
     src/math/copysignl.c \
-    src/math/fabs.c \
     src/math/fmod.c \
     src/math/fmodl.c \
     src/math/frexp.c \
@@ -69,7 +66,6 @@ SOURCES := \
     src/stdlib/wcstol.c \
     src/string/memchr.c \
     src/string/memcmp.c \
-    src/string/memcpy.c \
     src/string/memmove.c \
     src/string/memset.c \
     src/string/stpcpy.c \
@@ -94,6 +90,19 @@ SOURCES := \
     src/string/wmemcpy.c \
     src/string/wmemmove.c \
     src/string/wmemset.c \
+
+ifeq ($(CONFIG_ARCH), arm)
+ASFLAGS += -mimplicit-it=always
+SOURCES += \
+    src/math/arm/fabs.c \
+    src/math/arm/fabsf.c \
+    src/math/arm/fma.c \
+    src/math/arm/fmaf.c \
+    src/math/arm/sqrt.c \
+    src/math/arm/sqrtf.c \
+    src/string/arm/memcpy.c \
+    src/string/arm/memcpy_le.S
+endif
 
 $(APEX_SUBDIR)libc/src/string/memcmp_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
 $(APEX_SUBDIR)libc/src/string/memcpy_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
