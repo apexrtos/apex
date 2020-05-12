@@ -50,16 +50,19 @@ void (*kernel_entry)(phys *, long, long, long);
 void
 debug_puts(const char *s)
 {
+#if defined(CONFIG_BOOT_CONSOLE)
 	while (*s) {
 		if (*s == '\n')
 			machine_putc('\r');
 		machine_putc(*s++);
 	}
+#endif
 }
 
 void
 debug_printf(const char *fmt, ...)
 {
+#if defined(CONFIG_BOOT_CONSOLE)
 	char buf[256];
 
 	va_list ap;
@@ -78,6 +81,17 @@ debug_printf(const char *fmt, ...)
 	}
 
 	debug_puts(buf);
+#endif
+}
+
+noreturn void
+panic(const char *msg)
+{
+#if defined(CONFIG_BOOT_CONSOLE)
+	debug_puts("Panic: ");
+	debug_puts(msg);
+#endif
+	machine_panic();
 }
 
 /*

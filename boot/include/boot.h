@@ -48,11 +48,6 @@
 #define info(...)
 #endif
 
-#define panic(msg) ({ \
-	debug_puts("Panic: " msg); \
-	machine_panic(); \
-})
-
 extern struct bootargs args;
 extern void (*kernel_entry)(phys *archive_addr, long archive_size,
     long machdep0, long machdep1);
@@ -62,6 +57,7 @@ int load_bootimg();
 void debug_puts(const char *);
 void debug_printf(const char *, ...)
 	__attribute__((format (printf, 1, 2)));
+noreturn void panic(const char *);
 
 #endif /* !boot_h */
 
