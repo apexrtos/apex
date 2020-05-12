@@ -12,14 +12,17 @@ SECTIONS {
 	.text : {
 		KEEP(*head.o(.text))
 		*(.text*)
+		. = ALIGN(4);
 	} >rom
 
 	.rodata : {
 		*(.rodata*)
+		. = ALIGN(4);
 	} >rom
 
 	.data : {
 		*(.data*)
+		. = ALIGN(4);
 	} >ram AT>rom
 
 	.bss : {

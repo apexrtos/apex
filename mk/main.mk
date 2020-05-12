@@ -323,8 +323,9 @@ endef
 # The resultant boot image is laid out as follows:
 # 1. Boot loader
 # 2. Zero terminated array of file sizes (32bit big endian)
-# 3. Apex kernel
-# 4. Boot files
+# 3. Padding up to 8-byte boundary
+# 4. Apex kernel
+# 5. Boot files
 #
 define fn_bootimg_rule
     # fn_bootimg_rule
@@ -342,6 +343,7 @@ define fn_bootimg_rule
 	cat $$($(tgt)_BOOTLOADER) > $$@
 	$$(foreach a,$$($(tgt)_FILES),perl -e "print pack('N', `stat -c %s $$a`)" >> $$@;)
 	perl -e "print pack('N', 0)" >> $$@
+	truncate -s $$$$((($$$$(stat -c %s $$@) + 7) & -8)) $$@
 	cat $$($(tgt)_FILES) >> $$@
 
     $$(eval undefine SOURCES)

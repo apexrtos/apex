@@ -4,13 +4,15 @@
 #include <boot.h>
 
 #include <endian.h>
+#include <sys/include/kernel.h>
 
 /*
  * The Apex executable boot image is assembled as follows:
  * 1. Boot loader
  * 2. Zero terminated array of file sizes (32bit big endian)
+ * 3. Padding up to 8-byte boundary
  * 4. Apex kernel
- * 3. Boot files
+ * 5. Boot files
  */
 int
 load_bootimg(void)
@@ -32,7 +34,7 @@ load_bootimg(void)
 		return -1;
 	}
 
-	file_data = __loader_end + (files + 1) * sizeof(uint32_t);
+	file_data = ALIGNn(__loader_end + (files + 1) * sizeof(uint32_t), 8);
 
 	dbg("Found %zu boot files:\n", files);
 	p = file_data;
