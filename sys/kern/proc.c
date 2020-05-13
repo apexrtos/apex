@@ -35,7 +35,7 @@
  * Can be called under interrupt.
  */
 void
-proc_exit(struct task *task, int status)
+proc_exit(struct task *task, int status, int signal)
 {
 	struct list *head, *n;
 	struct thread *th;
@@ -74,7 +74,7 @@ proc_exit(struct task *task, int status)
 	 * to SIG_IGN or the SA_NOCLDWAIT flag is set
 	 */
 	task->state = PS_ZOMB;
-	task->exitcode = (status & 0xff) << 8;
+	task->exitcode = (status & 0xff) << 8 | (signal & 0x7f);
 
 	/*
 	 * Resume vfork thread if this process was vforked and didn't exec or

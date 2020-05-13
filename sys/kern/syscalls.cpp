@@ -34,7 +34,7 @@ sc_exit()
 void
 sc_exit_group(int status)
 {
-	proc_exit(task_cur(), status);
+	proc_exit(task_cur(), status, 0);
 }
 
 int
@@ -93,7 +93,7 @@ sc_reboot(unsigned long magic, unsigned long magic2, int cmd, void *arg)
 	}
 
 	/* Linux kills caller? */
-	proc_exit(task_cur(), 0);
+	proc_exit(task_cur(), 0, 0);
 	return 0;
 }
 

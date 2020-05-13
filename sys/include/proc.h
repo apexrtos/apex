@@ -13,7 +13,7 @@ extern "C" {
 /*
  * Kernel interface
  */
-void	     proc_exit(struct task *, int status);
+void	     proc_exit(struct task *, int status, int signal);
 
 /*
  * Syscalls

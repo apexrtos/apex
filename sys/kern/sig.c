@@ -237,8 +237,7 @@ process_signal(struct task *task, int sig)
 			return ret;
 		break;	    /* potentially process */
 	case SIGKILL:
-		proc_exit(task, 0);
-		task->exitcode = sig;
+		proc_exit(task, 0, sig);
 		return 1;   /* always ignore */
 	}
 
@@ -488,8 +487,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		case SIGBUS:
 		case SIGSYS:
 			dbg("Fatal signal in signal handler. Bye bye.\n");
-			proc_exit(task, 0);
-			task->exitcode = sig;
+			proc_exit(task, 0, sig);
 			break;
 		default:
 			/*
@@ -507,8 +505,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	if (handler != SIG_DFL) {
 		if (!(sig_flags(task, sig) & SA_RESTORER)) {
 			dbg("Signal without restorer. Bye bye.\n");
-			proc_exit(task, 0);
-			task->exitcode = sig;
+			proc_exit(task, 0, sig);
 			goto out;
 		}
 
@@ -588,8 +585,7 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		/* Default action: terminate */
 		dbg("Fatal signal %d. Terminate.\n", sig);
 fatal:
-		proc_exit(task_cur(), 0);
-		task_cur()->exitcode = sig;
+		proc_exit(task_cur(), 0, sig);
 		sch_unlock();
 		sch_testexit();
 		return -ETHREAD_EXIT;
