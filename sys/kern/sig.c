@@ -150,7 +150,7 @@ static sig_restore_fn
 sig_restorer(struct task *t, int sig)
 {
 	assert(sig > 0 && sig <= NSIG);
-	return t->sig_action[sig - 1].restorer;
+	return sig_flags(t, sig) & SA_RESTORER ? t->sig_action[sig - 1].restorer : 0;
 }
 
 /*
@@ -503,12 +503,6 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	assert(handler != SIG_IGN);
 
 	if (handler != SIG_DFL) {
-		if (!(sig_flags(task, sig) & SA_RESTORER)) {
-			dbg("Signal without restorer. Bye bye.\n");
-			proc_exit(task, 0, sig);
-			goto out;
-		}
-
 		trace("Delivering signal th:%p sig:%d\n", th, sig);
 
 		/*
@@ -765,17 +759,6 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 		goto out;
 	}
 
-	/*
-	 * Apex requires userspace to specify a restore trampoline
-	 */
-	if (!(kact.flags & SA_RESTORER)) {
-		ret = DERR(-EINVAL);
-		goto out;
-	}
-	if (!u_address(kact.restorer)) {
-		ret = DERR(-EFAULT);
-		goto out;
-	}
 	if (kact.handler != SIG_IGN && kact.handler != SIG_DFL &&
 	    !u_address(kact.handler)) {
 		ret = DERR(-EFAULT);
