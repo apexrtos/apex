@@ -211,6 +211,25 @@ context_restore_vfork(struct context *ctx, struct as *as)
 }
 
 /*
+ * Return true if context is already setup for signal delivery
+ */
+static bool
+context_in_signal(struct context *ctx)
+{
+	struct thread *th = thread_cur();
+
+	/* kernel threads can't be in signal handler */
+	assert(ctx->ustack);
+
+	/* get kernel stack for thread */
+	assert(&th->ctx == ctx);
+	void *kstack_top = arch_kstack_align(th->kstack + CONFIG_KSTACK_SIZE);
+
+	/* if there is saved context on kernel stack signal is in progress */
+	return ctx->estack != kstack_top;
+}
+
+/*
  * Setup context for signal delivery
  *
  * Always called in handler mode on interrupt stack.
@@ -322,25 +341,6 @@ void
 context_set_tls(struct context *ctx, void *tls)
 {
 	ctx->tls = tls;
-}
-
-/*
- * Return true if context is already setup for signal delivery
- */
-bool
-context_in_signal(struct context *ctx)
-{
-	struct thread *th = thread_cur();
-
-	/* kernel threads can't be in signal handler */
-	assert(ctx->ustack);
-
-	/* get kernel stack for thread */
-	assert(&th->ctx == ctx);
-	void *kstack_top = arch_kstack_align(th->kstack + CONFIG_KSTACK_SIZE);
-
-	/* if there is saved context on kernel stack signal is in progress */
-	return ctx->estack != kstack_top;
 }
 
 /*
