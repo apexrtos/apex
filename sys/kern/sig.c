@@ -476,28 +476,6 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	irq_restore(s1);
 
 	/*
-	 * Check for fatal signals while in signal handler
-	 */
-	if (context_in_signal(&th->ctx)) {
-		switch (sig) {
-		case SIGILL:
-		case SIGTRAP:
-		case SIGFPE:
-		case SIGSEGV:
-		case SIGBUS:
-		case SIGSYS:
-			dbg("Fatal signal in signal handler. Bye bye.\n");
-			proc_exit(task, 0, sig);
-			break;
-		default:
-			/*
-			 * Some other pending signal, defer
-			 */
-			goto out;
-		}
-	}
-
-	/*
 	 * Ignored signals are filtered out earlier
 	 */
 	assert(handler != SIG_IGN);
