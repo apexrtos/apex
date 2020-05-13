@@ -346,14 +346,14 @@ context_set_tls(struct context *ctx, void *tls)
 /*
  * Restore signal context
  */
-static int
-sigrestore(struct context *ctx, k_sigset_t *ss, const bool info)
+bool
+context_restore(struct context *ctx, k_sigset_t *ss, int *rval, const bool info)
 {
 	if (!ctx->ustack)
 		panic("signal kthread");
 
 	if (!context_in_signal(ctx))
-		return DERR(-EINVAL);
+		return DERR(false);
 
 	struct nvregs *unv = ctx->estack - sizeof(struct nvregs);
 
@@ -386,7 +386,7 @@ sigrestore(struct context *ctx, k_sigset_t *ss, const bool info)
 
 	/* check access to user memory */
 	if (!u_access_ok(ctx->ustack, usp - ctx->ustack, PROT_READ))
-		return DERR(-EFAULT);
+		return DERR(false);
 
 	/* restore state */
 	if (info) {
@@ -423,25 +423,8 @@ sigrestore(struct context *ctx, k_sigset_t *ss, const bool info)
 	ctx->ustack = uef;
 	ctx->estack += sizeof(struct nvregs);
 
-	return *urval;
-}
-
-/*
- * Restore context after signal return
- */
-int
-context_restore(struct context *ctx, k_sigset_t *ss)
-{
-	return sigrestore(ctx, ss, false);
-}
-
-/*
- * Restore extended context after signal return
- */
-int
-context_siginfo_restore(struct context *ctx, k_sigset_t *ss)
-{
-	return sigrestore(ctx, ss, true);
+	*rval = *urval;
+	return true;
 }
 
 /*

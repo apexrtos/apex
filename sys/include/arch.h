@@ -73,8 +73,7 @@ bool		context_set_signal(struct context *, const k_sigset_t *,
 				   int, const siginfo_t *, int);
 void		context_set_tls(struct context *, void *);
 void		context_switch(struct thread *, struct thread *);
-int		context_restore(struct context *, k_sigset_t *);
-int		context_siginfo_restore(struct context *, k_sigset_t *);
+bool		context_restore(struct context *, k_sigset_t *, int *, bool);
 void		context_terminate(struct thread *);
 void		context_free(struct context *);
 void		interrupt_enable(void);

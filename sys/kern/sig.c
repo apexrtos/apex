@@ -774,16 +774,21 @@ out:
 }
 
 /*
- * Return from signal handler (1 argument)
+ * Return from signal handler
  */
-int
-sc_sigreturn(void)
+static int
+sigreturn(bool siginfo)
 {
 	int ret;
 	struct thread *th = thread_cur();
 
 	sch_lock();
-	ret = context_restore(&th->ctx, &th->sig_blocked);
+	if (!context_restore(&th->ctx, &th->sig_blocked, &ret, siginfo)) {
+		proc_exit(task_cur(), 0, SIGSYS);
+		sch_unlock();
+		sch_testexit();
+		return -ETHREAD_EXIT;
+	}
 
 	/* SIGSTOP and SIGKILL cannot be blocked */
 	ksigdelset(&th->sig_blocked, SIGSTOP);
@@ -795,22 +800,20 @@ sc_sigreturn(void)
 }
 
 /*
+ * Return from signal handler (1 argument)
+ */
+int
+sc_sigreturn(void)
+{
+	return sigreturn(false);
+
+}
+
+/*
  * Return from SA_SIGINFO signal handler (3 arguments)
  */
 int
 sc_rt_sigreturn(void)
 {
-	int ret;
-	struct thread *th = thread_cur();
-
-	sch_lock();
-	ret = context_siginfo_restore(&th->ctx, &th->sig_blocked);
-
-	/* SIGSTOP and SIGKILL cannot be blocked */
-	ksigdelset(&th->sig_blocked, SIGSTOP);
-	ksigdelset(&th->sig_blocked, SIGKILL);
-
-	sch_unlock();
-
-	return ret;
+	return sigreturn(true);
 }
