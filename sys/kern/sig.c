@@ -506,8 +506,8 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 		}
 
 		/* setup context to run signal handler */
-		if (context_set_signal(&th->ctx, &th->sig_blocked, handler,
-		    sig_restorer(task, sig), sig, info ? &si : 0, rval) < 0) {
+		if (!context_set_signal(&th->ctx, &th->sig_blocked, handler,
+		    sig_restorer(task, sig), sig, info ? &si : 0, rval)) {
 			dbg("Signal setup failed. Terminate.\n");
 			goto fatal;
 		}

@@ -234,7 +234,7 @@ context_in_signal(struct context *ctx)
  *
  * Always called in handler mode on interrupt stack.
  */
-int
+bool
 context_set_signal(struct context *ctx, const k_sigset_t *ss,
     void (*handler)(int), void (*restorer)(void), const int sig,
     const siginfo_t *si, const int rval)
@@ -244,7 +244,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 		panic("signal kthread");
 
 	if (context_in_signal(ctx))
-		return DERR(-EINVAL);
+		return DERR(false);
 
 	/* allocate user stack */
 	void *usp = ctx->ustack;
@@ -268,7 +268,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 
 	/* catch stack overflow */
 	if (!u_access_ok(usp, ctx->ustack - usp + sizeof(*uef), PROT_WRITE))
-		return DERR(-EFAULT);
+		return DERR(false);
 
 	/* initialise userspace signal context */
 	if (si) {
@@ -331,7 +331,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	ctx->ustack = usef;
 	ctx->estack -= sizeof(struct nvregs);
 
-	return 0;
+	return true;
 }
 
 /*

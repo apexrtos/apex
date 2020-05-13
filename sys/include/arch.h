@@ -68,7 +68,7 @@ int		context_init_uthread(struct context *, struct as *,
 				     void *kstack_top, void *ustack_top,
 				     void (*entry)(void), long retval);
 void		context_restore_vfork(struct context *, struct as *);
-int		context_set_signal(struct context *, const k_sigset_t *,
+bool		context_set_signal(struct context *, const k_sigset_t *,
 				   void (*handler)(int), void (*restorer)(void),
 				   int, const siginfo_t *, int);
 void		context_set_tls(struct context *, void *);
