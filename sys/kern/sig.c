@@ -737,12 +737,6 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 		goto out;
 	}
 
-	if (kact.handler != SIG_IGN && kact.handler != SIG_DFL &&
-	    !u_address(kact.handler)) {
-		ret = DERR(-EFAULT);
-		goto out;
-	}
-
 	task_cur()->sig_action[sig - 1] = kact;
 
 	/*
