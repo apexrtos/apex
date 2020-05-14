@@ -192,11 +192,9 @@ sig_flush(struct task *task)
 		irq_restore(s);
 
 		/*
-		 * Wake up thread at high priority to handle signals
+		 * Wake up thread to handle signals
 		 */
 		sch_signal(th);
-		if (th->prio > PRI_SIGNAL)
-			sch_setprio(th, th->baseprio, PRI_SIGNAL);
 
 		/*
 		 * Clear pending signals from task
@@ -348,14 +346,6 @@ sig_thread(struct thread *th, int sig)
 	if (unblocked_pending)
 		sch_signal(th);
 
-	/*
-	 * Run thread at high priority to handle signal or kill request
-	 */
-	if (!sig && (th->baseprio > PRI_SIGNAL))
-		sch_setprio(th, PRI_SIGNAL, PRI_SIGNAL);
-	else if (unblocked_pending && (th->prio > PRI_SIGNAL))
-		sch_setprio(th, th->baseprio, PRI_SIGNAL);
-
 out:
 	sch_unlock();
 }
@@ -392,11 +382,9 @@ sig_restore(const k_sigset_t *old)
 	thread_cur()->sig_blocked = *old;
 	if (sig_unblocked_pending(th)) {
 		/*
-		 * Wake up thread at high priority to handle signal
+		 * Wake up thread to handle signal
 		 */
 		sch_signal(th);
-		if (th->prio > PRI_SIGNAL)
-			sch_setprio(th, th->baseprio, PRI_SIGNAL);
 	}
 	sch_unlock();
 }
