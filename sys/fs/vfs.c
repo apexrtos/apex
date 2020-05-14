@@ -775,7 +775,7 @@ fs_init(void)
 	vnode_init();
 	semaphore_init(&exit_sem);
 
-	kthread_create(&fs_thread, NULL, PRI_SIGNAL, "fs", MA_NORMAL);
+	kthread_create(&fs_thread, NULL, PRI_KERN_HIGH, "fs", MA_NORMAL);
 
 	/*
 	 * Initialize each file system.

@@ -95,7 +95,7 @@ console_init(const char *dev, tcflag_t cflag)
 	syslog_output(console_start);
 	console_start();
 
-	if (!kthread_create(&console_thread, NULL, PRI_SIGNAL, "console",
+	if (!kthread_create(&console_thread, NULL, PRI_KERN_LOW, "console",
 	    MA_NORMAL))
 		panic("console_init");
 

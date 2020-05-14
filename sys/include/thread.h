@@ -78,6 +78,8 @@ struct thread {
 #define PRI_IST_MAX	16	/* max priority for interrupt threads */
 #define PRI_IST_MIN	32	/* min priority for interrupt threads */
 #define PRI_DPC		33	/* priority for Deferred Procedure Call */
+#define PRI_KERN_HIGH	34	/* high priority kernel threads */
+#define PRI_KERN_LOW	35	/* low priority kernel threads */
 #define PRI_SIGNAL	63	/* priority for signal delivery */
 #define PRI_DEFAULT	200	/* default user priority */
 #define PRI_BACKGROUND	254	/* priority for background processing */
