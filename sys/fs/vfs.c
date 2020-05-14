@@ -837,9 +837,13 @@ fs_exit(struct task *t)
 	int fd;
 
 	/*
-	 * Defer to worker thread if called from interrupt
+	 * Defer to worker thread if called from an incompatible context
+	 *
+	 * REVISIT: The sch_locked() part of this is a horrible hack which we
+	 * will fix once the rest of the kernel stops leaking locks all over
+	 * the place.
 	 */
-	if (interrupt_running()) {
+	if (interrupt_running() || sch_locks()) {
 		semaphore_post(&exit_sem);
 		return;
 	}
