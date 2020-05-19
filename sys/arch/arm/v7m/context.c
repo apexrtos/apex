@@ -1,5 +1,6 @@
 #include <arch.h>
 
+#include "exception_frame.h"
 #include "mpu.h"
 #include <access.h>
 #include <alloca.h>
@@ -12,6 +13,57 @@
 #include <sys/mman.h>
 #include <thread.h>
 #include <vm.h>
+
+/*
+ * Non-volatile core registers switched by context switch.
+ */
+struct nvregs {
+	uint32_t control;
+	uint32_t r4;
+	uint32_t r5;
+	uint32_t r6;
+	uint32_t r7;
+	uint32_t r8;
+	uint32_t r9;
+	uint32_t r10;
+	uint32_t r11;
+	uint32_t lr;
+};
+static_assert(!(sizeof(struct nvregs) & 7));
+
+/*
+ * Non-volatile FPU registers switched by context switch.
+ */
+struct fpu_nvregs {
+	uint32_t s16;
+	uint32_t s17;
+	uint32_t s18;
+	uint32_t s19;
+	uint32_t s20;
+	uint32_t s21;
+	uint32_t s22;
+	uint32_t s23;
+	uint32_t s24;
+	uint32_t s25;
+	uint32_t s26;
+	uint32_t s27;
+	uint32_t s28;
+	uint32_t s29;
+	uint32_t s30;
+	uint32_t s31;
+};
+static_assert(!(sizeof(struct fpu_nvregs) & 7));
+
+/*
+ * System call arguments pushed by system call entry.
+ */
+struct syscall_args {
+	uint32_t a4;			    /* syscall argument 4 */
+	uint32_t a5;			    /* syscall argument 5 */
+	uint32_t a6;			    /* syscall argument 6 */
+	uint32_t syscall;		    /* syscall number */
+};
+static_assert(!(sizeof(struct syscall_args) & 7));
 
 /*
  * Frame on userspace stack for signal delivery

@@ -1,6 +1,6 @@
 #include <arch.h>
 
-#include <context.h>
+#include "exception_frame.h"
 #include <cpu.h>
 #include <debug.h>
 #include <irq.h>
