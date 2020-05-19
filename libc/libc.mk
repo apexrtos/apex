@@ -7,10 +7,13 @@
 
 TYPE := klib
 TARGET := libc.a
-CFLAGS += -ffreestanding
-CFLAGS += -Wno-parentheses -Wno-unused-function -Wno-unused-variable
-CFLAGS += -Wno-maybe-uninitialized
-CFLAGS += -fno-lto -ffunction-sections -fdata-sections
+CFLAGS := -std=c99 -ffreestanding -fexcess-precision=standard -frounding-math \
+	  -D_XOPEN_SOURCE=700 -Os -pipe -fomit-frame-pointer \
+	  -fno-unwind-tables -fno-asynchronous-unwind-tables \
+	  -ffunction-sections -fdata-sections \
+	  -Werror=implicit-function-declaration \
+	  -Werror=implicit-int -Werror=pointer-sign \
+	  -Werror=pointer-arith -fPIC
 
 INCLUDE := \
 	$(CONFIG_BUILDDIR) \
@@ -104,7 +107,30 @@ SOURCES += \
     src/string/arm/memcpy_le.S
 endif
 
+$(APEX_SUBDIR)libc/src/string/memchr_EXTRA_CFLAGS := -O3
 $(APEX_SUBDIR)libc/src/string/memcmp_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
-$(APEX_SUBDIR)libc/src/string/memcpy_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
+$(APEX_SUBDIR)libc/src/string/memcpy_EXTRA_CFLAGS := -fno-tree-loop-distribute-patterns -fno-stack-protector
 $(APEX_SUBDIR)libc/src/string/memmove_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
-$(APEX_SUBDIR)libc/src/string/memset_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
+$(APEX_SUBDIR)libc/src/string/memset_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns -fno-stack-protector
+$(APEX_SUBDIR)libc/src/string/stpcpy_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strchr_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strchrnul_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strcmp_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strcpy_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strcspn_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strdup_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strlcpy_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strlen_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strncmp_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strnlen_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strspn_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strstr_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/strtok_r_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wcschr_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wcslen_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wcsnlen_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wmemchr_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wmemcmp_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wmemcpy_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wmemmove_EXTRA_CFLAGS := -O3
+$(APEX_SUBDIR)libc/src/string/wmemset_EXTRA_CFLAGS := -O3
