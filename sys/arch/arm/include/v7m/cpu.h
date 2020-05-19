@@ -13,6 +13,7 @@
  */
 #define EPSR_T		(1 << 24)   /* Thumb mode */
 #define EPSR_ICI_IT	0x0600fc00  /* If-Then/Instruction-Continuation */
+#define XPSR_FRAMEPTRALIGN (1 << 9) /* Exception aligned stack to 8 bytes */
 
 /*
  * EXC_RETURN

@@ -28,9 +28,9 @@ void asm_def(void)
 	text();
 	text("/* struct thread */");
 	define("THREAD_CTX_TLS", offsetof(struct thread, ctx.tls));
-	define("THREAD_CTX_USTACK", offsetof(struct thread, ctx.ustack));
-	define("THREAD_CTX_ESTACK", offsetof(struct thread, ctx.estack));
+	define("THREAD_CTX_USP", offsetof(struct thread, ctx.usp));
 	define("THREAD_CTX_KSTACK", offsetof(struct thread, ctx.kstack));
+	define("THREAD_CTX_KSP", offsetof(struct thread, ctx.ksp));
 	text();
 	text("#endif");
 }

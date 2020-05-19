@@ -217,8 +217,8 @@ exc_SVCall:
 	movt r0, :upper16:active_thread	/* r0 = &active_thread */
 	ldr r0, [r0]			/* r0 = active_thread */
 	mrs r2, psp			/* r2 = psp (user stack pointer) */
-	str r2, [r0, THREAD_CTX_USTACK]	/* active_thread->ctx.ustack = r2 */
-	ldr ip, [r0, THREAD_CTX_ESTACK]	/* ip = active_thread->ctx.estack */
+	str r2, [r0, THREAD_CTX_USP]	/* active_thread->ctx.usp = r2 */
+	ldr ip, [r0, THREAD_CTX_KSTACK]	/* ip = active_thread->ctx.kstack */
 	stmdb ip!, {r3-r11, lr}		/* push nvregs */
 	stmdb ip!, {r4, r5, r6, r7}	/* push syscall_args */
 
@@ -291,7 +291,7 @@ return_to_user:
 	bl mpu_user_thread_switch	/* switch mpu context */
 	mov r0, r5
 #endif
-	ldr r2, [r4, THREAD_CTX_USTACK]	/* r2 = active_thread->ctx.ustack */
+	ldr r2, [r4, THREAD_CTX_USP]	/* r2 = active_thread->ctx.usp */
 
 	/* There are three cases where r0 == -EINTERRUPT_RETURN here:
 	    1. returing to userspace from interrupt via PendSV
@@ -312,7 +312,7 @@ return_to_user:
 	streq r1, [r2, EFRAME_RA]	/*	    store return addr */
 
 .Lout:
-	ldr r5, [r4, THREAD_CTX_ESTACK]	/* r5 = active_thread->ctx.estack */
+	ldr r5, [r4, THREAD_CTX_KSTACK]	/* r5 = active_thread->ctx.kstack */
 	ldmdb r5, {r3-r11, lr}		/* pop nvregs */
 	msr control, r3			/* restore control register */
 	msr psp, r2			/* switch back to user stack */
@@ -338,15 +338,15 @@ exc_PendSV:
 	mrs r3, control
 	tst r3, CONTROL_NPRIV		/* if (!(r3 & CONTROL_NPRIV)) */
 	beq .Lon_kstack			/*	goto .Lon_kstack */
-	str r0, [ip, THREAD_CTX_USTACK]	/* active_thread->ctx.ustack = r0 */
-	ldr r0, [ip, THREAD_CTX_ESTACK]	/* r0 = active_thread->ctx.estack */
+	str r0, [ip, THREAD_CTX_USP]	/* active_thread->ctx.usp = r0 */
+	ldr r0, [ip, THREAD_CTX_KSTACK]	/* r0 = active_thread->ctx.kstack */
 
 .Lon_kstack:
 	stmdb r0!, {r3-r11, lr}		/* push nvregs */
 #if defined(CONFIG_FPU)
 	vstmdb r0!, {s16-s31}		/* push fpu_nvregs */
 #endif
-	str r0, [ip, THREAD_CTX_KSTACK]	/* active_thread->ctx.kstack = r0 */
+	str r0, [ip, THREAD_CTX_KSP]	/* active_thread->ctx.ksp = r0 */
 
 	cpsid i
 	bl sch_switch			/* switch threads */
@@ -355,7 +355,7 @@ exc_PendSV:
 	movw ip, :lower16:active_thread
 	movt ip, :upper16:active_thread	/* ip = &active_thread */
 	ldr r4, [ip]			/* r4 = active_thread */
-	ldr r1, [r4, THREAD_CTX_KSTACK]	/* r1 = active_thread->ctx.kstack */
+	ldr r1, [r4, THREAD_CTX_KSP]	/* r1 = active_thread->ctx.ksp */
 #if defined(CONFIG_FPU)
 	vldmia r1!, {s16-s31}		/* pop fpu_nvregs */
 #endif

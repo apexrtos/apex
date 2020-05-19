@@ -143,9 +143,9 @@ struct syscall_args {
  */
 struct context {
 	void *tls;		    /* userspace tls address */
-	void *ustack;		    /* user stack pointer */
-	void *estack;		    /* user->kernel entry stack pointer */
-	void *kstack;		    /* kernel stack pointer */
+	void *usp;		    /* user stack pointer */
+	void *kstack;		    /* bottom of kernel stack */
+	void *ksp;		    /* kernel stack pointer */
 	void *vfork_eframe;	    /* vfork saved exception frame */
 };
 

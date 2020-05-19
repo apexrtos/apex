@@ -125,11 +125,11 @@ mpu_user_thread_switch()
 		mpu_switch(t->task->as);
 
 	/* zombies have no ustack */
-	if (!t->ctx.ustack)
+	if (!t->ctx.usp)
 		return;
 
 	/* map stack */
-	const struct seg *seg = as_find_seg(t->task->as, (void *)t->ctx.ustack);
+	const struct seg *seg = as_find_seg(t->task->as, (void *)t->ctx.usp);
 	if (!seg || seg_prot(seg) == PROT_NONE) {
 		sig_thread(t, SIGSEGV);
 		return;
