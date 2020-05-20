@@ -58,6 +58,15 @@ Architecture support		| >= 8-bit	    | 32-bit(*)	    | runs on anything
 (*) 64-bit will be supported in the future.
 
 
+Community
+=========
+
+Discussion about Apex takes place on the mailing list at
+[dev.apexrtos.com](http://dev.apexrtos.com). You will need to subscribe
+in order to send messages to the list. Please address all mailing list email to
+[dev@apexrtos.com](mailto:dev@apexrtos.com).
+
+
 Architecture Support
 ====================
 
