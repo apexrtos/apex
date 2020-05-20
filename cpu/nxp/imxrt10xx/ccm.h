@@ -213,7 +213,20 @@ struct ccm {
 	uint32_t CSCDR3;
 	uint32_t : 32;
 	uint32_t : 32;
-	uint32_t CDHIPR;
+	union ccm_cdhipr {
+		struct {
+			uint32_t SEMC_PODF_BUSY : 1;
+			uint32_t AHB_PODF_BUSY : 1;
+			uint32_t : 1;
+			uint32_t PERIPH2_CLK_SEL_BUSY : 1;
+			uint32_t : 1;
+			uint32_t PERIPH_CLK_SEL_BUSY : 1;
+			uint32_t : 10;
+			uint32_t ARM_PODF_BUSY : 1;
+			uint32_t : 15;
+		};
+		uint32_t r;
+	} CDHIPR;
 	uint32_t : 32;
 	uint32_t : 32;
 	uint32_t CLPCR;
