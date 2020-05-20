@@ -29,7 +29,7 @@ struct dcdc {
 			uint32_t PWD_CMP_OFFSET : 1;
 			uint32_t XTALOK_DISABLE : 1;
 			uint32_t CURRENT_ALERT_RESET : 1;
-			uint32_t XTAL_25M_OK : 1;
+			uint32_t XTAL_24M_OK : 1;
 			uint32_t : 1;
 			uint32_t STS_DC_OK : 1;
 		};
