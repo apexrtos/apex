@@ -4,8 +4,11 @@
 #include <cpu.h>
 #include <debug.h>
 #include <irq.h>
+#include <proc.h>
+#include <sch.h>
 #include <sections.h>
 #include <sig.h>
+#include <task.h>
 #include <thread.h>
 
 /*
@@ -20,6 +23,39 @@ dump_exception(struct exception_frame_basic *e, bool handler_mode, int exc)
 	    e->r0, e->r1, e->r2, e->r3);
 	emergency("r12 %08x lr %08x ra %08x xpsr %08x\n",
 	    e->r12, e->lr, e->ra, e->xpsr);
+}
+
+/*
+ * derived_exception - handle a derived exception
+ *
+ * A derived exception occurs when an exception entry sequence causes a fault.
+ *
+ * If this happens then we have unrecoverably lost the volatile registers
+ * required to deliver a signal or to return to the interrupted context. There
+ * is no option other than to terminate the process.
+ */
+static void
+derived_exception(int sig)
+{
+	/* If the failure happened when attempting to enter SVCall (most likely
+	 * due to stack overflow) we need to clear the pending SVCall exception
+	 * otherwise it will still run before we enter PendSV to switch away
+	 * from this thread. */
+	union scb_shcsr shcsr = read32(&SCB->SHCSR);
+	shcsr.SVCALLPENDED = 0;
+	write32(&SCB->SHCSR, shcsr.r);
+
+	/* kill the process */
+	proc_exit(task_cur(), 0, sig);
+
+	/* switch away from this dying thread soon.. */
+	sch_testexit();
+
+	/* NOTE: trying to step through the exception return after a derived
+	 * exception in a debugger can be difficult. We rely on tail-chaning to
+	 * PendSV to avoid an exception during unstacking of the exception
+	 * frame. Single step debugging can stop the tail-chain from happening
+	 * and result in another fault.*/
 }
 
 /*
@@ -58,7 +94,7 @@ exc_MemManage(struct exception_frame_basic *e, bool handler_mode, int exc)
 	else if (cfsr.MMFSR.IACCVIOL)
 		mpu_fault((void *)e->ra, 4);
 	else if (cfsr.MMFSR.MSTKERR)
-		sig_thread(thread_cur(), SIGSEGV); /* stack overflow */
+		derived_exception(SIGSEGV);
 	else {
 		dump_exception(e, handler_mode, exc);
 		panic("MemManage: unexpected fault");
@@ -81,8 +117,13 @@ exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 	if (handler_mode || !interrupt_from_userspace())
 		panic("BusFault");
 
-	dbg("BusFault");
-	sig_thread(thread_cur(), SIGBUS);
+	const union scb_cfsr cfsr = read32(&SCB->CFSR);
+	if (cfsr.BFSR.STKERR)
+		derived_exception(SIGBUS);
+	else {
+		dbg("BusFault");
+		sig_thread(thread_cur(), SIGBUS);
+	}
 
 	/* clear fault */
 	write8(&SCB->CFSR.BFSR, -1);
