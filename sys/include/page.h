@@ -27,8 +27,8 @@ phys   *page_alloc_order(size_t order, long ma_paf, void *);
 phys   *page_alloc(size_t, long ma_paf, void *);
 phys   *page_reserve(phys *, size_t, long paf, void *);
 int	page_free(phys *, size_t, void *);
-bool	page_valid(phys *, size_t, void *);
-long	page_attr(phys *, size_t len);
+bool	page_valid(const phys *, size_t, void *);
+long	page_attr(const phys *, size_t len);
 void	page_init(const struct meminfo *, size_t, const struct bootargs *);
 void	page_dump(void);
 

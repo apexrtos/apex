@@ -13,7 +13,7 @@ extern "C" {
  * Memory access checking
  */
 ssize_t	u_strnlen(const char *, size_t);
-ssize_t	u_arraylen(const void **, size_t);
+ssize_t	u_arraylen(const void *const *, size_t);
 bool	u_strcheck(const char *, size_t);
 bool	u_access_ok(const void *, size_t, int);
 bool	u_access_okfor(const struct as *, const void *, size_t, int);

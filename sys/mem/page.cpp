@@ -166,7 +166,7 @@ page_to_max_order(const region &r, const size_t page)
  * find_region - find region containing pages
  */
 static region *
-find_region(phys *begin, size_t len)
+find_region(const phys *begin, size_t len)
 {
 	const phys *end = begin + len;
 	if (end < begin)
@@ -415,7 +415,8 @@ page_reserve(region &r, phys *const addr, const size_t len,
  * returns 0 on failure, physical address otherwise.
  */
 static phys *
-page_reserve(phys *addr, size_t len, const PG_STATE st, long attr, void *owner)
+page_reserve(phys *addr, size_t len, const PG_STATE st, long attr,
+	     void *owner)
 {
 	auto *r = find_region(addr, len);
 	if (!r)
@@ -517,7 +518,7 @@ page_free(phys *addr, size_t len, void *owner)
  * page_valid - check if address range refers to valid, writable pages
  */
 bool
-page_valid(phys *addr, size_t len, void *owner)
+page_valid(const phys *addr, size_t len, void *owner)
 {
 	/* no need to lock - we aren't modifying anything, and after page_init
 	   the page layout is immutable */
@@ -557,7 +558,7 @@ page_valid(phys *addr, size_t len, void *owner)
  * page_attr - retrieve page attributes
  */
 long
-page_attr(phys *addr, size_t len)
+page_attr(const phys *addr, size_t len)
 {
 	/* no need to lock - we aren't modifying anything, and after page_init
 	   the page layout is immutable */

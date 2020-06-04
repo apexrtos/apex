@@ -244,7 +244,7 @@ mutex_unlock(struct mutex *m)
 struct thread*
 mutex_owner(const struct mutex *m)
 {
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	const struct mutex_private *mp = (const struct mutex_private*)m->storage;
 	return (struct thread *)(atomic_load_explicit(
 	    &mp->owner,
 	    memory_order_relaxed) & MUTEX_TID_MASK);

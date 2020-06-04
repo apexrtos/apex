@@ -186,7 +186,7 @@ u_strnlen(const char *u_str, const size_t maxlen)
 }
 
 ssize_t
-u_arraylen(const void **u_arr, const size_t maxlen)
+u_arraylen(const void *const *u_arr, const size_t maxlen)
 {
 	const auto seg = as_find_seg(task_cur()->as, u_arr);
 	if (!seg)
@@ -222,7 +222,7 @@ u_access_okfor(const as *a, const void *u_addr, size_t len, int access)
 bool
 k_access_ok(const void *k_addr, size_t len, int access)
 {
-	return page_valid((phys *)k_addr, len, &kern_task);
+	return page_valid((const phys *)k_addr, len, &kern_task);
 }
 
 int
@@ -285,5 +285,5 @@ u_addressfor(const as *a, const void *u_addr)
 bool
 k_address(const void *k_addr)
 {
-	return page_valid((phys *)k_addr, 0, &kern_task);
+	return page_valid((const phys *)k_addr, 0, &kern_task);
 }

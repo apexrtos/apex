@@ -29,19 +29,19 @@ read_once(const T *p)
 	switch (sizeof(T)) {
 	case 1:
 		typedef uint8_t __attribute__((__may_alias__)) u8a;
-		*(u8a *)&tmp = *(volatile u8a *)p;
+		*(u8a *)&tmp = *(const volatile u8a *)p;
 		break;
 	case 2:
 		typedef uint16_t __attribute__((__may_alias__)) u16a;
-		*(u16a *)&tmp = *(volatile u16a *)p;
+		*(u16a *)&tmp = *(const volatile u16a *)p;
 		break;
 	case 4:
 		typedef uint32_t __attribute__((__may_alias__)) u32a;
-		*(u32a *)&tmp = *(volatile u32a *)p;
+		*(u32a *)&tmp = *(const volatile u32a *)p;
 		break;
 	case 8:
 		typedef uint64_t __attribute__((__may_alias__)) u64a;
-		*(u64a *)&tmp = *(volatile u64a *)p;
+		*(u64a *)&tmp = *(const volatile u64a *)p;
 		break;
 	default:
 		compiler_barrier();
@@ -56,7 +56,7 @@ read_once(const T *p)
 	typeof(*(p)) tmp; \
 	switch (sizeof(*(p))) { \
 	case 1 ... 8: \
-		tmp = *(volatile typeof(*(p)) *)(p); \
+		tmp = *(const volatile typeof(*(p)) *)(p); \
 		break; \
 	default: \
 		compiler_barrier(); \

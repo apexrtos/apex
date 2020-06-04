@@ -634,11 +634,11 @@ sc_rt_sigprocmask(int how, const k_sigset_t *uset, k_sigset_t *uoldset,
 	switch (how) {
 	case SIG_BLOCK:
 		ksigorset(&thread_cur()->sig_blocked, &thread_cur()->sig_blocked,
-		    (k_sigset_t *)uset);
+		    uset);
 		break;
 	case SIG_UNBLOCK:
 		ksigandnset(&thread_cur()->sig_blocked, &thread_cur()->sig_blocked,
-		    (k_sigset_t *)uset);
+		    uset);
 		break;
 	case SIG_SETMASK:
 		memcpy(&thread_cur()->sig_blocked, uset, sizeof(k_sigset_t));

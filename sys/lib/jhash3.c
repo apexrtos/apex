@@ -174,7 +174,7 @@ uint32_t jhash_string(const char *key, uint32_t initval)
 	a = b = c = 0xdeadbeef + initval;
 
 	/* read 32-bit chunks */
-	const __attribute__((may_alias)) uint32_t *k = (uint32_t *)key;
+	const __attribute__((may_alias)) uint32_t *k = (const uint32_t *)key;
 
 	/* all but last block: reads and affect 32 bits of (a,b,c) */
 	int z0, z1, z2;

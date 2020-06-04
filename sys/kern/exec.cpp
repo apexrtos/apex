@@ -146,7 +146,7 @@ static int
 validate_args(const char *const args[])
 {
 	size_t args_len;
-	if ((args_len = u_arraylen((const void**)args, ARG_MAX)) < 0)
+	if ((args_len = u_arraylen((const void *const *)args, ARG_MAX)) < 0)
 		return args_len;
 	if (args_len == ARG_MAX)
 		return DERR(-E2BIG);

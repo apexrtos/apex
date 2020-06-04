@@ -62,7 +62,7 @@ cid::clear()
 
 unsigned cid::mid() const	    { return bits(r_, 120, 127); }
 unsigned cid::oid() const	    { return bits(r_, 104, 119); }
-std::string_view cid::pnm() const   { return {(char *)(r_.data() + 3), 5}; }
+std::string_view cid::pnm() const   { return {(const char *)(r_.data() + 3), 5}; }
 unsigned cid::prv() const	    { return bits(r_, 56, 63); }
 unsigned long cid::psn() const	    { return bits(r_, 24, 55); }
 unsigned cid::mdt() const	    { return bits(r_, 8, 19); }
