@@ -34,6 +34,7 @@
 #include <conf/config.h>
 #include <elf.h>
 #include <signal.h>
+#include <stdalign.h>
 #include <stdnoreturn.h>
 #include <sys/include/compiler.h>
 #include <sys/include/types.h>
@@ -112,17 +113,17 @@ bool		cache_aligned(const void *, size_t);
 void		memory_barrier(void);
 void		read_memory_barrier(void);
 void		write_memory_barrier(void);
-uint8_t		mmio_read8(const uint8_t *);
-uint16_t	mmio_read16(const uint16_t *);
-uint32_t	mmio_read32(const uint32_t *);
+uint8_t		mmio_read8(const void *);
+uint16_t	mmio_read16(const void *);
+uint32_t	mmio_read32(const void *);
 #if UINTPTR_MAX == 0xffffffffffffffff
-uint64_t	mmio_read64(const uint64_t *);
+uint64_t	mmio_read64(const void *);
 #endif
-void		mmio_write8(uint8_t *, uint8_t);
-void		mmio_write16(uint16_t *, uint16_t);
-void		mmio_write32(uint32_t *, uint32_t);
+void		mmio_write8(void *, uint8_t);
+void		mmio_write16(void *, uint16_t);
+void		mmio_write32(void *, uint32_t);
 #if UINTPTR_MAX == 0xffffffffffffffff
-void		mmio_write64(uint64_t *, uint64_t);
+void		mmio_write64(void *, uint64_t);
 #endif
 
 #if defined(CONFIG_MMU)
@@ -186,32 +187,38 @@ smp_write_memory_barrier()
 
 #define read8(p) ({ \
 	static_assert(sizeof(*p) == 1, ""); \
-	(__typeof__(*p))mmio_read8((const uint8_t*)p);})
+	(__typeof__(*p))mmio_read8(p);})
 #define read16(p) ({ \
 	static_assert(sizeof(*p) == 2, ""); \
-	(__typeof__(*p))mmio_read16((const uint16_t*)p);})
+	static_assert(alignof(*p) >= 2); \
+	(__typeof__(*p))mmio_read16(p);})
 #define read32(p) ({ \
 	static_assert(sizeof(*p) == 4, ""); \
-	(__typeof__(*p))mmio_read32((const uint32_t*)p);})
+	static_assert(alignof(*p) >= 4); \
+	(__typeof__(*p))mmio_read32(p);})
 #if UINTPTR_MAX == 0xffffffffffffffff
 #define read64(p) ({ \
 	static_assert(sizeof(*p) == 8, ""); \
-	(__typeof__(*p))mmio_read64((const uint64_t*)p);})
+	static_assert(alignof(*p) >= 8); \
+	(__typeof__(*p))mmio_read64(p);})
 #endif
 
 #define write8(p, ...) ({ \
 	static_assert(sizeof(*p) == 1, ""); \
-	mmio_write8((uint8_t*)p, __VA_ARGS__);})
+	mmio_write8(p, __VA_ARGS__);})
 #define write16(p, ...) ({ \
 	static_assert(sizeof(*p) == 2, ""); \
-	mmio_write16((uint16_t*)p, __VA_ARGS__);})
+	static_assert(alignof(*p) >= 2); \
+	mmio_write16(p, __VA_ARGS__);})
 #define write32(p, ...) ({ \
 	static_assert(sizeof(*p) == 4, ""); \
-	mmio_write32((uint32_t*)p, __VA_ARGS__);})
+	static_assert(alignof(*p) >= 4); \
+	mmio_write32(p, __VA_ARGS__);})
 #if UINTPTR_MAX == 0xffffffffffffffff
 #define write64(p, ...) ({ \
 	static_assert(sizeof(*p) == 8, ""); \
-	mmio_write64((uint64_t*)p, __VA_ARGS__);})
+	static_assert(alignof(*p) >= 8); \
+	mmio_write64(p, __VA_ARGS__);})
 #endif
 
 #if defined(__cplusplus)

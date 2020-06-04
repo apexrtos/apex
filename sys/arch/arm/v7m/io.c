@@ -34,10 +34,10 @@ write_memory_barrier(void)
  * Read uint8_t from memory location p
  */
 inline uint8_t
-mmio_read8(const uint8_t *p)
+mmio_read8(const void *p)
 {
 	uint8_t v;
-	asm volatile("ldrb %0, %1" : "=lh"(v) : "m"(*p));
+	asm volatile("ldrb %0, %1" : "=lh"(v) : "m"(*(const uint8_t *)p));
 	return v;
 }
 
@@ -45,10 +45,10 @@ mmio_read8(const uint8_t *p)
  * Read uint16_t from memory location p
  */
 inline uint16_t
-mmio_read16(const uint16_t *p)
+mmio_read16(const void *p)
 {
 	uint16_t v;
-	asm volatile("ldrh %0, %1" : "=lh"(v) : "m"(*p));
+	asm volatile("ldrh %0, %1" : "=lh"(v) : "m"(*(const uint16_t *)p));
 	return v;
 }
 
@@ -56,10 +56,10 @@ mmio_read16(const uint16_t *p)
  * Read uint32_t from memory location p
  */
 inline uint32_t
-mmio_read32(const uint32_t *p)
+mmio_read32(const void *p)
 {
 	uint32_t v;
-	asm volatile("ldr %0, %1" : "=lh"(v) : "m"(*p));
+	asm volatile("ldr %0, %1" : "=lh"(v) : "m"(*(const uint32_t *)p));
 	return v;
 }
 
@@ -67,25 +67,25 @@ mmio_read32(const uint32_t *p)
  * Write uint8_t to memory location p
  */
 inline void
-mmio_write8(uint8_t *p, uint8_t v)
+mmio_write8(void *p, uint8_t v)
 {
-	asm volatile("strb %1, %0" : "=m"(*p) : "lh"(v));
+	asm volatile("strb %1, %0" : "=m"(*(uint8_t *)p) : "lh"(v));
 }
 
 /*
  * Write uint16_t to memory location p
  */
 inline void
-mmio_write16(uint16_t *p, uint16_t v)
+mmio_write16(void *p, uint16_t v)
 {
-	asm volatile("strh %1, %0" : "=m"(*p) : "lh"(v));
+	asm volatile("strh %1, %0" : "=m"(*(uint16_t *)p) : "lh"(v));
 }
 
 /*
  * Write uint32_t to memory location p
  */
 inline void
-mmio_write32(uint32_t *p, uint32_t v)
+mmio_write32(void *p, uint32_t v)
 {
-	asm volatile("str %1, %0" : "=m"(*p) : "lh"(v));
+	asm volatile("str %1, %0" : "=m"(*(uint32_t *)p) : "lh"(v));
 }
