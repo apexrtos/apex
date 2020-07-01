@@ -95,6 +95,8 @@ virt_to_phys(const void *va)
  */
 #define ALIGNED(p, t) (!((uintptr_t)(p) & (alignof(t) - 1)))
 
+#ifndef __cplusplus
+
 /*
  * Calculate integer logarithm of an integer
  */
@@ -143,5 +145,82 @@ is_pow2(unsigned long v)
 {
 	return v && !(v & (v - 1));
 }
+
+#else
+
+/*
+ * Count the number of leading zeroes in n
+ */
+template<class T>
+std::enable_if_t<std::is_integral_v<T>, unsigned>
+clz(T n)
+{
+	if (n == 0)
+		return sizeof(T) * 8;
+	if constexpr (sizeof(T) == sizeof(int))
+		return __builtin_clz(n);
+	else if constexpr (sizeof(T) == sizeof(long))
+		return __builtin_clzl(n);
+	else if constexpr (sizeof(T) == sizeof(long long))
+		return __builtin_clzll(n);
+	else
+		static_assert(!sizeof(T), "type not supported for clz");
+}
+
+/*
+ * Calculate integer logarithm of an integer
+ */
+template<class T>
+std::enable_if_t<std::is_integral_v<T>, T>
+floor_log2(T n)
+{
+	assert(n > 0);
+	return sizeof(T) * 8 - clz(n) - 1;
+}
+
+template<class T>
+std::enable_if_t<std::is_integral_v<T>, T>
+ceil_log2(T n)
+{
+	return floor_log2(n) + (n & (n - 1) ? 1 : 0);
+}
+
+/*
+ * Integer division to closest integer
+ */
+template<class T>
+std::enable_if_t<std::is_integral_v<T>, T>
+div_closest(T n, T d)
+{
+	if ((n > 0) == (d > 0))
+		return (n + d / 2) / d;
+	else
+		return (n - d / 2) / d;
+}
+
+/*
+ * Integer division to ceiling of quotient
+ */
+template<class T>
+std::enable_if_t<std::is_integral_v<T>, T>
+div_ceil(T n, T d)
+{
+	if (n % d)
+		return n / d + 1;
+	else
+		return n / d;
+}
+
+/*
+ * Determine if integer is a non-zero power of 2.
+ */
+template<class T>
+std::enable_if_t<std::is_unsigned_v<T>, bool>
+is_pow2(T v)
+{
+	return v && !(v & (v - 1));
+}
+
+#endif
 
 #endif /* !kernel_h */
