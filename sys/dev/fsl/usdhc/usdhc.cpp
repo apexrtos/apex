@@ -373,8 +373,8 @@ calculate_dividers(const unsigned long clock, unsigned long hz,
 	const unsigned ddr_div = mode == mmc::clock_mode::ddr ? 2 : 1;
 	const unsigned ideal = clock / (hz * ddr_div);
 
-	for (int sdclkfs = 1; sdclkfs <= 256; sdclkfs *= 2) {
-		const unsigned dvs = std::min(div_ceil(ideal, sdclkfs), 16l);
+	for (unsigned sdclkfs = 1; sdclkfs <= 256; sdclkfs *= 2) {
+		const unsigned dvs = std::min(div_ceil(ideal, sdclkfs), 16u);
 		if (dvs == 0)
 			break;
 		const auto actual = clock / (sdclkfs * dvs * ddr_div);
@@ -437,8 +437,8 @@ private:
 	bool bus_test_;
 	std::atomic_bool retuning_required_;
 
-	static constexpr auto bounce_sz_ = 4096;
-	static constexpr auto dma_desc_sz_ = 16;
+	static constexpr auto bounce_sz_ = 4096u;
+	static constexpr auto dma_desc_sz_ = 16u;
 
 	void isr();
 	static int isr_wrapper(int, void *);
