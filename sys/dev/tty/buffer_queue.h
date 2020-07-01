@@ -104,7 +104,7 @@ public:
 
 		iterator &operator+=(size_t d)
 		{
-			while (off_ + d >= bi_->len() && bi_->complete()) {
+			while (d && off_ + d >= bi_->len() && bi_->complete()) {
 				d -= bi_->len() - off_;
 				off_ = 0;
 				++bi_;
