@@ -26,7 +26,7 @@ clear_dynamic(void)
 	mapped_thread = NULL;
 	fault_addr = 0;
 
-	const size_t regions = MPU->TYPE.DREGION;
+	const size_t regions = read32(&MPU->TYPE).DREGION;
 	for (size_t i = fixed; i < regions; ++i) {
 		write32(&MPU->RNR, i);
 		write32(&MPU->RASR, 0);
@@ -74,7 +74,7 @@ prot_to_rasr(int prot)
 void
 mpu_init(const struct mmumap *map, size_t count, int flags)
 {
-	const size_t regions = MPU->TYPE.DREGION;
+	const size_t regions = read32(&MPU->TYPE).DREGION;
 
 	if (!regions)
 		panic("MPU not implemented");
@@ -239,7 +239,7 @@ again:;
 		.ENABLE = 1,
 	}.r);
 
-	if (++victim == MPU->TYPE.DREGION)
+	if (++victim == read32(&MPU->TYPE).DREGION)
 		victim = fixed + stack;
 
 	/* multiple mappings if access crosses mapping boundary */
@@ -264,19 +264,19 @@ mpu_dump(void)
 	dbg("fixed:%x stack:%x victim:%x fault_addr:%8p\n",
 	    fixed, stack, victim, fault_addr);
 
-	const union mpu_type type = MPU->TYPE;
+	const union mpu_type type = read32(&MPU->TYPE);
 	dbg("MPU_TYPE %08x: SEPARATE:%d IREGION:%d DREGION:%d\n",
 	    type.r, type.SEPARATE, type.IREGION, type.DREGION);
 
-	const union mpu_ctrl ctrl = MPU->CTRL;
+	const union mpu_ctrl ctrl = read32(&MPU->CTRL);
 	dbg("MPU_CTRL %08x: ENABLE:%d HFNMIENA:%d PRIVDEFENA:%d\n",
 	    ctrl.r, ctrl.ENABLE, ctrl.HFNMIENA, ctrl.PRIVDEFENA);
 
-	for (size_t i = 0; i < MPU->TYPE.DREGION; ++i) {
+	for (size_t i = 0; i < read32(&MPU->TYPE).DREGION; ++i) {
 		write32(&MPU->RNR, i);
 
-		const union mpu_rbar rbar = MPU->RBAR;
-		const union mpu_rasr rasr = MPU->RASR;
+		const union mpu_rbar rbar = read32(&MPU->RBAR);
+		const union mpu_rasr rasr = read32(&MPU->RASR);
 
 		assert(rbar.REGION == i);
 
