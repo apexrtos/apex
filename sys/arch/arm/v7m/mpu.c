@@ -140,9 +140,9 @@ mpu_user_thread_switch()
 	for (void *a = seg_begin(seg); a < seg_end(seg);) {
 		const size_t size = seg_end(seg) - a;
 		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
+		write32(&MPU->RNR, fixed + stack);
+		write32(&MPU->RASR, 0);
 		write32(&MPU->RBAR, (union mpu_rbar){
-			.REGION = fixed + stack,
-			.VALID = 1,
 			.ADDR = (uintptr_t)a >> 5,
 		}.r);
 		write32(&MPU->RASR, rasr_prot | (union mpu_rasr){
