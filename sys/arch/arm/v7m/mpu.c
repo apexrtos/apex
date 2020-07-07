@@ -129,6 +129,7 @@ mpu_user_thread_switch()
 		return;
 
 	/* map stack */
+	const size_t regions = read32(&MPU->TYPE).DREGION;
 	const struct seg *seg = as_find_seg(t->task->as, (void *)t->ctx.usp);
 	if (!seg || seg_prot(seg) == PROT_NONE) {
 		sig_thread(t, SIGSEGV);
@@ -150,6 +151,11 @@ mpu_user_thread_switch()
 		}.r);
 		a += 1 << o;
 		++stack;
+
+		if (fixed + stack == regions) {
+			sig_thread(t, SIGSEGV);
+			return;
+		}
 	}
 
 	fault_addr = 0;
