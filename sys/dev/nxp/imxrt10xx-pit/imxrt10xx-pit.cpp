@@ -10,7 +10,7 @@
 
 namespace {
 
-imxrt10xx::pit *instance;
+std::aligned_storage_t<sizeof(imxrt10xx::pit), alignof(imxrt10xx::pit)> mem;
 
 }
 
@@ -151,7 +151,7 @@ pit::pit(const nxp_imxrt10xx_pit_desc *d)
 
 pit *pit::inst()
 {
-	return instance;
+	return reinterpret_cast<pit *>(&mem);
 }
 
 int
@@ -282,5 +282,5 @@ extern "C" void
 nxp_imxrt10xx_pit_init(const nxp_imxrt10xx_pit_desc *d)
 {
 	notice("PIT(%p) Init\n", (void*)d->base);
-	instance = new imxrt10xx::pit{d};
+	new(&mem) imxrt10xx::pit{d};
 }
