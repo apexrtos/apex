@@ -132,7 +132,7 @@ struct pit::regs {
  * Periodic Interrupt Timer Module
  */
 
-pit::pit(const fsl_imxrt10xx_pit_desc *d)
+pit::pit(const nxp_imxrt10xx_pit_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
 , clock_{d->clock}
 {
@@ -276,10 +276,10 @@ pit::isr_wrapper(int vector, void *data)
 }
 
 /*
- * fsl_imxrt10xx_pit_init
+ * nxp_imxrt10xx_pit_init
  */
 extern "C" void
-fsl_imxrt10xx_pit_init(const fsl_imxrt10xx_pit_desc *d)
+nxp_imxrt10xx_pit_init(const nxp_imxrt10xx_pit_desc *d)
 {
 	notice("PIT(%p) Init\n", (void*)d->base);
 	instance = new imxrt10xx::pit{d};

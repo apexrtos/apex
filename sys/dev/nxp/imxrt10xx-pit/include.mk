@@ -3,4 +3,4 @@
 #
 
 SOURCES += \
-    dev/fsl/imxrt10xx-pit/imxrt10xx-pit.cpp
+    dev/nxp/imxrt10xx-pit/imxrt10xx-pit.cpp
