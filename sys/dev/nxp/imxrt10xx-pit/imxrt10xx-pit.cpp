@@ -1,4 +1,4 @@
-#include "pit.h"
+#include "imxrt10xx-pit.h"
 
 #include "init.h"
 #include <arch.h>
