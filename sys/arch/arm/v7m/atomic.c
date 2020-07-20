@@ -219,7 +219,7 @@ __atomic_fetch_add_8(volatile void *p, uint64_t v, int m)
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
-	*p64 += v;
+	*p64 = ret + v;
 	irq_restore(s);
 	return ret;
 }
@@ -234,7 +234,7 @@ __atomic_fetch_sub_8(volatile void *p, uint64_t v, int m)
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
-	*p64 -= v;
+	*p64 = ret - v;
 	irq_restore(s);
 	return ret;
 }
@@ -249,7 +249,7 @@ __atomic_fetch_and_8(volatile void *p, uint64_t v, int m)
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
-	*p64 &= v;
+	*p64 = ret & v;
 	irq_restore(s);
 	return ret;
 }
@@ -264,7 +264,7 @@ __atomic_fetch_xor_8(volatile void *p, uint64_t v, int m)
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
-	*p64 ^= v;
+	*p64 = ret ^ v;
 	irq_restore(s);
 	return ret;
 }
@@ -279,7 +279,7 @@ __atomic_fetch_or_8(volatile void *p, uint64_t v, int m)
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
-	*p64 |= v;
+	*p64 = ret | v;
 	irq_restore(s);
 	return ret;
 }
