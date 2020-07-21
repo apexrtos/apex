@@ -31,6 +31,7 @@ SOURCES := \
     src/locale/c_locale.c \
     src/math/copysign.c \
     src/math/copysignl.c \
+    src/math/fabsl.c \
     src/math/fmod.c \
     src/math/fmodl.c \
     src/math/frexp.c \

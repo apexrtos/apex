@@ -15,6 +15,7 @@ INCLUDE := \
 	../libcxxrt/src \
 
 SOURCES := \
+	src/charconv.cpp \
 	src/memory.cpp \
 	src/new.cpp \
 	src/string.cpp \
