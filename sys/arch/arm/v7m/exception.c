@@ -89,12 +89,12 @@ exc_MemManage(struct exception_frame_basic *e, bool handler_mode, int exc)
 
 	/* try to handle fault */
 	const union scb_cfsr cfsr = read32(&SCB->CFSR);
-	if (cfsr.MMFSR.MMARVALID)
+	if (cfsr.MMFSR.MSTKERR)
+		derived_exception(SIGSEGV);
+	else if (cfsr.MMFSR.MMARVALID)
 		mpu_fault((void *)read32(&SCB->MMFAR), 0);
 	else if (cfsr.MMFSR.IACCVIOL)
 		mpu_fault((void *)e->ra, 4);
-	else if (cfsr.MMFSR.MSTKERR)
-		derived_exception(SIGSEGV);
 	else {
 		dump_exception(e, handler_mode, exc);
 		panic("MemManage: unexpected fault");
