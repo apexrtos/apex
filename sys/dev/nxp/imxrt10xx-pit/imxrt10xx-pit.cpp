@@ -4,6 +4,7 @@
 #include <arch.h>
 #include <debug.h>
 #include <errno.h>
+#include <kernel.h>
 #include <irq.h>
 
 #define trace(...)
@@ -101,7 +102,7 @@ pit::start(unsigned ch, std::chrono::nanoseconds t)
 	if (t > std::chrono::nanoseconds{UINT32_MAX * 1s + 1s} / clock_)
 		return DERR(-ERANGE);
 
-	const auto v = t * clock_ / 1s;
+	const auto v = div_closest(clock_ * t.count(), std::nano::den);
 	if (v <= 0)
 		return DERR(-ERANGE);
 
