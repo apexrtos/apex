@@ -12,12 +12,11 @@
 namespace {
 
 std::aligned_storage_t<sizeof(imxrt10xx::pit), alignof(imxrt10xx::pit)> mem;
+using namespace std::chrono_literals;
 
 }
 
 namespace imxrt10xx {
-
-using namespace std::chrono_literals;
 
 /*
  * Registers
@@ -84,7 +83,8 @@ pit::pit(const nxp_imxrt10xx_pit_desc *d)
 	::irq_attach(d->irq, d->ipl, 0, isr_wrapper, nullptr, this);
 }
 
-pit *pit::inst()
+pit *
+pit::inst()
 {
 	return reinterpret_cast<pit *>(&mem);
 }
