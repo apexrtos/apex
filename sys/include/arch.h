@@ -54,7 +54,7 @@ struct mmumap {
 #endif
 	phys	       *paddr;	/* physical address */
 	size_t		size;	/* size */
-	int		flags;	/* machine specific flags */
+	unsigned	flags;	/* machine specific flags */
 };
 
 #if defined(__cplusplus)
