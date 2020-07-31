@@ -119,15 +119,25 @@ write_once(T *p, const T &v)
 /*
  * ARRAY_SIZE
  */
+#ifdef __cplusplus
+template<class T, size_t N>
+constexpr size_t ARRAY_SIZE(const T(&)[N])
+{
+	return N;
+}
+#else
 #define ARRAY_SIZE(arr) \
     (sizeof(arr) / sizeof((arr)[0]) + sizeof(typeof(int[1 - 2 * \
     !!__builtin_types_compatible_p(typeof(arr), typeof(&arr[0]))])) * 0)
+#endif
 
 /*
  * Optimiser hints.
  */
+#ifndef __cplusplus
 #define likely(x) __builtin_expect((!!(x)),1)
 #define unlikely(x) __builtin_expect((!!(x)),0)
+#endif
 
 /*
  * Copy symbol attributes (GCC 9+)
