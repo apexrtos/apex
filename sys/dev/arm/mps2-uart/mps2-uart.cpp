@@ -10,13 +10,9 @@
 /*
  * Hardware registers
  */
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
 struct mps2_uart {
 	uint32_t DATA;
 	union state {
-		CPPREG(state);
 		struct {
 			uint32_t TX_FULL : 1;
 			uint32_t RX_FULL : 1;
@@ -27,7 +23,6 @@ struct mps2_uart {
 		uint32_t r;
 	} STATE;
 	union ctrl {
-		CPPREG(ctrl);
 		struct {
 			uint32_t TX_ENABLE : 1;
 			uint32_t RX_ENABLE : 1;
@@ -40,7 +35,6 @@ struct mps2_uart {
 		uint32_t r;
 	} CTRL;
 	union int_status_clear {
-		CPPREG(int_status_clear);
 		struct {
 			uint32_t TX : 1;
 			uint32_t RX : 1;

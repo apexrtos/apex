@@ -18,16 +18,11 @@ namespace imxrt10xx {
 
 using namespace std::chrono_literals;
 
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
-
 /*
  * Registers
  */
 struct pit::regs {
 	union mcr {
-		CPPREG(mcr);
 		struct {
 			uint32_t FRZ : 1;
 			uint32_t MDIS : 1;
@@ -49,7 +44,6 @@ struct pit::regs {
 		uint32_t CVAL;
 
 		union tctrl {
-			CPPREG(tctrl);
 			struct {
 				uint32_t TEN : 1;
 				uint32_t TIE : 1;
@@ -60,8 +54,6 @@ struct pit::regs {
 		} TCTRL;
 
 		union tflg {
-			CPPREG(tflg);
-			struct {
 				uint32_t TIF : 1;
 				uint32_t : 31;
 			};

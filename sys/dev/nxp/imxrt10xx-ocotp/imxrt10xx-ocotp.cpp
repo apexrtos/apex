@@ -70,16 +70,11 @@ clocks(unsigned long clock, std::chrono::nanoseconds t)
 
 namespace imxrt10xx {
 
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
-
 /*
  * Registers
  */
 struct ocotp::regs {
 	union ctrl {
-		CPPREG(ctrl);
 		struct {
 			uint32_t ADDR : 6;
 			uint32_t : 2;
@@ -96,7 +91,6 @@ struct ocotp::regs {
 	ctrl CTRL_CLR;
 	ctrl CTRL_TOG;
 	union timing {
-		CPPREG(timing);
 		struct {
 			uint32_t STROBE_PROG : 12;
 			uint32_t RELAX : 4;
@@ -114,7 +108,6 @@ struct ocotp::regs {
 	uint32_t : 32;
 	uint32_t : 32;
 	union read_ctrl {
-		CPPREG(read_ctrl);
 		struct {
 			uint32_t READ_FUSE : 1;
 			uint32_t : 31;
@@ -133,7 +126,6 @@ struct ocotp::regs {
 	uint32_t : 32;
 	uint32_t : 32;
 	union scs {
-		CPPREG(scs);
 		struct {
 			uint32_t HAB_JDE : 1;
 			uint32_t : 30;
@@ -153,7 +145,6 @@ struct ocotp::regs {
 	uint32_t : 32;
 	uint32_t : 32;
 	union version {
-		CPPREG(version);
 		struct {
 			uint32_t STEP : 16;
 			uint32_t MINOR : 8;
@@ -163,7 +154,6 @@ struct ocotp::regs {
 	} VERSION;
 	uint32_t reserved[27];
 	union timing2 {
-		CPPREG(timing2);
 		struct {
 			uint32_t RELAX_PROG : 12;
 			uint32_t : 4;

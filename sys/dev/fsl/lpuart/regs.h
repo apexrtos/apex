@@ -5,21 +5,12 @@
 #include <endian.h>
 #include <stdint.h>
 
-#if defined(__cplusplus)
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
-#else
-#define CPPREG(name)
-#endif
-
 /*
  * Hardware register description for Freescale LPUART
  */
 struct lpuart_regs {
 	uint32_t VERID;
 	union lpuart_param {
-		CPPREG(lpuart_param);
 		struct {
 			uint32_t TXFIFO : 8;
 			uint32_t RXFIFO : 8;
@@ -28,7 +19,6 @@ struct lpuart_regs {
 		uint32_t r;
 	} PARAM;
 	union lpuart_global {
-		CPPREG(lpuart_global);
 		struct {
 			uint32_t : 1;
 			uint32_t RST : 1;
@@ -38,7 +28,6 @@ struct lpuart_regs {
 	} GLOBAL;
 	uint32_t PINCFG;
 	union lpuart_baud {
-		CPPREG(lpuart_baud);
 		struct {
 			uint32_t SBR : 13;
 			uint32_t SBNS : 1;
@@ -59,7 +48,6 @@ struct lpuart_regs {
 		uint32_t r;
 	} BAUD;
 	union lpuart_stat {
-		CPPREG(lpuart_stat);
 		struct {
 			uint32_t : 14;
 			uint32_t MA2F : 1;
@@ -84,7 +72,6 @@ struct lpuart_regs {
 		uint32_t r;
 	} STAT;
 	union lpuart_ctrl {
-		CPPREG(lpuart_ctrl);
 		struct {
 			uint32_t PT : 1;
 			uint32_t PE : 1;
@@ -122,7 +109,6 @@ struct lpuart_regs {
 	uint32_t MATCH;
 	uint32_t MODIR;
 	union lpuart_fifo {
-		CPPREG(lpuart_fifo);
 		struct {
 			uint32_t RXFIFOSIZE : 3;
 			uint32_t RXFE : 1;
@@ -144,7 +130,6 @@ struct lpuart_regs {
 		uint32_t r;
 	} FIFO;
 	union lpuart_water {
-		CPPREG(lpuart_water);
 		struct {
 			uint32_t TXWATER : 8;
 			uint32_t TXCOUNT : 8;
@@ -156,7 +141,5 @@ struct lpuart_regs {
 };
 static_assert(sizeof(struct lpuart_regs) == 0x30, "");
 static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
-
-#undef CPPREG
 
 #endif

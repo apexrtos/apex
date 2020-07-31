@@ -21,12 +21,8 @@ namespace {
 /*
  * regs
  */
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
 struct regs {
 	union int_flags {
-		CPPREG(int_flags)
 		struct {
 			uint32_t CC : 1;
 			uint32_t TC : 1;
@@ -61,7 +57,6 @@ struct regs {
 	};
 	uint32_t DS_ADDR;
 	union blk_att {
-		CPPREG(blk_att)
 		struct {
 			uint32_t BLKSIZE : 13;
 			uint32_t : 3;
@@ -71,7 +66,6 @@ struct regs {
 	} BLK_ATT;
 	uint32_t CMD_ARG;
 	union cmd_xfr_typ {
-		CPPREG(cmd_xfr_typ)
 		struct {
 			uint32_t : 16;
 			uint32_t RSPTYP : 2;
@@ -91,7 +85,6 @@ struct regs {
 	uint32_t CMD_RSP3;
 	uint32_t DATA_BUFF_ACC_PORT;
 	union pres_state {
-		CPPREG(pres_state);
 		struct {
 			uint32_t CIHB : 1;
 			uint32_t CDIHB : 1;
@@ -119,7 +112,6 @@ struct regs {
 		uint32_t r;
 	} PRES_STATE;
 	union prot_ctrl {
-		CPPREG(prot_ctrl);
 		struct {
 			uint32_t LCTL : 1;
 			uint32_t DTW : 2;
@@ -145,7 +137,6 @@ struct regs {
 		uint32_t r;
 	} PROT_CTRL;
 	union sys_ctrl {
-		CPPREG(sys_ctrl);
 		struct {
 			uint32_t : 4;
 			uint32_t DVS : 4;
@@ -166,7 +157,6 @@ struct regs {
 	int_flags INT_STATUS_EN;
 	int_flags INT_SIGNAL_EN;
 	union autocmd12_err_status {
-		CPPREG(autocmd12_err_status);
 		struct {
 			uint32_t AC12NE : 1;
 			uint32_t AC12TOE : 1;
@@ -183,7 +173,6 @@ struct regs {
 		uint32_t r;
 	} AUTOCMD12_ERR_STATUS;
 	union host_ctrl_cap {
-		CPPREG(host_ctrl_cap);
 		struct {
 			uint32_t SDR50_SUPPORT : 1;
 			uint32_t SDR104_SUPPORT : 1;
@@ -207,7 +196,6 @@ struct regs {
 		uint32_t r;
 	} HOST_CTRL_CAP;
 	union wtmk_lvl {
-		CPPREG(wtmk_lvl);
 		struct {
 			uint32_t RD_WML : 8;
 			uint32_t RD_BRST_LEN : 5;
@@ -219,7 +207,6 @@ struct regs {
 		uint32_t r;
 	} WTMK_LVL;
 	union mix_ctrl {
-		CPPREG(mix_ctrl);
 		struct {
 			uint32_t DMAEN : 1;
 			uint32_t BCEN : 1;
@@ -246,7 +233,6 @@ struct regs {
 	uint32_t DLL_CTRL;
 	uint32_t DLL_STATUS;
 	union clk_tune_ctrl_status {
-		CPPREG(clk_tune_ctrl_status);
 		struct {
 			uint32_t DLY_CELL_SET_POS : 4;
 			uint32_t DLY_CELL_SET_OUT : 4;
@@ -281,7 +267,6 @@ struct regs {
 	uint32_t : 32;
 	uint32_t : 32;
 	union vend_spec {
-		CPPREG(vend_spec);
 		struct {
 			uint32_t : 1;
 			uint32_t VSELECT : 1;
@@ -298,7 +283,6 @@ struct regs {
 	} VEND_SPEC;
 	uint32_t MMC_BOOT;
 	union vend_spec2 {
-		CPPREG(vend_spec2);
 		struct {
 			uint32_t : 3;
 			uint32_t CARD_INT_D3_TEST : 1;
@@ -316,7 +300,6 @@ struct regs {
 		uint32_t r;
 	} VEND_SPEC2;
 	union tuning_ctrl {
-		CPPREG(tuning_ctrl);
 		struct {
 			uint32_t TUNING_START_TAP : 8;
 			uint32_t TUNING_COUNTER : 8;
@@ -546,7 +529,7 @@ fsl_usdhc::v_reset()
 	}());
 
 	/* Initialise interrupt mask. */
-	int_mask = 0u;
+	int_mask.r = 0;
 	int_mask.CC = 1;
 	int_mask.TC = 1;
 	int_mask.CINS = 1;

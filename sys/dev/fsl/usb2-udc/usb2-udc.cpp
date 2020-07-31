@@ -25,12 +25,8 @@ class fsl_usb2_transaction;
 /*
  * regs
  */
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
 struct regs {
 	union id {
-		CPPREG(id);
 		struct {
 			uint32_t ID : 6;
 			uint32_t : 2;
@@ -117,7 +113,6 @@ struct regs {
 	uint16_t DCIVERSION;
 	uint16_t : 16;
 	union dccparams {
-		CPPREG(dccparams);
 		struct {
 			uint32_t DEN : 5;
 			uint32_t : 2;
@@ -134,7 +129,6 @@ struct regs {
 	uint32_t : 32;
 	uint32_t : 32;
 	union usbcmd {
-		CPPREG(usbcmd);
 		/* The IMXRT manual is wrong and the ATDTW bit is in position
 		 * 14 like previous generations of hardware. */
 		struct {
@@ -158,7 +152,6 @@ struct regs {
 		uint32_t r;
 	} USBCMD;
 	union usbsts {
-		CPPREG(usbsts);
 		struct {
 			uint32_t UI : 1;
 			uint32_t UEI : 1;
@@ -179,7 +172,6 @@ struct regs {
 		uint32_t r;
 	} USBSTS;
 	union usbintr {
-		CPPREG(usbintr);
 		struct {
 			uint32_t UE : 1;
 			uint32_t UEE : 1;
@@ -202,7 +194,6 @@ struct regs {
 	uint32_t FRINDEX;
 	uint32_t : 32;
 	union deviceaddr {
-		CPPREG(deviceaddr);
 		struct {
 			uint32_t : 24;
 			uint32_t USBADRA : 1;
@@ -222,7 +213,6 @@ struct regs {
 	uint32_t ENDPTNAKEN;
 	uint32_t : 32;
 	union portsc1 {
-		CPPREG(portsc1);
 		struct {
 			uint32_t CCS : 1;
 			uint32_t : 3;
@@ -258,7 +248,6 @@ struct regs {
 	uint32_t : 32;
 	uint32_t OTGSC;
 	union usbmode {
-		CPPREG(usbmode);
 		struct {
 			uint32_t CM : 2;
 			uint32_t ES : 1;
@@ -274,7 +263,6 @@ struct regs {
 	uint32_t ENDPTSTAT;
 	uint32_t ENDPTCOMPLETE;
 	union endptctrl {
-		CPPREG(endptctrl);
 		struct {
 			uint32_t RXS : 1;
 			uint32_t RXD : 1;   /* not for endpoint 0 */
