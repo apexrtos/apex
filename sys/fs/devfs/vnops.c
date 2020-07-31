@@ -257,8 +257,9 @@ devfs_seek(struct file *fp, off_t off, int whence)
 	if (!dev)
 		return -ENODEV;
 
+	/* Seek is optional */
 	if (!dev->devio->seek)
-		return DERR(-EIO);
+		return 0;
 
 	++dev->busy;
 	vn_unlock(fp->f_vnode);
