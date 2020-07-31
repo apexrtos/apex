@@ -15,12 +15,12 @@
 #include <page.h>
 #include <timer.h>
 
-static const unsigned long LPUART1 = 0x40184000;
+constexpr auto LPUART1 = 0x40184000;
 
 void
-machine_init(struct bootargs *args)
+machine_init(bootargs *args)
 {
-	const struct mmumap mappings[] = {
+	const mmumap mappings[] = {
 		/* IMXRT10xx places external SDRAM in a default write-through
 		 * memory region. Override this as write-back. */
 		{
@@ -48,7 +48,7 @@ machine_init(struct bootargs *args)
 	};
 	mpu_init(mappings, ARRAY_SIZE(mappings), MPU_ENABLE_DEFAULT_MAP);
 
-	const struct meminfo memory[] = {
+	const meminfo memory[] = {
 		/* DRAM */
 		{
 			.base = (phys*)CONFIG_DRAM_BASE_PHYS,
@@ -90,7 +90,7 @@ machine_init(struct bootargs *args)
 }
 
 void
-machine_driver_init(struct bootargs *bootargs)
+machine_driver_init(bootargs *bootargs)
 {
 	/*
 	 * Run driver initialisation.
@@ -104,7 +104,7 @@ machine_idle(void)
 	/* nothing to do for now */
 }
 
-noreturn void
+[[noreturn]] void
 machine_reset(void)
 {
 	/* wait for console messages to finish printing */
@@ -116,7 +116,7 @@ machine_reset(void)
 	/* reset flexram configuration -- this is necessary as the IMXRT1050
 	 * boot ROM expects to use OCRAM as stack and is too stupid to make
 	 * sure that it will actually work */
-	union iomuxc_gpr_gpr16 gpr16 = IOMUXC_GPR->GPR16;
+	iomuxc_gpr_gpr16 gpr16 = IOMUXC_GPR->GPR16;
 	gpr16.FLEXRAM_BANK_CFG_SEL = 0;
 	write32(&IOMUXC_GPR->GPR16, gpr16.r);
 
@@ -124,10 +124,10 @@ machine_reset(void)
 	memory_barrier();
 
 	/* assert reset */
-	write32(&SCB->AIRCR, (union scb_aircr){
+	write32(&SCB->AIRCR, (scb::scb_aircr){{
 		.SYSRESETREQ = 1,
 		.VECTKEY = 0x05fa,
-	}.r);
+	}}.r);
 	memory_barrier();
 
 	while (1);
@@ -145,7 +145,7 @@ machine_suspend(void)
 	info("machine_suspend not supported\n");
 }
 
-noreturn void
+[[noreturn]] void
 machine_panic(void)
 {
 	while (1);
@@ -155,11 +155,11 @@ void
 early_console_init(void)
 {
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_mux_ctl){{
 		.MUX_MODE = 2,
 		.SION = SION_Software_Input_On_Disabled,
-	}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){
+	}}.r);
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_pad_ctl){{
 		.SRE = SRE_Slow,
 		.DSE = DSE_R0_6,
 		.SPEED = SPEED_100MHz,
@@ -168,7 +168,7 @@ early_console_init(void)
 		.PUE = PUE_Keeper,
 		.PUS = PUS_100K_Pull_Down,
 		.HYS = HYS_Hysteresis_Disabled,
-	}.r);
+	}}.r);
 
 	fsl_lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
 }
