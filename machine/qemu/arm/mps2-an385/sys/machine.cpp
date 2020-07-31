@@ -7,12 +7,12 @@
 #include <kernel.h>
 #include <page.h>
 
-static const unsigned long UART0 = 0x40004000;
+constexpr auto UART0 = 0x40004000;
 
 void
-machine_init(struct bootargs *args)
+machine_init(bootargs *args)
 {
-	const struct meminfo memory[] = {
+	const meminfo memory[] = {
 		/* Main memory */
 		{
 			.base = (phys *)CONFIG_RAM_BASE_PHYS,
@@ -24,7 +24,7 @@ machine_init(struct bootargs *args)
 }
 
 void
-machine_driver_init(struct bootargs *bootargs)
+machine_driver_init(bootargs *bootargs)
 {
 	/*
 	 * Run driver initialisation
@@ -38,7 +38,7 @@ machine_idle(void)
 	/* nothing to do for now */
 }
 
-noreturn void
+[[noreturn]] void
 machine_reset(void)
 {
 	#warning implement
@@ -58,7 +58,7 @@ machine_suspend(void)
 	#warning implement
 }
 
-noreturn void
+[[noreturn]] void
 machine_panic(void)
 {
 	while (1);
