@@ -284,7 +284,7 @@ struct ccm {
 			enum ccm_cg lpi2c1 : 2;
 			enum ccm_cg lpi2c2 : 2;
 			enum ccm_cg lpi2c3 : 2;
-			enum ccm_cg iim : 2;
+			enum ccm_cg ocotp : 2; /* OCOTP for IMXRT106x. IIM for IMXRT105x. Functionally the same */
 			enum ccm_cg xbar3 : 2;
 			enum ccm_cg ipmux1 : 2;
 			enum ccm_cg ipmux2 : 2;
@@ -366,7 +366,7 @@ struct ccm {
 			enum ccm_cg usdhc1 : 2;
 			enum ccm_cg usdhc2 : 2;
 			enum ccm_cg dcdc : 2;
-			enum ccm_cg iomux4 : 2;
+			enum ccm_cg ipmux4 : 2;
 			enum ccm_cg flexspi : 2;
 			enum ccm_cg trng : 2;
 			enum ccm_cg lpuart8 : 2;
