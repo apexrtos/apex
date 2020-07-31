@@ -88,12 +88,12 @@ exc_MemManage(struct exception_frame_basic *e, bool handler_mode, int exc)
 	}
 
 	/* try to handle fault */
-	const union scb_cfsr cfsr = read32(&SCB->CFSR);
-	if (cfsr.MMFSR.MSTKERR)
+	const union scb_cfsr_mmfsr mmfsr = read8(&SCB->CFSR.MMFSR);
+	if (mmfsr.MSTKERR)
 		derived_exception(SIGSEGV);
-	else if (cfsr.MMFSR.MMARVALID)
+	else if (mmfsr.MMARVALID)
 		mpu_fault((void *)read32(&SCB->MMFAR), 0);
-	else if (cfsr.MMFSR.IACCVIOL)
+	else if (mmfsr.IACCVIOL)
 		mpu_fault((void *)e->ra, 4);
 	else {
 		dump_exception(e, handler_mode, exc);
@@ -117,8 +117,8 @@ exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 	if (handler_mode || !interrupt_from_userspace())
 		panic("BusFault");
 
-	const union scb_cfsr cfsr = read32(&SCB->CFSR);
-	if (cfsr.BFSR.STKERR)
+	const union scb_cfsr_bfsr bfsr = read8(&SCB->CFSR.BFSR);
+	if (bfsr.STKERR)
 		derived_exception(SIGBUS);
 	else {
 		dbg("BusFault");
@@ -135,23 +135,23 @@ exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 void
 exc_UsageFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 {
-	const union scb_cfsr cfsr = read32(&SCB->CFSR);
+	const union scb_cfsr_ufsr ufsr = read16(&SCB->CFSR.UFSR);
 	const char *what = "Usage Fault\n";
 	int sig = SIGILL;
 
-	if (cfsr.UFSR.DIVBYZERO) {
+	if (ufsr.DIVBYZERO) {
 		what = "Divide by Zero\n";
 		sig = SIGFPE;
-	} if (cfsr.UFSR.UNDEFINSTR)
+	} if (ufsr.UNDEFINSTR)
 		what = "Undefined Instruction\n";
-	else if (cfsr.UFSR.INVSTATE)
+	else if (ufsr.INVSTATE)
 		what = "Invalid State\n";
-	else if (cfsr.UFSR.INVPC) {
+	else if (ufsr.INVPC) {
 		dump_exception(e, handler_mode, exc);
 		panic("Invalid PC");		/* Always fatal */
-	} else if (cfsr.UFSR.UNALIGNED)
+	} else if (ufsr.UNALIGNED)
 		what = "Invalid Unaligned Access\n";
-	else if (cfsr.UFSR.NOCP)
+	else if (ufsr.NOCP)
 		what = "Invalid Coprocessor Access\n";
 
 	dump_exception(e, handler_mode, exc);

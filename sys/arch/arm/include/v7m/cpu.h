@@ -38,7 +38,6 @@
 struct scb {
 	uint32_t CPUID;
 	union scb_icsr {
-		uint32_t r;
 		struct {
 			uint32_t VECTACTIVE : 9;
 			uint32_t : 2;
@@ -55,10 +54,10 @@ struct scb {
 			uint32_t : 2;
 			uint32_t NMIPENDSET : 1;
 		};
+		uint32_t r;
 	} ICSR;
 	uint32_t VTOR;
 	union scb_aircr {
-		uint32_t r;
 		struct {
 			uint32_t VECTRESET : 1;
 			uint32_t VECTCLRACTIVE : 1;
@@ -69,6 +68,7 @@ struct scb {
 			uint32_t ENDIANNESS : 1;
 			uint32_t VECTKEY : 16;
 		};
+		uint32_t r;
 	} AIRCR;
 	uint32_t SCR;
 	uint32_t CCR;
@@ -76,7 +76,6 @@ struct scb {
 	uint32_t SHPR2;
 	uint32_t SHPR3;
 	union scb_shcsr {
-		uint32_t r;
 		struct {
 			uint32_t MEMFAULTACT : 1;
 			uint32_t BUSFAULTACT : 1;
@@ -97,50 +96,48 @@ struct scb {
 			uint32_t USGFAULTENA : 1;
 			uint32_t : 13;
 		};
-	} SHCSR;
-	union scb_cfsr {
 		uint32_t r;
-		struct {
-			union scb_cfsr_mmfsr {
-				uint8_t r;
-				struct {
-					uint8_t IACCVIOL : 1;
-					uint8_t DACCVIOL : 1;
-					uint8_t : 1;
-					uint8_t MUNSTKERR : 1;
-					uint8_t MSTKERR : 1;
-					uint8_t MLSPERR : 1;
-					uint8_t : 1;
-					uint8_t MMARVALID : 1;
-				};
-			} MMFSR;
-			union scb_cfsr_bfsr {
-				uint8_t r;
-				struct {
-					uint8_t IBUSERR : 1;
-					uint8_t PRECISERR : 1;
-					uint8_t IMPRECISERR : 1;
-					uint8_t UNSTKERR : 1;
-					uint8_t STKERR : 1;
-					uint8_t LSPERR : 1;
-					uint8_t : 1;
-					uint8_t BFARVALID : 1;
-				};
-			} BFSR;
-			union scb_cfsr_ufsr {
-				uint16_t r;
-				struct {
-					uint16_t UNDEFINSTR : 1;
-					uint16_t INVSTATE : 1;
-					uint16_t INVPC : 1;
-					uint16_t NOCP : 1;
-					uint16_t : 4;
-					uint16_t UNALIGNED : 1;
-					uint16_t DIVBYZERO : 1;
-					uint16_t : 6;
-				};
-			} UFSR;
-		};
+	} SHCSR;
+	struct scb_cfsr {
+		union scb_cfsr_mmfsr {
+			uint8_t r;
+			struct {
+				uint8_t IACCVIOL : 1;
+				uint8_t DACCVIOL : 1;
+				uint8_t : 1;
+				uint8_t MUNSTKERR : 1;
+				uint8_t MSTKERR : 1;
+				uint8_t MLSPERR : 1;
+				uint8_t : 1;
+				uint8_t MMARVALID : 1;
+			};
+		} MMFSR;
+		union scb_cfsr_bfsr {
+			uint8_t r;
+			struct {
+				uint8_t IBUSERR : 1;
+				uint8_t PRECISERR : 1;
+				uint8_t IMPRECISERR : 1;
+				uint8_t UNSTKERR : 1;
+				uint8_t STKERR : 1;
+				uint8_t LSPERR : 1;
+				uint8_t : 1;
+				uint8_t BFARVALID : 1;
+			};
+		} BFSR;
+		union scb_cfsr_ufsr {
+			uint16_t r;
+			struct {
+				uint16_t UNDEFINSTR : 1;
+				uint16_t INVSTATE : 1;
+				uint16_t INVPC : 1;
+				uint16_t NOCP : 1;
+				uint16_t : 4;
+				uint16_t UNALIGNED : 1;
+				uint16_t DIVBYZERO : 1;
+				uint16_t : 6;
+			};
+		} UFSR;
 	} CFSR;
 	uint32_t HFSR;
 	uint32_t DFSR;
@@ -198,7 +195,6 @@ static struct nvic *const NVIC = (struct nvic*)0xe000e100;
  */
 struct fpu {
 	union fpu_fpccr {
-		uint32_t r;
 		struct {
 			uint32_t LSPACT : 1;
 			uint32_t USER : 1;
@@ -213,6 +209,7 @@ struct fpu {
 			uint32_t LSPEN : 1;
 			uint32_t ASPEN : 1;
 		};
+		uint32_t r;
 	} FPCCR;
 	uint32_t FPCAR;
 	uint32_t FPDSCR;
@@ -227,16 +224,29 @@ static struct fpu *const FPU = (struct fpu*)0xe000ef34;
  * MPU
  */
 union mpu_rbar {
-	uint32_t r;
 	struct {
 		uint32_t REGION : 4;
 		uint32_t VALID : 1;
 		uint32_t ADDR : 27;
 	};
+	uint32_t r;
+};
+
+enum mpu_rasr_ap {
+	MPU_RASR_AP_None = 0,
+	MPU_RASR_AP_Kern_RW = 1,
+	MPU_RASR_AP_Kern_RW_User_RO = 2,
+	MPU_RASR_AP_Kern_RW_User_RW = 3,
+	MPU_RASR_AP_Kern_RO = 5,
+	MPU_RASR_AP_Kern_RO_User_RO = 6,
+};
+
+enum mpu_rasr_xn {
+	MPU_RASR_XN_Execute = 0,
+	MPU_RASR_XN_No_Execute = 1,
 };
 
 union mpu_rasr {
-	uint32_t r;
 	struct {
 		uint32_t ENABLE : 1;
 		uint32_t SIZE : 5;
@@ -247,26 +257,16 @@ union mpu_rasr {
 		uint32_t S : 1;
 		uint32_t TEX : 3;
 		uint32_t : 2;
-		enum {
-			AP_None = 0,
-			AP_Kern_RW = 1,
-			AP_Kern_RW_User_RO = 2,
-			AP_Kern_RW_User_RW = 3,
-			AP_Kern_RO = 5,
-			AP_Kern_RO_User_RO = 6,
-		} AP : 3;
+		enum mpu_rasr_ap AP : 3;
 		uint32_t : 1;
-		enum {
-			XN_Execute = 0,
-			XN_No_Execute = 1,
-		} XN : 1;
+		enum mpu_rasr_xn XN : 1;
 		uint32_t : 3;
 	};
+	uint32_t r;
 };
 
 struct mpu {
 	union mpu_type {
-		uint32_t r;
 		struct {
 			uint32_t SEPARATE : 1;
 			uint32_t : 7;
@@ -274,15 +274,16 @@ struct mpu {
 			uint32_t IREGION : 8;
 			uint32_t : 8;
 		};
+		uint32_t r;
 	} TYPE;
 	union mpu_ctrl {
-		uint32_t r;
 		struct {
 			uint32_t ENABLE : 1;
 			uint32_t HFNMIENA : 1;
 			uint32_t PRIVDEFENA : 1;
 			uint32_t : 29;
 		};
+		uint32_t r;
 	} CTRL;
 	uint32_t RNR;
 	union mpu_rbar RBAR;
@@ -318,54 +319,54 @@ static struct mpu *const MPU = (struct mpu*)0xe000ed90;
 /*
  * values for RASR register
  */
-#define RASR_KERNEL_RWX_WBWA ((union mpu_rasr){ \
-	.XN = XN_Execute, \
-	.AP = AP_Kern_RW, \
-	.TEX = 0b001, \
-	.S = 0, \
-	.C = 1, \
+#define RASR_KERNEL_RWX_WBWA ((union mpu_rasr){{ \
 	.B = 1, \
-}.r)
-#define RASR_KERNEL_RW ((union mpu_rasr){ \
-	.XN = XN_No_Execute, \
-	.AP = AP_Kern_RW, \
-	.TEX = 0b001, \
+	.C = 1, \
 	.S = 0, \
-	.C = 0, \
+	.TEX = 0b001, \
+	.AP = MPU_RASR_AP_Kern_RW, \
+	.XN = MPU_RASR_XN_Execute, \
+}}.r)
+#define RASR_KERNEL_RW ((union mpu_rasr){{ \
 	.B = 0, \
-}.r)
-#define RASR_USER_R_WBWA ((union mpu_rasr){ \
-	.XN = XN_No_Execute, \
-	.AP = AP_Kern_RW_User_RO, \
-	.TEX = 0b001, \
+	.C = 0, \
 	.S = 0, \
-	.C = 1, \
-	.B = 1, \
-}.r)
-#define RASR_USER_RX_WBWA ((union mpu_rasr){ \
-	.XN = XN_Execute, \
-	.AP = AP_Kern_RW_User_RO, \
 	.TEX = 0b001, \
-	.S = 0, \
-	.C = 1, \
+	.AP = MPU_RASR_AP_Kern_RW, \
+	.XN = MPU_RASR_XN_No_Execute, \
+}}.r)
+#define RASR_USER_R_WBWA ((union mpu_rasr){{ \
 	.B = 1, \
-}.r)
-#define RASR_USER_RW_WBWA ((union mpu_rasr){ \
-	.XN = XN_No_Execute, \
-	.AP = AP_Kern_RW_User_RW, \
+	.C = 1, \
+	.S = 0, \
 	.TEX = 0b001, \
-	.S = 0, \
-	.C = 1, \
+	.AP = MPU_RASR_AP_Kern_RW_User_RO, \
+	.XN = MPU_RASR_XN_No_Execute, \
+}}.r)
+#define RASR_USER_RX_WBWA ((union mpu_rasr){{ \
 	.B = 1, \
-}.r)
-#define RASR_USER_RWX_WBWA ((union mpu_rasr){ \
-	.XN = XN_Execute, \
-	.AP = AP_Kern_RW_User_RW, \
+	.C = 1, \
+	.S = 0, \
 	.TEX = 0b001, \
-	.S = 0, \
-	.C = 1, \
+	.AP = MPU_RASR_AP_Kern_RW_User_RO, \
+	.XN = MPU_RASR_XN_Execute, \
+}}.r)
+#define RASR_USER_RW_WBWA ((union mpu_rasr){{ \
 	.B = 1, \
-}.r)
+	.C = 1, \
+	.S = 0, \
+	.TEX = 0b001, \
+	.AP = MPU_RASR_AP_Kern_RW_User_RW, \
+	.XN = MPU_RASR_XN_No_Execute, \
+}}.r)
+#define RASR_USER_RWX_WBWA ((union mpu_rasr){{ \
+	.B = 1, \
+	.C = 1, \
+	.S = 0, \
+	.TEX = 0b001, \
+	.AP = MPU_RASR_AP_Kern_RW_User_RW, \
+	.XN = MPU_RASR_XN_Execute, \
+}}.r)
 #define RASR_NONE 0
 
 #endif /* !__ASSEMBLY__ */
