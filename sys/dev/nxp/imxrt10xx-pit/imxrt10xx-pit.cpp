@@ -54,6 +54,7 @@ struct pit::regs {
 		} TCTRL;
 
 		union tflg {
+			struct {
 				uint32_t TIF : 1;
 				uint32_t : 31;
 			};
