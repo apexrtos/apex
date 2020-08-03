@@ -74,5 +74,9 @@ extern "C" void
 nxp_imxrt10xx_xbara_init(const nxp_imxrt10xx_xbara_desc *d)
 {
 	dbg("XBARA(%p) Init\n", (void*)d->base);
-	new(&mem) imxrt10xx::xbara{d};
+
+	auto x{new(&mem) imxrt10xx::xbara{d}};
+
+	for (const auto &c : d->config)
+		x->set_connection(c.first, c.second);
 }
