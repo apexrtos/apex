@@ -167,8 +167,8 @@ public:
 	void unlock() { rwlock_write_unlock(&m_); }
 	bool locked() { return rwlock_write_locked(&m_); }
 };
-inline rwlock_read &rwlock::read() { return static_cast<rwlock_read&>(*this); }
-inline rwlock_write &rwlock::write() { return static_cast<rwlock_write&>(*this); }
+inline rwlock_read &rwlock::read() { return static_cast<rwlock_read &>(*this); }
+inline rwlock_write &rwlock::write() { return static_cast<rwlock_write &>(*this); }
 
 /*
  * a::spinlock - Apex c++ spinlock wrapper
@@ -275,10 +275,10 @@ public:
 			unlock();
 	}
 
-	unique_lock(const unique_lock&) = delete;
-	unique_lock&operator=(const unique_lock&) = delete;
+	unique_lock(const unique_lock &) = delete;
+	unique_lock &operator=(const unique_lock &) = delete;
 
-	unique_lock(unique_lock&&o)
+	unique_lock(unique_lock &&o)
 	: m_{o.m_}
 	, locked_{o.locked_}
 	, s_{o.s_}
@@ -287,7 +287,7 @@ public:
 		o.locked_ = false;
 	}
 
-	unique_lock&operator=(unique_lock&&o)
+	unique_lock &operator=(unique_lock &&o)
 	{
 		if (locked_)
 			unlock();
@@ -314,7 +314,7 @@ public:
 		locked_ = false;
 	}
 
-	void swap(unique_lock&o)
+	void swap(unique_lock &o)
 	{
 		std::swap(m_, o.m_);
 		std::swap(s_, o.s_);
