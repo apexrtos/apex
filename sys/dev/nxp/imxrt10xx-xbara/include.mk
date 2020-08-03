@@ -1,5 +1,5 @@
 #
-# Driver for Inter-Peripheral Crossbar Switch (XBAR) on IMXRT10xx processors
+# Driver for Inter-Peripheral Crossbar Switch A (XBARA) on IMXRT10xx processors
 #
 
 SOURCES += \

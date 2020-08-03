@@ -3,6 +3,7 @@
 #include "init.h"
 #include <arch.h>
 #include <debug.h>
+#include <new>
 
 #define trace(...)
 
@@ -14,23 +15,18 @@ std::aligned_storage_t<sizeof(imxrt10xx::xbara), alignof(imxrt10xx::xbara)> mem;
 
 namespace imxrt10xx {
 
-#define CPPREG(name) \
-	name() : r{0} { } \
-	name(auto v) : r{v} { }
 /*
  * Registers
  */
 struct xbara::regs {
-	union xbara_select {
-		CPPREG(xbara_select);
+	union select {
 		struct {
 			uint8_t SEL : 7;
 			uint8_t : 1;
 		};
 		uint8_t r;
-	} SEL[xbara::outputs];
-	union xbara_ctrl {
-		CPPREG(xbara_ctrl);
+	} SEL[132];
+	union ctrl {
 		struct {
 			uint8_t DEN : 1;
 			uint8_t IEN : 1;
@@ -60,17 +56,13 @@ xbara::inst()
 }
 
 void
-xbara::set_connection(input in, output out)
+xbara::set_connection(output out, input in)
 {
-	auto input = static_cast<uint8_t>(in);
-	auto output = static_cast<uint8_t>(out);
+	const auto o{static_cast<unsigned>(out)};
+	const auto i{static_cast<unsigned>(in)};
 
-	assert(input < inputs);
-	assert(output < outputs);
-
-	trace("XBARA(%p) Set connection: IN:%d -> OUT:%d\n",
-		r_, output, input);
-	write8(&r_->SEL[output], input);
+	trace("XBARA(%p) Set connection: OUT:%u <- IN:%u\n", r_, o, i);
+	write8(&r_->SEL[o], i);
 }
 
 }

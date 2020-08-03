@@ -1,14 +1,12 @@
 #pragma once
 
-#include <functional>
-
 struct nxp_imxrt10xx_xbara_desc;
 extern "C" void nxp_imxrt10xx_xbara_init(const nxp_imxrt10xx_xbara_desc *);
 
 namespace imxrt10xx {
 
 /*
- * XBAR(A) Module
+ * Driver for Inter-Peripheral Crossbar Switch A (XBARA) on IMXRT10xx processors
  */
 class xbara {
 public:
@@ -233,16 +231,16 @@ public:
 		flexio2_trigger_in1,
 	};
 
-	static constexpr auto inputs = 87u;
-	static constexpr auto outputs = 132u;
-	void set_connection(input, output);
+	void set_connection(output, input);
 	static xbara *inst();
 
 private:
 	struct regs;
-	xbara(const nxp_imxrt10xx_xbara_desc *d);
-	xbara(const xbara&) = delete;
-	xbara& operator=(const xbara&) = delete;
+	xbara(const nxp_imxrt10xx_xbara_desc *);
+	xbara(xbara &&) = delete;
+	xbara(const xbara &) = delete;
+	xbara &operator=(xbara &&) = delete;
+	xbara &operator=(const xbara &) = delete;
 
 	regs *const r_;
 
