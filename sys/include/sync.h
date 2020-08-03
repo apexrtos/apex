@@ -234,8 +234,10 @@ public:
 		m_.unlock(s);
 	}
 
-	lock_guard(const lock_guard&) = delete;
-	lock_guard&operator=(const lock_guard&) = delete;
+	lock_guard(lock_guard &&) = delete;
+	lock_guard(const lock_guard &) = delete;
+	lock_guard &operator=(lock_guard &&) = delete;
+	lock_guard &operator=(const lock_guard &) = delete;
 
 private:
 	a::spinlock_irq &m_;
@@ -389,7 +391,9 @@ public:
 		unlock();
 	}
 
+	interruptible_lock(interruptible_lock &&) = delete;
 	interruptible_lock(const interruptible_lock &) = delete;
+	interruptible_lock &operator=(interruptible_lock &&) = delete;
 	interruptible_lock &operator=(const interruptible_lock &) = delete;
 
 private:

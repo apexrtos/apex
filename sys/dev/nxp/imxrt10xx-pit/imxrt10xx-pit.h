@@ -27,8 +27,10 @@ public:
 private:
 	struct regs;
 	pit(const nxp_imxrt10xx_pit_desc *d);
+	pit(pit &&) = delete;
 	pit(const pit&) = delete;
-	pit& operator=(const pit&) = delete;
+	pit &operator=(pit &&) = delete;
+	pit &operator=(const pit &) = delete;
 
 	a::spinlock_irq lock_;
 	isr_fn irq_table_[channels];

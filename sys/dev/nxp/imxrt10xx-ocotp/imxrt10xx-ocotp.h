@@ -22,8 +22,10 @@ public:
 private:
 	struct regs;
 	ocotp(const nxp_imxrt10xx_ocotp_desc *d);
-	ocotp(const ocotp&) = delete;
-	ocotp& operator=(const ocotp&) = delete;
+	ocotp(ocotp &&) = delete;
+	ocotp(const ocotp &) = delete;
+	ocotp &operator=(ocotp &&) = delete;
+	ocotp &operator=(const ocotp&) = delete;
 
 	a::mutex mutex_;
 	regs *const r_;
