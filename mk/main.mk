@@ -16,6 +16,11 @@ SED := sed
 # Extensions for C++ files
 CXX_EXT := cpp cc C cxx c++
 
+# Some useful constants for string and variable manipulation in gnu make
+empty :=
+space := $(empty) $(empty)
+comma := ,
+
 # Search path for sources & output (if Apex is a subdir)
 ifeq ($(CONFIG_SRCDIR),$(CONFIG_APEXDIR))
     APEX_SUBDIR :=
