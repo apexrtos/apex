@@ -476,13 +476,30 @@ sc_madvise(void *vaddr, size_t ulen, int advice)
 		return 0;
 
 	switch (advice) {
-	case POSIX_MADV_NORMAL:
-	case POSIX_MADV_RANDOM:
-	case POSIX_MADV_SEQUENTIAL:
-	case POSIX_MADV_WILLNEED:
+	case MADV_NORMAL:
+	case MADV_RANDOM:
+	case MADV_SEQUENTIAL:
+	case MADV_WILLNEED:
 		return 0;
-	case POSIX_MADV_DONTNEED:
+	case MADV_DONTNEED:
+	case MADV_FREE:
 		break;
+	case MADV_REMOVE:
+	case MADV_DONTFORK:
+	case MADV_DOFORK:
+	case MADV_MERGEABLE:
+	case MADV_UNMERGEABLE:
+	case MADV_HUGEPAGE:
+	case MADV_NOHUGEPAGE:
+	case MADV_DONTDUMP:
+	case MADV_DODUMP:
+	case MADV_WIPEONFORK:
+	case MADV_KEEPONFORK:
+	case MADV_COLD:
+	case MADV_PAGEOUT:
+	case MADV_HWPOISON:
+	case MADV_SOFT_OFFLINE:
+		return DERR(-ENOTSUP);
 	default:
 		return DERR(-EINVAL);
 	}

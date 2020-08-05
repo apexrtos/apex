@@ -153,17 +153,24 @@ as_mprotect(as *a, void *addr, size_t len, int prot)
 
 /*
  * as_madvise - act on advice about intended memory use
- *
- * nommu must zero fill anonymous private mappings.
  */
 int
 as_madvise(as *a, seg *s, void *addr, size_t len, int advice)
 {
-	if (advice != POSIX_MADV_DONTNEED)
-		return 0;
-	if (seg_vnode(s))
-		return 0;
-	memset(addr, 0, len);
+	switch (advice) {
+	case MADV_DONTNEED:
+		if (seg_vnode(s))
+			return 0;
+		/* anonymous private mappings must be zero-filled */
+		memset(addr, 0, len);
+		break;
+	case MADV_FREE:
+		if (seg_vnode(s))
+			return DERR(-EINVAL);
+		/* no need to zero as free is allowed to be lazy */
+		break;
+	}
+
 	return 0;
 }
 
