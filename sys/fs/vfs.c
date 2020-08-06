@@ -882,11 +882,20 @@ fs_fork(struct task *t)
 
 	task_lock(p);
 
-	/*
-	 * Copy task related data.
-	 */
+	/* Copy cwd and increment reference count */
 	t->cwdfp = p->cwdfp;
+	struct vnode *cwd_vp = t->cwdfp->f_vnode;
+	vn_lock(cwd_vp);
+	vref(cwd_vp);
+	t->cwdfp->f_count++;
+	vn_unlock(cwd_vp);
+
+	/* Copy umask */
 	t->umask = p->umask;
+
+	/* Inherit file descriptors for all tasks except init */
+	if (p == &kern_task)
+		goto out;
 	for (size_t i = 0; i < ARRAY_SIZE(t->file); i++) {
 		struct file *fp;
 		if (!(fp = task_getfp(p, i)))
@@ -899,13 +908,7 @@ fs_fork(struct task *t)
 		vn_unlock(vp);
 	}
 
-	/* Increment cwd's reference count */
-	struct vnode *vp = t->cwdfp->f_vnode;
-	vn_lock(vp);
-	vref(vp);
-	t->cwdfp->f_count++;
-	vn_unlock(vp);
-
+out:
 	task_unlock(p);
 }
 
