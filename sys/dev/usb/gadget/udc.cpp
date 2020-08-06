@@ -46,7 +46,7 @@ udc::udc(std::string_view name, const size_t endpoints)
 : name_{name}
 , endpoints_{endpoints}
 , running_{false}
-, state_{ch9::DeviceState::Attached}
+, state_{ch9::DeviceState::Detached}
 , dpc_{}
 , events_{0}
 , complete_{0}
@@ -102,7 +102,7 @@ udc::stop()
 	running_ = false;
 	v_stop();
 	device_->reset();
-	state_ = ch9::DeviceState::Attached;
+	state_ = ch9::DeviceState::Detached;
 	events_ = 0;
 	complete_ = 0;
 	speed_irq_ = Speed::High;
@@ -707,7 +707,7 @@ udc::process_events()
 		if (v_port_change() < 0)
 			state_ = ch9::DeviceState::Failed;
 		else if (!connected_irq_) {
-			state_ = ch9::DeviceState::Attached;
+			state_ = ch9::DeviceState::Detached;
 			device_->reset();
 		} else if (state_ != ch9::DeviceState::Default) {
 			state_ = ch9::DeviceState::Default;

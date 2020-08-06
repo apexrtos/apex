@@ -18,6 +18,7 @@ namespace usb::ch9 {
  * 9.1: USB Device States
  */
 enum class DeviceState {
+	Detached,	    /* Apex: device is not attached to USB bus */
 	Attached,
 	Powered,
 	Default,
