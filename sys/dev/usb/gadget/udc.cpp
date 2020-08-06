@@ -50,7 +50,7 @@ udc::udc(std::string_view name, const size_t endpoints)
 , dpc_{}
 , events_{0}
 , complete_{0}
-, connected_irq_{false}
+, attached_irq_{false}
 , speed_irq_{Speed::High}
 , setup_buf_{nullptr}
 {
@@ -271,7 +271,7 @@ udc::bus_reset_irq()
 void
 udc::port_change_irq(bool connected, Speed s)
 {
-	connected_irq_ = connected;
+	attached_irq_ = connected;
 	speed_irq_ = s;
 
 	events_ |= port_change_event;
@@ -710,14 +710,14 @@ udc::process_events()
 
 	if (e & port_change_event) {
 		dbg("%s: port_change %s%s\n", name_.c_str(),
-		    connected_irq_ ? "Connected" : "Disconnected",
-		    connected_irq_
+		    attached_irq_ ? "Attached" : "Detached",
+		    attached_irq_
 		        ?  (const char *[]){", Low Speed", ", Full Speed",
 			    ", High Speed"}[static_cast<int>(speed_irq_.load())]
 			: "");
 		if (v_port_change() < 0)
 			state_ = ch9::DeviceState::Failed;
-		else if (!connected_irq_) {
+		else if (!attached_irq_) {
 			state_ = ch9::DeviceState::Detached;
 			device_->reset();
 		} else if (state_ != ch9::DeviceState::Default) {

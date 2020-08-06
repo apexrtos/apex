@@ -45,7 +45,7 @@ public:
 protected:
 	void reset_irq();
 	void bus_reset_irq();
-	void port_change_irq(bool connected, Speed);
+	void port_change_irq(bool attached, Speed);
 	void setup_request_irq(size_t endpoint, const ch9::setup_data &);
 	void setup_aborted_irq(size_t endpoint);
 	void ep_complete_irq(size_t endpoint, ch9::Direction);
@@ -82,7 +82,7 @@ private:
 	dpc dpc_;
 	std::atomic_ulong events_;
 	std::atomic_ulong complete_;
-	std::atomic_bool connected_irq_;
+	std::atomic_bool attached_irq_;
 	std::atomic<Speed> speed_irq_;
 	ch9::setup_data setup_data_irq_;
 
