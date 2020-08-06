@@ -27,6 +27,7 @@ public:
 
 	int start();
 	void stop();
+	ch9::DeviceState state();
 	template<typename T, typename ...A> int set_device(A &&...);
 	int set_device(std::unique_ptr<gadget::device>);
 	std::shared_ptr<gadget::device> device();

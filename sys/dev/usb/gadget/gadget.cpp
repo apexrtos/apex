@@ -100,6 +100,15 @@ gadget_ioctl(file *file, unsigned long cmd, void *data)
 		u->stop();
 		return 0;
 	}
+	case USBG_IOC_STATE: {
+		auto n{static_cast<char *>(data)};
+		if (!u_strcheck(n, string_max))
+			return DERR(-EFAULT);
+		auto u{gadget::udc::find(n)};
+		if (!u)
+			return DERR(-ENODEV);
+		return static_cast<int>(u->state());
+	}
 	default:
 		return DERR(-EINVAL);
 	}

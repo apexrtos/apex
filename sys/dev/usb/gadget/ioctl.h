@@ -56,4 +56,19 @@ struct usbg_ioctl_add_function {
  */
 #define USBG_IOC_STOP _IOW('u', 4, const char *)
 
+/*
+ * Get USB device controller state
+ *
+ * <0: Error, see errno
+ *  0: Detached
+ *  1: Attached
+ *  2: Powered
+ *  3: Default
+ *  4: Address
+ *  5: Configured
+ *  6: Suspended
+ *  7: Failed
+ */
+#define USBG_IOC_STATE _IOW('u', 5, const char *)
+
 #endif

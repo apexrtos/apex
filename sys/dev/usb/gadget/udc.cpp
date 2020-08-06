@@ -109,6 +109,17 @@ udc::stop()
 }
 
 /*
+ * udc::state - retrieve device state
+ */
+ch9::DeviceState
+udc::state()
+{
+	std::lock_guard l{lock_};
+
+	return state_;
+}
+
+/*
  * udc::set_device - set device implementation
  */
 int
