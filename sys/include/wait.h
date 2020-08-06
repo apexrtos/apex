@@ -41,11 +41,13 @@ wait_event(event &e, auto condition)
  * wait_event_timeout - wait for an event with timeout.
  *
  * Returns nanoseconds of sleep time remaining, or -ve on timeout or interrupt.
+ *
+ * ns = 0 disables timeout.
  */
 int
 wait_event_interruptible_timeout(event &e, int ns, auto condition)
 {
-	assert(ns > 0);
+	assert(ns >= 0);
 	const uint_fast64_t expire = timer_monotonic_coarse() + ns;
 	while (!condition()) {
 		if (auto r = sch_prepare_sleep(&e, ns); r)
@@ -132,11 +134,13 @@ wait_event_lock(event &e, auto &lock, auto condition)
  * wait_event_timeout - wait for an event with timeout.
  *
  * Returns nanoseconds of sleep time remaining, or -ve on timeout or interrupt.
+ *
+ * ns = 0 disables timeout.
  */
 #define wait_event_interruptible_timeout(event, condition, ns) \
 ({ \
 	int __rc, __ret = ns; \
-	assert(__ret > 0); \
+	assert(__ret >= 0); \
 	const uint_fast64_t __expire = timer_monotonic_coarse() + __ret; \
 	while (!(condition)) { \
 		if ((__rc = sch_prepare_sleep(&(event), __ret))) { \
