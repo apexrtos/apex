@@ -9,6 +9,7 @@
 #include <device.h>
 #include <errno.h>
 #include <fs/file.h>
+#include <kernel.h>
 #include <linux/major.h>
 #include <linux/mmc/ioctl.h>
 #include <string_utils.h>
@@ -434,11 +435,7 @@ device::ioctl(partition p, unsigned long cmd, void *arg)
 
 	std::lock_guard hl{*h_};
 
-	switch (cmd) {
-	case MMC_IOC_CMD: {
-		mmc_ioc_cmd *c = static_cast<mmc_ioc_cmd *>(arg);
-		if (!u_access_ok(c, sizeof *c, PROT_WRITE))
-			return DERR(-EFAULT);
+	auto run_cmd = [this](mmc_ioc_cmd *c) {
 		switch (c->opcode) {
 		case 6: { /* switch */
 			const auto arg = read_once(&c->arg);
@@ -470,6 +467,29 @@ device::ioctl(partition p, unsigned long cmd, void *arg)
 		default:
 			return DERR(-ENOTSUP);
 		}
+	};
+
+	switch (cmd) {
+	case MMC_IOC_CMD: {
+		if (!ALIGNED(arg, mmc_ioc_cmd))
+			return DERR(-EFAULT);
+		if (!u_access_ok(arg, sizeof(mmc_ioc_cmd), PROT_WRITE))
+			return DERR(-EFAULT);
+		return run_cmd(static_cast<mmc_ioc_cmd *>(arg));
+	}
+	case MMC_IOC_MULTI_CMD: {
+		if (!ALIGNED(arg, mmc_ioc_multi_cmd))
+			return DERR(-EFAULT);
+		if (!u_access_ok(arg, sizeof(mmc_ioc_multi_cmd), PROT_WRITE))
+			return DERR(-EFAULT);
+		mmc_ioc_multi_cmd *c = static_cast<mmc_ioc_multi_cmd *>(arg);
+		if (!u_access_ok(c->cmds, sizeof(mmc_ioc_cmd) * c->num_of_cmds,
+								PROT_WRITE))
+			return DERR(-EFAULT);
+		for (uint64_t i = 0; i != c->num_of_cmds; ++i)
+			if (const auto r = run_cmd(c->cmds + i); r < 0)
+				return r;
+		return 0;
 	}
 	default:
 		return DERR(-ENOSYS);
