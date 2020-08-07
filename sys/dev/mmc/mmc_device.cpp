@@ -3,6 +3,7 @@
 #include "host.h"
 #include "mmc_block.h"
 #include <access.h>
+#include <climits>
 #include <compiler.h>
 #include <debug.h>
 #include <dev/regulator/voltage/regulator.h>
@@ -15,6 +16,7 @@
 #include <string_utils.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/uio.h>
 
 namespace mmc::mmc {
 
@@ -435,7 +437,7 @@ device::ioctl(partition p, unsigned long cmd, void *arg)
 
 	std::lock_guard hl{*h_};
 
-	auto run_cmd = [this](mmc_ioc_cmd *c) {
+	auto run_cmd = [this, p](mmc_ioc_cmd *c) {
 		switch (c->opcode) {
 		case 6: { /* switch */
 			const auto arg = read_once(&c->arg);
@@ -462,6 +464,43 @@ device::ioctl(partition p, unsigned long cmd, void *arg)
 			if (auto r = send_status(h_, rca_, s); r < 0)
 				return r;
 			c->response[0] = s.raw();
+			return 0;
+		}
+		case 18: { /* read_multiple_block */
+			if (c->write_flag || c->blocks > SSIZE_MAX / c->blksz)
+				return DERR(-EINVAL);
+			const ssize_t sz = c->blocks * c->blksz;
+			void *dp = reinterpret_cast<void *>(c->data_ptr);
+			if (!u_access_ok(dp, sz, PROT_WRITE))
+				return DERR(-EFAULT);
+			if (auto r = switch_partition(p); r < 0)
+				return r;
+			const iovec iov{dp, static_cast<size_t>(sz)};
+			const auto r = read_multiple_block(h_, &iov, 0, sz,
+							   c->blksz, c->arg);
+			if (r < 0)
+				return r;
+			if (r != sz)
+				return DERR(-EIO);
+			return 0;
+		}
+		case 25: { /* write_multiple_block */
+			if (!c->write_flag || c->blocks > SSIZE_MAX / c->blksz)
+				return DERR(-EINVAL);
+			const ssize_t sz = c->blocks * c->blksz;
+			void *dp = reinterpret_cast<void *>(c->data_ptr);
+			if (!u_access_ok(dp, sz, PROT_READ))
+				return DERR(-EFAULT);
+			if (auto r = switch_partition(p); r < 0)
+				return r;
+			const iovec iov{dp, static_cast<size_t>(sz)};
+			const auto r = write_multiple_block(h_, &iov, 0, sz,
+						c->blksz, c->arg,
+						c->write_flag & (1 << 31));
+			if (r < 0)
+				return r;
+			if (r != sz)
+				return DERR(-EIO);
 			return 0;
 		}
 		default:
