@@ -465,9 +465,10 @@ ssize_t read_single_block(host *h, const iovec *, size_t iov_off, size_t len,
 ssize_t read_multiple_block(host *, const iovec *, size_t iov_off, size_t len,
 			    size_t trfsz, size_t addr);
 ssize_t write_block(host *h, const iovec *, size_t iov_off, size_t len,
-		    size_t trfsz, size_t addr);
+		    size_t trfsz, size_t addr, bool reliable);
 ssize_t write_multiple_block(host *h, const iovec *, size_t iov_off,
-			     size_t len, size_t trfsz, size_t addr);
+			     size_t len, size_t trfsz, size_t addr,
+			     bool reliable);
 int discard(host *, size_t start_lba, size_t end_lba);
 int trim(host *, size_t start_lba, size_t end_lba);
 

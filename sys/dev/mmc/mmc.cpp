@@ -820,7 +820,7 @@ send_ext_csd(host *h, ext_csd &c)
 	iovec iov{c.data(), c.size()};
 	command cmd{8, 0, command::response_type::r1};
 	cmd.setup_data_transfer(command::data_direction::device_to_host,
-	    c.size(), &iov, 0, c.size());
+	    c.size(), &iov, 0, c.size(), false);
 
 	if (auto r = h->run_command(cmd, 0); (size_t)r != c.size())
 		return r < 0 ? r : DERR(-EIO);
@@ -904,7 +904,7 @@ bus_test(host *h, unsigned rca, const unsigned w)
 	iov = {tx, w};
 	command write{19, 0, command::response_type::r1};
 	write.setup_data_transfer(command::data_direction::host_to_device,
-	    w, &iov, 0, w);
+	    w, &iov, 0, w, false);
 	if (auto r = h->run_command(write, 0); (size_t)r != w)
 		return r < 0 ? r : DERR(-EIO);
 	if (auto r = send_status(h, rca, s); r < 0)
@@ -916,7 +916,7 @@ bus_test(host *h, unsigned rca, const unsigned w)
 	iov = {rx, w};
 	command read{14, 0, command::response_type::r1};
 	read.setup_data_transfer(command::data_direction::device_to_host,
-	    w, &iov, 0, w);
+	    w, &iov, 0, w, false);
 	if (auto r = h->run_command(read, 0); (size_t)r != w)
 		return r < 0 ? r : DERR(-EIO);
 	if (auto r = send_status(h, rca, s); r < 0)
@@ -938,10 +938,10 @@ bus_test(host *h, unsigned rca, const unsigned w)
 static ssize_t
 do_transfer(host *h, unsigned cmd_index, enum command::data_direction dir,
     const iovec *iov, size_t iov_off, size_t len, size_t trfsz,
-    size_t addr)
+    size_t addr, bool reliable)
 {
 	command cmd{cmd_index, addr, command::response_type::r1};
-	cmd.setup_data_transfer(dir, trfsz, iov, iov_off, len);
+	cmd.setup_data_transfer(dir, trfsz, iov, iov_off, len, reliable);
 
 	if (cmd.data_size() % trfsz)
 		return DERR(-EINVAL);
@@ -965,7 +965,7 @@ read_single_block(host *h, const iovec *iov, size_t iov_off, size_t len,
     size_t trfsz, size_t addr)
 {
 	return do_transfer(h, 17, command::data_direction::device_to_host,
-	    iov, iov_off, len, trfsz, addr);
+	    iov, iov_off, len, trfsz, addr, false);
 }
 
 /*
@@ -976,7 +976,7 @@ read_multiple_block(host *h, const iovec *iov, size_t iov_off, size_t len,
     size_t trfsz, size_t addr)
 {
 	return do_transfer(h, 18, command::data_direction::device_to_host,
-	    iov, iov_off, len, trfsz, addr);
+	    iov, iov_off, len, trfsz, addr, false);
 }
 
 /*
@@ -984,10 +984,10 @@ read_multiple_block(host *h, const iovec *iov, size_t iov_off, size_t len,
  */
 ssize_t
 write_block(host *h, const iovec *iov, size_t iov_off, size_t len,
-    size_t trfsz, size_t addr)
+    size_t trfsz, size_t addr, bool reliable)
 {
 	return do_transfer(h, 24, command::data_direction::host_to_device,
-	    iov, iov_off, len, trfsz, addr);
+	    iov, iov_off, len, trfsz, addr, reliable);
 }
 
 /*
@@ -995,10 +995,10 @@ write_block(host *h, const iovec *iov, size_t iov_off, size_t len,
  */
 ssize_t
 write_multiple_block(host *h, const iovec *iov, size_t iov_off, size_t len,
-    size_t trfsz, size_t addr)
+    size_t trfsz, size_t addr, bool reliable)
 {
 	return do_transfer(h, 25, command::data_direction::host_to_device,
-	    iov, iov_off, len, trfsz, addr);
+	    iov, iov_off, len, trfsz, addr, reliable);
 }
 
 /*

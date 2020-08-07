@@ -14,17 +14,19 @@ command::command(unsigned index, uint32_t argument, response_type rt)
 , data_size_{0}
 , transfer_block_size_{0}
 , data_direction_{data_direction::none}
+, reliable_write_{false}
 { }
 
 void
 command::setup_data_transfer(enum data_direction d, size_t transfer_block_size,
-    const struct iovec *iov, size_t iov_off, size_t len)
+    const struct iovec *iov, size_t iov_off, size_t len, bool reliable_write)
 {
 	data_direction_ = d;
 	transfer_block_size_ = transfer_block_size;
 	iov_ = iov;
 	iov_off_ = iov_off;
 	data_size_ = len;
+	reliable_write_ = reliable_write;
 }
 
 const iovec *
@@ -55,6 +57,12 @@ size_t
 command::transfer_block_size() const
 {
 	return transfer_block_size_;
+}
+
+bool
+command::reliable_write() const
+{
+	return reliable_write_;
 }
 
 bool

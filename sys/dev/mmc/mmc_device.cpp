@@ -412,7 +412,7 @@ device::write(partition p, const iovec *iov, size_t iov_off, size_t len,
 		/* see WRITE_BL_LEN and h->max_block_len */
 		/* in DDR mode must be 512b */
 		auto r = write_multiple_block(h_, iov, iov_off + wr, len - wr,
-		    512, (off + wr) / am);
+		    512, (off + wr) / am, false);
 		if (r < 0)
 			return r;
 		if (r % sector_size_)

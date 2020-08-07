@@ -512,7 +512,7 @@ send_scr(host *h, unsigned rca, scr &s)
 	iovec iov{s.data(), s.size()};
 	command cmd{51 | command::ACMD, 0, command::response_type::r1};
 	cmd.setup_data_transfer(command::data_direction::device_to_host,
-	    s.size(), &iov, 0, s.size());
+	    s.size(), &iov, 0, s.size(), false);
 
 	if (auto r = h->run_command(cmd, rca); (size_t)r != s.size())
 		return r < 0 ? r : DERR(-EIO);
@@ -552,7 +552,7 @@ check_func(host *h, function_status &f)
 	iovec iov{f.data(), f.size()};
 	command cmd{6, 0, command::response_type::r1};
 	cmd.setup_data_transfer(command::data_direction::device_to_host,
-	    f.size(), &iov, 0, f.size());
+	    f.size(), &iov, 0, f.size(), false);
 
 	if (auto r = h->run_command(cmd, 0); (size_t)r != f.size())
 		return r < 0 ? r : DERR(-EIO);
@@ -582,7 +582,7 @@ switch_func(host *h, power_limit p, driver_strength d, access_mode a)
 	    command_system << 4 | access_mode,
 	    command::response_type::r1};
 	cmd.setup_data_transfer(command::data_direction::device_to_host,
-	    f.size(), &iov, 0, f.size());
+	    f.size(), &iov, 0, f.size(), false);
 
 	if (auto r = h->run_command(cmd, 0); (size_t)r != f.size())
 		return r < 0 ? r : DERR(-EIO);
@@ -608,7 +608,7 @@ sd_status(host *h, unsigned rca, status &s)
 	iovec iov{s.data(), s.size()};
 	command cmd{13 | command::ACMD, 0, command::response_type::r1};
 	cmd.setup_data_transfer(command::data_direction::device_to_host,
-	    s.size(), &iov, 0, s.size());
+	    s.size(), &iov, 0, s.size(), false);
 
 	if (auto r = h->run_command(cmd, rca); (size_t)r != s.size())
 		return r < 0 ? r : DERR(-EIO);
@@ -628,7 +628,7 @@ do_transfer(host *h, unsigned cmd_index, enum command::data_direction dir,
     size_t addr)
 {
 	command cmd{cmd_index, addr, command::response_type::r1};
-	cmd.setup_data_transfer(dir, trfsz, iov, iov_off, len);
+	cmd.setup_data_transfer(dir, trfsz, iov, iov_off, len, false);
 
 	if (cmd.data_size() % trfsz)
 		return DERR(-EINVAL);

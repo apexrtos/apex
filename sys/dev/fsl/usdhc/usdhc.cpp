@@ -743,12 +743,12 @@ fsl_usdhc::v_run_command(mmc::command &c)
 		const auto blkcnt = len / c.transfer_block_size();
 
 		/* Use auto-CMD23 functionality for multi block transfers. */
-		/* REVISIT: support MMC reliable write? */
 		if (c.index() == 18 || c.index() == 25) {
 			mix_ctrl.MSBSEL = 1;
 			mix_ctrl.BCEN = 1;
 			mix_ctrl.AC23EN = 1;
-			write32(&r_->DS_ADDR, blkcnt);
+			write32(&r_->DS_ADDR,
+				blkcnt | (1 << 31) * c.reliable_write());
 		}
 
 		/* Set transfer block size & block count. */
@@ -982,7 +982,7 @@ fsl_usdhc::do_tuning(const unsigned cmd_index)
 
 	mmc::command c{cmd_index, 0, mmc::command::response_type::r1};
 	c.setup_data_transfer(mmc::command::data_direction::device_to_host,
-	    bus_width * 16, nullptr, 0, 0);
+	    bus_width * 16, nullptr, 0, 0, false);
 
 	tuning_ = true;
 
