@@ -12,7 +12,6 @@
 #include <timer.h>
 
 #define trace(...)
-
 namespace {
 
 using namespace std::chrono_literals;
@@ -169,7 +168,7 @@ struct ocotp::regs {
 		uint32_t : 32;
 		uint32_t : 32;
 	};
-	std::array<otp, 76> OTP;
+	std::array<otp, 80> OTP;
 
 	static constexpr auto otp_word_sz = sizeof(otp::BITS);
 };
@@ -181,7 +180,7 @@ struct ocotp::regs {
 ocotp::ocotp(const nxp_imxrt10xx_ocotp_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
 {
-	static_assert(sizeof(regs) == 0x8C0, "");
+	static_assert(sizeof(regs) == 0x900, "");
 	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
 
 	uint32_t wait = clocks(d->clock, tSP_RD) - 1;
