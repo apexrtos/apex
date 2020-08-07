@@ -8,6 +8,7 @@
 #include <dev/regulator/voltage/regulator.h>
 #include <device.h>
 #include <errno.h>
+#include <fs/file.h>
 #include <linux/major.h>
 #include <linux/mmc/ioctl.h>
 #include <string_utils.h>
@@ -15,6 +16,26 @@
 #include <sys/mman.h>
 
 namespace mmc::mmc {
+
+namespace {
+
+int
+rpmb_ioctl(file *f, unsigned long c, void *a)
+{
+	return reinterpret_cast<device *>(f->f_data)->ioctl(
+						partition::rpmb, c, a);
+}
+
+const devio rpmb_io{
+	.open = nullptr,
+	.close = nullptr,
+	.read = nullptr,
+	.write = nullptr,
+	.seek = nullptr,
+	.ioctl = rpmb_ioctl,
+};
+
+}
 
 /*
  * device::device
@@ -31,6 +52,18 @@ device::~device()
 	info("%s: MMC device %.*s%sdetached\n",
 	    h_->name(), cid_.pnm().size(), cid_.pnm().data(),
 	    *cid_.pnm().data() ? " " : "");
+
+	if (rpmb_dev_) {
+		/* hide device node */
+		device_hide(rpmb_dev_);
+
+		/* wait for active operations to complete */
+		while (device_busy(rpmb_dev_))
+			timer_delay(10e6);
+
+		/* destroy device */
+		device_destroy(rpmb_dev_);
+	}
 }
 
 /*
@@ -609,16 +642,6 @@ device::add_partitions()
 		partitions_.emplace_back(this, dev, partition::boot2, sz);
 	}
 
-	if (ext_csd_.rpmb_size_mult()) {
-		const auto sz = ext_csd_.rpmb_size_mult() * 128 * 1024ul;
-		snprintf(b, 32, "%srpmb", root->name);
-		if (!(dev = device_reserve(b, false)))
-			return DERR(-ENOMEM);
-		info("%s: rpmb partition %s %s\n", h_->name(),
-		    dev->name, hr_size_fmt(sz, b, 32));
-		partitions_.emplace_back(this, dev, partition::rpmb, sz);
-	};
-
 	for (auto p : {partition::gp1, partition::gp2, partition::gp3,
 	    partition::gp4}) {
 		const auto sz = ext_csd_.gp_size_mult_gpp(p) * usr_gp_scale;
@@ -635,6 +658,16 @@ device::add_partitions()
 		    ext == ext_partitions_attribute::non_persistent ? " (non-persistent)" : "");
 		partitions_.emplace_back(this, dev, p, sz);
 	}
+
+	/* RPMB is not a block device, so don't treat it as such */
+	if (ext_csd_.rpmb_size_mult()) {
+		const auto sz = ext_csd_.rpmb_size_mult() * 128 * 1024ul;
+		snprintf(b, 32, "%srpmb", root->name);
+		if (!(rpmb_dev_ = device_create(&rpmb_io, b, DF_CHR, this)))
+			return DERR(-ENOMEM);
+		info("%s: rpmb partition %s %s\n", h_->name(),
+		    dev->name, hr_size_fmt(sz, b, 32));
+	};
 
 	return 0;
 }

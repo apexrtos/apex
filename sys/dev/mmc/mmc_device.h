@@ -10,6 +10,7 @@
 #include <list>
 #include <memory>
 
+struct device;
 struct iovec;
 
 namespace mmc::mmc {
@@ -39,6 +40,7 @@ private:
 	ext_csd ext_csd_;
 	unsigned sector_size_;
 	std::list<block> partitions_;
+	::device *rpmb_dev_ = nullptr;
 
 	mode_t v_mode() const override;
 
