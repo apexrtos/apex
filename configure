@@ -177,7 +177,7 @@ parse_config()
 				;;
 			\{*)
 				# driver a/b/x{...} -> x_init(&(struct x_desc){...});
-				decls="const struct $c_name""_desc"" desc = $args;"
+				decls="static const struct $c_name""_desc"" desc = $args;"
 				args="(&desc)"
 				;;
 			esac
