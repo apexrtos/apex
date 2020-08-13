@@ -42,6 +42,7 @@
 #include <futex.h>
 #include <kernel.h>
 #include <kmem.h>
+#include <page.h>
 #include <sch.h>
 #include <sched.h>
 #include <sections.h>
@@ -76,17 +77,17 @@ static struct thread *
 thread_alloc(long mem_attr)
 {
 	struct thread *th;
-	void *stack;
+	phys *stack;
 
 	if ((th = kmem_alloc(sizeof(*th), MA_FAST)) == NULL)
 		return NULL;
 
-	if ((stack = kmem_alloc(CONFIG_KSTACK_SIZE, mem_attr)) == NULL) {
+	if ((stack = page_alloc(CONFIG_KSTACK_SIZE, mem_attr, th)) == NULL) {
 		kmem_free(th);
 		return NULL;
 	}
 	memset(th, 0, sizeof(*th));
-	th->kstack = stack;
+	th->kstack = phys_to_virt(stack);
 	th->magic = THREAD_MAGIC;
 #if defined(CONFIG_KSTACK_CHECK)
 	memset(th->kstack, 0xaa, CONFIG_KSTACK_SIZE);
@@ -105,7 +106,7 @@ thread_free(struct thread *th)
 
 	th->magic = 0;
 	context_free(&th->ctx);
-	kmem_free(th->kstack);
+	page_free(virt_to_phys(th->kstack), CONFIG_KSTACK_SIZE, th);
 	kmem_free(th);
 }
 

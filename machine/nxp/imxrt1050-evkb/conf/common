@@ -1,7 +1,7 @@
 /*
  * Kernel
  */
-memory KSTACK_SIZE	4048	    // Kernel stack size
+memory KSTACK_SIZE	4096	    // Kernel stack size
 memory IRQSTACK_SIZE	4096	    // IRQ stack size
 option TIME_SLICE_MS	50	    // milliseconds
 option HZ		1000
