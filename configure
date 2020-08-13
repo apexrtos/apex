@@ -161,10 +161,11 @@ parse_config()
 			;;
 		driver*)
 			order=$(expr "$cmd" : 'driver\(.*\)')
-			path=$(expr "$rest" : '\([^({[:space:]]*\)')
+			path=$(expr "$rest" : '\([^({<[:space:]]*\)')
 			name=$(expr "$path" : '.*dev/\(.*\)')
 			name=${name:="$path"}
 			c_name=$(echo "$name" | tr '/-' '_')
+			template=$(expr "$rest" : '[^({<]*\([^({]*>\)')
 			decls=
 			args=$(expr "$rest" : '[^{(]*\(.*\)')
 			case $args in
@@ -187,7 +188,7 @@ parse_config()
 
 			if [ "x$args" != x ]; then
 				echo "#include <$path/init.h>" >> "$DRIVERS_H"
-				echo "/* $order */ { $decls $c_name""_init$args; }" >> "$DRIVERS_C"
+				echo "/* $order */ { $decls $c_name""_init$template$args; }" >> "$DRIVERS_C"
 			fi
 			echo "CONFIG_DRIVER_LIST += $path" >> "$CONFIG_MK"
 			;;
