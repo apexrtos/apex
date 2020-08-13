@@ -48,6 +48,7 @@ SOURCES := \
     kern/task.c \
     kern/thread.c \
     kern/timer.c \
+    lib/crypto/sha256.cpp \
     lib/errno.c \
     lib/jhash3.c \
     lib/queue.c \
