@@ -37,6 +37,7 @@
 #include <assert.h>
 #include <event.h>
 #include <sch.h>
+#include <sig.h>
 #include <stdalign.h>
 
 struct cond_private {
@@ -61,12 +62,21 @@ cond_init(struct cond *c)
 }
 
 /*
- * cond_wait_interruptible - Wait on a condition for ever.
+ * cond_wait - Wait on a condition.
  */
 int
 cond_wait_interruptible(struct cond *c, struct mutex *m)
 {
 	return cond_timedwait_interruptible(c, m, 0);
+}
+
+int
+cond_wait(struct cond *c, struct mutex *m)
+{
+	const k_sigset_t sig_mask = sig_block_all();
+	const int ret = cond_wait_interruptible(c, m);
+	sig_restore(&sig_mask);
+	return ret;
 }
 
 /*
@@ -93,6 +103,15 @@ cond_timedwait_interruptible(struct cond *c, struct mutex *m,
 	r = sch_continue_sleep();
 	mutex_lock(m);
 	return r;
+}
+
+int
+cond_timedwait(struct cond *c, struct mutex *m, uint_fast64_t nsec)
+{
+	const k_sigset_t sig_mask = sig_block_all();
+	const int ret = cond_timedwait_interruptible(c, m, nsec);
+	sig_restore(&sig_mask);
+	return ret;
 }
 
 /*
