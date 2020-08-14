@@ -324,7 +324,7 @@ page_alloc_order(const size_t o, unsigned long attr, void *owner)
 		}
 	}
 
-	if (attr & PAF_NO_SPEED_FALLBACK)
+	if (attr & PAF_EXACT_SPEED)
 		return 0;
 
 	/* find any speed region with closest matching attributes */

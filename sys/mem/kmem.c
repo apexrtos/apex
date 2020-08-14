@@ -237,7 +237,7 @@ kmem_alloc_internal(size_t size, unsigned type)
 	} else {
 		/* No block found. Allocate new page */
 		phys *const pp = page_alloc_order(0,
-		    type_to_attr(type) | PAF_NO_SPEED_FALLBACK, &kern_task);
+		    type_to_attr(type) | PAF_EXACT_SPEED, &kern_task);
 		if (!pp)
 			goto out;
 		pg = (struct page_hdr *)phys_to_virt(pp);
