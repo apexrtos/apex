@@ -402,6 +402,6 @@ nxp_imxrt10xx_ocotp_init(const nxp_imxrt10xx_ocotp_desc *d)
 		.write = ocotp_write_iov,
 	};
 
-	if (!device_create(&io, d->name, DF_CHR, &mem))
+	if (!device_create(&io, d->name, DF_BLK, &mem))
 		DERR(-EINVAL);
 }
