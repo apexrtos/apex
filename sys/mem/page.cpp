@@ -771,7 +771,7 @@ void page_dump(void)
 
 		constexpr auto bufsz = 128;
 		char buf[bufsz], *s = buf;
-		for (int j = r.nr_orders - 2; j >= 0; --j) {
+		for (int j = r.nr_orders - 1; j >= 0; --j) {
 			int n = 0;
 			page *p;
 			list_for_each_entry(p, r.blocks + j, link)
