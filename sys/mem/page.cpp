@@ -51,7 +51,7 @@ struct page {
 };
 
 struct region {
-	long attr;		/* Region attributes, bitfield of MA_* */
+	unsigned long attr;	/* Region attributes, bitfield of MA_* */
 	a::spinlock lock;	/* For pages, blocks & bitmap */
 	phys *begin;		/* First physical address in region */
 	phys *end;		/* Last physical address in region + 1 */
@@ -293,7 +293,7 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
  * returns 0 on failure, physical address otherwise.
  */
 phys *
-page_alloc_order(const size_t o, long attr, void *owner)
+page_alloc_order(const size_t o, unsigned long attr, void *owner)
 {
 	const auto st = attr & PAF_MAPPED ? PG_MAPPED : PG_FIXED;
 
@@ -353,7 +353,7 @@ page_alloc_order(const size_t o, long attr, void *owner)
  * returns 0 on failure, physical address otherwise.
  */
 phys *
-page_alloc(size_t len, long attr, void *owner)
+page_alloc(size_t len, unsigned long attr, void *owner)
 {
 	if (len == 0)
 		return 0;
@@ -377,7 +377,7 @@ page_alloc(size_t len, long attr, void *owner)
  */
 static phys *
 page_reserve(region &r, phys *const addr, const size_t len,
-    const PG_STATE st, long attr, void *owner)
+    const PG_STATE st, unsigned long attr, void *owner)
 {
 	assert(st == PG_HOLE || st == PG_SYSTEM || st == PG_FIXED);
 	if (len == 0)
@@ -415,7 +415,7 @@ page_reserve(region &r, phys *const addr, const size_t len,
  * returns 0 on failure, physical address otherwise.
  */
 static phys *
-page_reserve(phys *addr, size_t len, const PG_STATE st, long attr,
+page_reserve(phys *addr, size_t len, const PG_STATE st, unsigned long attr,
 	     void *owner)
 {
 	auto *r = find_region(addr, len);
@@ -432,7 +432,7 @@ page_reserve(phys *addr, size_t len, const PG_STATE st, long attr,
  * returns 0 on failure, physical address otherwise.
  */
 phys *
-page_reserve(phys *addr, size_t len, long attr, void *owner)
+page_reserve(phys *addr, size_t len, unsigned long attr, void *owner)
 {
 	const auto st = attr & PAF_MAPPED ? PG_MAPPED : PG_FIXED;
 
@@ -557,7 +557,7 @@ page_valid(const phys *addr, size_t len, void *owner)
 /*
  * page_attr - retrieve page attributes
  */
-long
+unsigned long
 page_attr(const phys *addr, size_t len)
 {
 	/* no need to lock - we aren't modifying anything, and after page_init

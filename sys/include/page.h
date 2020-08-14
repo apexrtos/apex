@@ -16,21 +16,21 @@ struct bootargs;
 struct meminfo {
 	phys *base;		    /* start address */
 	size_t size;		    /* size in bytes */
-	long attr;		    /* bitfield of MA_... attributes */
+	unsigned long attr;	    /* bitfield of MA_... attributes */
 };
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
 
-phys   *page_alloc_order(size_t order, long ma_paf, void *);
-phys   *page_alloc(size_t, long ma_paf, void *);
-phys   *page_reserve(phys *, size_t, long paf, void *);
-int	page_free(phys *, size_t, void *);
-bool	page_valid(const phys *, size_t, void *);
-long	page_attr(const phys *, size_t len);
-void	page_init(const struct meminfo *, size_t, const struct bootargs *);
-void	page_dump(void);
+phys *page_alloc_order(size_t order, unsigned long ma_paf, void *);
+phys *page_alloc(size_t, unsigned long ma_paf, void *);
+phys *page_reserve(phys *, size_t, unsigned long paf, void *);
+int page_free(phys *, size_t, void *);
+bool page_valid(const phys *, size_t, void *);
+unsigned long page_attr(const phys *, size_t len);
+void page_init(const struct meminfo *, size_t, const struct bootargs *);
+void page_dump(void);
 
 #if defined(__cplusplus)
 } /* extern "C" */
