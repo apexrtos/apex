@@ -31,6 +31,7 @@
 #define sync_h
 
 #include <conf/config.h>
+#include <errno.h>
 #include <types.h>
 
 #if defined(__cplusplus)
@@ -142,9 +143,58 @@ public:
 	int lock() { return mutex_lock(&m_); }
 	int unlock() { return mutex_unlock(&m_); }
 	void assert_locked() const { mutex_assert_locked(&m_); }
+	::mutex *native_handle() { return &m_; }
 
 private:
 	::mutex m_;
+};
+
+/*
+ * a::condition_variable - Apex c++ condition variable wrapper
+ */
+class condition_variable final {
+public:
+	condition_variable() { cond_init(&c_); }
+	condition_variable(condition_variable &&) = delete;
+	condition_variable(const condition_variable &) = delete;
+	condition_variable &operator=(condition_variable &&) = delete;
+	condition_variable &operator=(const condition_variable &) = delete;
+
+	void
+	wait(std::unique_lock<mutex> &m)
+	{
+		cond_wait(&c_, m.mutex()->native_handle());
+	}
+
+	int
+	wait(std::unique_lock<mutex> &m, const auto &pred)
+	{
+		while (!pred())
+			wait(m);
+		return 0;
+	}
+
+	int
+	wait_interruptible(std::unique_lock<mutex> &m)
+	{
+		return cond_wait_interruptible(&c_, m.mutex()->native_handle());
+	}
+
+	int
+	wait_interruptible(std::unique_lock<mutex> &m, const auto &pred)
+	{
+		while (!pred()) {
+			if (wait_interruptible(m) == -EINTR)
+				return -EINTR;
+		}
+		return 0;
+	}
+
+	void notify_one() { cond_signal(&c_); }
+	void notify_all() { cond_broadcast(&c_); }
+
+private:
+	::cond c_;
 };
 
 /*
