@@ -54,18 +54,21 @@ machine_init(bootargs *args)
 			.base = (phys*)CONFIG_DRAM_BASE_PHYS,
 			.size = CONFIG_DRAM_SIZE,
 			.attr = MA_SPEED_0 | MA_DMA,
+			.priority = 0,
 		},
 		/* DTCM */
 		{
 			.base = (phys*)CONFIG_DTCM_BASE_PHYS,
 			.size = CONFIG_DTCM_SIZE,
 			.attr = MA_SPEED_2 | MA_SECURE,
+			.priority = 2,
 		},
 		/* DMA */
 		{
 			.base = (phys*)CONFIG_DMA_BASE_PHYS,
 			.size = CONFIG_DMA_SIZE,
 			.attr = MA_SPEED_1 | MA_DMA | MA_CACHE_COHERENT | MA_SECURE,
+			.priority = 3,
 		},
 #if defined(CONFIG_SRAM_SIZE)
 		/* SRAM */
@@ -73,6 +76,7 @@ machine_init(bootargs *args)
 			.base = (phys*)CONFIG_SRAM_BASE_PHYS,
 			.size = CONFIG_SRAM_SIZE,
 			.attr = MA_SPEED_1 | MA_DMA | MA_SECURE,
+			.priority = 1,
 		},
 #endif
 	};

@@ -61,6 +61,7 @@ struct region {
 	size_t size;		/* Total size of region */
 	size_t nr_orders;	/* size = PAGE_SIZE * 2^nr_orders */
 	size_t nr_pages;	/* Number of pages in pages array */
+	unsigned priority;	/* Region priority */
 	page *pages;		/* Page descriptors */
 	list *blocks;		/* Linked list of free blocks for each order */
 	unsigned long *bitmap;	/* Bitmap of allocated ranges */
@@ -68,7 +69,7 @@ struct region {
 
 static struct {
 	region *regions;
-	region **regions_by_speed;
+	region **regions_by_priority;
 	size_t nr_regions;
 } s;
 
@@ -295,7 +296,10 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
 phys *
 page_alloc_order(const size_t o, unsigned long attr, void *owner)
 {
+	/* extract page allocation flags */
 	const auto st = attr & PAF_MAPPED ? PG_MAPPED : PG_FIXED;
+	const auto exact_speed = attr & PAF_EXACT_SPEED;
+	attr &= ~PAF_MASK;
 
 	/* find_block returns first page of free block with order >= o */
 	auto find_block = [](const region &r, const size_t o) -> ptrdiff_t {
@@ -309,36 +313,29 @@ page_alloc_order(const size_t o, unsigned long attr, void *owner)
 		return -1;
 	};
 
-	const auto fallbacks = {0, MA_DMA, MA_DMA | MA_CACHE_COHERENT};
-
-	/* find matching speed region with closest matching attributes */
-	for (unsigned long mask : fallbacks) {
+	while (true) {
+		/* find first region with compatible attributes */
 		for (size_t i = 0; i < s.nr_regions; ++i) {
-			auto &r = s.regions[i];
-			if ((r.attr & ~mask) != (attr & ~PAF_MASK))
+			auto &r = *s.regions_by_priority[i];
+			if ((r.attr & attr) != attr)
+				continue;
+			if (exact_speed &&
+			    (r.attr & MA_SPEED_MASK) != (attr & MA_SPEED_MASK))
 				continue;
 			std::lock_guard l(r.lock);
 			const auto p = find_block(r, o);
 			if (p != -1)
 				return do_alloc(r, p, o, st, owner);
 		}
-	}
 
-	if (attr & PAF_EXACT_SPEED)
+		/* try again allowing slower regions */
+		if (!exact_speed && attr & MA_SPEED_MASK) {
+			attr &= ~MA_SPEED_MASK;
+			continue;
+		}
+
+		/* can't find suitable pages */
 		return 0;
-
-	/* find any speed region with closest matching attributes */
-	for (unsigned long mask : fallbacks) {
-		for (size_t i = 0; i < s.nr_regions; ++i) {
-			auto &r = *s.regions_by_speed[i];
-			if ((r.attr & ~mask & ~MA_SPEED_MASK) !=
-			    (attr & ~MA_SPEED_MASK & ~PAF_MASK))
-				continue;
-			std::lock_guard l(r.lock);
-			const auto p = find_block(r, o);
-			if (p != -1)
-				return do_alloc(r, p, o, st, owner);
-		}
 	}
 
 	return 0;
@@ -660,7 +657,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 
 	/* allocate regions */
 	s.regions = (region*)alloc(sizeof *s.regions * s.nr_regions);
-	s.regions_by_speed = (region**)alloc(sizeof(s.regions) * s.nr_regions);
+	s.regions_by_priority = (region**)alloc(sizeof(s.regions) * s.nr_regions);
 
 	/* initialise regions & pages in ascending address order */
 	phys *init_addr = nullptr;
@@ -685,6 +682,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 		const size_t max_order = ceil_log2(r.size);
 		r.nr_orders = max_order - floor_log2(PAGE_SIZE) + 1;
 		r.nr_pages = 1 << (r.nr_orders - 1);
+		r.priority = m->priority;
 		r.size = r.nr_pages * PAGE_SIZE;
 		r.usable = r.size;
 		r.free = r.size;
@@ -730,17 +728,15 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	if (!page_reserve(m_begin, m_alloc - m_begin, PG_SYSTEM, 0, &page_id))
 		panic("bug");
 
-	/* initialise regions_by_speed */
-	unsigned spd_idx = 0;
-	for (int spd : {MA_SPEED_0, MA_SPEED_1, MA_SPEED_2, MA_SPEED_3}) {
+	/* initialise regions_by_priority */
+	for (size_t priority = 0, pri_idx = 0; pri_idx < s.nr_regions;) {
 		for (size_t i = 0; i < s.nr_regions; ++i) {
 			auto &r = s.regions[i];
-			if ((r.attr & MA_SPEED_MASK) != spd)
-				continue;
-			s.regions_by_speed[spd_idx++] = &r;
+			if (r.priority == priority)
+				s.regions_by_priority[pri_idx++] = &r;
 		}
+		++priority;
 	}
-	assert(spd_idx == s.nr_regions);
 
 #if defined(CONFIG_DEBUG)
 	page_dump();
@@ -771,6 +767,7 @@ void page_dump(void)
 		info("  free      %zu\n", r.free);
 		info("  nr_orders %zu\n", r.nr_orders);
 		info("  nr_pages  %zu\n", r.nr_pages);
+		info("  priority  %u\n", r.priority);
 
 		constexpr auto bufsz = 128;
 		char buf[bufsz], *s = buf;

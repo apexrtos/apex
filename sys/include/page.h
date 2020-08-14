@@ -17,6 +17,7 @@ struct meminfo {
 	phys *base;		    /* start address */
 	size_t size;		    /* size in bytes */
 	unsigned long attr;	    /* bitfield of MA_... attributes */
+	unsigned priority;	    /* lowest priority allocated first */
 };
 
 #if defined(__cplusplus)

@@ -18,6 +18,7 @@ machine_init(bootargs *args)
 			.base = (phys *)CONFIG_RAM_BASE_PHYS,
 			.size = CONFIG_RAM_SIZE,
 			.attr = MA_SPEED_0,
+			.priority = 0,
 		},
 	};
 	page_init(memory, ARRAY_SIZE(memory), args);
