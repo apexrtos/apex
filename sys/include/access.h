@@ -43,6 +43,8 @@ bool	u_addressfor(const struct as *, const void *);
 #if defined(__cplusplus)
 } /* extern "C" */
 
+#include <string_view>
+
 namespace a {
 
 class u_access {
@@ -52,6 +54,8 @@ public:
 };
 
 } /* namespace a */
+
+std::string_view u_string(const char *, size_t);
 
 inline constexpr a::u_access u_access_lock;
 
