@@ -759,11 +759,12 @@ void page_dump(void)
 		const region &r = s.regions[i];
 #endif
 		info(" %p -> %p\n", r.begin, r.end);
-		info("  attr      speed %ld%s%s%s\n",
+		info("  attr      speed %ld%s%s%s%s\n",
 		    r.attr & MA_SPEED_MASK,
 		    r.attr & MA_DMA ? ", dma" : "",
 		    r.attr & MA_CACHE_COHERENT ? ", coherent" : "",
-		    r.attr & MA_PERSISTENT ? ", persistent" : "");
+		    r.attr & MA_PERSISTENT ? ", persistent" : "",
+		    r.attr & MA_SECURE ? ", secure" : "");
 		info("  base      %p\n", r.base);
 		info("  size      %zu\n", r.size);
 		info("  usable    %zu\n", r.usable);

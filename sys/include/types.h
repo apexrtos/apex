@@ -26,6 +26,7 @@ typedef struct k_sigset_t { unsigned long __bits[_NSIG / 8 / sizeof(long)]; } k_
 #define MA_DMA 0x4		    /* memory is suitable for DMA */
 #define MA_CACHE_COHERENT 0x8	    /* memory is cache coherent */
 #define MA_PERSISTENT 0x10	    /* memory is persistent */
+#define MA_SECURE 0x20		    /* memory is secure */
 
 #define MA_NORMAL CONFIG_MA_NORMAL_ATTR
 #define MA_FAST CONFIG_MA_FAST_ATTR

@@ -59,20 +59,20 @@ machine_init(bootargs *args)
 		{
 			.base = (phys*)CONFIG_DTCM_BASE_PHYS,
 			.size = CONFIG_DTCM_SIZE,
-			.attr = MA_SPEED_2,
+			.attr = MA_SPEED_2 | MA_SECURE,
 		},
 		/* DMA */
 		{
 			.base = (phys*)CONFIG_DMA_BASE_PHYS,
 			.size = CONFIG_DMA_SIZE,
-			.attr = MA_SPEED_1 | MA_DMA | MA_CACHE_COHERENT,
+			.attr = MA_SPEED_1 | MA_DMA | MA_CACHE_COHERENT | MA_SECURE,
 		},
 #if defined(CONFIG_SRAM_SIZE)
 		/* SRAM */
 		{
 			.base = (phys*)CONFIG_SRAM_BASE_PHYS,
 			.size = CONFIG_SRAM_SIZE,
-			.attr = MA_SPEED_1 | MA_DMA,
+			.attr = MA_SPEED_1 | MA_DMA | MA_SECURE,
 		},
 #endif
 	};
