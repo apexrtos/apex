@@ -129,9 +129,13 @@ namespace a {
 /*
  * a::mutex - Apex c++ mutex wrapper
  */
-class mutex {
+class mutex final {
 public:
 	mutex() { mutex_init(&m_); }
+	mutex(mutex &&) = delete;
+	mutex(const mutex &) = delete;
+	mutex &operator=(mutex &&) = delete;
+	mutex &operator=(const mutex &) = delete;
 	int interruptible_lock() { return mutex_lock_interruptible(&m_); }
 	int lock() { return mutex_lock(&m_); }
 	int unlock() { return mutex_unlock(&m_); }
@@ -149,19 +153,23 @@ class rwlock_write;
 class rwlock {
 public:
 	rwlock() { rwlock_init(&m_); }
+	rwlock(rwlock &&) = delete;
+	rwlock(const rwlock &) = delete;
+	rwlock &operator=(rwlock &&) = delete;
+	rwlock &operator=(const rwlock &) = delete;
 	rwlock_read &read();
 	rwlock_write &write();
 
 protected:
 	::rwlock m_;
 };
-class rwlock_read : public rwlock {
+class rwlock_read final : public rwlock {
 public:
 	int interruptible_lock() { return rwlock_read_lock_interruptible(&m_); }
 	void unlock() { rwlock_read_unlock(&m_); }
 	bool locked() { return rwlock_read_locked(&m_); }
 };
-class rwlock_write : public rwlock {
+class rwlock_write final : public rwlock {
 public:
 	int interruptible_lock() { return rwlock_write_lock_interruptible(&m_); }
 	void unlock() { rwlock_write_unlock(&m_); }
@@ -173,9 +181,13 @@ inline rwlock_write &rwlock::write() { return static_cast<rwlock_write &>(*this)
 /*
  * a::spinlock - Apex c++ spinlock wrapper
  */
-class spinlock {
+class spinlock final {
 public:
 	spinlock() { spinlock_init(&s_); }
+	spinlock(spinlock &&) = delete;
+	spinlock(const spinlock &) = delete;
+	spinlock &operator=(spinlock &&) = delete;
+	spinlock &operator=(const spinlock &) = delete;
 	void lock() { spinlock_lock(&s_); }
 	void unlock() { spinlock_unlock(&s_); }
 	void assert_locked() const { spinlock_assert_locked(&s_); }
@@ -187,9 +199,13 @@ private:
 /*
  * a::spinlock_irq - Apex c++ irq disabling spinlock wrapper
  */
-class spinlock_irq {
+class spinlock_irq final {
 public:
 	spinlock_irq() { spinlock_init(&s_); }
+	spinlock_irq(spinlock_irq &&) = delete;
+	spinlock_irq(const spinlock_irq &) = delete;
+	spinlock_irq &operator=(spinlock_irq &&) = delete;
+	spinlock_irq &operator=(const spinlock_irq &) = delete;
 	int lock() { return spinlock_lock_irq_disable(&s_); }
 	void unlock(int v) { spinlock_unlock_irq_restore(&s_, v); }
 	void assert_locked() const { spinlock_assert_locked(&s_); }
@@ -201,9 +217,13 @@ private:
 /*
  * a::semaphore - Apex c++ semaphore wrapper
  */
-class semaphore {
+class semaphore final {
 public:
 	semaphore() { semaphore_init(&s_); }
+	semaphore(semaphore &&) = delete;
+	semaphore(const semaphore &) = delete;
+	semaphore &operator=(semaphore &&) = delete;
+	semaphore &operator=(const semaphore &) = delete;
 	int post() { return semaphore_post(&s_); }
 	int wait_interruptible() { return semaphore_wait_interruptible(&s_); }
 
