@@ -1,6 +1,8 @@
 #ifndef compiler_h
 #define compiler_h
 
+#include <stdint.h>
+
 #if defined(__cplusplus)
 #include <type_traits>
 #endif
