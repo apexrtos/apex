@@ -335,7 +335,7 @@ ocotp::write(file *f, void *buf, size_t len, off_t off)
 		static_assert(sizeof(tmp) == regs::otp_word_sz);
 		memcpy(&tmp, static_cast<char *>(buf) + i * regs::otp_word_sz, regs::otp_word_sz);
 
-		trace("index: %llu data: 0x%04x\n", addr, tmp);
+		trace("index: %llu data: 0x%08x\n", addr, tmp);
 
 		write32(&r_->CTRL, [&]{
 			decltype(r_->CTRL) v{};
