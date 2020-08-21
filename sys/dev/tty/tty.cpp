@@ -319,7 +319,6 @@ tty::write(file *f, const void *buf, size_t len)
 	const char *it = begin;
 
 	auto rval = [&](int rc) {
-		assert(rc < 0);
 		return it == begin ? rc : it - begin;
 	};
 
@@ -340,7 +339,7 @@ tty::write(file *f, const void *buf, size_t len)
 		tx_start();
 
 		if (f->f_flags & O_NONBLOCK)
-			return it == begin ? -EAGAIN : it - begin;
+			return rval(-EAGAIN);
 
 		if (it != end) {
 			/* sleep until output queue drains */
@@ -354,7 +353,7 @@ tty::write(file *f, const void *buf, size_t len)
 				return rval(rc);
 		}
 	}
-	return it - begin;
+	return rval(0);
 }
 
 /*
