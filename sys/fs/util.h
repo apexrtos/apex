@@ -27,6 +27,8 @@ ssize_t	for_each_iov(struct file *, const struct iovec *, size_t, off_t,
 #if defined(__cplusplus)
 }
 
+#include <span>
+
 /*
  * for_each_iov - C++ version of for_each_iov
  */
@@ -37,7 +39,11 @@ for_each_iov(file *fp, const iovec *iov, size_t count, off_t offset, Fn &&fn)
 	ssize_t total = 0;
 	ssize_t res = 0;
 	while (count--) {
-		if ((res = fn(iov->iov_base, iov->iov_len, offset + total)) < 0)
+		const std::span<std::byte> buf{
+			reinterpret_cast<std::byte *>(iov->iov_base),
+			iov->iov_len
+		};
+		if ((res = fn(buf, offset + total)) < 0)
 			break;
 		total += res;
 		if ((size_t)res != iov->iov_len)

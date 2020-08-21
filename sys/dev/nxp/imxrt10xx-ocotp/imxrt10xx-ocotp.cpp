@@ -256,69 +256,67 @@ ocotp::check_and_clear_error()
 }
 
 ssize_t
-ocotp::read(void *buf, size_t len, off_t off)
+ocotp::read(std::span<std::byte> buf, off_t off)
 {
-	/* check if buffer available */
-	if (!buf)
+	if (!data(buf))
 		return DERR(-EFAULT);
 
 	/* check if word aligned */
-	if (len % regs::otp_word_sz || off % regs::otp_word_sz)
+	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz)
 		return DERR(-EINVAL);
 
 	/* bytes are passed in - convert to words */
 	off /= regs::otp_word_sz;
-	len /= regs::otp_word_sz;
+	auto words{size(buf) / regs::otp_word_sz};
 
 	/* check if requested index is beyond the available */
 	if (off >= std::size(r_->OTP))
 		return 0;
 
 	/* clip read size to maximum OTP registers */
-	len = std::min<size_t>(std::size(r_->OTP) - off, len);
+	words = std::min(std::size(r_->OTP) - static_cast<size_t>(off), words);
 
-	trace("ocotp::read index: %lld len: %d\n", off, len);
+	trace("ocotp::read index: %lld words: %d\n", off, words);
 
 	std::lock_guard l{mutex_};
-	for (auto i = 0u; i != len; ++i) {
+	for (auto i = 0u; i != words; ++i) {
 		auto tmp = read32(&r_->OTP[i+off].BITS);
 		static_assert(sizeof(tmp) == regs::otp_word_sz);
-		memcpy(static_cast<char *>(buf) + i * regs::otp_word_sz, &tmp, regs::otp_word_sz);
+		memcpy(data(buf) + i * regs::otp_word_sz, &tmp, regs::otp_word_sz);
 		if (tmp == read_locked_val) {
 			check_and_clear_error();
 			trace("OCOTP(%p) Failed to read locked region: %u\n",
 				r_, i);
 		}
 	}
-	return len * regs::otp_word_sz;
+	return words * regs::otp_word_sz;
 }
 
 ssize_t
-ocotp::write(void *buf, size_t len, off_t off)
+ocotp::write(std::span<const std::byte> buf, off_t off)
 {
-	/* check if buffer available */
-	if (!buf)
+	if (!data(buf))
 		return DERR(-EFAULT);
 
 	/* check if word aligned */
-	if (len % regs::otp_word_sz || off % regs::otp_word_sz)
+	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz)
 		return DERR(-EINVAL);
 
 	/* bytes are passed in - convert to words */
 	off /= regs::otp_word_sz;
-	len /= regs::otp_word_sz;
+	auto words{size(buf) / regs::otp_word_sz};
 
 	/* check if requested index is beyond the available */
 	if (off >= std::size(r_->OTP))
 		return 0;
 
 	/* clip read size to maximum OTP registers */
-	len = std::min<size_t>(std::size(r_->OTP) - off, len);
+	words = std::min(std::size(r_->OTP) - static_cast<size_t>(off), words);
 
-	trace("ocotp::write index: %lld count: %d\n", off, len);
+	trace("ocotp::write index: %lld words: %d\n", off, words);
 
 	std::lock_guard l{mutex_};
-	for (auto i = 0u; i != len; ++i) {
+	for (auto i = 0u; i != words; ++i) {
 		/* 
 		* i.MX RT1060 reference manual as at
 		* Rev. 2, 12/2019 23.6.1.35 Value of OTP Bank7 Word0 (GP3) (GP30)
@@ -332,7 +330,7 @@ ocotp::write(void *buf, size_t len, off_t off)
 
 		uint32_t tmp;
 		static_assert(sizeof(tmp) == regs::otp_word_sz);
-		memcpy(&tmp, static_cast<char *>(buf) + i * regs::otp_word_sz, regs::otp_word_sz);
+		memcpy(&tmp, data(buf) + i * regs::otp_word_sz, regs::otp_word_sz);
 
 		trace("index: %llu data: 0x%08x\n", addr, tmp);
 
@@ -360,7 +358,7 @@ ocotp::write(void *buf, size_t len, off_t off)
 	}
 
 	reload_shadow();
-	return len * regs::otp_word_sz;
+	return words * regs::otp_word_sz;
 }
 
 }
@@ -369,8 +367,8 @@ ssize_t
 ocotp_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
 	return for_each_iov(f, iov, count, offset,
-	    [](void *buf, size_t len, off_t offset) {
-		return imxrt10xx::ocotp::inst()->read(buf, len, offset);
+	    [](std::span<std::byte> buf, off_t offset) {
+		return imxrt10xx::ocotp::inst()->read(buf, offset);
 	});
 }
 
@@ -378,8 +376,8 @@ ssize_t
 ocotp_write_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
 	return for_each_iov(f, iov, count, offset,
-	    [](void *buf, size_t len, off_t offset) {
-		return imxrt10xx::ocotp::inst()->write(buf, len, offset);
+	    [](std::span<const std::byte> buf, off_t offset) {
+		return imxrt10xx::ocotp::inst()->write(buf, offset);
 	});
 }
 

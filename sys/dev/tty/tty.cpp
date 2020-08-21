@@ -55,8 +55,8 @@ public:
 	/* interface to filesystem */
 	int open(file *);
 	int close(file *);
-	ssize_t read(file *, void *, size_t);
-	ssize_t write(file *, const void *, size_t);
+	ssize_t read(file *, std::span<std::byte>);
+	ssize_t write(file *, std::span<const std::byte>);
 	int ioctl(file *, u_long, void *);
 	void terminate();
 
@@ -224,7 +224,7 @@ tty::close(file *f)
  * tty::read - read data from a tty
  */
 ssize_t
-tty::read(file *f, void *buf, const size_t len)
+tty::read(file *f, std::span<std::byte> buf)
 {
 	auto rx_avail = [&] {
 		return rxq_cooked_ != rxq_.begin();
@@ -236,7 +236,7 @@ tty::read(file *f, void *buf, const size_t len)
 	 * task address space can change while access is suspended
 	 */
 	auto ua = u_access_suspend();
-	if (auto r = u_access_resume(ua, buf, len, PROT_WRITE); r)
+	if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_WRITE); r)
 		return r;
 
 	std::unique_lock sl{state_lock_};
@@ -246,7 +246,7 @@ tty::read(file *f, void *buf, const size_t len)
 	if (f->f_flags & O_NONBLOCK && !rx_avail())
 		return -EAGAIN;
 
-	if (!buf)
+	if (!data(buf))
 		return DERR(-EFAULT);
 
 	/* wait for input */
@@ -262,7 +262,7 @@ tty::read(file *f, void *buf, const size_t len)
 		sl.unlock();
 		auto ua = u_access_suspend();
 		auto rc = sch_continue_sleep();
-		if (auto r = u_access_resume(ua, buf, len, PROT_WRITE); r)
+		if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_WRITE); r)
 			rc = r;
 		if (rc)
 			return rc;
@@ -279,8 +279,8 @@ tty::read(file *f, void *buf, const size_t len)
 		/* split input on '\n', cc[VEOL], cc[VEOL2] and cc[VEOF], do
 		   not pass cc[VOEF] as input */
 		count = 0;
-		char *cbuf = static_cast<char *>(buf);
-		while (count < len && it < end) {
+		char *cbuf = reinterpret_cast<char *>(data(buf));
+		while (count < size(buf) && it < end) {
 			const char c = *it++;
 			if (c == cc[VEOF])
 				break;
@@ -290,8 +290,8 @@ tty::read(file *f, void *buf, const size_t len)
 				break;
 		}
 	} else {
-		count = std::min<size_t>(len, end - it);
-		rxq_.copy(buf, count);
+		count = std::min<size_t>(size(buf), end - it);
+		rxq_.copy(data(buf), count);
 		it += count;
 	}
 
@@ -312,14 +312,12 @@ tty::read(file *f, void *buf, const size_t len)
  * tty::write - write data to a tty
  */
 ssize_t
-tty::write(file *f, const void *buf, size_t len)
+tty::write(file *f, std::span<const std::byte> buf)
 {
-	const char *begin = static_cast<const char *>(buf);
-	const char *end = begin + len;
-	const char *it = begin;
+	const auto len{size(buf)};
 
 	auto rval = [&](int rc) {
-		return it == begin ? rc : it - begin;
+		return len - size(buf) ?: rc;
 	};
 
 	/*
@@ -328,12 +326,14 @@ tty::write(file *f, const void *buf, size_t len)
 	 * task address space can change while access is suspended
 	 */
 	auto ua = u_access_suspend();
-	if (auto r = u_access_resume(ua, buf, len, PROT_READ); r)
+	if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_READ); r)
 		return r;
 
-	while (it != end) {
+	while (!empty(buf)) {
 		std::unique_lock sl{state_lock_};
-		it += output(it, end - it, false);
+		buf = buf.subspan(output(
+			reinterpret_cast<const char *>(data(buf)), size(buf),
+			false));
 		sl.unlock();
 
 		tx_start();
@@ -341,13 +341,13 @@ tty::write(file *f, const void *buf, size_t len)
 		if (f->f_flags & O_NONBLOCK)
 			return rval(-EAGAIN);
 
-		if (it != end) {
+		if (!empty(buf)) {
 			/* sleep until output queue drains */
 			if (auto r = sch_prepare_sleep(&output_, 0); r)
 				return rval(r);
 			auto ua = u_access_suspend();
 			auto rc = sch_continue_sleep();
-			if (auto r = u_access_resume(ua, buf, len, PROT_READ); r)
+			if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_READ); r)
 				rc = r;
 			if (rc)
 				return rval(rc);
@@ -442,7 +442,7 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 			sl.unlock();
 			if (c == _POSIX_VDISABLE)
 				break;
-			if (int r = write(f, &c, sizeof(c)); r < 0)
+			if (int r = write(f, as_bytes(std::span{&c, 1})); r < 0)
 				return r;
 			break;
 		}
@@ -1184,8 +1184,8 @@ tty_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
 	tty *t = static_cast<tty *>(f->f_data);
 	return for_each_iov(f, iov, count, offset,
-	    [=](void *buf, size_t len, off_t offset) {
-		return t->read(f, buf, len);
+	    [=](std::span<std::byte> buf, off_t offset) {
+		return t->read(f, buf);
 	});
 }
 
@@ -1197,8 +1197,8 @@ tty_write_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
 	tty *t = static_cast<tty *>(f->f_data);
 	return for_each_iov(f, iov, count, offset,
-	    [=](const void *buf, size_t len, off_t offset) {
-		return t->write(f, buf, len);
+	    [=](std::span<const std::byte> buf, off_t offset) {
+		return t->write(f, buf);
 	});
 }
 

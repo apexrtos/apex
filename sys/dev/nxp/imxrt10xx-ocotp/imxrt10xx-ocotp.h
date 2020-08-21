@@ -1,6 +1,7 @@
 #pragma once
 
 #include <device.h>
+#include <span>
 #include <sync.h>
 
 struct nxp_imxrt10xx_ocotp_desc;
@@ -15,8 +16,8 @@ class ocotp {
 public:
 	static ocotp *inst();
 
-	ssize_t read(void *, size_t, off_t);
-	ssize_t write(void *, size_t, off_t);
+	ssize_t read(std::span<std::byte>, off_t);
+	ssize_t write(std::span<const std::byte>, off_t);
 
 private:
 	struct regs;
