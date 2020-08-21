@@ -122,7 +122,7 @@ gadget_ioctl(file *file, unsigned long cmd, void *data)
 extern "C" void
 usb_gadget_init()
 {
-	static devio io = {
+	static constinit devio io{
 		.open = nullptr,
 		.close = nullptr,
 		.read = nullptr,

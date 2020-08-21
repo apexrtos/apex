@@ -29,7 +29,7 @@ rpmb_ioctl(file *f, unsigned long c, void *a)
 						partition::rpmb, c, a);
 }
 
-const devio rpmb_io{
+constinit devio rpmb_io{
 	.open = nullptr,
 	.close = nullptr,
 	.read = nullptr,

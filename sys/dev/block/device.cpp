@@ -43,7 +43,7 @@ block_ioctl(file *f, unsigned long c, void *a)
 	return reinterpret_cast<block::device *>(f->f_data)->ioctl(c, a);
 }
 
-constexpr devio block_io = {
+constinit devio block_io{
 	.open = block_open,
 	.close = block_close,
 	.read = block_read,

@@ -397,7 +397,7 @@ nxp_imxrt10xx_ocotp_init(const nxp_imxrt10xx_ocotp_desc *d)
 	dbg("OCOTP %d.%d.%d initialised\n", v.MAJOR, v.MINOR, v.STEP);
 #endif
 
-	static devio io = {
+	static constinit devio io{
 		.read = ocotp_read_iov,
 		.write = ocotp_write_iov,
 	};

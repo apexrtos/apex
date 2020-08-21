@@ -1250,7 +1250,7 @@ tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
 		return (tty *)DERR(-ENOMEM);
 
 	device *dev;
-	static devio tty_io = {
+	static constinit devio tty_io{
 		.open = tty_open,
 		.close = tty_close,
 		.read = tty_read_iov,
