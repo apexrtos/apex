@@ -267,14 +267,14 @@ ocotp::read(std::span<std::byte> buf, off_t off)
 
 	/* bytes are passed in - convert to words */
 	off /= regs::otp_word_sz;
-	auto words{size(buf) / regs::otp_word_sz};
 
 	/* check if requested index is beyond the available */
 	if (off >= std::size(r_->OTP))
 		return 0;
 
-	/* clip read size to maximum OTP registers */
-	words = std::min(std::size(r_->OTP) - static_cast<size_t>(off), words);
+	/* limit read size to size of OTP registers */
+	const auto words{std::min(size(buf) / regs::otp_word_sz,
+				  std::size(r_->OTP) - static_cast<size_t>(off))};
 
 	trace("ocotp::read index: %lld words: %d\n", off, words);
 
@@ -304,14 +304,14 @@ ocotp::write(std::span<const std::byte> buf, off_t off)
 
 	/* bytes are passed in - convert to words */
 	off /= regs::otp_word_sz;
-	auto words{size(buf) / regs::otp_word_sz};
 
 	/* check if requested index is beyond the available */
 	if (off >= std::size(r_->OTP))
 		return 0;
 
-	/* clip read size to maximum OTP registers */
-	words = std::min(std::size(r_->OTP) - static_cast<size_t>(off), words);
+	/* limit write size to size of OTP registers */
+	const auto words{std::min(size(buf) / regs::otp_word_sz,
+				  std::size(r_->OTP) - static_cast<size_t>(off))};
 
 	trace("ocotp::write index: %lld words: %d\n", off, words);
 
