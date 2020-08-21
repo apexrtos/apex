@@ -262,7 +262,7 @@ ocotp::read(std::span<std::byte> buf, off_t off)
 		return DERR(-EFAULT);
 
 	/* check if word aligned */
-	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz)
+	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz || off < 0)
 		return DERR(-EINVAL);
 
 	/* bytes are passed in - convert to words */
@@ -299,7 +299,7 @@ ocotp::write(std::span<const std::byte> buf, off_t off)
 		return DERR(-EFAULT);
 
 	/* check if word aligned */
-	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz)
+	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz || off < 0)
 		return DERR(-EINVAL);
 
 	/* bytes are passed in - convert to words */
