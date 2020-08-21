@@ -30,11 +30,6 @@ rpmb_ioctl(file *f, unsigned long c, void *a)
 }
 
 constinit devio rpmb_io{
-	.open = nullptr,
-	.close = nullptr,
-	.read = nullptr,
-	.write = nullptr,
-	.seek = nullptr,
 	.ioctl = rpmb_ioctl,
 };
 

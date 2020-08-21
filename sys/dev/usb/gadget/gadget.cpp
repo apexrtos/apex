@@ -123,10 +123,6 @@ extern "C" void
 usb_gadget_init()
 {
 	static constinit devio io{
-		.open = nullptr,
-		.close = nullptr,
-		.read = nullptr,
-		.write = nullptr,
 		.ioctl = gadget_ioctl,
 	};
 	device_create(&io, "usbgadget", DF_CHR, NULL);
