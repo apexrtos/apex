@@ -3,7 +3,6 @@
 #include "init.h"
 #include <algorithm>
 #include <arch.h>
-#include <array>
 #include <chrono>
 #include <debug.h>
 #include <errno.h>
@@ -168,7 +167,7 @@ struct ocotp::regs {
 		uint32_t : 32;
 		uint32_t : 32;
 	};
-	std::array<otp, 80> OTP;
+	otp OTP[80];
 
 	static constexpr auto otp_word_sz = sizeof(otp::BITS);
 };
@@ -272,11 +271,11 @@ ocotp::read(file *f, void *buf, size_t len, off_t off)
 	len /= regs::otp_word_sz;
 
 	/* check if requested index is beyond the available */
-	if (off >= r_->OTP.size())
+	if (off >= std::size(r_->OTP))
 		return 0;
 
 	/* clip read size to maximum OTP registers */
-	len = std::min<size_t>(r_->OTP.size() - off, len);
+	len = std::min<size_t>(std::size(r_->OTP) - off, len);
 
 	trace("ocotp::read index: %lld len: %d\n", off, len);
 
@@ -310,11 +309,11 @@ ocotp::write(file *f, void *buf, size_t len, off_t off)
 	len /= regs::otp_word_sz;
 
 	/* check if requested index is beyond the available */
-	if (off >= r_->OTP.size())
+	if (off >= std::size(r_->OTP))
 		return 0;
 
 	/* clip read size to maximum OTP registers */
-	len = std::min<size_t>(r_->OTP.size() - off, len);
+	len = std::min<size_t>(std::size(r_->OTP) - off, len);
 
 	trace("ocotp::write index: %lld count: %d\n", off, len);
 
