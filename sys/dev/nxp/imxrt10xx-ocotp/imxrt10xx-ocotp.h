@@ -15,9 +15,8 @@ class ocotp {
 public:
 	static ocotp *inst();
 
-	/* interface to filesystem */
-	ssize_t read(file *, void *, size_t, off_t);
-	ssize_t write(file *, void *, size_t, off_t);
+	ssize_t read(void *, size_t, off_t);
+	ssize_t write(void *, size_t, off_t);
 
 private:
 	struct regs;

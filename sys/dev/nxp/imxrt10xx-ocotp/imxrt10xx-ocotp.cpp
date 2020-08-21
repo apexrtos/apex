@@ -256,7 +256,7 @@ ocotp::check_and_clear_error()
 }
 
 ssize_t
-ocotp::read(file *f, void *buf, size_t len, off_t off)
+ocotp::read(void *buf, size_t len, off_t off)
 {
 	/* check if buffer available */
 	if (!buf)
@@ -294,7 +294,7 @@ ocotp::read(file *f, void *buf, size_t len, off_t off)
 }
 
 ssize_t
-ocotp::write(file *f, void *buf, size_t len, off_t off)
+ocotp::write(void *buf, size_t len, off_t off)
 {
 	/* check if buffer available */
 	if (!buf)
@@ -369,8 +369,8 @@ ssize_t
 ocotp_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
 	return for_each_iov(f, iov, count, offset,
-	    [=](void *buf, size_t len, off_t offset) {
-		return imxrt10xx::ocotp::inst()->read(f, buf, len, offset);
+	    [](void *buf, size_t len, off_t offset) {
+		return imxrt10xx::ocotp::inst()->read(buf, len, offset);
 	});
 }
 
@@ -378,8 +378,8 @@ ssize_t
 ocotp_write_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
 	return for_each_iov(f, iov, count, offset,
-	    [=](void *buf, size_t len, off_t offset) {
-		return imxrt10xx::ocotp::inst()->write(f, buf, len, offset);
+	    [](void *buf, size_t len, off_t offset) {
+		return imxrt10xx::ocotp::inst()->write(buf, len, offset);
 	});
 }
 
