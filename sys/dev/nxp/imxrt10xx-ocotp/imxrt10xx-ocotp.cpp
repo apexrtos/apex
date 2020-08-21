@@ -317,13 +317,13 @@ ocotp::write(std::span<const std::byte> buf, off_t off)
 
 	std::lock_guard l{mutex_};
 	for (auto i = 0u; i != words; ++i) {
-		/* 
-		* i.MX RT1060 reference manual as at
-		* Rev. 2, 12/2019 23.6.1.35 Value of OTP Bank7 Word0 (GP3) (GP30)
-		* The address index for the registers at and above 0x880h
-		* (72) become non linear. We therefore must remove a value
-		* of 16 to re-align.
-		*/
+		/*
+		 * i.MX RT1060 reference manual as at
+		 * Rev. 2, 12/2019 23.6.1.35 Value of OTP Bank7 Word0 (GP3) (GP30)
+		 * The address index for the registers at and above 0x880h
+		 * (72) become non linear. We therefore must remove a value
+		 * of 16 to re-align.
+		 */
 		auto addr = i + off;
 		if (addr >= 72)
 			addr -= 16;
