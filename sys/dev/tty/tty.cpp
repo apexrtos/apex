@@ -61,7 +61,7 @@ public:
 	void terminate();
 
 	/* interface to drivers */
-	void *data();
+	void *driver_data();
 	char *rx_getbuf();
 	void rx_putbuf(char *, size_t);
 	void rx_putc(char);
@@ -123,7 +123,7 @@ private:
 	static void rx_dpc_fn(void *);
 
 	/* static initialisation data */
-	void *const data_;		/* private driver data */
+	void *const driver_data_;	/* private driver data */
 	const tty_oproc oproc_;		/* routine to start output */
 	const tty_iproc iproc_;		/* routine to start input */
 	const tty_fproc fproc_;		/* routine to flush queues */
@@ -135,7 +135,7 @@ private:
  */
 tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
     size_t tx_bufsiz, std::unique_ptr<phys> txp, tty_tproc tproc,
-    tty_oproc oproc, tty_iproc iproc, tty_fproc fproc, void *data)
+    tty_oproc oproc, tty_iproc iproc, tty_fproc fproc, void *driver_data)
 : dev_{}
 , flags_{}
 , open_{}
@@ -150,7 +150,7 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 , rxq_pending_{rxq_.begin()}
 , rxq_cooked_{rxq_.begin()}
 , rx_dpc_{}
-, data_{data}
+, driver_data_{driver_data}
 , oproc_{oproc}
 , iproc_{iproc}
 , fproc_{fproc}
@@ -493,9 +493,9 @@ tty::terminate()
  * tty::data - get hardware driver specific tty data
  */
 void *
-tty::data()
+tty::driver_data()
 {
-	return data_;
+	return driver_data_;
 }
 
 /*
@@ -1230,7 +1230,7 @@ extern "C" {
 tty *
 tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
     tty_tproc tproc, tty_oproc oproc, tty_iproc iproc, tty_fproc fproc,
-    void *data)
+    void *driver_data)
 {
 	if (rx_bufsiz > PAGE_SIZE || PAGE_SIZE % rx_bufsiz)
 		return (tty *)DERR(-EINVAL);
@@ -1245,7 +1245,7 @@ tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
 	const size_t rx_bufcnt = rx_sz / rx_bufsiz;
 	std::unique_ptr<tty> t{std::make_unique<tty>(rx_bufcnt, rx_bufsiz,
 	    std::move(rxp), PAGE_SIZE, std::move(txp), tproc, oproc,
-	    iproc, fproc, data)};
+	    iproc, fproc, driver_data)};
 	if (!t.get())
 		return (tty *)DERR(-ENOMEM);
 
@@ -1294,7 +1294,7 @@ tty_destroy(tty *t)
 void *
 tty_data(tty *t)
 {
-	return t->data();
+	return t->driver_data();
 }
 
 /*
