@@ -41,7 +41,7 @@ void
 arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *d)
 {
 	/* do not configure twice */
-	assert(!SYST->CSR.ENABLE);
+	assert(!read32(&SYST->CSR).ENABLE);
 
 	/* set systick timer to interrupt us at CONFIG_HZ */
 	write32(&SYST->RVR, d->clock / CONFIG_HZ - 1);
@@ -65,7 +65,7 @@ arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *d)
 unsigned long
 clock_ns_since_tick(void)
 {
-	if (!SYST->CSR.ENABLE)
+	if (!read32(&SYST->CSR).ENABLE)
 		return 0;
 
 	/* get CVR, making sure that we handle rollovers */
@@ -78,7 +78,7 @@ clock_ns_since_tick(void)
 
 	/* convert count to nanoseconds */
 	/* REVISIT: fractional multiply instead of 64-bit division? */
-	const uint32_t r = SYST->RVR + 1;
+	const uint32_t r = read32(&SYST->RVR) + 1;
 	uint32_t ns = cvr ? (r - cvr) * 1000000000ULL / (r * CONFIG_HZ) : 0;
 	if (tick_pending)
 		ns += 1000000000 / CONFIG_HZ;
