@@ -832,7 +832,7 @@ sch_setpolicy(struct thread *th, int policy)
 		th->policy = policy;
 		break;
 	default:
-		err = -1;
+		err = -EINVAL;
 		break;
 	}
 	return err;

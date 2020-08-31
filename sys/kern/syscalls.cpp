@@ -4,7 +4,10 @@
 #include <arch.h>
 #include <debug.h>
 #include <errno.h>
+#include <kernel.h>
 #include <proc.h>
+#include <sch.h>
+#include <sched.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/reboot.h>
@@ -195,4 +198,79 @@ int
 sc_gettid(void)
 {
 	return thread_id(thread_cur());
+}
+
+int
+sc_sched_getparam(int id, sched_param *param)
+{
+	interruptible_lock ul{u_access_lock};
+	if (auto r = ul.lock(); r < 0)
+		return r;
+	if (!u_access_ok(param, sizeof *param, PROT_WRITE) ||
+	    !ALIGNED(param, sched_param))
+		return DERR(-EFAULT);
+
+	/* take a spinlock to disable preemption so that thread remains valid */
+	/* REVISIT(SMP): this will need to be rewritten */
+	a::spinlock sl;
+	std::lock_guard pl{sl};
+
+	thread *th{id ? thread_find(id) : thread_cur()};
+	if (!th)
+		return DERR(-ESRCH);
+
+	param->sched_priority = sch_getprio(th);
+	return 0;
+}
+
+int
+sc_sched_getscheduler(int id)
+{
+	/* take a spinlock to disable preemption so that thread remains valid */
+	/* REVISIT(SMP): this will need to be rewritten */
+	a::spinlock sl;
+	std::lock_guard pl{sl};
+
+	thread *th{id ? thread_find(id) : thread_cur()};
+	if (!th)
+		return DERR(-ESRCH);
+
+	return sch_getpolicy(th);
+}
+
+int
+sc_sched_setscheduler(int id, int policy, const sched_param *param)
+{
+	using std::min;
+
+	interruptible_lock ul{u_access_lock};
+	if (auto r = ul.lock(); r < 0)
+		return r;
+	if (!u_access_ok(param, sizeof *param, PROT_READ) ||
+	    !ALIGNED(param, sched_param))
+		return DERR(-EFAULT);
+
+	const auto prio{read_once(&param->sched_priority)};
+	const auto prio_min{sched_get_priority_min(policy)};
+	const auto prio_max{sched_get_priority_max(policy)};
+	if (prio_min < 0)
+		return prio_min;
+	if (prio_max < 0)
+		return prio_max;
+	if (prio < prio_min || prio > prio_max)
+		return DERR(-EINVAL);
+
+	/* take a spinlock to disable preemption so that thread remains valid */
+	/* REVISIT(SMP): this will need to be rewritten */
+	a::spinlock sl;
+	std::lock_guard pl{sl};
+
+	thread *th{id ? thread_find(id) : thread_cur()};
+	if (!th)
+		return DERR(-ESRCH);
+
+	if (auto r{sch_setpolicy(th, policy)}; r < 0)
+		return r;
+	sch_setprio(th, prio, min(prio, sch_getprio(th)));
+	return 0;
 }

@@ -5,6 +5,7 @@
  * syscalls.h - syscall wrappers which have nowhere better to live
  */
 
+struct sched_param;
 struct timespec32;
 struct timespec;
 struct timezone;
@@ -25,6 +26,9 @@ int sc_clock_gettime(clockid_t, struct timespec *);
 int sc_clock_settime(clockid_t, const struct timespec *);
 int sc_clock_settime32(clockid_t, const struct timespec32 *);
 int sc_gettid();
+int sc_sched_getparam(int, struct sched_param *);
+int sc_sched_getscheduler(int);
+int sc_sched_setscheduler(int, int, const struct sched_param *);
 
 #if defined(__cplusplus)
 } /* extern "C" */
