@@ -17,6 +17,15 @@ endif
 ASFLAGS += -mimplicit-it=thumb
 
 #
+# Ask gcc not to use FPU registers in critical areas
+#
+$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/context_EXTRA_CFLAGS := -mgeneral-regs-only
+$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/exception_EXTRA_CFLAGS := -mgeneral-regs-only
+$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/mpu_EXTRA_CFLAGS := -mgeneral-regs-only
+$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/syscall_EXTRA_CFLAGS := -mgeneral-regs-only
+$(APEX_SUBDIR)sys/kern/sig_EXTRA_CFLAGS := -mgeneral-regs-only
+
+#
 # Automatically generate offsets for assembly files
 #
 MK += $(ARCHDIR)/$(CONFIG_SUBARCH)/asm_def.mk
