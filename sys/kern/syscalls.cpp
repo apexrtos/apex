@@ -257,7 +257,7 @@ sc_sched_setscheduler(int id, int policy, const sched_param *param)
 		return prio_min;
 	if (prio_max < 0)
 		return prio_max;
-	if (prio < prio_min || prio > prio_max)
+	if (prio > prio_min || prio < prio_max)
 		return DERR(-EINVAL);
 
 	/* take a spinlock to disable preemption so that thread remains valid */

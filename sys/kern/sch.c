@@ -956,7 +956,7 @@ int
 sched_get_priority_max(int policy)
 {
 	if (policy == SCHED_FIFO || policy == SCHED_RR)
-		return 100;
+		return PRI_USER_MAX;
 	return -EINVAL;
 }
 
@@ -967,6 +967,6 @@ int
 sched_get_priority_min(int policy)
 {
 	if (policy == SCHED_FIFO || policy == SCHED_RR)
-		return 1;
+		return PRI_USER_MIN;
 	return -EINVAL;
 }
