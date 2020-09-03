@@ -442,7 +442,8 @@ vm_writev(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 void*
 sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 {
-	return mmapfor(task_cur()->as, addr, len, prot, flags, fd,
+	/* mmap maps whole pages, Apex requires that addr is page aligned */
+	return mmapfor(task_cur()->as, addr, PAGE_ALIGN(len), prot, flags, fd,
 	    (off_t)pgoff * PAGE_SIZE, MA_NORMAL);
 }
 
@@ -452,7 +453,8 @@ sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 int
 sc_munmap(void *addr, size_t len)
 {
-	return munmapfor(task_cur()->as, addr, len);
+	/* munmap unmaps any whole page in the range [addr, addr + len) */
+	return munmapfor(task_cur()->as, PAGE_TRUNC(addr), PAGE_ALIGN(len));
 }
 
 /*
