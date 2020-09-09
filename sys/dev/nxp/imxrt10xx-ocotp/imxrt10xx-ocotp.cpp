@@ -366,7 +366,7 @@ ocotp::write(std::span<const std::byte> buf, off_t off)
 ssize_t
 ocotp_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
-	return for_each_iov(f, iov, count, offset,
+	return for_each_iov(iov, count, offset,
 	    [](std::span<std::byte> buf, off_t offset) {
 		return imxrt10xx::ocotp::inst()->read(buf, offset);
 	});
@@ -375,7 +375,7 @@ ocotp_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 ssize_t
 ocotp_write_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
-	return for_each_iov(f, iov, count, offset,
+	return for_each_iov(iov, count, offset,
 	    [](std::span<const std::byte> buf, off_t offset) {
 		return imxrt10xx::ocotp::inst()->write(buf, offset);
 	});

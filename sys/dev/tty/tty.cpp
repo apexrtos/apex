@@ -1182,10 +1182,9 @@ tty_close(file *f)
 ssize_t
 tty_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
-	tty *t = static_cast<tty *>(f->f_data);
-	return for_each_iov(f, iov, count, offset,
-	    [=](std::span<std::byte> buf, off_t offset) {
-		return t->read(f, buf);
+	return for_each_iov(iov, count, offset,
+	    [f](std::span<std::byte> buf, off_t offset) {
+		return static_cast<tty *>(f->f_data)->read(f, buf);
 	});
 }
 
@@ -1195,10 +1194,9 @@ tty_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 ssize_t
 tty_write_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
-	tty *t = static_cast<tty *>(f->f_data);
-	return for_each_iov(f, iov, count, offset,
-	    [=](std::span<const std::byte> buf, off_t offset) {
-		return t->write(f, buf);
+	return for_each_iov(iov, count, offset,
+	    [f](std::span<const std::byte> buf, off_t offset) {
+		return static_cast<tty *>(f->f_data)->write(f, buf);
 	});
 }
 

@@ -34,7 +34,7 @@ ssize_t	for_each_iov(struct file *, const struct iovec *, size_t, off_t,
  */
 template<typename Fn>
 ssize_t
-for_each_iov(file *fp, const iovec *iov, size_t count, off_t offset, Fn &&fn)
+for_each_iov(const iovec *iov, size_t count, off_t offset, Fn &&fn)
 {
 	ssize_t total = 0;
 	ssize_t res = 0;

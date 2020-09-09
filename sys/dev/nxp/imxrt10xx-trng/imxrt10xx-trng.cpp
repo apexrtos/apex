@@ -441,7 +441,7 @@ trng::isr_wrapper(int vector, void *data)
 ssize_t
 trng_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
-	return for_each_iov(f, iov, count, offset,
+	return for_each_iov(iov, count, offset,
 	    [](std::span<std::byte> buf, off_t offset) {
 		return imxrt10xx::trng::inst()->read(buf);
 	});
