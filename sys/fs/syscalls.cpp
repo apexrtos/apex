@@ -504,14 +504,14 @@ sc_unlinkat(int dirfd, const char *path, int flags)
 }
 
 int
-sc_utimensat(int dirfd, const char *path, const struct timespec times[2],
+sc_utimensat(int dirfd, const char *path, const timespec *times,
     int flags)
 {
 	interruptible_lock l(u_access_lock);
 	if (auto r = l.lock(); r < 0)
 		return r;
 	if (!u_strcheck(path, PATH_MAX) ||
-	    !u_access_ok(times, sizeof(*times) * 2, PROT_WRITE))
+	    (times && !u_access_ok(times, sizeof(*times) * 2, PROT_WRITE)))
 		return DERR(-EFAULT);
 	return utimensat(dirfd, path, times, flags);
 }

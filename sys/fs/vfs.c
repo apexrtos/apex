@@ -1060,7 +1060,7 @@ vn_open(int fd, int flags)
  * utimensat
  */
 int
-utimensat(int dirfd, const char *path, const struct timespec times[2],
+utimensat(int dirfd, const char *path, const struct timespec *times,
     int flags)
 {
 	int err;
