@@ -224,7 +224,11 @@ ramfs_unlink(struct vnode *dvp, struct vnode *vp)
 		return -ENOTEMPTY;
 
 	if (np->rn_buf != NULL) {
-		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize, &ramfs_id);
+		if (np->rn_bufsize > PAGE_SIZE / 2)
+			page_free(virt_to_phys(np->rn_buf), np->rn_bufsize,
+				  &ramfs_id);
+		else
+			free(np->rn_buf);
 		np->rn_buf = NULL; /* incase remove_node fails */
 		np->rn_bufsize = 0;
 		np->rn_size = 0;
@@ -241,7 +245,11 @@ ramfs_truncate(struct vnode *vp)
 
 	rfsdbg("truncate %s\n", vp->v_path);
 	if (np->rn_buf != NULL) {
-		page_free(virt_to_phys(np->rn_buf), np->rn_bufsize, &ramfs_id);
+		if (np->rn_bufsize > PAGE_SIZE / 2)
+			page_free(virt_to_phys(np->rn_buf), np->rn_bufsize,
+				  &ramfs_id);
+		else
+			free(np->rn_buf);
 		np->rn_buf = NULL;
 		np->rn_bufsize = 0;
 		np->rn_size = 0;
