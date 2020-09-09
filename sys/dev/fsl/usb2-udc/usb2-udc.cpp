@@ -510,11 +510,11 @@ fsl_usb2_udc::isr()
 	/* short packet detected */
 	if (s.UI) {
 		v = read32(&r_->ENDPTSETUPSTAT);
-		write32(&r_->ENDPTSETUPSTAT, v);
-
-		trace("ENDPTSETUPSTAT %x\n", v);
 
 		if (v) {
+			trace("ENDPTSETUPSTAT %x\n", v);
+			write32(&r_->ENDPTSETUPSTAT, v);
+
 			/* synchronise with udc::queue_setup */
 			std::lock_guard l{setup_lock_};
 
@@ -560,11 +560,10 @@ fsl_usb2_udc::isr()
 		}
 
 		v = read32(&r_->ENDPTCOMPLETE);
-		write32(&r_->ENDPTCOMPLETE, v);
-
-		trace("ENDPTCOMPLETE %x\n", v);
 
 		if (v) {
+			trace("ENDPTCOMPLETE %x\n", v);
+			write32(&r_->ENDPTCOMPLETE, v);
 			for (int i; (i = __builtin_ffsl(v)); v -= 1UL << i) {
 				i -= 1; /* ffsl returns 1 + bit number */
 				ep_complete_irq(i & 0xf, i & 0x10
