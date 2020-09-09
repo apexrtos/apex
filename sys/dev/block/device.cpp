@@ -16,31 +16,31 @@ namespace {
 int
 block_open(file *f)
 {
-	return reinterpret_cast<block::device *>(f->f_data)->open();
+	return static_cast<block::device *>(f->f_data)->open();
 }
 
 int
 block_close(file *f)
 {
-	return reinterpret_cast<block::device *>(f->f_data)->close();
+	return static_cast<block::device *>(f->f_data)->close();
 }
 
 ssize_t
 block_read(file *f, const iovec *v, size_t c, off_t o)
 {
-	return reinterpret_cast<block::device *>(f->f_data)->read(v, c, o);
+	return static_cast<block::device *>(f->f_data)->read(v, c, o);
 }
 
 ssize_t
 block_write(file *f, const iovec *v, size_t c, off_t o)
 {
-	return reinterpret_cast<block::device *>(f->f_data)->write(v, c, o);
+	return static_cast<block::device *>(f->f_data)->write(v, c, o);
 }
 
 int
 block_ioctl(file *f, unsigned long c, void *a)
 {
-	return reinterpret_cast<block::device *>(f->f_data)->ioctl(c, a);
+	return static_cast<block::device *>(f->f_data)->ioctl(c, a);
 }
 
 constinit devio block_io{

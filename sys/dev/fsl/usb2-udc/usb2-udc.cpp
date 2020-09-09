@@ -440,9 +440,9 @@ private:
 fsl_usb2_udc::fsl_usb2_udc(const char *name, regs *r)
 : gadget::udc{name, r->DCCPARAMS.DEN}
 , r_{r}
-, dqh_{reinterpret_cast<dqh *>(phys_to_virt(page_alloc(
+, dqh_{static_cast<dqh *>(phys_to_virt(page_alloc(
     mem_size, MA_FAST | MA_DMA | MA_CACHE_COHERENT,
-    reinterpret_cast<void *>(this))))}
+    static_cast<void *>(this))))}
 {
 	/* dqh must be 2k aligned */
 	assert(dqh_);
@@ -1243,7 +1243,7 @@ fsl_usb2_transaction::free_dtds()
 int
 isr(int vector, void *data)
 {
-	auto u = reinterpret_cast<fsl_usb2_udc *>(data);
+	auto u = static_cast<fsl_usb2_udc *>(data);
 	u->isr();
 	return INT_DONE;
 }

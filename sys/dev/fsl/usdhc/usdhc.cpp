@@ -1102,7 +1102,7 @@ fsl_usdhc::isr()
 int
 fsl_usdhc::isr_wrapper(int vector, void *data)
 {
-	auto p = reinterpret_cast<fsl_usdhc *>(data);
+	auto p = static_cast<fsl_usdhc *>(data);
 	p->isr();
 	return INT_DONE;
 }

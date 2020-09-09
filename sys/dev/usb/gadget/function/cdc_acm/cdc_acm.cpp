@@ -28,7 +28,7 @@ inline constexpr auto tx_txn = 2;
 void
 oproc(tty *t)
 {
-	auto p = reinterpret_cast<cdc_acm *>(tty_data(t));
+	auto p = static_cast<cdc_acm *>(tty_data(t));
 	p->tx_queue();
 }
 
@@ -38,7 +38,7 @@ oproc(tty *t)
 void
 iproc(tty *t)
 {
-	auto p = reinterpret_cast<cdc_acm *>(tty_data(t));
+	auto p = static_cast<cdc_acm *>(tty_data(t));
 	p->rx_queue();
 }
 
@@ -48,7 +48,7 @@ iproc(tty *t)
 void
 fproc(tty *t, int io)
 {
-	auto p = reinterpret_cast<cdc_acm *>(tty_data(t));
+	auto p = static_cast<cdc_acm *>(tty_data(t));
 	if (io == TCIFLUSH || io == TCIOFLUSH)
 		p->flush_input();
 	if (io == TCOFLUSH || io == TCIOFLUSH)

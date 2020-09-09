@@ -40,7 +40,7 @@ for_each_iov(file *fp, const iovec *iov, size_t count, off_t offset, Fn &&fn)
 	ssize_t res = 0;
 	while (count--) {
 		const std::span<std::byte> buf{
-			reinterpret_cast<std::byte *>(iov->iov_base),
+			static_cast<std::byte *>(iov->iov_base),
 			iov->iov_len
 		};
 		if ((res = fn(buf, offset + total)) < 0)

@@ -654,7 +654,7 @@ host::th_fn()
 void
 host::th_fn_wrapper(void *p)
 {
-	reinterpret_cast<host *>(p)->th_fn();
+	static_cast<host *>(p)->th_fn();
 }
 
 /*
@@ -663,7 +663,7 @@ host::th_fn_wrapper(void *p)
 void
 host::bus_changed_debounce_timeout(void *p)
 {
-	auto h = reinterpret_cast<host *>(p);
+	auto h = static_cast<host *>(p);
 	h->bus_changed_semaphore_.post();
 }
 

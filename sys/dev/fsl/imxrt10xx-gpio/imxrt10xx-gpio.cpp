@@ -223,7 +223,7 @@ imxrt10xx_gpio::v_interrupt_unmask(size_t pin)
 int
 isr(int vector, void *data)
 {
-	auto u = reinterpret_cast<imxrt10xx_gpio *>(data);
+	auto u = static_cast<imxrt10xx_gpio *>(data);
 	u->isr();
 	return INT_DONE;
 }

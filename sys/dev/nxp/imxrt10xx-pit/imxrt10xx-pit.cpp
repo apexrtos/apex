@@ -204,7 +204,7 @@ pit::isr()
 int
 pit::isr_wrapper(int vector, void *data)
 {
-	auto p = reinterpret_cast<pit *>(data);
+	auto p = static_cast<pit *>(data);
 	p->isr();
 	return INT_DONE;
 }

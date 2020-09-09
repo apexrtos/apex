@@ -25,8 +25,7 @@ namespace {
 int
 rpmb_ioctl(file *f, unsigned long c, void *a)
 {
-	return reinterpret_cast<device *>(f->f_data)->ioctl(
-						partition::rpmb, c, a);
+	return static_cast<device *>(f->f_data)->ioctl(partition::rpmb, c, a);
 }
 
 constinit devio rpmb_io{

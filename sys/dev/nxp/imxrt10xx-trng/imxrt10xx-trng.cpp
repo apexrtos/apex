@@ -432,7 +432,7 @@ trng::isr()
 int
 trng::isr_wrapper(int vector, void *data)
 {
-	reinterpret_cast<trng *>(data)->isr();
+	static_cast<trng *>(data)->isr();
 	return INT_DONE;
 }
 
