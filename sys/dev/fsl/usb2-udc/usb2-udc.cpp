@@ -453,6 +453,8 @@ fsl_usb2_udc::fsl_usb2_udc(const char *name, regs *r)
 	assert(endpoints() > 0);
 	assert(endpoints() * 2 <= num_dqh);
 
+	std::lock_guard l{lock_};
+
 	/* initialise dtd free list */
 	auto dtd_mem = reinterpret_cast<dtd *>(
 	    reinterpret_cast<uintptr_t>(dqh_) + num_dqh * sizeof(dqh));
