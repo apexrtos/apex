@@ -631,19 +631,16 @@ fsl_usb2_udc::v_stop()
 {
 	std::lock_guard l{lock_};
 
-	/* stop controller */
-	write32(&r_->USBCMD, [&]{
-		auto v = read32(&r_->USBCMD);
-		v.RS = 0;
-		return v.r;
-	}());
-
 	/* issue controller reset */
 	write32(&r_->USBCMD, []{
 		decltype(r_->USBCMD) v{};
 		v.RST = 1;
 		return v.r;
 	}());
+
+	/* wait for reset to complete */
+	while (read32(&r_->USBCMD).RST);
+
 	reset_queues();
 }
 
