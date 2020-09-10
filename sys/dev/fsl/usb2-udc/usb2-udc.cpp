@@ -391,6 +391,7 @@ private:
 	void v_set_address(unsigned address) override;
 	void v_setup_aborted(size_t endpoint) override;
 
+	void hw_init();
 	void reset_queues();
 	dqh &get_dqh(size_t endpoint, ch9::Direction);
 	uint32_t epbit(size_t endpoint, ch9::Direction);
@@ -609,7 +610,9 @@ fsl_usb2_udc::free_dtd(dtd *p)
 int
 fsl_usb2_udc::v_start()
 {
-	v_reset();
+	std::lock_guard l{lock_};
+
+	hw_init();
 
 	/* start controller */
 	write32(&r_->USBCMD, [&]{
@@ -647,38 +650,7 @@ fsl_usb2_udc::v_reset()
 {
 	std::lock_guard l{lock_};
 
-	reset_queues();
-
-	/* wait for reset to complete */
-	while (read32(&r_->USBCMD).RST);
-
-	/* configure as device controller */
-	write32(&r_->USBMODE.r, []{
-		decltype(r_->USBMODE) v{};
-		v.CM = 2;
-		v.SLOM = 1;
-		return v.r;
-	}());
-
-	/* configure queue head */
-	write32(&r_->ENDPOINTLISTADDR,
-	    reinterpret_cast<uintptr_t>(virt_to_phys(dqh_)));
-
-	/* configure interrupts */
-	write32(&r_->USBINTR, []{
-		decltype(r_->USBINTR) v{};
-		v.UE = 1;
-		v.PCE = 1;
-		v.URE = 1;
-		return v.r;
-	}());
-
-	/* set interrupt threshold to immediate */
-	write32(&r_->USBCMD, [&]{
-		auto v = read32(&r_->USBCMD);
-		v.ITC = 0;
-		return v.r;
-	}());
+	hw_init();
 
 	return 0;
 }
@@ -1011,6 +983,45 @@ fsl_usb2_udc::v_setup_aborted(size_t endpoint)
 
 	cancel_txn(get_dqh(endpoint, ch9::Direction::DeviceToHost));
 	cancel_txn(get_dqh(endpoint, ch9::Direction::HostToDevice));
+}
+
+void
+fsl_usb2_udc::hw_init()
+{
+	lock_.assert_locked();
+
+	reset_queues();
+
+	/* wait for reset to complete */
+	while (read32(&r_->USBCMD).RST);
+
+	/* configure as device controller */
+	write32(&r_->USBMODE.r, []{
+		decltype(r_->USBMODE) v{};
+		v.CM = 2;
+		v.SLOM = 1;
+		return v.r;
+	}());
+
+	/* configure queue head */
+	write32(&r_->ENDPOINTLISTADDR,
+	    reinterpret_cast<uintptr_t>(virt_to_phys(dqh_)));
+
+	/* configure interrupts */
+	write32(&r_->USBINTR, []{
+		decltype(r_->USBINTR) v{};
+		v.UE = 1;
+		v.PCE = 1;
+		v.URE = 1;
+		return v.r;
+	}());
+
+	/* set interrupt threshold to immediate */
+	write32(&r_->USBCMD, [&]{
+		auto v = read32(&r_->USBCMD);
+		v.ITC = 0;
+		return v.r;
+	}());
 }
 
 void
