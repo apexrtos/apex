@@ -879,10 +879,14 @@ fsl_usb2_udc::v_flush(size_t endpoint, ch9::Direction dir)
 	if (!q.open)
 		return DERR(-EINVAL);
 
+	const auto epb = epbit(endpoint, dir);
+
 	/* flush endpoint */
-	while (read32(&r_->ENDPTPRIME));
-	write32(&r_->ENDPTFLUSH, epbit(endpoint, dir));
-	while (read32(&r_->ENDPTFLUSH));
+	while (read32(&r_->ENDPTPRIME) & epb);
+	while (read32(&r_->ENDPTSTAT) & epb) {
+		write32(&r_->ENDPTFLUSH, epb);
+		while (read32(&r_->ENDPTFLUSH));
+	}
 
 	/* abort any queued transactions */
 	while (q.transaction) {
