@@ -521,27 +521,18 @@ fsl_usb2_udc::isr()
 			/* synchronise with udc::queue_setup */
 			std::lock_guard l{setup_lock_};
 
-			/* wait for any endpoints to finish priming in case
-			 * we need to cancel a previous setup transaction */
-			while (read32(&r_->ENDPTPRIME));
-
 			auto usbcmd = read32(&r_->USBCMD);
 			usbcmd.SUTW = 1;
 
 			for (int e; (e = __builtin_ffsl(v)); v -= 1UL << e) {
 				e -= 1; /* ffsl returns 1 + bit number */
 
-				/* cancel any primed transfers pending from
-				 * previous setup transaction */
-				const auto epmask =
-				    epbit(0, ch9::Direction::HostToDevice) |
-				    epbit(0, ch9::Direction::DeviceToHost);
-				if (read32(&r_->ENDPTSTAT) & epmask) {
-					trace("overlapping setup!\n");
-					write32(&r_->ENDPTFLUSH, epmask);
-					while (read32(&r_->ENDPTFLUSH));
-					setup_aborted_irq(e);
-				}
+				/* cancel any primed transfers pending from a
+				 * previous setup transaction - note that the
+				 * hardware clears ENDPTSTAT if a setup request
+				 * is received, and won't prime if a setup
+				 * request is pending */
+				setup_aborted_irq(e);
 
 				/* read using tripwire for synchronisation */
 				ch9::setup_data s;
@@ -971,6 +962,18 @@ void
 fsl_usb2_udc::v_setup_aborted(size_t endpoint)
 {
 	std::lock_guard l{lock_};
+
+	/* we probably don't need to flush the endpoint here as the hardware
+	 * has probably done it for us but the available documentation is a
+	 * bit unclear on this particular point */
+	const auto epb =
+	    epbit(endpoint, ch9::Direction::HostToDevice) |
+	    epbit(endpoint, ch9::Direction::DeviceToHost);
+	while (read32(&r_->ENDPTPRIME) & epb);
+	while (read32(&r_->ENDPTSTAT) & epb) {
+		write32(&r_->ENDPTFLUSH, epb);
+		while (read32(&r_->ENDPTFLUSH));
+	}
 
 	auto cancel_txn = [](dqh &q) {
 		if (!q.transaction)
