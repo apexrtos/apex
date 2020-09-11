@@ -343,8 +343,15 @@ tty::write(file *f, std::span<const std::byte> buf)
 
 		if (!empty(buf)) {
 			/* sleep until output queue drains */
+			std::unique_lock tl{txq_lock_};
 			if (auto r = sch_prepare_sleep(&output_, 0); r)
 				return rval(r);
+			auto txq_full = txq_.size() == txq_.capacity();
+			tl.unlock();
+			if (!txq_full) {
+				sch_cancel_sleep();
+				continue;
+			}
 			auto ua = u_access_suspend();
 			auto rc = sch_continue_sleep();
 			if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_READ); r)
