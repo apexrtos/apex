@@ -785,7 +785,12 @@ fsl_usb2_udc::v_queue(size_t endpoint, ch9::Direction dir,
 
 	/* enqueue transacation */
 	if (q.transaction) {
-		q.transaction->enqueue(t);
+		/* iterate to queue transaction list tail */
+		auto qt = q.transaction;
+		while (qt->next())
+			qt = qt->next();
+
+		qt->enqueue(t);
 
 		/* ensure writes to transfer descriptors are observable */
 		write_memory_barrier();
@@ -804,7 +809,7 @@ fsl_usb2_udc::v_queue(size_t endpoint, ch9::Direction dir,
 		} while (!read32(&r_->USBCMD).ATDTW);
 		if (stat & epb) {
 			trace("enqueue continue ep %zu dir %d q %p txn %p\n",
-			    endpoint, static_cast<int>(dir), t, q.transaction);
+			    endpoint, static_cast<int>(dir), t, qt);
 			return 0;
 		}
 	} else
