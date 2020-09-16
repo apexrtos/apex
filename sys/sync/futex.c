@@ -55,7 +55,7 @@ futexes(struct task *t)
  * futex_find - search for futex associated with uaddr
  */
 static struct futex *
-futex_find(struct futexes_impl *fi, int *uaddr)
+futex_find_unlocked(struct futexes_impl *fi, int *uaddr)
 {
 	struct futex *f;
 	list_for_each_entry(f, &fi->list, link) {
@@ -63,6 +63,16 @@ futex_find(struct futexes_impl *fi, int *uaddr)
 			return f;
 	}
 	return 0;
+}
+
+static struct futex *
+futex_find(struct futexes_impl *fi, int *uaddr)
+{
+	spinlock_lock(&fi->lock);
+	struct futex *f = futex_find_unlocked(fi, uaddr);
+	spinlock_unlock(&fi->lock);
+
+	return f;
 }
 
 /*
@@ -75,7 +85,7 @@ futex_get(struct futexes_impl *fi, int *uaddr)
 
 	spinlock_lock(&fi->lock);
 
-	if ((f = futex_find(fi, uaddr)))
+	if ((f = futex_find_unlocked(fi, uaddr)))
 		goto out;
 
 	if (!(f = malloc(sizeof(struct futex))))
