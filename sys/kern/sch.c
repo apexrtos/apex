@@ -404,9 +404,8 @@ sch_wakeone(struct event *evt)
 		timer_stop(&top->timeout);
 		if (th != active_thread)
 			runq_enqueue(top);
-	}
-	if (top)
 		schedule();
+	}
 	irq_restore(s);
 
 	return top;
