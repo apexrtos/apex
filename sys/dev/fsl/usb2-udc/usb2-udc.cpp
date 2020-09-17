@@ -807,6 +807,8 @@ fsl_usb2_udc::v_queue(size_t endpoint, ch9::Direction dir,
 			write32(&r_->USBCMD, cmd.r);
 			stat = read32(&r_->ENDPTSTAT);
 		} while (!read32(&r_->USBCMD).ATDTW);
+		cmd.ATDTW = 0;
+		write32(&r_->USBCMD, cmd.r);
 		if (stat & epb) {
 			trace("enqueue continue ep %zu dir %d q %p txn %p\n",
 			    endpoint, static_cast<int>(dir), t, qt);
