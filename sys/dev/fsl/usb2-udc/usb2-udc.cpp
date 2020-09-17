@@ -1175,8 +1175,11 @@ fsl_usb2_transaction::start(const size_t max_packet_len,
 		dtd_tail_->buffer[3] = base += dtd_max_buffer_size;
 		dtd_tail_->buffer[4] = base += dtd_max_buffer_size;
 
-		const auto l = std::min<size_t>(
-		    static_cast<char *>(phys_to_virt(base)) - tbuf, tlen);
+		const auto l = std::min({
+			static_cast<size_t>(
+				static_cast<char *>(phys_to_virt(base)) - tbuf),
+			tlen,
+			max_packet_len});
 
 		dtd_tail_->token.r = [&]() {
 			decltype(dtd_tail_->token) v{};
