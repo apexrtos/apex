@@ -114,8 +114,8 @@ cdc_acm::tx_queue()
 
 	while (!tx_.empty()) {
 		const void *p;
-		const auto len = tty_tx_getbuf(t_,
-		    bulk_max_packet_len(Speed::High), &p);
+		/* REVISIT: query tx buffer size from tty? */
+		const auto len = tty_tx_getbuf(t_, CONFIG_PAGE_SIZE / 2, &p);
 		if (!len)
 			return;
 		auto &t = tx_.back();
