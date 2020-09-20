@@ -76,6 +76,18 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 }
 
 /*
+ * rwlock_read_lock - non interruptible read lock
+ */
+int
+rwlock_read_lock(struct rwlock *o)
+{
+	const k_sigset_t sig_mask = sig_block_all();
+	const int ret = rwlock_read_lock_interruptible(o);
+	sig_restore(&sig_mask);
+	return ret;
+}
+
+/*
  * rwlock_read_unlock
  */
 void
@@ -141,6 +153,18 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 	spinlock_unlock(&p->lock);
 
 	return err;
+}
+
+/*
+ * rwlock_write_lock - non interruptible write lock
+ */
+int
+rwlock_write_lock(struct rwlock *o)
+{
+	const k_sigset_t sig_mask = sig_block_all();
+	const int ret = rwlock_write_lock_interruptible(o);
+	sig_restore(&sig_mask);
+	return ret;
 }
 
 /*

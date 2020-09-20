@@ -107,9 +107,11 @@ int	       cond_broadcast(struct cond *);
 
 void	       rwlock_init(struct rwlock *);
 int	       rwlock_read_lock_interruptible(struct rwlock *);
+int	       rwlock_read_lock(struct rwlock *);
 void	       rwlock_read_unlock(struct rwlock *);
 bool	       rwlock_read_locked(struct rwlock *);
 int	       rwlock_write_lock_interruptible(struct rwlock *);
+int	       rwlock_write_lock(struct rwlock *);
 void	       rwlock_write_unlock(struct rwlock *);
 bool	       rwlock_write_locked(struct rwlock *);
 
