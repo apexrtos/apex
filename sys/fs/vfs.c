@@ -56,30 +56,48 @@ static struct semaphore exit_sem;
 #define FP_RESERVED -1
 
 /*
- * task_unlock - unlock task file system mutex
+ * unlock task file system lock
  */
 static void
-task_unlock(struct task *t)
+task_read_unlock(struct task *t)
 {
-	mutex_unlock(&t->fs_lock);
+	rwlock_read_unlock(&t->fs_lock);
+}
+
+static void
+task_write_unlock(struct task *t)
+{
+	rwlock_write_unlock(&t->fs_lock);
 }
 
 /*
- * task_lock_interruptible - lock task file system mutex
+ * lock task file system lock
  */
 static int
-task_lock_interruptible(struct task *t)
+task_read_lock_interruptible(struct task *t)
 {
-	return mutex_lock_interruptible(&t->fs_lock);
+	return rwlock_read_lock_interruptible(&t->fs_lock);
+}
+
+static int
+task_write_lock_interruptible(struct task *t)
+{
+	return rwlock_write_lock_interruptible(&t->fs_lock);
 }
 
 /*
- * task_lock - signal safe version of task_lock
+ * lock task file system lock
  */
 static void
-task_lock(struct task *t)
+task_read_lock(struct task *t)
 {
-	mutex_lock(&t->fs_lock);
+	rwlock_read_lock(&t->fs_lock);
+}
+
+static void
+task_write_lock(struct task *t)
+{
+	rwlock_write_lock(&t->fs_lock);
 }
 
 /*
@@ -111,7 +129,7 @@ fp_flags(uintptr_t file)
 static struct file *
 task_getfp_unlocked(struct task *t, int fd)
 {
-	assert(mutex_owner(&t->fs_lock) == thread_cur());
+	assert(rwlock_locked(&t->fs_lock));
 
 	struct file *fp;
 
@@ -164,9 +182,9 @@ task_getfp_interruptible(struct task *t, int fd)
 static struct file *
 task_file(struct task *t, int fd)
 {
-	task_lock(t);
+	task_read_lock(t);
 	struct file *fp = task_getfp(t, fd);
-	task_unlock(t);
+	task_read_unlock(t);
 	return fp;
 }
 
@@ -179,10 +197,10 @@ static struct file *
 task_file_interruptible(struct task *t, int fd)
 {
 	int err;
-	if ((err = task_lock_interruptible(t)))
+	if ((err = task_read_lock_interruptible(t)))
 		return (struct file *)err;
 	struct file *fp = task_getfp_interruptible(t, fd);
-	task_unlock(t);
+	task_read_unlock(t);
 	return fp;
 }
 
@@ -195,7 +213,7 @@ task_file_interruptible(struct task *t, int fd)
 static int
 task_newfd(struct task *t, int start)
 {
-	assert(mutex_owner(&t->fs_lock) == thread_cur());
+	assert(rwlock_write_locked(&t->fs_lock));
 	assert(start < ARRAY_SIZE(t->file));
 
 	int fd;
@@ -848,7 +866,7 @@ fs_exit(struct task *t)
 		return;
 	}
 
-	task_lock(t);
+	task_write_lock(t);
 
 	/*
 	 * Close all files opened by task.
@@ -869,7 +887,7 @@ fs_exit(struct task *t)
 		t->cwdfp = 0;
 	}
 
-	task_unlock(t);
+	task_write_unlock(t);
 }
 
 /*
@@ -880,7 +898,8 @@ fs_fork(struct task *t)
 {
 	struct task *p = task_cur();
 
-	task_lock(p);
+	task_read_lock(p);
+	task_write_lock(t);
 
 	/* Copy cwd and increment reference count */
 	t->cwdfp = p->cwdfp;
@@ -909,7 +928,8 @@ fs_fork(struct task *t)
 	}
 
 out:
-	task_unlock(p);
+	task_write_unlock(t);
+	task_read_unlock(p);
 }
 
 /*
@@ -922,7 +942,7 @@ fs_exec(struct task *t)
 	 * Close directory file descripters and file
 	 * descriptors with O_CLOEXEC.
 	 */
-	task_lock(t);
+	task_write_lock(t);
 	for (size_t i = 0; i < ARRAY_SIZE(t->file); ++i) {
 		struct file *fp;
 		if (!(fp = task_getfp(t, i)))
@@ -935,7 +955,7 @@ fs_exec(struct task *t)
 		}
 		vn_unlock(vp);
 	}
-	task_unlock(t);
+	task_write_unlock(t);
 }
 
 /*
@@ -959,14 +979,14 @@ openfor(struct task *t, int dirfd, const char *path, int flags, ...)
 	    t, dirfd, path, flags, mode);
 
 	/* reserve slot for file descriptor. */
-	if ((err = task_lock_interruptible(t)))
+	if ((err = task_write_lock_interruptible(t)))
 		return err;
 	if ((fd = task_newfd(t, 0)) < 0) {
-		task_unlock(t);
+		task_write_unlock(t);
 		return DERR(-EMFILE);
 	}
 	t->file[fd] = FP_RESERVED;
-	task_unlock(t);
+	task_write_unlock(t);
 
 	if ((ret = fs_openfp(t, dirfd, path, flags, mode, &fp)) != 0) {
 		fp = 0;
@@ -987,9 +1007,9 @@ openfor(struct task *t, int dirfd, const char *path, int flags, ...)
 
 out:
 	/* assign fp to reserved slot or unreserve slot in error cases */
-	task_lock(t);
+	task_write_lock(t);
 	t->file[fd] = fp;
-	task_unlock(t);
+	task_write_unlock(t);
 
 	return ret;
 }
@@ -1095,9 +1115,9 @@ closefor(struct task *t, int fd)
 
 	err = fs_closefp(fp);
 
-	task_lock(t);
+	task_write_lock(t);
 	t->file[fd] = 0;
-	task_unlock(t);
+	task_write_unlock(t);
 
 	return err;
 }
@@ -1791,11 +1811,11 @@ dup(int fildes)
 	if (fildes >= ARRAY_SIZE(t->file))
 		return DERR(-EBADF);
 
-	if ((err = task_lock_interruptible(t)))
+	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
 	if ((fp = task_getfp_interruptible(t, fildes)) > (struct file *)-4096UL) {
-		task_unlock(t);
+		task_write_unlock(t);
 		return (int)fp;
 	}
 
@@ -1804,7 +1824,7 @@ dup(int fildes)
 	/* Find smallest empty slot as new fd. */
 	if ((fildes2 = task_newfd(t, 0)) == -1) {
 		vn_unlock(vp);
-		task_unlock(t);
+		task_write_unlock(t);
 		return DERR(-EMFILE);
 	}
 
@@ -1815,7 +1835,7 @@ dup(int fildes)
 	vref(vp);
 	fp->f_count++;
 	vn_unlock(vp);
-	task_unlock(t);
+	task_write_unlock(t);
 
 	return fildes2;
 }
@@ -1838,11 +1858,11 @@ dup2for(struct task *t, int fildes, int fildes2)
 	if (fildes == fildes2)
 		return fildes;
 
-	if ((err = task_lock_interruptible(t)))
+	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
 	if ((fp = task_getfp_interruptible(t, fildes)) > (struct file *)-4096UL) {
-		task_unlock(t);
+		task_write_unlock(t);
 		return (int)fp;
 	}
 
@@ -1852,7 +1872,7 @@ dup2for(struct task *t, int fildes, int fildes2)
 		if ((err = fs_closefp(fp2)) != 0) {
 			vn_unlock(fp2->f_vnode);
 			vn_unlock(fp->f_vnode);
-			task_unlock(t);
+			task_write_unlock(t);
 			return err;
 		}
 	}
@@ -1864,7 +1884,7 @@ dup2for(struct task *t, int fildes, int fildes2)
 	vref(fp->f_vnode);
 	fp->f_count++;
 	vn_unlock(fp->f_vnode);
-	task_unlock(t);
+	task_write_unlock(t);
 
 	return fildes2;
 }
@@ -1886,12 +1906,12 @@ umask(mode_t mask)
 
 	vdbgsys("umask mask=0%03o\n", mask);
 
-	if ((err = task_lock_interruptible(t)))
+	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
 	mode_t old = t->umask;
 	t->umask = mask;
-	task_unlock(t);
+	task_write_unlock(t);
 
 	return old;
 }
@@ -1974,11 +1994,11 @@ chdir(const char *path)
 		return -ENOTDIR;
 	}
 
-	task_lock(t);
+	task_write_lock(t);
 	vn_lock(t->cwdfp->f_vnode);
 	fs_closefp(t->cwdfp);
 	t->cwdfp = fpp;
-	task_unlock(t);
+	task_write_unlock(t);
 
 	return 0;
 }
@@ -2066,11 +2086,11 @@ fcntl(int fd, int cmd, ...)
 
 	vdbgsys("fcntl fd=%d cmd=%d arg=%ld\n", fd, cmd, arg);
 
-	if ((err = task_lock_interruptible(t)))
+	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
 	if ((fp = task_getfp_interruptible(t, fd)) > (struct file *)-4096UL) {
-		task_unlock(t);
+		task_write_unlock(t);
 		return (int)fp;
 	}
 
@@ -2122,7 +2142,7 @@ fcntl(int fd, int cmd, ...)
 		break;
 	}
 	vn_unlock(vp);
-	task_unlock(t);
+	task_write_unlock(t);
 	return ret;
 }
 
@@ -2191,23 +2211,23 @@ pipe2(int fd[2], int flags)
 	int r, rfd, wfd;
 	int err;
 
-	if ((err = task_lock_interruptible(t)))
+	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
 	/* reserve fd's */
 	if ((rfd = task_newfd(t, 0)) < 0) {
-		task_unlock(t);
+		task_write_unlock(t);
 		return DERR(-EMFILE);
 	}
 	t->file[rfd] = FP_RESERVED;
 	if ((wfd = task_newfd(t, 0)) < 0) {
 		t->file[rfd] = 0;
-		task_unlock(t);
+		task_write_unlock(t);
 		return DERR(-EMFILE);
 	}
 	t->file[wfd] = FP_RESERVED;
 
-	task_unlock(t);
+	task_write_unlock(t);
 
 	/* create vnode */
 	if (!(vp = vget_pipe())) {
@@ -2250,7 +2270,7 @@ pipe2(int fd[2], int flags)
 	fd[0] = rfd;
 	fd[1] = wfd;
 	r = 0;
-	task_lock(t);
+	task_write_lock(t);
 	t->file[rfd] = (uintptr_t)rfp | cloexec;
 	t->file[wfd] = (uintptr_t)wfp | cloexec;
 	goto out;
@@ -2262,11 +2282,11 @@ out2:
 out1:
 	vput(vp);
 out0:
-	task_lock(t);
+	task_write_lock(t);
 	t->file[rfd] = 0;
 	t->file[wfd] = 0;
 out:
-	task_unlock(t);
+	task_write_unlock(t);
 	return r;
 }
 

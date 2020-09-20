@@ -206,7 +206,7 @@ task_create(struct task *parent, int vm_option, struct task **child)
 	task->pgid = parent->pgid;
 	task->sid = parent->sid;
 	task->state = PS_RUN;
-	mutex_init(&task->fs_lock);
+	rwlock_init(&task->fs_lock);
 	event_init(&task->child_event, "child", ev_SLEEP);
 	event_init(&task->thread_event, "thread", ev_SLEEP);
 	list_insert(&kern_task.link, &task->link);
@@ -446,7 +446,7 @@ task_init(void)
 	kern_task.magic = TASK_MAGIC;
 	kern_task.state = PS_RUN;
 	kern_task.as = as_create(0);
-	mutex_init(&kern_task.fs_lock);
+	rwlock_init(&kern_task.fs_lock);
 	event_init(&kern_task.child_event, "child", ev_SLEEP);
 	event_init(&kern_task.thread_event, "thread", ev_SLEEP);
 }
