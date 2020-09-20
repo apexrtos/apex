@@ -114,6 +114,7 @@ int	       rwlock_write_lock_interruptible(struct rwlock *);
 int	       rwlock_write_lock(struct rwlock *);
 void	       rwlock_write_unlock(struct rwlock *);
 bool	       rwlock_write_locked(struct rwlock *);
+bool	       rwlock_locked(struct rwlock *);
 
 void	       spinlock_init(struct spinlock *);
 void	       spinlock_lock(struct spinlock *);
@@ -213,6 +214,7 @@ public:
 	rwlock &operator=(const rwlock &) = delete;
 	rwlock_read &read();
 	rwlock_write &write();
+	bool locked() { return rwlock_locked(&m_); }
 
 protected:
 	::rwlock m_;

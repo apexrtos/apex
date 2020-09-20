@@ -206,3 +206,20 @@ rwlock_write_locked(struct rwlock *o)
 
 	return r;
 }
+
+/*
+ * rwlock_locked - test if rwlock is locked for reading or writing
+ */
+bool
+rwlock_locked(struct rwlock *o)
+{
+	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+
+	spinlock_lock(&p->lock);
+
+	bool r =  p->state != 0;
+
+	spinlock_unlock(&p->lock);
+
+	return r;
+}
