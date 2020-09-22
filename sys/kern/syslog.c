@@ -498,24 +498,24 @@ kmsg_read(struct file *file, void *buf, size_t len, off_t offset)
 	if (!kmsg)
 		return -EBADF;
 
-	 /*
-	  * REVISIT: the u_access* mechanism is broken for iov, so if
-	  * _any_ usage of u_access_suspend() it must be unconditional
-	  * so u_access_resume() can guarantee pointers are still
-	  * valid
-	  */
-	bool ua = u_access_suspend();
+	/* each iov entry must be validated as userspace address space can
+	 * change between u_access_suspend and u_access_resume */
+	if (!u_access_continue(buf, len, PROT_WRITE))
+		return -EFAULT;
+
 	int rc;
 	if ((log_last_seq - kmsg->seq) >= 0) /* seq can rollover */
 		rc = 0;
 	else if (file->f_flags & O_NONBLOCK)
 		rc = -EAGAIN;
-	else
+	else {
+		u_access_suspend();
 		rc = wait_event_interruptible(log_wait, (log_last_seq - kmsg->seq) >= 0);
+		int r = u_access_resume(buf, len, PROT_WRITE);
+		if (r < 0)
+			return r;
+	}
 
-	int r = u_access_resume(ua, buf, len, PROT_WRITE);
-	if (r < 0)
-		return r;
 	if (rc < 0)
 		return rc;
 

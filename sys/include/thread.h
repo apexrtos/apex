@@ -94,6 +94,8 @@ struct thread {
 #define TH_SUSPEND	0x02	/* suspended */
 #define TH_EXIT		0x04	/* terminating */
 #define TH_ZOMBIE	0x08	/* dead */
+#define TH_U_ACCESS	0x10	/* thread is accessing userspace */
+#define TH_U_ACCESS_S	0x20	/* thread access to userspace was suspended */
 
 #if defined(__cplusplus)
 #define noreturn [[noreturn]]

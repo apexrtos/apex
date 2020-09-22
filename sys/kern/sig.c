@@ -591,6 +591,8 @@ sig_deliver(int rval)
 	assert(!th->spinlock_locks);
 	assert(!th->rwlock_locks);
 	assert(!sch_locks());
+	assert(!(th->state & TH_U_ACCESS));
+	assert(!(th->state & TH_U_ACCESS_S));
 #endif
 
 	return rval;

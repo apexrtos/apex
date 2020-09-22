@@ -8,6 +8,7 @@
 #include <fs.h>
 #include <kernel.h>
 #include <page.h>
+#include <sch.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
 #include <task.h>
@@ -213,8 +214,12 @@ u_access_ok(const void *u_addr, size_t len, int access)
 }
 
 bool
-u_access_okfor(const as *a, const void *u_addr, size_t len, int access)
+u_access_okfor(as *a, const void *u_addr, size_t len, int access)
 {
+	/* u_access_okfor only makes sense if the address space is locked or if
+	 * preemption is disabled. Otherwise the address space could be
+	 * modified by some other thread. */
+	assert(sch_locks() || as_locked(a));
 	const auto seg = as_find_seg(a, u_addr);
 	if (!seg)
 		return false;
@@ -235,34 +240,47 @@ k_access_ok(const void *k_addr, size_t len, int access)
 int
 u_access_begin()
 {
-	return as_transfer_begin(task_cur()->as);
+	/* recursive u_access_begin makes no sense */
+	assert(!(thread_cur()->state & TH_U_ACCESS));
+	if (auto r{as_transfer_begin(task_cur()->as)}; r < 0)
+		return r;
+	thread_cur()->state |= TH_U_ACCESS;
+	return 0;
 }
 
 void
 u_access_end()
 {
 	as_transfer_end(task_cur()->as);
+	thread_cur()->state &= ~(TH_U_ACCESS | TH_U_ACCESS_S);
 }
 
-bool
+void
 u_access_suspend()
 {
-	if (!as_transfer_running(task_cur()->as))
-		return false;
+	if (!(thread_cur()->state & TH_U_ACCESS))
+		return;
 	as_transfer_end(task_cur()->as);
-	return true;
+	thread_cur()->state |= TH_U_ACCESS_S;
 }
 
 int
-u_access_resume(bool suspended, const void *u_addr, size_t len, int prot)
+u_access_resume(const void *u_addr, size_t len, int prot)
 {
-	if (!suspended)
+	if (!(thread_cur()->state & TH_U_ACCESS))
 		return 0;
 	if (auto r = as_transfer_begin(task_cur()->as); r)
 		return r;
 	if (!u_access_ok(u_addr, len, prot))
 		return DERR(-EFAULT);
 	return 0;
+}
+
+bool
+u_access_continue(const void *u_addr, size_t len, int prot)
+{
+	const auto suspended{thread_cur()->state & TH_U_ACCESS_S};
+	return !suspended || u_access_ok(u_addr, len, prot);
 }
 
 bool

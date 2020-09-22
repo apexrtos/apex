@@ -692,12 +692,12 @@ as_transfer_end(as *a)
 }
 
 /*
- * as_transfer_running - query status of transfer to address space memory
+ * as_locked - query state of address space lock
  */
 bool
-as_transfer_running(as *a)
+as_locked(as *a)
 {
-	return a->lock.read().locked();
+	return a->lock.locked();
 }
 
 /*

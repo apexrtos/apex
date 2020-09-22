@@ -230,14 +230,10 @@ tty::read(file *f, std::span<std::byte> buf)
 		return rxq_cooked_ != rxq_.begin();
 	};
 
-	/*
-	 * REVISIT: must call u_access_suspend/u_access_resume unconditionally
-	 * in case handling a previous iov entry called u_access_suspend as the
-	 * task address space can change while access is suspended
-	 */
-	auto ua = u_access_suspend();
-	if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_WRITE); r)
-		return r;
+	/* each iov entry must be validated as userspace address space
+	 * can change between u_access_suspend and u_access_resume */
+	if (!u_access_continue(data(buf), size(buf), PROT_WRITE))
+		return DERR(-EFAULT);
 
 	std::unique_lock sl{state_lock_};
 	std::unique_lock rl{rxq_lock_};
@@ -253,9 +249,9 @@ tty::read(file *f, std::span<std::byte> buf)
 			return r;
 		rl.unlock();
 		sl.unlock();
-		auto ua = u_access_suspend();
+		u_access_suspend();
 		auto rc = sch_continue_sleep();
-		if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_WRITE); r)
+		if (auto r = u_access_resume(data(buf), size(buf), PROT_WRITE); r)
 			rc = r;
 		if (rc)
 			return rc;
@@ -313,14 +309,10 @@ tty::write(file *f, std::span<const std::byte> buf)
 		return len - size(buf) ?: rc;
 	};
 
-	/*
-	 * REVISIT: must call u_access_suspend/u_access_resume unconditionally
-	 * in case handling a previous iov entry called u_access_suspend as the
-	 * task address space can change while access is suspended
-	 */
-	auto ua = u_access_suspend();
-	if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_READ); r)
-		return r;
+	/* each iov entry must be validated as userspace address space can
+	 * change between u_access_suspend and u_access_resume */
+	if (!u_access_continue(data(buf), size(buf), PROT_READ))
+		return DERR(-EFAULT);
 
 	while (!empty(buf)) {
 		std::unique_lock sl{state_lock_};
@@ -345,9 +337,9 @@ tty::write(file *f, std::span<const std::byte> buf)
 				sch_cancel_sleep();
 				continue;
 			}
-			auto ua = u_access_suspend();
+			u_access_suspend();
 			auto rc = sch_continue_sleep();
-			if (auto r = u_access_resume(ua, data(buf), size(buf), PROT_READ); r)
+			if (auto r = u_access_resume(data(buf), size(buf), PROT_READ); r)
 				rc = r;
 			if (rc)
 				return rval(rc);
@@ -370,10 +362,9 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 	}
 	case TCSETSW:
 	case TCSETSF: {
-		auto ua = u_access_suspend();
+		u_access_suspend();
 		auto rc = tx_wait();
-		if (auto r = u_access_resume(ua, arg, sizeof(termios),
-		    PROT_WRITE); r)
+		if (auto r = u_access_resume(arg, sizeof(termios), PROT_WRITE); r)
 			rc = r;
 		if (rc)
 			return rc;

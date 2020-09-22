@@ -16,7 +16,7 @@ ssize_t	u_strnlen(const char *, size_t);
 ssize_t	u_arraylen(const void *const *, size_t);
 bool	u_strcheck(const char *, size_t);
 bool	u_access_ok(const void *, size_t, int);
-bool	u_access_okfor(const struct as *, const void *, size_t, int);
+bool	u_access_okfor(struct as *, const void *, size_t, int);
 bool	k_access_ok(const void *, size_t, int);
 
 /*
@@ -24,8 +24,9 @@ bool	k_access_ok(const void *, size_t, int);
  */
 int	u_access_begin(void);
 void	u_access_end(void);
-bool	u_access_suspend(void);
-int	u_access_resume(bool, const void *, size_t, int);
+void	u_access_suspend(void);
+int	u_access_resume(const void *, size_t, int);
+bool	u_access_continue(const void *, size_t, int);
 
 /*
  * User access fault detection
