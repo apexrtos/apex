@@ -403,14 +403,6 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	if (uef_extended)
 		fpu_lazy_sync();
 
-	/* make a copy of the userspace exception frame as we are going to
-	 * overwrite it's location with the signal frame */
-	struct exception_frame_extended *uef = alloca(uef_sz);
-	memcpy(uef, ctx->usp, uef_sz);
-
-	/* did exception entry add 4 bytes to align the userspace stack? */
-	const size_t uef_align = uef->xpsr & XPSR_FRAMEPTRALIGN ? 4 : 0;
-
 	/* allocate stack frame for signal */
 	void *usp = ctx->usp + uef_sz;
 	struct exception_frame_basic *sef;
@@ -436,6 +428,14 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	/* catch stack overflow */
 	if (!u_access_ok(usp, ctx->usp + uef_sz - usp, PROT_WRITE))
 		return DERR(false);
+
+	/* make a copy of the userspace exception frame as we are going to
+	 * overwrite it's location with the signal frame */
+	struct exception_frame_extended *uef = alloca(uef_sz);
+	memcpy(uef, ctx->usp, uef_sz);
+
+	/* did exception entry add 4 bytes to align the userspace stack? */
+	const size_t uef_align = uef->xpsr & XPSR_FRAMEPTRALIGN ? 4 : 0;
 
 	/* initialise userspace signal context */
 	memset(ssf, 0, sizeof(*ssf));
