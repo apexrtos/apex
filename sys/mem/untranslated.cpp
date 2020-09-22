@@ -230,7 +230,6 @@ u_access_okfor(as *a, const void *u_addr, size_t len, int access)
 	return true;
 }
 
-
 bool
 k_access_ok(const void *k_addr, size_t len, int access)
 {
