@@ -242,10 +242,6 @@ tty::read(file *f, std::span<std::byte> buf)
 	std::unique_lock sl{state_lock_};
 	std::unique_lock rl{rxq_lock_};
 
-	/* tstchar calls with a NULL buffer */
-	if (f->f_flags & O_NONBLOCK && !rx_avail())
-		return -EAGAIN;
-
 	if (!data(buf))
 		return DERR(-EFAULT);
 
