@@ -350,10 +350,6 @@ trng::inst()
 ssize_t
 trng::read(std::span<std::byte> buf)
 {
-	/* check if buffer available */
-	if (!data(buf))
-		return DERR(-EFAULT);
-
 	trace("trng::read: buf: %p len: %d\n", data(buf), size(buf));
 
 	const auto len{ssize(buf)};

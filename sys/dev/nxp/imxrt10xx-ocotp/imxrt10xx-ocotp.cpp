@@ -258,9 +258,6 @@ ocotp::check_and_clear_error()
 ssize_t
 ocotp::read(std::span<std::byte> buf, off_t off)
 {
-	if (!data(buf))
-		return DERR(-EFAULT);
-
 	/* check if word aligned */
 	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz || off < 0)
 		return DERR(-EINVAL);
@@ -295,9 +292,6 @@ ocotp::read(std::span<std::byte> buf, off_t off)
 ssize_t
 ocotp::write(std::span<const std::byte> buf, off_t off)
 {
-	if (!data(buf))
-		return DERR(-EFAULT);
-
 	/* check if word aligned */
 	if (size(buf) % regs::otp_word_sz || off % regs::otp_word_sz || off < 0)
 		return DERR(-EINVAL);
