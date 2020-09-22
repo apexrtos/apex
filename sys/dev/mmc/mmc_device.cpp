@@ -425,10 +425,6 @@ device::write(partition p, const iovec *iov, size_t iov_off, size_t len,
 int
 device::ioctl(partition p, unsigned long cmd, void *arg)
 {
-	interruptible_lock ul(u_access_lock);
-	if (auto r = ul.lock(); r < 0)
-		return r;
-
 	std::lock_guard hl{*h_};
 
 	auto run_cmd = [this, p](mmc_ioc_cmd *c) {
