@@ -566,7 +566,7 @@ public:
 			auto p = it;
 			while (b != e) {
 				const auto lin = std::min<size_type>(
-				capacity_ - wrap(it), e - b);
+						capacity_ - wrap(p), e - b);
 				memcpy(&ref(p), b, lin * sizeof(T));
 				b += lin;
 				p += lin;
