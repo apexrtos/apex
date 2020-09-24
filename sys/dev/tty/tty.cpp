@@ -103,10 +103,14 @@ private:
 	size_t column_;		    /* output column */
 	size_t canon_column_;	    /* column at start of canonical line */
 
-	/* transmit queue */
+	/* transmit queue
+	 *  txq_.begin(), txq_pos_ and txq_end_ are protected by txq_lock_
+	 *  txq_.end() is protected by state_lock_
+	 * This is to allow queueing of output data with interrupts enabled. */
 	a::spinlock_irq txq_lock_;
 	circular_buffer_wrapper<char> txq_;
 	circular_buffer_wrapper<char>::iterator txq_pos_;
+	circular_buffer_wrapper<char>::iterator txq_end_;
 	std::unique_ptr<phys> txq_pages_;
 
 	/* receive buffer queue */
@@ -144,6 +148,7 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 , canon_column_{}
 , txq_{tx_bufsiz, static_cast<char *>(phys_to_virt(txp.get()))}
 , txq_pos_{txq_.begin()}
+, txq_end_{txq_.end()}
 , txq_pages_{std::move(txp)}
 , rxq_{rx_bufcnt, rx_bufsiz, std::move(rxp)}
 , rxq_processed_{rxq_.begin()}
@@ -459,7 +464,7 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 	}
 	case TIOCOUTQ: {
 		std::lock_guard tl{txq_lock_};
-		*static_cast<int *>(arg) = txq_.size();
+		*static_cast<int *>(arg) = txq_end_ - txq_.begin();
 		break;
 	}
 	default:
@@ -561,7 +566,7 @@ int
 tty::tx_getc()
 {
 	std::unique_lock tl{txq_lock_};
-	if (txq_.empty())
+	if (txq_.begin() == txq_end_)
 		return -1;
 	const auto ret = txq_.front();
 	txq_.pop_front();
@@ -588,7 +593,7 @@ size_t
 tty::tx_getbuf(const size_t maxlen, const void **buf)
 {
 	std::lock_guard tl{txq_lock_};
-	if (txq_pos_ == txq_.end())
+	if (txq_pos_ == txq_end_)
 		return 0;
 	auto len = std::min(txq_.linear(txq_pos_), maxlen);
 	*buf = &*txq_pos_;
@@ -605,7 +610,7 @@ bool
 tty::tx_empty()
 {
 	std::lock_guard tl{txq_lock_};
-	return txq_pos_ == txq_.end();
+	return txq_pos_ == txq_end_;
 }
 
 /*
@@ -681,7 +686,6 @@ size_t
 tty::output(const char *buf, size_t len, bool atomic)
 {
 	state_lock_.assert_locked();
-	std::lock_guard tl{txq_lock_};
 
 	const auto lflag = termios_.c_lflag;
 	const auto oflag = termios_.c_oflag;
@@ -695,6 +699,9 @@ tty::output(const char *buf, size_t len, bool atomic)
 			return 0;
 		const auto cp = std::min(len, txq_remain());
 		txq_.insert(txq_.end(), buf, buf + cp);
+
+		std::lock_guard tl{txq_lock_};
+		txq_end_ = txq_.end();
 		return cp;
 	}
 
@@ -759,6 +766,9 @@ out:
 	if (rxq_pending_ == rxq_cooked_)
 		canon_column_ = prev_column;
 
+	std::lock_guard tl{txq_lock_};
+	txq_end_ = txq_.end();
+
 	return pos;
 }
 
@@ -779,13 +789,14 @@ tty::rubout(const char c)
 	if (!(lflag & ECHO) || !(lflag & ECHOE))
 		return true;
 
-	std::lock_guard tl{txq_lock_};
-
 	auto erase = [&](const char *s, size_t len, size_t n) {
 		if (txq_.capacity() - txq_.size() < len)
 			return false;
 		txq_.insert(txq_.end(), s, s + len);
 		column_ -= std::min(n, column_);
+
+		std::lock_guard tl{txq_lock_};
+		txq_end_ = txq_.end();
 		return true;
 	};
 
@@ -873,6 +884,7 @@ tty::flush(int io)
 
 		txq_.clear();
 		txq_pos_ = txq_.begin();
+		txq_end_ = txq_.end();
 
 		if (flags_ & flags::rx_blocked_on_tx_full) {
 			sch_dpc(&rx_dpc_, rx_dpc_fn, this);
@@ -899,7 +911,7 @@ tty::tx_wait()
 {
 	std::unique_lock tl{txq_lock_};
 	return wait_event_interruptible_lock(complete_, tl, [&] {
-		return txq_.empty();
+		return txq_.begin() == txq_end_;
 	});
 }
 
