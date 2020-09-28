@@ -113,7 +113,11 @@ private:
 	circular_buffer_wrapper<char>::iterator txq_end_;
 	std::unique_ptr<phys> txq_pages_;
 
-	/* receive buffer queue */
+	/* receive buffer queue
+	 *  rxq_.end() and rxq_.bufpool are protected by rxq_lock_
+	 *  rxq_.begin(), rxq_processed_, rxq_pending_ and rxq_cooked_ are
+	 *    protected by state_lock_
+	 * This is to allow processing input data with interrupts enabled. */
 	a::spinlock_irq rxq_lock_;
 	buffer_queue rxq_;
 	buffer_queue::iterator rxq_processed_;
@@ -232,6 +236,12 @@ ssize_t
 tty::read(file *f, std::span<std::byte> buf)
 {
 	auto rx_avail = [&] {
+		/* raw input is not processed by dpc */
+		if (!(flags_.load() & flags::cook_input)) {
+			std::unique_lock rl{rxq_lock_};
+			rxq_cooked_ = rxq_processed_ = rxq_pending_ = rxq_.end();
+			rl.unlock();
+		}
 		return rxq_cooked_ != rxq_.begin();
 	};
 
@@ -241,7 +251,6 @@ tty::read(file *f, std::span<std::byte> buf)
 		return DERR(-EFAULT);
 
 	std::unique_lock sl{state_lock_};
-	std::unique_lock rl{rxq_lock_};
 
 	/* wait for input */
 	while (!rx_avail()) {
@@ -252,7 +261,6 @@ tty::read(file *f, std::span<std::byte> buf)
 		 */
 		if (auto r = sch_prepare_sleep(&input_, 0); r)
 			return r;
-		rl.unlock();
 		sl.unlock();
 		u_access_suspend();
 		auto rc = sch_continue_sleep();
@@ -261,7 +269,6 @@ tty::read(file *f, std::span<std::byte> buf)
 		if (rc)
 			return rc;
 		sl.lock();
-		rl.lock();
 	}
 
 	size_t count;
@@ -290,6 +297,7 @@ tty::read(file *f, std::span<std::byte> buf)
 	}
 
 	/* trim empty buffers */
+	std::unique_lock rl{rxq_lock_};
 	rxq_.trim_front(it);
 	const auto bufavail = !rxq_.bufpool_empty();
 	rl.unlock();
@@ -458,7 +466,7 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 		break;
 	}
 	case TIOCINQ: {
-		std::lock_guard rl{rxq_lock_};
+		std::lock_guard rl{state_lock_};
 		*static_cast<int *>(arg) = rxq_cooked_ - rxq_.begin();
 		break;
 	}
@@ -781,7 +789,6 @@ bool
 tty::rubout(const char c)
 {
 	state_lock_.assert_locked();
-	rxq_lock_.assert_locked();
 
 	const auto lflag = termios_.c_lflag;
 	const auto oflag = termios_.c_oflag;
@@ -932,10 +939,6 @@ tty::cook()
 	}
 
 	/* otherwise pass data straight through */
-	std::unique_lock rl{rxq_lock_};
-	rxq_cooked_ = rxq_processed_ = rxq_pending_ = rxq_.end();
-	rl.unlock();
-
 	sch_wakeone(&input_);
 }
 
@@ -969,8 +972,10 @@ tty::rx_process()
 	const auto &cc = termios_.c_cc;
 
 	std::unique_lock rl{rxq_lock_};
+	const auto end = rxq_.end();
+	rl.unlock();
 
-	while (rxq_processed_ != rxq_.end()) {
+	while (rxq_processed_ != end) {
 		char c = *rxq_processed_++;
 
 		/* IGNCR, ICRNL, INLCR */
@@ -1004,11 +1009,8 @@ tty::rx_process()
 		if (lflag & ISIG) {
 			/* quit (^C) */
 			if (c == cc[VINTR] || c == cc[VQUIT]) {
-				if (!(lflag & NOFLSH)) {
-					rl.unlock();
+				if (!(lflag & NOFLSH))
 					flush(TCIOFLUSH);
-					rl.lock();
-				}
 				if (!echo(c) && !(flags_ & flags::rx_overflow))
 					goto out;
 				const int sig = (c == cc[VINTR])
@@ -1021,11 +1023,8 @@ tty::rx_process()
 			}
 			/* suspend (^Z) */
 			if (c == cc[VSUSP]) {
-				if (!(lflag & NOFLSH)) {
-					rl.unlock();
+				if (!(lflag & NOFLSH))
 					flush(TCIOFLUSH);
-					rl.lock();
-				}
 				if (!echo(c) && !(flags_ & flags::rx_overflow))
 					goto out;
 				const int sig = SIGTSTP;
