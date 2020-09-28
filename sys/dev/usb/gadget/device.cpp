@@ -283,7 +283,7 @@ device::device_get_configuration_request(const setup_request &s, transaction &t)
 		return setup_result::error;
 	if (s.length() != sizeof(setup_buf_.configuration))
 		return setup_result::error;
-	setup_buf_.configuration = htole16(configuration_);
+	setup_buf_.configuration = configuration_;
 	t.set_buf(&setup_buf_, sizeof(setup_buf_.configuration));
 	return setup_result::data;
 }

@@ -66,7 +66,7 @@ private:
 	string_descriptor serial_number_;
 
 	union {
-		uint16_t configuration;
+		uint8_t configuration;
 	} setup_buf_;
 
 	std::vector<const string_descriptor *> strings_;
