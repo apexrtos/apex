@@ -252,6 +252,9 @@ tty::read(file *f, std::span<std::byte> buf)
 
 	std::unique_lock sl{state_lock_};
 
+	if (f->f_flags & O_NONBLOCK && !rx_avail())
+		return -EAGAIN;
+
 	/* wait for input */
 	while (!rx_avail()) {
 		/*
