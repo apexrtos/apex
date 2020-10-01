@@ -113,17 +113,17 @@ exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 {
 	dump_exception(e, handler_mode, exc);
 
+	const union scb_cfsr_bfsr bfsr = read8(&SCB->CFSR.BFSR);
+	emergency("BusFault BFSR %x BFAR %x\n", bfsr.r, read32(&SCB->BFAR));
+
 	/* kernel faults are always fatal */
 	if (handler_mode || !interrupt_from_userspace())
 		panic("BusFault");
 
-	const union scb_cfsr_bfsr bfsr = read8(&SCB->CFSR.BFSR);
 	if (bfsr.STKERR)
 		derived_exception(SIGBUS);
-	else {
-		dbg("BusFault");
+	else
 		sig_thread(thread_cur(), SIGBUS);
-	}
 
 	/* clear fault */
 	write8(&SCB->CFSR.BFSR, -1);
