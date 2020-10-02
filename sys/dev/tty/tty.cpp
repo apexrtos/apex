@@ -95,7 +95,7 @@ private:
 	std::atomic_ulong flags_;   /* tty flags */
 
 	/* tty state */
-	a::spinlock state_lock_;
+	a::mutex state_lock_;
 	size_t open_;		    /* open count */
 	pid_t pgid_;		    /* foreground process group */
 	termios termios_;	    /* termios state */
@@ -191,7 +191,6 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 	t.c_cc[VLNEXT] = CLNEXT;	/* REVISIT: not yet supported */
 	/* VEOL2 default is 0 */
 
-	std::lock_guard sl{state_lock_};
 	set_termios(t);
 }
 
@@ -264,6 +263,10 @@ tty::read(file *f, std::span<std::byte> buf)
 		 */
 		if (auto r = sch_prepare_sleep(&input_, 0); r)
 			return r;
+		if (rx_avail()) {
+			sch_cancel_sleep();
+			continue;
+		}
 		sl.unlock();
 		u_access_suspend();
 		auto rc = sch_continue_sleep();
@@ -953,8 +956,6 @@ tty::cook()
 void
 tty::set_termios(const termios &t)
 {
-	state_lock_.assert_locked();
-
 	termios_ = t;
 	auto lflag = termios_.c_lflag;
 	auto iflag = termios_.c_iflag;
