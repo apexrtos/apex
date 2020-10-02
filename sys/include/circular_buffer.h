@@ -653,6 +653,13 @@ public:
 		    end() - pos, capacity_ - wrap(pos.it_));
 	}
 
+	size_type linear(const_iterator pos, const_iterator end)
+	{
+		ASSERT(end >= pos);
+		return std::min<size_type>(
+		    end - pos, capacity_ - wrap(pos.it_));
+	}
+
 private:
 	size_type begin_;
 	size_type end_;
