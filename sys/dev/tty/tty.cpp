@@ -606,7 +606,7 @@ tty::tx_getbuf(const size_t maxlen, const void **buf)
 	std::lock_guard tl{txq_lock_};
 	if (txq_pos_ == txq_end_)
 		return 0;
-	auto len = std::min(txq_.linear(txq_pos_), maxlen);
+	auto len = std::min(txq_.linear(txq_pos_, txq_end_), maxlen);
 	*buf = &*txq_pos_;
 	txq_pos_ += len;
 	return len;
