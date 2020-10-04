@@ -64,6 +64,16 @@ derived_exception(int sig)
 void
 exc_Unhandled(struct exception_frame_basic *e, bool handler_mode, int exc)
 {
+	switch (exc) {
+	case 3:
+		/* HardFault */
+		emergency("HardFault HRSR %x\n", read32(&SCB->HFSR));
+		break;
+	case 6:
+		/* UsageFault */
+		emergency("UsageFault UFSR %x\n", read16(&SCB->CFSR.UFSR).r);
+		break;
+	}
 	dump_exception(e, handler_mode, exc);
 	panic("Unhandled");
 }
