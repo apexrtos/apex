@@ -61,7 +61,7 @@ struct rtwdog::regs {
 
 rtwdog::rtwdog(const nxp_imxrt10xx_rtwdog_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
-, clock_{d->prescale_256 ? d->freq / 256 : d->freq}
+, clock_{d->prescale_256 ? div_ceil(d->freq, 256lu) : d->freq}
 , open_{false}
 , expect_close_{false}
 {
