@@ -67,7 +67,8 @@ rtwdog::rtwdog(const nxp_imxrt10xx_rtwdog_desc *d)
 	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
 
 	configure(d->clock, d->prescale_256);
-	set_timeout(d->default_timeout);
+	if (set_timeout(d->default_timeout) < 0)
+		panic("bad timeout");
 }
 
 rtwdog *
