@@ -62,6 +62,8 @@ struct rtwdog::regs {
 rtwdog::rtwdog(const nxp_imxrt10xx_rtwdog_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
 , clock_{d->prescale_256 ? d->freq / 256 : d->freq}
+, open_{false}
+, expect_close_{false}
 {
 	static_assert(sizeof(regs) == 0x10, "");
 	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
