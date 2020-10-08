@@ -60,12 +60,12 @@ struct rtwdog::regs {
 
 rtwdog::rtwdog(const nxp_imxrt10xx_rtwdog_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
-, clock_{d->prescaler ? d->freq / 256 : d->freq}
+, clock_{d->prescale_256 ? d->freq / 256 : d->freq}
 {
 	static_assert(sizeof(regs) == 0x10, "");
 	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
 
-	configure(d->clock, d->prescaler);
+	configure(d->clock, d->prescale_256);
 	set_timeout(d->default_timeout);
 }
 
@@ -76,7 +76,7 @@ rtwdog::inst()
 }
 
 void
-rtwdog::configure(clock clock, bool prescaler)
+rtwdog::configure(clock clock, bool prescale_256)
 {
 	std::lock_guard l{lock_};
 
@@ -99,7 +99,7 @@ rtwdog::configure(clock clock, bool prescaler)
 		.INT{0},
 		.EN{0}, /* keep off until open device is opened */
 		.CLK{static_cast<unsigned>(clock)},
-		.PRES{prescaler},
+		.PRES{prescale_256},
 		.CMD32EN{1},
 		.WIN{0},
 	}}.r);

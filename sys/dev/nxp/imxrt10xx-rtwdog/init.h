@@ -11,7 +11,7 @@ struct nxp_imxrt10xx_rtwdog_desc {
 	unsigned long base;			/* module base address */
 	imxrt10xx::rtwdog::clock clock;		/* module clock source */
 	unsigned long freq;			/* module clock frequency */
-	bool prescaler;				/* enable fixed 256 prescaler */
+	bool prescale_256;		    /* enable /256 clock prescaler */
 	int default_timeout;			/* default watchdog timeout */
 };
 
