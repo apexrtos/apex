@@ -43,7 +43,7 @@ private:
 
 	void configure(clock, bool);
 	void enable(bool);
-	int set_timeout(int);
+	int set_timeout(unsigned);
 	int get_timeout();
 	int get_timeleft();
 	void refresh();

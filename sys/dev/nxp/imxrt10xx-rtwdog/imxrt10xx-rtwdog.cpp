@@ -128,19 +128,18 @@ rtwdog::enable(bool en)
 }
 
 int
-rtwdog::set_timeout(int t)
+rtwdog::set_timeout(unsigned t)
 {
 	trace("imxrt10xx::rtwdog::set_timeout: %ds\n", t);
 
 	/* sanity check requested timeout */
-	const auto v{clock_ * t};
-	if (v > (UINT16_MAX + 1) || v < 1)
+	if (t < 1 || t > UINT16_MAX / clock_)
 		return DERR(-ERANGE);
 
 	std::lock_guard l{lock_};
 	write32(&r_->CNT, unlock_key);
 	while (!read32(&r_->CS).ULK);
-	write32(&r_->TOVAL, v - 1);
+	write32(&r_->TOVAL, t * clock_);
 	while (!read32(&r_->CS).RCS);
 
 	return 0;
