@@ -184,7 +184,7 @@ rtwdog::open()
 	trace("imxrt10xx::rtwdog::open\n");
 
 	if (open_)
-		return -EBUSY;
+		return DERR(-EBUSY);
 	enable(true);
 	open_ = true;
 	return 0;
