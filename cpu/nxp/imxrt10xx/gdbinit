@@ -347,8 +347,8 @@ define debug_kernel
 	reset
 	symbol-file apex/sys/apex.elf
 	b _start
-	b __assert_fail
 	c
+	b __assert_fail
 	python
 if 'DEBUGGER' not in os.environ:
 	gdb.write('DEBUGGER is not set\n')
