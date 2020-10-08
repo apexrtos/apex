@@ -84,11 +84,11 @@ rtwdog::configure(clock clock, bool prescale_256)
 	write32(&r_->CNT, unlock_key);
 	while (!read32(&r_->CS).ULK);
 
-	/* 
+	/*
 	 * CS is allowed to be written once after 255 clock cycles after reset
 	 * unless UPDATE = 1.
-	 * Bootrom writes UPDATE = 1 shortly after reset. This allows this driver
-	 * to update the value of CS. 
+	 * Bootrom writes UPDATE = 1 shortly after reset. This allows this
+	 * driver to update the value of CS.
 	 */
 	write32(&r_->CS, decltype(r_->CS){{
 		.STOP{0},
@@ -155,7 +155,7 @@ rtwdog::get_timeleft()
 {
 	trace("imxrt10xx::rtwdog::get_timeleft\n");
 
-	/* 
+	/*
 	 * CNT counts up.
 	 * Subtract count(CNT) from timeout value(TOVAL) to get time left.
 	 */
@@ -213,9 +213,9 @@ rtwdog::ioctl(unsigned long cmd, void *arg)
 			int to;
 			memcpy(&to, arg, sizeof(to));
 			/*
-			* Reset the counter so any new value that is less than the
-			* current counter value wont cause a reset
-			*/
+			 * Reset the counter so any new value that is less than
+			 * the current counter value wont cause a reset
+			 */
 			refresh();
 			return set_timeout(to);
 		}
