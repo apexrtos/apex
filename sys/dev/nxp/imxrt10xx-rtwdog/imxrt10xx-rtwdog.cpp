@@ -224,12 +224,12 @@ rtwdog::ioctl(unsigned long cmd, void *arg)
 			return set_timeout(to);
 		}
 		case WDIOC_GETTIMEOUT: {
-			const auto to{get_timeout()};
+			const int to{get_timeout()};
 			memcpy(arg, &to, sizeof(to));
 			return 0;
 		}
 		case WDIOC_GETTIMELEFT: {
-			const auto tl{get_timeleft()};
+			const int tl{get_timeleft()};
 			memcpy(arg, &tl, sizeof(tl));
 			return 0;
 		}
