@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <span>
 #include <sync.h>
 
@@ -37,7 +38,7 @@ private:
 	a::spinlock_irq lock_;
 	regs *const r_;
 	const unsigned long clock_;
-	bool open_;
+	std::atomic<bool> open_;
 	bool expect_close_;
 
 	void configure(clock, bool);

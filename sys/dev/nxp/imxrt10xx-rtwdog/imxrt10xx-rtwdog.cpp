@@ -186,10 +186,11 @@ rtwdog::open()
 {
 	trace("imxrt10xx::rtwdog::open\n");
 
-	if (open_)
+	bool v{false};
+	if (!open_.compare_exchange_strong(v, true))
 		return DERR(-EBUSY);
+
 	enable(true);
-	open_ = true;
 	return 0;
 }
 
