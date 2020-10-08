@@ -349,6 +349,7 @@ define debug_kernel
 	b _start
 	c
 	b __assert_fail
+	b panic
 	python
 if 'DEBUGGER' not in os.environ:
 	gdb.write('DEBUGGER is not set\n')
