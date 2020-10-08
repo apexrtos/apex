@@ -178,7 +178,7 @@ rtwdog::refresh()
 }
 
 int
-rtwdog::open(file *f)
+rtwdog::open()
 {
 	trace("imxrt10xx::rtwdog::open\n");
 
@@ -190,7 +190,7 @@ rtwdog::open(file *f)
 }
 
 int
-rtwdog::close(file *f)
+rtwdog::close()
 {
 	trace("imxrt10xx::rtwdog::close\n");
 	if (expect_close_)
@@ -254,13 +254,13 @@ rtwdog::write(std::span<const std::byte> buf, off_t off)
 int
 rtwdog_open(file *f)
 {
-	return imxrt10xx::rtwdog::inst()->open(f);
+	return imxrt10xx::rtwdog::inst()->open();
 }
 
 int
 rtwdog_close(file *f)
 {
-	return imxrt10xx::rtwdog::inst()->close(f);
+	return imxrt10xx::rtwdog::inst()->close();
 }
 
 ssize_t

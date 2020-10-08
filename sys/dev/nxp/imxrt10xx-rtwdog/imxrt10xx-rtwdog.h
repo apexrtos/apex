@@ -23,8 +23,8 @@ public:
 	};
 
 	static rtwdog *inst();
-	int open(file *);
-	int close(file *);
+	int open();
+	int close();
 	int ioctl(unsigned long, void *);
 	ssize_t write(std::span<const std::byte> buf, off_t off);
 
