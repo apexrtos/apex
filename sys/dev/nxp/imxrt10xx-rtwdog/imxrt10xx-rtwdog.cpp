@@ -243,11 +243,9 @@ rtwdog::write(std::span<const std::byte> buf, off_t off)
 {
 	trace("imxrt10xx::rtwdog::write\n");
 
-	char tmp;
-	memcpy(&tmp, data(buf), sizeof(tmp));
-	expect_close_ = false;
-	if (tmp == 'V')
-		expect_close_ = true;
+	/* scan for magic 'V' to disable watchdog on close */
+	const auto magic{static_cast<std::byte>('V')};
+	expect_close_ = std::find(begin(buf), end(buf), magic) != end(buf);
 
 	refresh();
 	return size(buf);
