@@ -3,6 +3,7 @@
 #include "init.h"
 #include <arch.h>
 #include <debug.h>
+#include <device.h>
 #include <errno.h>
 #include <fs/util.h>
 #include <kernel.h>
