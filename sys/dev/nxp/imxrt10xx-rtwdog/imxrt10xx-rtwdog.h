@@ -24,7 +24,7 @@ public:
 	int open();
 	int close();
 	int ioctl(unsigned long, void *);
-	ssize_t write(std::span<const std::byte> buf, off_t off);
+	ssize_t write(std::span<const std::byte>, off_t);
 
 private:
 	struct regs;
