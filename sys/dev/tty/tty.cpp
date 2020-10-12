@@ -51,6 +51,7 @@ public:
 	tty(size_t, size_t, std::unique_ptr<phys>, size_t,
 	    std::unique_ptr<phys>, tty_tproc, tty_oproc, tty_iproc, tty_fproc,
 	    void *);
+	~tty();
 
 	/* interface to filesystem */
 	int open(file *);
@@ -124,11 +125,12 @@ private:
 	buffer_queue::iterator rxq_pending_;
 	buffer_queue::iterator rxq_cooked_;
 
-	/* DPC for processing received data */
-	dpc rx_dpc_;
+	/* thread for processing received data */
+	thread *rx_th_;
+	a::semaphore rx_semaphore_;
 	void rx_process();
-	void rx_dpc();
-	static void rx_dpc_fn(void *);
+	void rx_th();
+	static void rx_th_wrapper(void *);
 
 	/* static initialisation data */
 	void *const driver_data_;	/* private driver data */
@@ -158,7 +160,7 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 , rxq_processed_{rxq_.begin()}
 , rxq_pending_{rxq_.begin()}
 , rxq_cooked_{rxq_.begin()}
-, rx_dpc_{}
+, rx_th_{}
 , driver_data_{driver_data}
 , oproc_{oproc}
 , iproc_{iproc}
@@ -192,6 +194,19 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 	/* VEOL2 default is 0 */
 
 	set_termios(t);
+
+	/* thread for processing received data */
+	if (!(rx_th_ = kthread_create(&rx_th_wrapper, this, PRI_DPC, "tty_rx",
+				      MA_NORMAL)))
+		panic("OOM");
+}
+
+/*
+ * tty::~tty
+ */
+tty::~tty()
+{
+	thread_terminate(rx_th_);
 }
 
 /*
@@ -235,7 +250,7 @@ ssize_t
 tty::read(file *f, std::span<std::byte> buf)
 {
 	auto rx_avail = [&] {
-		/* raw input is not processed by dpc */
+		/* raw input is not processed by thread */
 		if (!(flags_.load() & flags::cook_input)) {
 			std::unique_lock rl{rxq_lock_};
 			rxq_cooked_ = rxq_processed_ = rxq_pending_ = rxq_.end();
@@ -888,8 +903,8 @@ tty::flush(int io)
 
 		flags_ &= ~flags::rx_overflow;
 
-		/* use dpc to requeue rx buffers */
-		sch_dpc(&rx_dpc_, rx_dpc_fn, this);
+		/* use thread to requeue rx buffers */
+		rx_semaphore_.post();
 	}
 	if (io == TCOFLUSH || io == TCIOFLUSH) {
 		/* flush output */
@@ -900,7 +915,7 @@ tty::flush(int io)
 		txq_end_ = txq_.end();
 
 		if (flags_ & flags::rx_blocked_on_tx_full) {
-			sch_dpc(&rx_dpc_, rx_dpc_fn, this);
+			rx_semaphore_.post();
 			flags_ &= ~flags::rx_blocked_on_tx_full;
 		}
 	}
@@ -940,7 +955,7 @@ tty::cook()
 	const auto f = flags_.load();
 	if (f & flags::cook_input) {
 		if (!(f & flags::rx_blocked_on_tx_full))
-			sch_dpc(&rx_dpc_, rx_dpc_fn, this);
+			rx_semaphore_.post();
 		return;
 	}
 
@@ -1110,49 +1125,52 @@ out:
 }
 
 /*
- * tty::rx_dpc - deferred procedure call for receive processing
+ * tty::rx_th - thread function for receive processing
  */
 void
-tty::rx_dpc()
+tty::rx_th()
 {
-	std::unique_lock sl{state_lock_};
+	while (rx_semaphore_.wait_interruptible() == 0) {
+		std::unique_lock sl{state_lock_};
 
-	rx_process();
+		rx_process();
 
-	/* trim empty buffers & check if data is ready */
-	std::unique_lock rl{rxq_lock_};
-	if (flags_ & flags::rx_overflow) {
-		rxq_.free_buffers_after(rxq_cooked_);
-		rxq_pending_ = rxq_processed_ = rxq_.end();
-	} else if (rxq_processed_ != rxq_.end()) {
-		std::lock_guard tl{txq_lock_};
-		if (!txq_.empty())
-			flags_ |= flags::rx_blocked_on_tx_full;
-	} else {
-		rxq_.free_buffers_after(rxq_pending_);
-		rxq_processed_ = rxq_.end();
+		/* trim empty buffers & check if data is ready */
+		std::unique_lock rl{rxq_lock_};
+		if (flags_ & flags::rx_overflow) {
+			rxq_.free_buffers_after(rxq_cooked_);
+			rxq_pending_ = rxq_processed_ = rxq_.end();
+		} else if (rxq_processed_ != rxq_.end()) {
+			std::lock_guard tl{txq_lock_};
+			if (!txq_.empty())
+				flags_ |= flags::rx_blocked_on_tx_full;
+		} else {
+			rxq_.free_buffers_after(rxq_pending_);
+			rxq_processed_ = rxq_.end();
+		}
+		const auto bufavail = !rxq_.bufpool_empty();
+		const auto dataavail = rxq_cooked_ != rxq_.begin();
+		rl.unlock();
+		sl.unlock();
+
+		/* notify if buffer available */
+		if (bufavail && iproc_)
+			iproc_(this);
+
+		/* wakeup threads waiting for input */
+		if (dataavail)
+			sch_wakeone(&input_);
 	}
-	const auto bufavail = !rxq_.bufpool_empty();
-	const auto dataavail = rxq_cooked_ != rxq_.begin();
-	rl.unlock();
-	sl.unlock();
-
-	/* notify if buffer available */
-	if (bufavail && iproc_)
-		iproc_(this);
-
-	/* wakeup threads waiting for input */
-	if (dataavail)
-		sch_wakeone(&input_);
+	sch_testexit();
 }
 
 /*
- * tty::rx_dpc_fn - deferred procedure call wrapper for receive processing
+ * tty::rx_th_wrapper - thread function wrapper for receive processing
  */
 void
-tty::rx_dpc_fn(void *arg)
+tty::rx_th_wrapper(void *arg)
 {
-	static_cast<tty *>(arg)->rx_dpc();
+	static_cast<tty *>(arg)->rx_th();
 }
 
 namespace {
