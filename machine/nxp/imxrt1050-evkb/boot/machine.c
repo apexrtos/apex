@@ -65,6 +65,15 @@ machine_setup(void)
 		.TE = 1, /* transmitter enabled */
 	}.r);
 #endif
+
+	/* Limit the write issuing capability of writes from the Cortex-M7 core
+	 * to one outstanding transaction in the NIC-301 interconnect.
+	 *
+	 * This works around a bug in the i.MXRT processor which results in
+	 * DRAM corruption.
+	 *
+	 * Set the fn_mod register of the m_b_0 (Cortex-M7) port. */
+	write32((int *)0x41442108, 2);
 }
 
 /*
