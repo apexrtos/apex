@@ -58,11 +58,7 @@ host::host(const mmc_desc &d, bool sdr104, bool sdr50, bool ddr50,
 	    power_stable_delay_ms_ < 1 || load_capacitance_pf_ < 1)
 		panic("bad desc");
 
-	/* Thread for rescanning bus after change events.
-	 *
-	 * This is required as Apex doesn't have support for deferred
-	 * processing which can sleep yet.
-	 */
+	/* thread for rescanning bus after change events */
 	if (!(th_ = kthread_create(&th_fn_wrapper, this, PRI_DPC, d.name,
 	    MA_NORMAL)))
 		panic("OOM");
