@@ -28,6 +28,7 @@ __atomic_load_8(const volatile void *p, int m)
 		"msr PRIMASK, %[s]\n"
 		: [s]"=&lh"(s), [r]"=lh"(tmp)
 		: [p]"m"(*p64)
+		: "memory"
 	);
 	return tmp;
 }
@@ -55,6 +56,7 @@ __atomic_store_8(volatile void *p, uint64_t v, int m)
 		"msr PRIMASK, %[s]\n"
 		: [s]"=&lh"(s), [p]"=m"(*p64)
 		: [v]"lh"(v)
+		: "memory"
 	);
 }
 
@@ -83,6 +85,7 @@ __atomic_exchange_8(volatile void *p, uint64_t v, int m)
 		"msr PRIMASK, %[s]\n"
 		: [s]"=&lh"(s), [p]"=m"(*p64), [ret]"=&lh"(ret)
 		: [v]"lh"(v), "m"(*p64)
+		: "memory"
 	);
 	return ret;
 }
