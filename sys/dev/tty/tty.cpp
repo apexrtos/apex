@@ -904,7 +904,7 @@ tty::flush(int io)
 		flags_ &= ~flags::rx_overflow;
 
 		/* use thread to requeue rx buffers */
-		rx_semaphore_.post();
+		rx_semaphore_.post_once();
 	}
 	if (io == TCOFLUSH || io == TCIOFLUSH) {
 		/* flush output */
@@ -915,7 +915,7 @@ tty::flush(int io)
 		txq_end_ = txq_.end();
 
 		if (flags_ & flags::rx_blocked_on_tx_full) {
-			rx_semaphore_.post();
+			rx_semaphore_.post_once();
 			flags_ &= ~flags::rx_blocked_on_tx_full;
 		}
 	}
@@ -955,7 +955,7 @@ tty::cook()
 	const auto f = flags_.load();
 	if (f & flags::cook_input) {
 		if (!(f & flags::rx_blocked_on_tx_full))
-			rx_semaphore_.post();
+			rx_semaphore_.post_once();
 		return;
 	}
 

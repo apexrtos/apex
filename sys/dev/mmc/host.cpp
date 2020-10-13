@@ -155,7 +155,7 @@ host::run_command(command &c, unsigned rca)
 void
 host::rescan()
 {
-	bus_changed_semaphore_.post();
+	bus_changed_semaphore_.post_once();
 }
 
 /*
@@ -660,7 +660,7 @@ void
 host::bus_changed_debounce_timeout(void *p)
 {
 	auto h = static_cast<host *>(p);
-	h->bus_changed_semaphore_.post();
+	h->bus_changed_semaphore_.post_once();
 }
 
 /*
