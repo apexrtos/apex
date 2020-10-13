@@ -48,6 +48,26 @@ semaphore_post(struct semaphore *s)
 }
 
 /*
+ * semaphore_post_once - increment (unlock) semaphore if it is not unlocked.
+ *
+ * This can be used to implement a binary semaphore.
+ *
+ * Safe to call from interrupt context.
+ */
+int
+semaphore_post_once(struct semaphore *s)
+{
+	struct private *p = (struct private *)s->storage;
+
+	if (p->count)
+		return 0;
+
+	++p->count;
+	sch_wakeone(&p->event);
+	return 0;
+}
+
+/*
  * semaphore_wait - decrement (lock) semaphore.
  */
 int

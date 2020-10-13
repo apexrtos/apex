@@ -125,6 +125,7 @@ void	       spinlock_assert_locked(const struct spinlock *);
 
 void	       semaphore_init(struct semaphore *);
 int	       semaphore_post(struct semaphore *);
+int	       semaphore_post_once(struct semaphore *);
 int	       semaphore_wait_interruptible(struct semaphore *);
 
 #if defined(__cplusplus)
@@ -281,6 +282,7 @@ public:
 	semaphore &operator=(semaphore &&) = delete;
 	semaphore &operator=(const semaphore &) = delete;
 	int post() { return semaphore_post(&s_); }
+	int post_once() { return semaphore_post_once(&s_); }
 	int wait_interruptible() { return semaphore_wait_interruptible(&s_); }
 
 private:
