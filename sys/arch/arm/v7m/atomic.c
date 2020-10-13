@@ -18,15 +18,12 @@
 inline uint64_t
 __atomic_load_8(const volatile void *p, int m)
 {
+	/* ldrd is restarted on interrupt */
 	const volatile uint64_t *p64 = p;
 	uint64_t tmp;
-	int s;
 	asm volatile(
-		"mrs %[s], PRIMASK\n"
-		"cpsid i\n"
 		"ldrd %[r], %H[r], %[p]\n"
-		"msr PRIMASK, %[s]\n"
-		: [s]"=&lh"(s), [r]"=lh"(tmp)
+		: [r]"=lh"(tmp)
 		: [p]"m"(*p64)
 		: "memory"
 	);
