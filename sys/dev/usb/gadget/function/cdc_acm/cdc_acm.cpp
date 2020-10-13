@@ -91,12 +91,10 @@ cdc_acm::cdc_acm(gadget::udc &u)
 cdc_acm::~cdc_acm()
 {
 	/* Lock to ensure that data is synchronised. */
-	lock_.lock();
-	lock_.unlock();
+	std::lock_guard l{lock_};
 
 	assert(!running_);
 
-	/* Do not hold lock while destroying tty as this can sleep. */
 	if (t_)
 		tty_destroy(t_);
 }

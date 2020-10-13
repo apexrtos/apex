@@ -50,7 +50,7 @@ private:
 	std::vector<std::unique_ptr<transaction>> tx_;
 	std::vector<std::unique_ptr<transaction>> rx_;
 
-	a::spinlock lock_;
+	a::mutex lock_;
 };
 
 }

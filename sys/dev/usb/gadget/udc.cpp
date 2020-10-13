@@ -8,6 +8,8 @@
 #include <irq.h>
 #include <list>
 #include <mutex>
+#include <sch.h>
+#include <thread.h>
 
 #define trace(...)
 
@@ -47,7 +49,6 @@ udc::udc(std::string_view name, const size_t endpoints)
 , endpoints_{endpoints}
 , running_{false}
 , state_{ch9::DeviceState::Detached}
-, dpc_{}
 , events_{0}
 , complete_{0}
 , attached_irq_{false}
@@ -55,13 +56,19 @@ udc::udc(std::string_view name, const size_t endpoints)
 , setup_buf_{nullptr}
 {
 	assert(endpoints_ <= 16);
+
+	if (!(th_ = kthread_create(&th_fn_wrapper, this, PRI_DPC, "udc",
+				   MA_NORMAL)))
+		panic("OOM");
 }
 
 /*
  * udc::~udc
  */
 udc::~udc()
-{ }
+{
+	thread_terminate(th_);
+}
 
 /*
  * udc::start - start USB device controller
@@ -100,8 +107,8 @@ udc::stop()
 	if (!running_)
 		return;
 	running_ = false;
-	v_stop();
 	device_->reset();
+	v_stop();
 	state_ = ch9::DeviceState::Detached;
 	events_ = 0;
 	complete_ = 0;
@@ -240,7 +247,7 @@ void
 udc::reset_irq()
 {
 	events_ |= reset_event;
-	sch_dpc(&dpc_, dpc_fn, this);
+	semaphore_.post_once();
 }
 
 /*
@@ -256,7 +263,7 @@ void
 udc::bus_reset_irq()
 {
 	events_ |= bus_reset_event;
-	sch_dpc(&dpc_, dpc_fn, this);
+	semaphore_.post_once();
 }
 
 /*
@@ -275,7 +282,7 @@ udc::port_change_irq(bool connected, Speed s)
 	speed_irq_ = s;
 
 	events_ |= port_change_event;
-	sch_dpc(&dpc_, dpc_fn, this);
+	semaphore_.post_once();
 }
 
 /*
@@ -284,13 +291,10 @@ udc::port_change_irq(bool connected, Speed s)
  * See process_events for further details.
  *
  * Interrupt safe.
- * Caller must hold setup_lock_.
  */
 void
 udc::setup_request_irq(size_t endpoint, const ch9::setup_data &s)
 {
-	setup_lock_.assert_locked();
-
 	/* only default control pipe (endpoint 0) supported */
 	if (endpoint != 0) {
 		dbg("udc::setup_request_irq: ignoring setup on endpoint %d\n",
@@ -300,7 +304,7 @@ udc::setup_request_irq(size_t endpoint, const ch9::setup_data &s)
 
 	setup_data_irq_ = s;
 	events_ |= setup_request_event;
-	sch_dpc(&dpc_, dpc_fn, this);
+	semaphore_.post_once();
 }
 
 /*
@@ -322,7 +326,7 @@ udc::setup_aborted_irq(size_t endpoint)
 	}
 
 	events_ |= setup_aborted_event;
-	sch_dpc(&dpc_, dpc_fn, this);
+	semaphore_.post_once();
 }
 
 /*
@@ -341,7 +345,21 @@ udc::ep_complete_irq(size_t endpoint, ch9::Direction dir)
 
 	events_ |= ep_complete_event;
 	complete_ |= 1UL << (endpoint * 2 + static_cast<int>(dir));
-	sch_dpc(&dpc_, dpc_fn, this);
+	semaphore_.post_once();
+}
+
+/*
+ * udc::setup_requested
+ *
+ * Returns true if a setup request has been received.
+ */
+bool
+udc::setup_requested(size_t endpoint)
+{
+	/* only default control pipe (endpoint 0) supported */
+	assert(endpoint == 0);
+
+	return events_ & setup_request_event;
 }
 
 /*
@@ -356,15 +374,7 @@ udc::queue_setup(const ch9::Direction dir, transaction *t)
 
 	int ret = 0;
 
-	/* Setup transactions need to be queued with interrupts disabled as we
-	 * must never respond to a new setup request with old data. The device
-	 * controller must abort any queued data/status transfer if a new setup
-	 * request is received. */
-	std::lock_guard l{setup_lock_};
-
-	if (events_ & setup_request_event)
-		ret = -EBUSY;
-	else if ((ret = v_queue(0, dir, t)) < 0)
+	if ((ret = v_queue_setup(0, dir, t)) < 0)
 		v_set_stall(0, true);
 
 	return ret;
@@ -737,22 +747,28 @@ udc::process_events()
 	if (e & setup_aborted_event)
 		v_setup_aborted(0);
 
-	if (e & setup_request_event) {
-		std::unique_lock sl{setup_lock_};
-		ch9::setup_data s{setup_data_irq_};
-		sl.unlock();
-
-		process_setup(s, speed_irq_.load());
-	}
+	if (e & setup_request_event)
+		process_setup(setup_data_irq_.load(), speed_irq_.load());
 }
 
 /*
- * udc::dpc_fn
+ * udc::th_fn
  */
 void
-udc::dpc_fn(void *arg)
+udc::th_fn()
 {
-	static_cast<udc *>(arg)->process_events();
+	while (semaphore_.wait_interruptible() == 0)
+		process_events();
+	sch_testexit();
+}
+
+/*
+ * udc::th_fn_wrapper
+ */
+void
+udc::th_fn_wrapper(void *arg)
+{
+	static_cast<udc *>(arg)->th_fn();
 }
 
 namespace {

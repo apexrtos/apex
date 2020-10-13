@@ -383,6 +383,8 @@ private:
 	std::unique_ptr<gadget::transaction> v_alloc_transaction() override;
 	int v_queue(size_t endpoint, ch9::Direction,
 	    gadget::transaction*) override;
+	int v_queue_setup(size_t endpoint, ch9::Direction,
+	    gadget::transaction*) override;
 	int v_flush(size_t endpoint, ch9::Direction) override;
 	void v_complete(size_t endpoint, ch9::Direction);
 	void v_set_stall(size_t endpoint, bool) override;
@@ -391,6 +393,7 @@ private:
 	void v_set_address(unsigned address) override;
 	void v_setup_aborted(size_t endpoint) override;
 
+	int do_queue(size_t endpoint, ch9::Direction, gadget::transaction *);
 	void hw_init();
 	void reset_queues();
 	dqh &get_dqh(size_t endpoint, ch9::Direction);
@@ -400,8 +403,9 @@ private:
 	dqh *const dqh_;
 	dtd *dtd_free_;
 
-	a::spinlock dtd_lock_;	/* for dtd free list */
-	a::spinlock lock_;	/* for device controller state */
+	a::spinlock_irq setup_lock_;	/* for setup requests */
+	a::spinlock_irq dtd_lock_;	/* for dtd free list */
+	a::mutex lock_;			/* for device controller state */
 
 	static constexpr size_t mem_size = 4096;
 	static constexpr size_t num_dqh = 32;
@@ -518,7 +522,7 @@ fsl_usb2_udc::isr()
 			trace("ENDPTSETUPSTAT %x\n", v);
 			write32(&r_->ENDPTSETUPSTAT, v);
 
-			/* synchronise with udc::queue_setup */
+			/* synchronise with v_queue_setup */
 			std::lock_guard l{setup_lock_};
 
 			auto usbcmd = read32(&r_->USBCMD);
@@ -755,82 +759,24 @@ fsl_usb2_udc::v_queue(size_t endpoint, ch9::Direction dir,
 {
 	std::lock_guard l{lock_};
 
-	trace("v_queue ep:%zu dir:%d t:%p\n", endpoint, static_cast<int>(dir),
-	    tb);
+	return do_queue(endpoint, dir, tb);
+}
 
-	auto t = dynamic_cast<fsl_usb2_transaction *>(tb);
+int
+fsl_usb2_udc::v_queue_setup(size_t endpoint, ch9::Direction dir,
+			    gadget::transaction *tb)
+{
+	std::lock_guard l{lock_};
 
-	if (!t)
-		return DERR(-EINVAL);
+	/* setup transactions need to be queued with interrupts disabled as we
+	 * must never respond to a new setup request with old data */
+	std::lock_guard sl{setup_lock_};
 
-	if (endpoint >= endpoints())
-		return DERR(-EINVAL);
+	/* a new setup request was received before we responded */
+	if (setup_requested(endpoint))
+		return 0;
 
-	auto &q = get_dqh(endpoint, dir);
-
-	if (!q.open)
-		return DERR(-EINVAL);
-
-	/* prepare transfer descriptors */
-	if (auto r = t->start(q.capabilities.max_packet_len, dir); r < 0)
-		return r;
-
-	const auto epb = epbit(endpoint, dir);
-
-	trace("dump queue ep %zu dir %d\n", endpoint, static_cast<int>(dir));
-	for (auto qt = q.transaction; qt; qt = qt->next()) {
-		trace("-> %p\n", qt);
-		assert(qt != t);
-	}
-
-	/* enqueue transacation */
-	if (q.transaction) {
-		/* iterate to queue transaction list tail */
-		auto qt = q.transaction;
-		while (qt->next())
-			qt = qt->next();
-
-		qt->enqueue(t);
-
-		/* ensure writes to transfer descriptors are observable */
-		write_memory_barrier();
-
-		/* perform synchronisation dance with hardware */
-		/* this comes straight from the "Executing A Transfer
-		 * Descriptor" section of the imxRT1060 reference manual */
-		if (read32(&r_->ENDPTPRIME) & epb)
-			return 0;
-		auto cmd = read32(&r_->USBCMD);
-		cmd.ATDTW = 1;
-		uint32_t stat;
-		do {
-			write32(&r_->USBCMD, cmd.r);
-			stat = read32(&r_->ENDPTSTAT);
-		} while (!read32(&r_->USBCMD).ATDTW);
-		cmd.ATDTW = 0;
-		write32(&r_->USBCMD, cmd.r);
-		if (stat & epb) {
-			trace("enqueue continue ep %zu dir %d q %p txn %p\n",
-			    endpoint, static_cast<int>(dir), t, qt);
-			return 0;
-		}
-	} else
-		q.transaction = t;
-
-	trace("enqueue prime ep %zu dir %d q %p txn %p\n",
-	    endpoint, static_cast<int>(dir), t, q.transaction);
-
-	/* fill in queue head */
-	q.dtd_overlay.next_link = t->dtd_head();
-	q.dtd_overlay.token.r = 0;
-
-	/* ensure writes to transfer descriptors & queue head are observable */
-	write_memory_barrier();
-
-	/* prime endpoint */
-	write32(&r_->ENDPTPRIME, epb);
-
-	return 0;
+	return do_queue(endpoint, dir, tb);
 }
 
 int
@@ -992,6 +938,90 @@ fsl_usb2_udc::v_setup_aborted(size_t endpoint)
 
 	cancel_txn(get_dqh(endpoint, ch9::Direction::DeviceToHost));
 	cancel_txn(get_dqh(endpoint, ch9::Direction::HostToDevice));
+}
+
+int
+fsl_usb2_udc::do_queue(size_t endpoint, ch9::Direction dir,
+		       gadget::transaction *tb)
+{
+	lock_.assert_locked();
+
+	trace("do_queue ep:%zu dir:%d t:%p\n", endpoint, static_cast<int>(dir),
+	    tb);
+
+	auto t = dynamic_cast<fsl_usb2_transaction *>(tb);
+
+	if (!t)
+		return DERR(-EINVAL);
+
+	if (endpoint >= endpoints())
+		return DERR(-EINVAL);
+
+	auto &q = get_dqh(endpoint, dir);
+
+	if (!q.open)
+		return DERR(-EINVAL);
+
+	/* prepare transfer descriptors */
+	if (auto r = t->start(q.capabilities.max_packet_len, dir); r < 0)
+		return r;
+
+	const auto epb = epbit(endpoint, dir);
+
+	trace("dump queue ep %zu dir %d\n", endpoint, static_cast<int>(dir));
+	for (auto qt = q.transaction; qt; qt = qt->next()) {
+		trace("-> %p\n", qt);
+		assert(qt != t);
+	}
+
+	/* enqueue transacation */
+	if (q.transaction) {
+		/* iterate to queue transaction list tail */
+		auto qt = q.transaction;
+		while (qt->next())
+			qt = qt->next();
+
+		qt->enqueue(t);
+
+		/* ensure writes to transfer descriptors are observable */
+		write_memory_barrier();
+
+		/* perform synchronisation dance with hardware */
+		/* this comes straight from the "Executing A Transfer
+		 * Descriptor" section of the imxRT1060 reference manual */
+		if (read32(&r_->ENDPTPRIME) & epb)
+			return 0;
+		auto cmd = read32(&r_->USBCMD);
+		cmd.ATDTW = 1;
+		uint32_t stat;
+		do {
+			write32(&r_->USBCMD, cmd.r);
+			stat = read32(&r_->ENDPTSTAT);
+		} while (!read32(&r_->USBCMD).ATDTW);
+		cmd.ATDTW = 0;
+		write32(&r_->USBCMD, cmd.r);
+		if (stat & epb) {
+			trace("enqueue continue ep %zu dir %d q %p txn %p\n",
+			    endpoint, static_cast<int>(dir), t, qt);
+			return 0;
+		}
+	} else
+		q.transaction = t;
+
+	trace("enqueue prime ep %zu dir %d q %p txn %p\n",
+	    endpoint, static_cast<int>(dir), t, q.transaction);
+
+	/* fill in queue head */
+	q.dtd_overlay.next_link = t->dtd_head();
+	q.dtd_overlay.token.r = 0;
+
+	/* ensure writes to transfer descriptors & queue head are observable */
+	write_memory_barrier();
+
+	/* prime endpoint */
+	write32(&r_->ENDPTPRIME, epb);
+
+	return 0;
 }
 
 void

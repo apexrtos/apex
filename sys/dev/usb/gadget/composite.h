@@ -45,7 +45,7 @@ private:
 
 	configuration *find_configuration(std::string_view name);
 
-	mutable a::spinlock lock_;
+	mutable a::mutex lock_;
 	bool initialised_;
 	std::vector<std::unique_ptr<configuration>> configurations_;
 	std::vector<std::byte> desc_;

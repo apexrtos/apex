@@ -12,7 +12,6 @@
 #include <dev/usb/setup_request.h>
 #include <dev/usb/usb.h>
 #include <memory>
-#include <sch.h>
 #include <string>
 #include <sync.h>
 
@@ -49,8 +48,7 @@ protected:
 	void setup_request_irq(size_t endpoint, const ch9::setup_data &);
 	void setup_aborted_irq(size_t endpoint);
 	void ep_complete_irq(size_t endpoint, ch9::Direction);
-
-	a::spinlock_irq setup_lock_;
+	bool setup_requested(size_t endpoint);
 
 private:
 	virtual int v_start() = 0;
@@ -63,6 +61,8 @@ private:
 	virtual void v_close_endpoint(size_t endpoint, ch9::Direction) = 0;
 	virtual std::unique_ptr<transaction> v_alloc_transaction() = 0;
 	virtual int v_queue(size_t endpoint, ch9::Direction, transaction *) = 0;
+	virtual int v_queue_setup(size_t endpoint, ch9::Direction,
+				  transaction *) = 0;
 	virtual int v_flush(size_t endpoint, ch9::Direction) = 0;
 	virtual void v_complete(size_t endpoint, ch9::Direction) = 0;
 	virtual void v_set_stall(size_t endpoint, bool) = 0;
@@ -71,7 +71,7 @@ private:
 	virtual void v_set_address(unsigned address) = 0;
 	virtual void v_setup_aborted(size_t endpoint) = 0;
 
-	a::spinlock lock_;
+	a::mutex lock_;
 
 	const std::string name_;
 	const size_t endpoints_;
@@ -79,12 +79,13 @@ private:
 	std::shared_ptr<gadget::device> device_;
 	ch9::DeviceState state_;
 
-	dpc dpc_;
+	thread *th_;
+	a::semaphore semaphore_;
 	std::atomic_ulong events_;
 	std::atomic_ulong complete_;
 	std::atomic_bool attached_irq_;
 	std::atomic<Speed> speed_irq_;
-	ch9::setup_data setup_data_irq_;
+	std::atomic<ch9::setup_data> setup_data_irq_;
 
 	std::unique_ptr<transaction> txn_;
 	void *setup_buf_;
@@ -104,7 +105,8 @@ private:
 	setup_result endpoint_feature_request(const setup_request &, bool);
 
 	void process_events();
-	static void dpc_fn(void *);
+	void th_fn();
+	static void th_fn_wrapper(void *);
 
 public:
 	static void add(udc *);
