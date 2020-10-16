@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <task.h>
 #include <thread.h>
+#include <time32.h>
 #include <vm.h>
 
 #define trace(...)
@@ -105,7 +106,7 @@ out:
  * futex_wait - perform FUTEX_WAIT operation
  */
 static int
-futex_wait(struct task *t, int *uaddr, int val, const struct timespec *ts)
+futex_wait(struct task *t, int *uaddr, int val, const struct timespec32 *ts)
 {
 	int err, uval;
 
@@ -133,9 +134,9 @@ futex_wait(struct task *t, int *uaddr, int val, const struct timespec *ts)
 	}
 
 	trace("futex_wait th:%p uaddr:%p val:%x ns:%llu\n",
-	    thread_cur(), uaddr, val, ts ? ts_to_ns(ts) : 0);
+	      thread_cur(), uaddr, val, ts ? ts32_to_ns(ts) : 0);
 
-	err = sch_prepare_sleep(&f->event, ts ? ts_to_ns(ts) : 0);
+	err = sch_prepare_sleep(&f->event, ts ? ts32_to_ns(ts) : 0);
 	spinlock_unlock(&f->lock);
 	if (err)
 		return err;
@@ -256,7 +257,7 @@ int
 sc_futex(int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
 	int ret;
-	struct timespec ts;
+	struct timespec32 ts;
 
 	/* copy in userspace timespec */
 	switch (op & FUTEX_OP_MASK) {
