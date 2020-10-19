@@ -182,8 +182,8 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 	t.c_cc[VERASE] = CERASE;
 	t.c_cc[VKILL] = CKILL;
 	t.c_cc[VEOF] = CEOF;
-	t.c_cc[VTIME] = CTIME;		/* REVISIT: not yet supported */
-	t.c_cc[VMIN] = CMIN;		/* REVISIT: not yet supported */
+	t.c_cc[VTIME] = CTIME;
+	t.c_cc[VMIN] = CMIN;
 	t.c_cc[VSTART] = CSTART;
 	t.c_cc[VSTOP] = CSTOP;
 	t.c_cc[VSUSP] = CSUSP;
@@ -269,40 +269,43 @@ tty::read(file *f, std::span<std::byte> buf)
 	if (f->f_flags & O_NONBLOCK && !rx_avail())
 		return -EAGAIN;
 
-	/* wait for input */
-	while (!rx_avail()) {
-		/*
-		 * REVISIT: The settings of MIN (c_cc[VMIN]) and TIME
-		 * (c_cc[VTIME]) should be used to determine the
-		 * circumstances in which a read(2) completes
-		 */
-		if (auto r = sch_prepare_sleep(&input_, 0); r)
-			return r;
-		if (rx_avail()) {
-			sch_cancel_sleep();
-			continue;
+	auto rx_wait = [&](uint_fast64_t timeout) {
+		timeout *= 100000000;
+		while (!rx_avail()) {
+			if (auto r = sch_prepare_sleep(&input_, timeout); r)
+				return r;
+			if (rx_avail()) {
+				sch_cancel_sleep();
+				return 0;
+			}
+			sl.unlock();
+			u_access_suspend();
+			auto rc = sch_continue_sleep();
+			if (auto r = u_access_resume(data(buf), size(buf),
+						     PROT_WRITE); r)
+				rc = r;
+			sl.lock();
+			if (rc)
+				return rc;
 		}
-		sl.unlock();
-		u_access_suspend();
-		auto rc = sch_continue_sleep();
-		if (auto r = u_access_resume(data(buf), size(buf), PROT_WRITE); r)
-			rc = r;
-		if (rc)
-			return rc;
-		sl.lock();
-	}
+		return 0;
+	};
 
 	size_t count;
-	auto it = rxq_.begin();
-	const auto end = rxq_cooked_;
+	buffer_queue::iterator it;
+	const auto &cc = termios_.c_cc;
 
 	if (termios_.c_lflag & ICANON) {
-		const auto &cc = termios_.c_cc;
+		/* block waiting for input */
+		if (auto r{rx_wait(0)}; r)
+			return r;
+
 		/* split input on '\n', cc[VEOL], cc[VEOL2] and cc[VEOF], do
 		   not pass cc[VOEF] as input */
 		count = 0;
+		it = rxq_.begin();
 		char *cbuf = reinterpret_cast<char *>(data(buf));
-		while (count < size(buf) && it < end) {
+		while (count < size(buf) && it < rxq_cooked_) {
 			const char c = *it++;
 			if (c == cc[VEOF])
 				break;
@@ -312,7 +315,20 @@ tty::read(file *f, std::span<std::byte> buf)
 				break;
 		}
 	} else {
-		count = std::min<size_t>(size(buf), end - it);
+		if (cc[VTIME])
+			if (auto r{rx_wait(!cc[VMIN] * cc[VTIME])};
+			    r < 0 && r != -ETIMEDOUT)
+				return r;
+		while (rxq_cooked_ - rxq_.begin() < cc[VMIN]) {
+			auto r{rx_wait(cc[VTIME])};
+			if (r == -ETIMEDOUT)
+				break;
+			if (r)
+				return r;
+		}
+
+		it = rxq_.begin();
+		count = std::min(ssize(buf), rxq_cooked_ - it);
 		rxq_.copy(data(buf), count);
 		it += count;
 	}
