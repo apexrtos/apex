@@ -679,6 +679,12 @@ as_reference(as *a)
 int
 as_transfer_begin(as *a)
 {
+	return a->lock.read().lock();
+}
+
+int
+as_transfer_begin_interruptible(as *a)
+{
 	return a->lock.read().interruptible_lock();
 }
 

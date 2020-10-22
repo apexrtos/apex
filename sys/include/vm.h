@@ -30,6 +30,7 @@ struct as	   *as_copy(struct as *, pid_t);
 void		    as_destroy(struct as *);
 void		    as_reference(struct as *);
 int		    as_transfer_begin(struct as *);
+int		    as_transfer_begin_interruptible(struct as *);
 void		    as_transfer_end(struct as *);
 bool		    as_locked(struct as *);
 int		    as_modify_begin(struct as *);
