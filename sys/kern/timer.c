@@ -510,10 +510,13 @@ sc_getitimer(int timer, struct k_itimerval *o)
 int
 sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 {
+	int err;
+
 	if (timer < 0 || timer > ITIMER_PROF)
 		return DERR(-EINVAL);
 
-	u_access_begin();
+	if ((err = u_access_begin()) < 0)
+		return err;
 	if (!u_access_ok(n, sizeof *n, PROT_READ) ||
 	    (o && !u_access_ok(o, sizeof *o, PROT_WRITE))) {
 		u_access_end();
