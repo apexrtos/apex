@@ -34,6 +34,7 @@ int		    as_transfer_begin_interruptible(struct as *);
 void		    as_transfer_end(struct as *);
 bool		    as_locked(struct as *);
 int		    as_modify_begin(struct as *);
+int		    as_modify_begin_interruptible(struct as *);
 void		    as_modify_end(struct as *);
 void		    as_switch(struct as *);
 void		    as_dump(const struct as *);

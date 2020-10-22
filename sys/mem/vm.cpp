@@ -712,6 +712,12 @@ as_locked(as *a)
 int
 as_modify_begin(as *a)
 {
+	return a->lock.write().lock();
+}
+
+int
+as_modify_begin_interruptible(as *a)
+{
 	return a->lock.write().interruptible_lock();
 }
 
