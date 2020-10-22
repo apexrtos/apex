@@ -445,6 +445,8 @@ public:
 
 	auto lock()
 	{
+		assert(!locked_);
+
 		/* m_.interruptible_lock() returns 0 on success */
 		const auto r = m_.interruptible_lock();
 		locked_ = !r;
