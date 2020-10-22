@@ -33,6 +33,7 @@ public:
 	virtual ~host();
 
 	void lock();
+	int interruptible_lock();
 	void unlock();
 	void assert_owned() const;
 

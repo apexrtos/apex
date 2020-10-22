@@ -80,6 +80,15 @@ host::lock()
 }
 
 /*
+ * host::interruptible_lock - lock host for exclusive access if not signalled
+ */
+int
+host::interruptible_lock()
+{
+	return mutex_.interruptible_lock();
+}
+
+/*
  * host::unlock - unlock host
  */
 void

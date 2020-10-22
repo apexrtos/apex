@@ -531,7 +531,9 @@ device::ioctl(partition p, unsigned long cmd, void *arg)
 int
 device::zeroout(partition p, off_t off, uint64_t len)
 {
-	std::unique_lock l{*h_};
+	interruptible_lock l{*h_};
+	if (auto r{l.lock()}; r < 0)
+		return r;
 
 	if (ext_csd_.erased_mem_cont() != 0 ||
 	    !ext_csd_.sec_feature_support().is_set(sec_feature_support::sec_gb_cl_en))
@@ -546,7 +548,8 @@ device::zeroout(partition p, off_t off, uint64_t len)
 	/* trim one erase group at a time to allow for other i/o */
 	return for_each_eg(off, len, [&](size_t start_lba, size_t end_lba) {
 		l.unlock();
-		l.lock();
+		if (auto r{l.lock()}; r < 0)
+			return r;
 		return trim(h_, start_lba, end_lba);
 	});
 }
@@ -557,7 +560,9 @@ device::zeroout(partition p, off_t off, uint64_t len)
 int
 device::discard(partition p, off_t off, uint64_t len, bool secure)
 {
-	std::unique_lock l{*h_};
+	interruptible_lock l{*h_};
+	if (auto r{l.lock()}; r < 0)
+		return r;
 
 	/* TODO: support secure discard by using MMC secure trim? */
 	if (secure)
@@ -566,10 +571,11 @@ device::discard(partition p, off_t off, uint64_t len, bool secure)
 	if (auto r = switch_partition(p); r < 0)
 		return r;
 
-	/* discard one erase group at a time to allow for other i/o */
+	/* discard an erase group at a time to allow other i/o and interrupt */
 	return for_each_eg(off, len, [&](size_t start_lba, size_t end_lba) {
 		l.unlock();
-		l.lock();
+		if (auto r{l.lock()}; r < 0)
+			return r;
 		return mmc::discard(h_, start_lba, end_lba);
 	});
 }
