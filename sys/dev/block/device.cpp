@@ -89,7 +89,9 @@ device::~device()
 int
 device::open()
 {
-	std::lock_guard l{mutex_};
+	interruptible_lock l{mutex_};
+	if (auto r{l.lock()}; r < 0)
+		return r;
 
 	if (nopens_++)
 		return 0;
@@ -111,7 +113,9 @@ device::open()
 int
 device::close()
 {
-	std::lock_guard l{mutex_};
+	interruptible_lock l{mutex_};
+	if (auto r{l.lock()}; r < 0)
+		return r;
 
 	assert(nopens_ > 0);
 
@@ -146,7 +150,9 @@ device::write(const iovec *iov, size_t count, off_t off)
 int
 device::ioctl(unsigned long cmd, void *arg)
 {
-	std::lock_guard l{mutex_};
+	interruptible_lock l{mutex_};
+	if (auto r{l.lock()}; r < 0)
+		return r;
 
 	assert(nopens_ > 0);
 
@@ -193,7 +199,7 @@ device::ioctl(unsigned long cmd, void *arg)
 			i.iov_len = PAGE_SIZE;
 		}
 
-		/* write zeros */
+		/* write zeros allowing for other i/o and interrupt */
 		uint64_t off = arg64[0];
 		uint64_t len = arg64[1];
 		while (len) {
@@ -204,6 +210,9 @@ device::ioctl(unsigned long cmd, void *arg)
 			assert(!(r & PAGE_MASK));
 			off += r;
 			len -= r;
+			l.unlock();
+			if (auto r{l.lock()}; r < 0)
+				return r;
 		}
 
 		return 0;
@@ -231,7 +240,9 @@ device::ioctl(unsigned long cmd, void *arg)
 int
 device::transfer(const iovec *iov, size_t count, off_t off, bool write)
 {
-	std::lock_guard l{mutex_};
+	interruptible_lock l{mutex_};
+	if (auto r{l.lock()}; r < 0)
+		return r;
 
 	assert(nopens_ > 0);
 
