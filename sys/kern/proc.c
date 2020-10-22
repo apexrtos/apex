@@ -224,17 +224,15 @@ again:
 	if (!have_children)
 		err = -ECHILD;
 	else if (cpid) {
-		sch_unlock();
-		if ((err = u_access_begin()) < 0)
-			goto out;
-		if (ustatus && !u_access_ok(ustatus, sizeof *ustatus, PROT_WRITE))
-			err = DERR(-EFAULT);
-		else {
-			err = cpid;
-			*ustatus = status;
+		err = cpid;
+		if (ustatus) {
+			sch_unlock();
+			int r = vm_write(task_cur()->as, &status, ustatus,
+					 sizeof *ustatus);
+			if (r < 0)
+				err = r;
+			sch_lock();
 		}
-		u_access_end();
-		sch_lock();
 	} else if (options & WNOHANG) {
 		/*
 		 * No child exited, but caller has asked us not to block
@@ -252,7 +250,6 @@ again:
 		}
 	}
 
-out:
 	sch_unlock();
 	return err;
 }
