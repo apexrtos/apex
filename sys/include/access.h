@@ -23,6 +23,7 @@ bool	k_access_ok(const void *, size_t, int);
  * User access locking
  */
 int	u_access_begin(void);
+int	u_access_begin_interruptible(void);
 void	u_access_end(void);
 void	u_access_suspend(void);
 int	u_access_resume(const void *, size_t, int);
@@ -50,7 +51,8 @@ namespace a {
 
 class u_access {
 public:
-	int interruptible_lock() const { return u_access_begin(); }
+	int lock() const { return u_access_begin(); }
+	int interruptible_lock() const { return u_access_begin_interruptible(); }
 	void unlock() const { u_access_end(); }
 };
 

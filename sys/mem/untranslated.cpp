@@ -247,6 +247,17 @@ u_access_begin()
 	return 0;
 }
 
+int
+u_access_begin_interruptible()
+{
+	/* recursive u_access_begin makes no sense */
+	assert(!(thread_cur()->state & TH_U_ACCESS));
+	if (auto r{as_transfer_begin_interruptible(task_cur()->as)}; r < 0)
+		return r;
+	thread_cur()->state |= TH_U_ACCESS;
+	return 0;
+}
+
 void
 u_access_end()
 {

@@ -117,7 +117,7 @@ futex_wait(struct task *t, int *uaddr, int val, const struct timespec32 *ts)
 	if (!(f = futex_get(futexes(t), uaddr)))
 		return DERR(-ENOMEM);
 
-	if ((err = u_access_begin()) < 0)
+	if ((err = u_access_begin_interruptible()) < 0)
 		return err;
 	if (!u_access_okfor(t->as, uaddr, 4, PROT_READ)) {
 		u_access_end();
