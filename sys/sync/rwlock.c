@@ -48,10 +48,10 @@ rwlock_init(struct rwlock *o)
 }
 
 /*
- * rwlock_read_lock_interruptible
+ * rwlock_read_lock
  */
-int
-rwlock_read_lock_interruptible(struct rwlock *o)
+static int
+rwlock_read_lock_s(struct rwlock *o, bool block_signals)
 {
 	assert(!interrupt_running());
 	assert(!sch_locks());
@@ -59,10 +59,17 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
+	if (!block_signals && sig_unblocked_pending(thread_cur()))
+		return -EINTR;
+
 	spinlock_lock(&p->lock);
 
 	/* state < 0 while writing */
-	err = wait_event_interruptible_lock(p->event, p->state >= 0, &p->lock);
+	if (block_signals)
+		err = wait_event_lock(p->event, p->state >= 0, &p->lock);
+	else
+		err = wait_event_interruptible_lock(p->event, p->state >= 0,
+						    &p->lock);
 	if (!err) {
 		++p->state;
 #if defined(CONFIG_DEBUG)
@@ -76,15 +83,21 @@ rwlock_read_lock_interruptible(struct rwlock *o)
 }
 
 /*
+ * rwlock_read_lock_interruptible
+ */
+int
+rwlock_read_lock_interruptible(struct rwlock *o)
+{
+	return rwlock_read_lock_s(o, false);
+}
+
+/*
  * rwlock_read_lock - non interruptible read lock
  */
 int
 rwlock_read_lock(struct rwlock *o)
 {
-	const k_sigset_t sig_mask = sig_block_all();
-	const int ret = rwlock_read_lock_interruptible(o);
-	sig_restore(&sig_mask);
-	return ret;
+	return rwlock_read_lock_s(o, true);
 }
 
 /*
@@ -128,10 +141,10 @@ rwlock_read_locked(struct rwlock *o)
 }
 
 /*
- * rwlock_write_lock_interruptible
+ * rwlock_write_lock
  */
-int
-rwlock_write_lock_interruptible(struct rwlock *o)
+static int
+rwlock_write_lock_s(struct rwlock *o, bool block_signals)
 {
 	assert(!interrupt_running());
 	assert(!sch_locks());
@@ -139,10 +152,17 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 	int err;
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
+	if (!block_signals && sig_unblocked_pending(thread_cur()))
+		return -EINTR;
+
 	spinlock_lock(&p->lock);
 
 	/* state == 0, no writers or readers */
-	err = wait_event_interruptible_lock(p->event, p->state == 0, &p->lock);
+	if (block_signals)
+		err = wait_event_lock(p->event, p->state == 0, &p->lock);
+	else
+		err = wait_event_interruptible_lock(p->event, p->state == 0,
+						    &p->lock);
 	if (!err) {
 		--p->state;
 #if defined(CONFIG_DEBUG)
@@ -155,16 +175,16 @@ rwlock_write_lock_interruptible(struct rwlock *o)
 	return err;
 }
 
-/*
- * rwlock_write_lock - non interruptible write lock
- */
+int
+rwlock_write_lock_interruptible(struct rwlock *o)
+{
+	return rwlock_write_lock_s(o, false);
+}
+
 int
 rwlock_write_lock(struct rwlock *o)
 {
-	const k_sigset_t sig_mask = sig_block_all();
-	const int ret = rwlock_write_lock_interruptible(o);
-	sig_restore(&sig_mask);
-	return ret;
+	return rwlock_write_lock_s(o, true);
 }
 
 /*
