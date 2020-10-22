@@ -222,12 +222,14 @@ protected:
 };
 class rwlock_read final : public rwlock {
 public:
+	int lock() { return rwlock_read_lock(&m_); }
 	int interruptible_lock() { return rwlock_read_lock_interruptible(&m_); }
 	void unlock() { rwlock_read_unlock(&m_); }
 	bool locked() { return rwlock_read_locked(&m_); }
 };
 class rwlock_write final : public rwlock {
 public:
+	int lock() { return rwlock_write_lock(&m_); }
 	int interruptible_lock() { return rwlock_write_lock_interruptible(&m_); }
 	void unlock() { rwlock_write_unlock(&m_); }
 	bool locked() { return rwlock_write_locked(&m_); }
