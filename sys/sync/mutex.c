@@ -135,13 +135,16 @@ mutex_lock_slowpath(struct mutex *m)
 	return r;
 }
 
-int
-mutex_lock_interruptible(struct mutex *m)
+static int
+mutex_lock_s(struct mutex *m, bool block_signals)
 {
 	assert(!sch_locks());
 	assert(!interrupt_running());
 
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
+
+	if (!block_signals && sig_unblocked_pending(thread_cur()))
+		return -EINTR;
 
 #if defined(CONFIG_DEBUG)
 	++thread_cur()->mutex_locks;
@@ -158,16 +161,26 @@ mutex_lock_interruptible(struct mutex *m)
 		return 0;
 	}
 
-	return mutex_lock_slowpath(m);
+	k_sigset_t sig_mask;
+	if (block_signals)
+		sig_mask = sig_block_all();
+	const int ret = mutex_lock_slowpath(m);
+	if (block_signals)
+		sig_restore(&sig_mask);
+	return ret;
+}
+
+int
+mutex_lock_interruptible(struct mutex *m)
+{
+	return mutex_lock_s(m, false);
 }
 
 int
 mutex_lock(struct mutex *m)
 {
-	const k_sigset_t sig_mask = sig_block_all();
-	const int ret = mutex_lock_interruptible(m);
-	sig_restore(&sig_mask);
-	return ret;
+	return mutex_lock_s(m, true);
+
 }
 
 /*
