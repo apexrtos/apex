@@ -379,7 +379,8 @@ sig_restore(const k_sigset_t *old)
 {
 	struct thread *th = thread_cur();
 	sch_lock();
-	thread_cur()->sig_blocked = *old;
+	th->sig_blocked = *old;
+	sig_flush(th->task);
 	if (sig_unblocked_pending(th)) {
 		/*
 		 * Wake up thread to handle signal
