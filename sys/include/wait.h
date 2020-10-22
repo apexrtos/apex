@@ -190,9 +190,9 @@ wait_event_lock(event &e, auto &lock, auto condition)
 #define wait_event_lock(event, condition, lock) \
 ({ \
 	const k_sigset_t __sig_mask = sig_block_all(); \
-	const int __r = wait_event_lock(event, condition, lock); \
+	const int __r = wait_event_interruptible_lock(event, condition, lock); \
 	sig_restore(&__sig_mask); \
-	return __r; \
+	__r; \
 })
 
 /*
@@ -215,9 +215,9 @@ wait_event_lock(event &e, auto &lock, auto condition)
 #define wait_event_lock_irq(event, condition, lock, irq_state) \
 ({ \
 	const k_sigset_t __sig_mask = sig_block_all(); \
-	const int __r = wait_event_lock_irq(event, condition, lock, irq_state); \
+	const int __r = wait_event_interruptible_lock_irq(event, condition, lock, irq_state); \
 	sig_restore(&__sig_mask); \
-	return __r; \
+	__r; \
 })
 
 #endif
