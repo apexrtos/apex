@@ -25,6 +25,7 @@
 #include <limits.h>
 #include <page.h>
 #include <sch.h>
+#include <sig.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
@@ -869,6 +870,12 @@ fs_exit(struct task *t)
 	task_write_lock(t);
 
 	/*
+	 * Block signals as close is an interruptible function. In this context
+	 * it is crucial that it runs to completion.
+	 */
+	const k_sigset_t sig_mask = sig_block_all();
+
+	/*
 	 * Close all files opened by task.
 	 */
 	for (fd = 0; fd < ARRAY_SIZE(t->file); fd++) {
@@ -887,6 +894,7 @@ fs_exit(struct task *t)
 		t->cwdfp = 0;
 	}
 
+	sig_restore(&sig_mask);
 	task_write_unlock(t);
 }
 
