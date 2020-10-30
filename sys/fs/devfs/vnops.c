@@ -72,6 +72,7 @@ static int devfs_seek (struct file *, off_t, int);
 static int devfs_ioctl(struct file *, u_long, void *);
 static int devfs_readdir(struct file *, struct dirent *, size_t);
 static int devfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
+static int devfs_inactive(struct vnode *);
 
 /*
  * vnode operations
@@ -91,7 +92,7 @@ static const struct vnops devfs_vnops = {
 	.vop_rename = ((vnop_rename_fn)vop_einval),
 	.vop_getattr = ((vnop_getattr_fn)vop_nullop),
 	.vop_setattr = ((vnop_setattr_fn)vop_nullop),
-	.vop_inactive = ((vnop_inactive_fn)vop_nullop),
+	.vop_inactive = devfs_inactive,
 	.vop_truncate = ((vnop_truncate_fn)vop_nullop),
 };
 
@@ -363,12 +364,24 @@ devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 		dev->vnode = vp;
 		spinlock_unlock(&device_list_lock);
 
-		vref(vp);
 		return 0;
 	}
 	spinlock_unlock(&device_list_lock);
 
 	return -ENOENT;
+}
+
+static int
+devfs_inactive(struct vnode *vp)
+{
+	struct device *dev = vp->v_data;
+
+	if (dev) {
+		assert(!dev->busy);
+		dev->vnode = 0;
+	}
+
+	return 0;
 }
 
 /*
@@ -505,7 +518,7 @@ device_destroy(struct device *dev)
 	if (vp) {
 		vn_lock(vp);
 		vp->v_data = NULL;
-		vput(vp);
+		vn_unlock(vp);
 	}
 
 	free(dev);
