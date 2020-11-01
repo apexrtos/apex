@@ -141,6 +141,8 @@ task_getfp_unlocked(struct task *t, int fd)
 	else if (!(fp = fp_ptr(t->file[fd])))
 		return NULL;
 
+	++fp->f_count;
+
 	return fp;
 }
 
@@ -491,6 +493,7 @@ lookup_t(struct task *t, const int fd, const char *path, struct vnode **vpp,
 		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
+	--fp->f_count;
 	vref(fp->f_vnode);
 	if ((err = lookup_v(fp->f_vnode, path, vpp, node, node_len, flags, 0)) == -ENOENT)
 		vput(*vpp);
@@ -522,6 +525,7 @@ lookup_t_dir(struct task *t, const int fd, const char *path,
 		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
+	--fp->f_count;
 	vref(fp->f_vnode);
 	return lookup_v(fp->f_vnode, path, vpp, node, node_len, flags, 0);
 }
@@ -553,6 +557,7 @@ lookup_t_noexist(struct task *t, const int fd, const char *path,
 		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
+	--fp->f_count;
 	vref(fp->f_vnode);
 	err = lookup_v(fp->f_vnode, path, vpp, &node_, &node_len_, flags, 0);
 
@@ -728,20 +733,21 @@ vn_name(struct vnode *vn)
 }
 
 /*
- * fs_closefp - file pointer based close
+ * putfp - release reference on file pointer
  */
 static int
-fs_closefp(struct file *fp)
+putfp(struct file *fp)
 {
 	int err;
 	struct vnode *vp = fp->f_vnode;
 
+	assert(fp->f_count > 0);
 	assert(mutex_owner(&vp->v_lock) == thread_cur());
 
-	vdbgsys("fs_closefp: fp=%x\n", (u_int)fp);
+	vdbgsys("putfp: fp=%x count=%d\n", (u_int)fp, fp->f_count);
 
 	if (--fp->f_count > 0) {
-		vput(fp->f_vnode);
+		vn_unlock(fp->f_vnode);
 		return 0;
 	}
 
@@ -753,6 +759,18 @@ fs_closefp(struct file *fp)
 	vput(fp->f_vnode);
 	free(fp);
 	return err;
+}
+
+/*
+ * fs_closefp - file pointer based close
+ */
+static int
+fs_closefp(struct file *fp)
+{
+	vdbgsys("fs_closefp: fp=%x count=%d\n", (u_int)fp, fp->f_count);
+	assert(fp->f_count > 1);
+	--fp->f_count;
+	return putfp(fp);
 }
 
 /*
@@ -890,7 +908,7 @@ fs_exit(struct task *t)
 	 */
 	if (t->cwdfp) {
 		vn_lock(t->cwdfp->f_vnode);
-		fs_closefp(t->cwdfp);
+		putfp(t->cwdfp);
 		t->cwdfp = 0;
 	}
 
@@ -913,7 +931,6 @@ fs_fork(struct task *t)
 	t->cwdfp = p->cwdfp;
 	struct vnode *cwd_vp = t->cwdfp->f_vnode;
 	vn_lock(cwd_vp);
-	vref(cwd_vp);
 	t->cwdfp->f_count++;
 	vn_unlock(cwd_vp);
 
@@ -928,10 +945,8 @@ fs_fork(struct task *t)
 		if (!(fp = task_getfp(p, i)))
 			continue;
 		struct vnode *vp = fp->f_vnode;
-		/* copy FF_CLOEXEC */
+		/* copy FF_CLOEXEC, keep file reference from task_getfp */
 		t->file[i] = p->file[i];
-		vref(vp);
-		fp->f_count++;
 		vn_unlock(vp);
 	}
 
@@ -961,7 +976,7 @@ fs_exec(struct task *t)
 			t->file[i] = 0;
 			continue;
 		}
-		vn_unlock(vp);
+		putfp(fp);
 	}
 	task_write_unlock(t);
 }
@@ -1005,7 +1020,7 @@ openfor(struct task *t, int dirfd, const char *path, int flags, ...)
 
 	if (flags & O_NOFOLLOW && S_ISLNK(fpp->f_vnode->v_mode)) {
 		vn_lock(fpp->f_vnode);
-		fs_closefp(fpp);
+		putfp(fpp);
 		fp = 0;
 		ret = -ELOOP;
 		goto out;
@@ -1075,12 +1090,12 @@ vn_open(int fd, int flags)
 	/* cannot vn_open if filesystem/device requires per-handle data or if
 	 * fd was not opened with compatible flags */
 	if (fp->f_data || (fp->f_flags & flags) != flags) {
-		vn_unlock(vp);
+		putfp(fp);
 		return NULL;
 	}
 
 	vref(vp);
-	vn_unlock(vp);
+	putfp(fp);
 	return vp;
 }
 
@@ -1121,9 +1136,8 @@ closefor(struct task *t, int fd)
 	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
 		return (int)fp;
 
-	err = fs_closefp(fp);
-
 	task_write_lock(t);
+	err = fs_closefp(fp);
 	t->file[fd] = 0;
 	task_write_unlock(t);
 
@@ -1284,7 +1298,7 @@ lseek(int fd, off_t off, int whence)
 		err = fp->f_offset = x + off;
 
 out:
-	vn_unlock(vp);
+	putfp(fp);
 	return err;
 }
 
@@ -1333,7 +1347,7 @@ do_readv(struct file *fp, const struct iovec *iov, int count, off_t offset,
 		fp->f_offset += res;
 
 out:
-	vn_unlock(vp);
+	putfp(fp);
 	return res;
 }
 
@@ -1420,7 +1434,7 @@ vn_preadv(struct vnode *vp, const struct iovec *iov, int count, off_t offset)
 	/* read from dummy file */
 	struct file f = {
 		.f_flags = O_RDONLY,
-		.f_count = 1,
+		.f_count = 99,
 		.f_offset = 0,
 		.f_data = NULL,
 		.f_vnode = vp,
@@ -1484,7 +1498,7 @@ do_writev(struct file *fp, const struct iovec *iov, int count, off_t offset,
 		fp->f_offset = offset + res;
 
 out:
-	vn_unlock(vp);
+	putfp(fp);
 
 	return res;
 }
@@ -1588,7 +1602,7 @@ do_ioctl(struct task *t, int fd, int request, va_list ap)
 	else
 		err = VOP_IOCTL(fp, request, arg);
 
-	vn_unlock(fp->f_vnode);
+	putfp(fp);
 	return err;
 }
 
@@ -1633,13 +1647,13 @@ fsync(int fd)
 		return (int)fp;
 
 	if (!flags_allow_write(fp->f_flags)) {
-		vn_unlock(fp->f_vnode);
+		putfp(fp);
 		return DERR(-EBADF);
 	}
 
 	err = VOP_FSYNC(fp);
 
-	vn_unlock(fp->f_vnode);
+	putfp(fp);
 	return err;
 }
 
@@ -1684,7 +1698,7 @@ do_fstat(struct task *t, int fd, struct stat *st)
 
 	err = vn_stat(fp->f_vnode, st);
 
-	vn_unlock(fp->f_vnode);
+	putfp(fp);
 	return err;
 }
 
@@ -1722,7 +1736,7 @@ getdents(int dirfd, struct dirent *buf, size_t len)
 	err = VOP_READDIR(fp, buf, len);
 
 out:
-	vn_unlock(fp->f_vnode);
+	putfp(fp);
 	return err;
 }
 
@@ -1831,7 +1845,7 @@ dup(int fildes)
 
 	/* Find smallest empty slot as new fd. */
 	if ((fildes2 = task_newfd(t, 0)) == -1) {
-		vn_unlock(vp);
+		putfp(fp);
 		task_write_unlock(t);
 		return DERR(-EMFILE);
 	}
@@ -1839,9 +1853,7 @@ dup(int fildes)
 	/* don't copy FF_CLOEXEC */
 	t->file[fildes2] = (uintptr_t)fp;
 
-	/* Increment file reference */
-	vref(vp);
-	fp->f_count++;
+	/* keep file reference from task_getfp_interruptible */
 	vn_unlock(vp);
 	task_write_unlock(t);
 
@@ -1878,8 +1890,7 @@ dup2for(struct task *t, int fildes, int fildes2)
 		/* Close previous file if it's opened. */
 		int err;
 		if ((err = fs_closefp(fp2)) != 0) {
-			vn_unlock(fp2->f_vnode);
-			vn_unlock(fp->f_vnode);
+			putfp(fp);
 			task_write_unlock(t);
 			return err;
 		}
@@ -1888,9 +1899,7 @@ dup2for(struct task *t, int fildes, int fildes2)
 	/* don't copy FF_CLOEXEC */
 	t->file[fildes2] = (uintptr_t)fp;
 
-	/* Increment file reference */
-	vref(fp->f_vnode);
-	fp->f_count++;
+	/* keep file reference from task_getfp_interruptible */
 	vn_unlock(fp->f_vnode);
 	task_write_unlock(t);
 
@@ -1947,6 +1956,7 @@ getcwd(char *buf, size_t size)
 	*p = 0;
 
 	struct vnode *vp = fp->f_vnode;
+	--fp->f_count;
 	vref(vp);
 	while (vp->v_parent) {
 		/* push path component */
@@ -1998,13 +2008,13 @@ chdir(const char *path)
 	fpp = fp_ptr(fp);
 	if (!S_ISDIR(fpp->f_vnode->v_mode)) {
 		vn_lock(fpp->f_vnode);
-		fs_closefp(fpp);
+		putfp(fpp);
 		return -ENOTDIR;
 	}
 
 	task_write_lock(t);
 	vn_lock(t->cwdfp->f_vnode);
-	fs_closefp(t->cwdfp);
+	putfp(t->cwdfp);
 	t->cwdfp = fpp;
 	task_write_unlock(t);
 
@@ -2083,7 +2093,6 @@ fcntl(int fd, int cmd, ...)
 {
 	struct task *t = task_cur();
 	struct file *fp;
-	struct vnode *vp;
 	va_list args;
 	long arg;
 	int err;
@@ -2101,8 +2110,6 @@ fcntl(int fd, int cmd, ...)
 		task_write_unlock(t);
 		return (int)fp;
 	}
-
-	vp = fp->f_vnode;
 
 	int ret = 0;
 	switch (cmd) {
@@ -2127,7 +2134,6 @@ fcntl(int fd, int cmd, ...)
 			t->file[ret] |= FF_CLOEXEC;
 
 		/* Increment file reference */
-		vref(vp);
 		fp->f_count++;
 		break;
 	case F_GETFD:
@@ -2149,7 +2155,7 @@ fcntl(int fd, int cmd, ...)
 		ret = DERR(-ENOSYS);
 		break;
 	}
-	vn_unlock(vp);
+	putfp(fp);
 	task_write_unlock(t);
 	return ret;
 }
@@ -2177,7 +2183,7 @@ fstatfs(int fd, struct statfs *stf)
 	else
 		err = VFS_STATFS(vp->v_mount, stf);
 
-	vn_unlock(vp);
+	putfp(fp);
 	return err;
 }
 
@@ -2563,14 +2569,18 @@ int
 fchmod(int fd, mode_t mode)
 {
 	struct file *fp;
+	struct vnode *vp;
 
 	vdbgsys("fchmod fd=%d mode=0%03o\n", fd, mode);
 
 	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
 		return (int)fp;
 
-	vref(fp->f_vnode);
-	return do_chmod(fp->f_vnode, mode);
+	vp = fp->f_vnode;
+
+	--fp->f_count;
+	vref(vp);
+	return do_chmod(vp, mode);
 }
 
 int
@@ -2611,14 +2621,18 @@ int
 fchown(int fd, uid_t uid, gid_t gid)
 {
 	struct file *fp;
+	struct vnode *vp;
 
 	vdbgsys("fchown fd=%d uid=%d gid=%d\n", fd, uid, gid);
 
 	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
 		return (int)fp;
 
-	vref(fp->f_vnode);
-	return do_chown(fp->f_vnode, uid, gid);
+	vp = fp->f_vnode;
+
+	--fp->f_count;
+	vref(vp);
+	return do_chown(vp, uid, gid);
 }
 
 int
