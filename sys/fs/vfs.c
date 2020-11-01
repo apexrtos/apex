@@ -1457,10 +1457,8 @@ do_writev(struct file *fp, const struct iovec *iov, int count, off_t offset,
 	struct vnode *vp = fp->f_vnode;
 
 	/* console driver calls write.. */
-#if !defined(CONFIG_CONSOLE)
-	 vdbgsys("writev: fp=%p iov=%p count=%d, offset=%lld\n",
-	     fp, iov, count, offset);
-#endif
+	vdbgsys("writev: fp=%p iov=%p count=%d, offset=%lld\n",
+		fp, iov, count, offset);
 
 	if (count < 0) {
 		res = DERR(-EINVAL);
