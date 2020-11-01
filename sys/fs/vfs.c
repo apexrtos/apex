@@ -2660,16 +2660,16 @@ file_dump(void)
 	i = &kern_task.link;
 	do {
 		t = list_entry(i, struct task, link);
-		info(" %s (%08x) cwd: %p\n", t->path, (int)t, t->cwdfp);
-		info("   fd fp_flags fd_flags count   offset    vnode\n");
-		info("  --- -------- -------- ----- -------- --------\n");
+		info(" %s (%08x) cwd: %p\n", t->path, (int)t, t->cwdfp->f_vnode);
+		info("   fd         fp fp_flags fd_flags count   offset      vnode\n");
+		info("  --- ---------- -------- -------- ----- -------- ----------\n");
 		for (size_t j = 0; j < ARRAY_SIZE(t->file); ++j) {
 			struct file *f = fp_ptr(t->file[j]);
 			if (!f)
 				continue;
 			int fd_flags = fp_flags(t->file[j]);
-			info("  %3d %8x %8x %5d %8ld %p\n",
-			    j, f->f_flags, fd_flags, f->f_count,
+			info("  %3d %10p %8x %8x %5d %8ld %10p\n",
+			    j, f, f->f_flags, fd_flags, f->f_count,
 			    (long)f->f_offset, f->f_vnode);
 		}
 		i = list_next(i);
