@@ -31,7 +31,8 @@ v7m_emulate:
 	ldr r1, [r3]			/* r1 = failed instruction */
 	movw r2, :lower16:0x0f70ee1d
 	movt r2, :upper16:0x0f70ee1d    /* r2 = instruction mask */
-	bics r2, r1			/* check for mrc get_tls */
+	bic ip, r1, 0xf0000000		/* mask out destination register */
+	cmp ip, r2			/* check for mrc get_tls */
 	bne v7m_entry
 	ubfx r1, r1, 28, 4		/* r1 = destination reg */
 	cmp r1, 14
