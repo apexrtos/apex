@@ -56,7 +56,7 @@ arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *d)
 		.CLKSOURCE = d->clksource,
 	}.r);
 
-	dbg("ARMv7-M SysTick initialised, RVR=%u\n", SYST->RVR);
+	dbg("ARMv7-M SysTick initialised, RVR=%u\n", read32(&SYST->RVR));
 }
 
 /*
