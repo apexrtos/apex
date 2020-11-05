@@ -176,12 +176,15 @@ exc_UsageFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 
 /*
  * exc_SysTick
+ *
+ * If the systick driver is in use it will handle exc_SysTick.
  */
-__fast_text void
-exc_SysTick(void)
+void
+unhandled_SysTick(void)
 {
-	timer_tick(1);
+	panic("Unhandled SysTick");
 }
+weak_alias(unhandled_SysTick, exc_SysTick);
 
 /*
  * exc_NVIC

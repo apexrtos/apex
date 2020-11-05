@@ -4,6 +4,8 @@
 #include <clock.h>
 #include <cpu.h>
 #include <debug.h>
+#include <sections.h>
+#include <timer.h>
 
 /*
  * SysTick registers
@@ -83,4 +85,13 @@ clock_ns_since_tick(void)
 	if (tick_pending)
 		ns += 1000000000 / CONFIG_HZ;
 	return ns;
+}
+
+/*
+ * SysTick exception
+ */
+__fast_text void
+exc_SysTick(void)
+{
+	timer_tick(1);
 }
