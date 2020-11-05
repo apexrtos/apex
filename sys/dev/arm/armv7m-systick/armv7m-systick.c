@@ -36,6 +36,8 @@ struct syst {
 static_assert(sizeof(struct syst) == 16, "Bad SYST size");
 static struct syst *const SYST = (struct syst*)0xe000e010;
 
+__fast_bss uint64_t scale;
+
 /*
  * Initialise
  */
@@ -55,6 +57,9 @@ arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *d)
 		.TICKINT = 1,
 		.CLKSOURCE = d->clksource,
 	}.r);
+
+	/* scaling factor from count to ns * 2^32 */
+	scale = 1000000000ull * 0x100000000 / d->clock;
 
 	dbg("ARMv7-M SysTick initialised, RVR=%u\n", read32(&SYST->RVR));
 }
@@ -79,9 +84,7 @@ clock_ns_since_tick(void)
 	} while (tick_pending != read32(&SCB->ICSR).PENDSTSET);
 
 	/* convert count to nanoseconds */
-	/* REVISIT: fractional multiply instead of 64-bit division? */
-	const uint32_t r = read32(&SYST->RVR) + 1;
-	uint32_t ns = cvr ? (r - cvr) * 1000000000ULL / (r * CONFIG_HZ) : 0;
+	uint32_t ns = cvr ? ((read32(&SYST->RVR) + 1 - cvr) * scale) >> 32 : 0;
 	if (tick_pending)
 		ns += 1000000000 / CONFIG_HZ;
 	return ns;
