@@ -70,7 +70,7 @@ struct task {
 
 	/* File System State */
 	struct rwlock	fs_lock;	    /* lock for file system data */
-	uintptr_t	file[32];	    /* array of file pointers */
+	uintptr_t	file[64];	    /* array of file pointers */
 	struct file    *cwdfp;		    /* directory for cwd */
 	mode_t		umask;		    /* current file creation mask */
 };
