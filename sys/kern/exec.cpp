@@ -40,7 +40,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 		return (thread *)r;
 
 	/* open target file */
-	a::fd fd(path, O_RDONLY);
+	a::fd fd(path, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
 		return (thread *)(int)fd;
 
@@ -60,7 +60,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 		if (i == 3)
 			return (thread *)DERR(-ENOEXEC);
 		path = prgv[0];
-		fd.open(path, O_RDONLY);
+		fd.open(path, O_RDONLY | O_CLOEXEC);
 		if (fd < 0)
 			return (thread *)(int)fd;
 	}
@@ -118,8 +118,12 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	sig_exec(t);
 	task_path(t, path);
 
+	/* fs_exec will close fd as it's marked as CLOEXEC. No point calling
+	 * close() as it will return EINTR because the current thread has
+	 * been signalled by thread_terminate() */
+	fd.release();
+
 	/* notify file system */
-	fd.close();
 	fs_exec(t);
 
 	/* switch to new address space */

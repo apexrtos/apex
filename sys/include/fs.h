@@ -140,6 +140,7 @@ public:
 	operator int() const { return (int)(fd_.get()); }
 	void open(const char *p, int f) { fd_.reset((void*)::open(p, f)); }
 	void close() { fd_.reset(); }
+	int release() { return (int)fd_.release(); }
 
 private:
 	struct auto_close {
