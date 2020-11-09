@@ -76,12 +76,10 @@ clock_ns_since_tick(void)
 		return 0;
 
 	/* get CVR, making sure that we handle rollovers */
-	uint32_t cvr;
-	bool tick_pending;
-	do {
-		tick_pending = read32(&SCB->ICSR).PENDSTSET;
+	uint32_t cvr = read32(&SYST->CVR);
+	bool tick_pending = read32(&SCB->ICSR).PENDSTSET;
+	if (tick_pending)
 		cvr = read32(&SYST->CVR);
-	} while (tick_pending != read32(&SCB->ICSR).PENDSTSET);
 
 	/* convert count to nanoseconds */
 	uint32_t ns = cvr ? ((read32(&SYST->RVR) + 1 - cvr) * scale) >> 32 : 0;
