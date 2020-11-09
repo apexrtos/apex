@@ -221,6 +221,64 @@ static_assert(sizeof(struct fpu) == 24, "Bad FPU size");
 static struct fpu *const FPU = (struct fpu*)0xe000ef34;
 
 /*
+ * DWT
+ */
+struct dwt {
+	union dwt_ctrl {
+		struct {
+			uint32_t CYCCNTENA : 1;
+			uint32_t POSTPRESET : 4;
+			uint32_t POSTINIT: 4;
+			uint32_t CYCTAP : 1;
+			uint32_t SYNCTAP : 2;
+			uint32_t PCSAMPLENA : 1;
+			uint32_t : 3;
+			uint32_t EXCTRCENA : 1;
+			uint32_t CPIEVTENA: 1;
+			uint32_t EXCEVTENA : 1;
+			uint32_t SLEEPEVTENA: 1;
+			uint32_t LSUEVTENA : 1;
+			uint32_t FOLDEVTENA : 1;
+			uint32_t CYCEVTENA : 1;
+			uint32_t : 1;
+			uint32_t NOPRFCNT : 1;
+			uint32_t NOCYCCNT : 1;
+			uint32_t NOEXTTRIG : 1;
+			uint32_t NOTRCPKT : 1;
+			uint32_t NUMCOMP : 4;
+		};
+		uint32_t r;
+	} CTRL;
+	uint32_t CYCCNT;
+	uint32_t CPICNT;
+	uint32_t EXCCNT;
+	uint32_t SLEEPCNT;
+	uint32_t LSUCNT;
+	uint32_t FOLDCNT;
+	uint32_t PCSR;
+	uint32_t COMP0;
+	uint32_t MASK0;
+	uint32_t FUNCTION0;
+	uint32_t : 32;
+	uint32_t COMP1;
+	uint32_t MASK1;
+	uint32_t FUNCTION1;
+	uint32_t : 32;
+	uint32_t COMP2;
+	uint32_t MASK2;
+	uint32_t FUNCTION2;
+	uint32_t : 32;
+	uint32_t COMP3;
+	uint32_t MASK3;
+	uint32_t FUNCTION3;
+	uint32_t reserved_0[981];
+	uint32_t LAR;
+	uint32_t LSR;
+};
+static_assert(sizeof(struct dwt) == 0xfb8, "Bad DWT size");
+static struct dwt *const DWT = (struct dwt*)0xe0001000;
+
+/*
  * MPU
  */
 union mpu_rbar {
