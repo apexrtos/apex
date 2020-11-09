@@ -137,12 +137,10 @@ clock_ns_since_tick()
 		return 0;
 
 	/* get CNT, making sure that we handle rollovers */
-	uint32_t cnt;
-	bool tick_pending;
-	do {
-		tick_pending = read32(&gpt->SR).OF1;
+	uint32_t cnt = read32(&gpt->CNT);
+	bool tick_pending = read32(&gpt->SR).OF1;
+	if (tick_pending)
 		cnt = read32(&gpt->CNT);
-	} while (tick_pending != read32(&gpt->SR).OF1);
 
 	/* convert count to nanoseconds */
 	uint32_t ns = (cnt * scale) >> 32;
