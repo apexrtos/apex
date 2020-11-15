@@ -25,12 +25,14 @@ cache_coherent_exec(const void *p, size_t len)
 		return;
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
-	asm volatile("dmb" ::: "memory");
+	asm volatile("dsb" ::: "memory");
 	const size_t sz = MAX(CONFIG_DCACHE_LINE_SIZE, CONFIG_ICACHE_LINE_SIZE);
 	const void *start = TRUNCn(p, sz);
 	const void *end = ALIGNn(p + len, sz);
 	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCMVAU, (uintptr_t)l);
+	/* ensure visibliity of the data cleaned from the cache */
+	asm volatile("dsb");
 	for (const void *l = start; l != end; l += CONFIG_ICACHE_LINE_SIZE)
 		write32(&CBP->ICIMVAU, (uintptr_t)l);
 	/* invalidate branch predictor */
@@ -51,7 +53,7 @@ cache_flush(const void *p, size_t len)
 #if defined(CONFIG_CACHE)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
-	asm volatile("dmb" ::: "memory");
+	asm volatile("dsb" ::: "memory");
 	if (cache_coherent_range(p, len))
 		return;
 	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
@@ -90,7 +92,7 @@ cache_flush_invalidate(const void *p, size_t len)
 #if defined(CONFIG_CACHE)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
-	asm volatile("dmb" ::: "memory");
+	asm volatile("dsb" ::: "memory");
 	if (cache_coherent_range(p, len))
 		return;
 	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
