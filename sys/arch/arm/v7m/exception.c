@@ -200,6 +200,6 @@ exc_NVIC(void)
 	 * returning from interrupt - this is so that an interrupt can't
 	 * spuriously re-trigger if the CPU returns from interrupt before the
 	 * write to clear a peripheral's interrupt flag register completes */
-	write_memory_barrier();
+	asm("dsb");
 }
 
