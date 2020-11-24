@@ -9,7 +9,6 @@ makeoption COMMON_FLAGS += -flto -fuse-linker-plugin
 makeoption COMMON_FLAGS += -Xlinker --gc-sections
 makeoption CFLAGS += $(CONFIG_COMMON_FLAGS)
 makeoption CXXFLAGS += $(CONFIG_COMMON_FLAGS)
-makeoption SSTRIP := y
 
 /*
  * Debugging
