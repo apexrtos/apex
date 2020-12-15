@@ -683,6 +683,8 @@ fsl_usdhc::v_run_command(mmc::command &c)
 	 * is still using data lines (most likely busy signalling) wait for
 	 * device to finish the previous command before starting this one. */
 	if (pres_state.CDIHB && c.uses_data_lines()) {
+		int_mask.TC = 1;
+		write32(&r_->INT_SIGNAL_EN, int_mask.r);
 		const auto r = wait_event_timeout(event_, 1e9, [&] {
 			return !read32(&r_->PRES_STATE).CDIHB;
 		});
@@ -766,9 +768,11 @@ fsl_usdhc::v_run_command(mmc::command &c)
 		mix_ctrl.DMAEN = len > 0;
 		cmd_xfr_typ.DPSEL = 1;
 		int_mask.CC = 0;
+		int_mask.TC = 1;
 	} else {
 		cmd_xfr_typ.DPSEL = 0;
 		int_mask.CC = 1;
+		int_mask.TC = 0;
 	}
 
 	cmd_xfr_typ.CMDINX = c.index();
