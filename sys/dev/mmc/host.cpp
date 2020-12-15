@@ -508,7 +508,7 @@ host::scan()
 	/* Attempt to initialise SD card before MMC device. The initialisation
 	 * commands require this ordering. */
 	int r = sd_initialise();
-	if (r < 0 && r != -EAGAIN)
+	if (r < 0)
 		r = mmc_initialise();
 	if (r == 0) {
 		if (!bus_tuning_required())
@@ -519,12 +519,13 @@ host::scan()
 		if (v_run_tuning(device_->tuning_cmd_index()) == 0)
 			return;
 		error("%s: initial bus tuning failed\n", name());
-	} else if (r == -EAGAIN)
-		rescan();
-	else
-		info("%s: failed to initialise device %d\n", name(), r);
+	}
+
+	info("%s: failed to initialise device, retry in 1s\n", name());
 
 	power_off();
+	timer_delay(1e9);
+	rescan();
 }
 
 /*
@@ -631,8 +632,7 @@ host::mmc_initialise()
 	/* Attempt to initialise device. */
 	auto device = std::make_unique<mmc::device>(this);
 	if (auto r = device->init(); r < 0) {
-		if (r != -EAGAIN)
-			dbg("%s: MMC device initialisation failed\n", name());
+		dbg("%s: MMC device initialisation failed\n", name());
 		return r;
 	}
 
