@@ -1,33 +1,27 @@
-#ifndef elf_load_h
-#define elf_load_h
+#pragma once
+
+#include <array>
+#include <span>
 
 struct as;
-#define AUX_CNT 24
-
-#if defined(__cplusplus)
-extern "C" {
-#endif
+constexpr auto AUX_CNT{24};
 
 /*
  * elf_load - load elf image into mmu map from kernel file handle fd.
  *
  * *entry is set to the entry point of the elf image on success.
  */
-int elf_load(struct as *, int fd, void (**entry)(void),
-	     unsigned auxv[AUX_CNT], void **stack);
+int
+elf_load(as *, int fd, void (**entry)(void),
+	 std::array<unsigned, AUX_CNT> &auxv, void **stack);
 
 /*
  * build_args - build arguments onto stack.
  *
  * returns stack pointer ready for new thread.
  */
-void *build_args(struct as *, void *stack, const char *const prgv[],
-		 const char *const argv[], const char *const envp[],
-		 const unsigned auxv[]);
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif
-
-#endif /* !elf_load_h */
+void *
+build_args(as *, void *stack, const char *const prgv[],
+	   const char *const argv[], const char *const envp[],
+	   std::span<const unsigned> auxv);
 

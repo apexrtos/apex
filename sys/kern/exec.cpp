@@ -70,7 +70,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 
 	/* load program image into new address space */
 	void (*entry)(void);
-	unsigned auxv[AUX_CNT];
+	std::array<unsigned, AUX_CNT> auxv;
 	void *sp;
 	if (auto r = elf_load(as.get(), fd, &entry, auxv, &sp); r < 0)
 		return (thread *)r;

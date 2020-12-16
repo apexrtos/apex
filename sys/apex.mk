@@ -34,7 +34,7 @@ SOURCES := \
     kern/clone.cpp \
     kern/debug.c \
     kern/dma.cpp \
-    kern/elf_load.c \
+    kern/elf_load.cpp \
     kern/exec.cpp \
     kern/irq.c \
     kern/main.c \
