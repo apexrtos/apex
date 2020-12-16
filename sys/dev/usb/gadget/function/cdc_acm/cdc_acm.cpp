@@ -8,6 +8,7 @@
 #include <dev/usb/gadget/udc.h>
 #include <endian.h>
 #include <errno.h>
+#include <kernel.h>
 #include <mutex>
 #include <string_utils.h>
 #include <termios.h>
@@ -113,7 +114,7 @@ cdc_acm::tx_queue()
 	while (!tx_.empty()) {
 		const void *p;
 		/* REVISIT: query tx buffer size from tty? */
-		const auto len = tty_tx_getbuf(t_, CONFIG_PAGE_SIZE / 2, &p);
+		const auto len = tty_tx_getbuf(t_, PAGE_SIZE / 2, &p);
 		if (!len)
 			return;
 		auto &t = tx_.back();
