@@ -453,7 +453,8 @@ int
 sc_munmap(void *addr, size_t len)
 {
 	/* munmap unmaps any whole page in the range [addr, addr + len) */
-	return munmapfor(task_cur()->as, PAGE_TRUNC(addr), PAGE_ALIGN(len));
+	return munmapfor(task_cur()->as, PAGE_TRUNC(addr),
+			 PAGE_ALIGN(PAGE_OFF(addr) + len));
 }
 
 /*
