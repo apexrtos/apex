@@ -258,7 +258,6 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 	return as_map(a, addr, len, prot, flags, std::move(vn), off, attr);
 }
 
-
 /*
  * mmapfor - map memory into task address space
  */
