@@ -82,27 +82,36 @@ as_switch(as *a)
  * as_map - map memory into address space
  */
 void *
-as_map(as *a, void *addr, size_t len, int prot, int flags,
+as_map(as *a, void *req_addr, size_t len, int prot, int flags,
     std::unique_ptr<vnode> vn, off_t off, long attr)
 {
-	int r = 0;
 	const auto fixed = flags & MAP_FIXED;
+	const auto pg_off = PAGE_OFF(req_addr);
+
+	if (fixed && vn && pg_off != PAGE_OFF(off))
+		return (void*)DERR(-EINVAL);
 
 	std::unique_ptr<phys> pages(fixed
-	    ? page_reserve((phys*)addr, len, attr, a)
-	    : page_alloc(len, attr, a),
-	    {len, a});
+	    ? page_reserve((phys*)req_addr, len, attr, a)
+	    : page_alloc(pg_off + len, attr, a),
+	    {pg_off + len, a});
 
-	if (!pages.get())
+	if (!pages)
 		return (void *)-ENOMEM;
 
-	addr = pages.get();
+	std::byte *addr = (std::byte*)pages.get();
 
-	/* read data */
-	if (vn.get() && (r = vn_pread(vn.get(), addr, len, off)) < 0)
-		return (void*)r;
-	if ((size_t)r < len)
-		memset((char*)addr + r, 0, len - r);
+	/* read data & zero-fill (partial pages if not anonymous) */
+	ssize_t r = 0;
+	memset(addr, 0, pg_off);
+	if (vn)
+		if (r = vn_pread(vn.get(), addr + pg_off, len, off);
+		    r != (ssize_t)len)
+			return (void*)(r < 0 ? r : DERR(-ENXIO));
+	r += pg_off;
+	len = PAGE_ALIGN(pg_off + len);
+	memset(addr + r, 0, len - r);
+
 	if (prot & PROT_EXEC)
 		cache_coherent_exec(addr, len);
 
@@ -115,7 +124,7 @@ as_map(as *a, void *addr, size_t len, int prot, int flags,
 		mpu_map(addr, len, prot);
 #endif
 
-	return addr;
+	return addr + pg_off;
 }
 
 /*

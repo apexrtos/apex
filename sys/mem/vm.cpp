@@ -242,8 +242,7 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 	const bool priv = flags & MAP_PRIVATE;
 	const bool shared = flags & MAP_SHARED;
 
-	if ((uintptr_t)addr & PAGE_MASK || len & PAGE_MASK || off & PAGE_MASK ||
-	    priv == shared || !len)
+	if (priv == shared || !len)
 		return (void*)DERR(-EINVAL);
 	if (!anon) {
 		int oflg;
@@ -442,7 +441,7 @@ void*
 sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 {
 	/* mmap maps whole pages, Apex requires that addr is page aligned */
-	return mmapfor(task_cur()->as, addr, PAGE_ALIGN(len), prot, flags, fd,
+	return mmapfor(task_cur()->as, addr, len, prot, flags, fd,
 	    (off_t)pgoff * PAGE_SIZE, MA_NORMAL);
 }
 
