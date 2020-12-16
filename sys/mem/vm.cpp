@@ -243,7 +243,7 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 	const bool shared = flags & MAP_SHARED;
 
 	if ((uintptr_t)addr & PAGE_MASK || len & PAGE_MASK || off & PAGE_MASK ||
-	    priv == shared)
+	    priv == shared || !len)
 		return (void*)DERR(-EINVAL);
 	if (!anon) {
 		int oflg;
