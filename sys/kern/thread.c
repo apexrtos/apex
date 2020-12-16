@@ -37,7 +37,6 @@
 #include <arch.h>
 #include <assert.h>
 #include <debug.h>
-#include <elf_load.h>
 #include <errno.h>
 #include <futex.h>
 #include <kernel.h>
