@@ -160,7 +160,7 @@ device::ioctl(unsigned long cmd, void *arg)
 	auto valid_range = [&]{
 		if (!ALIGNED(arg, uint64_t))
 			return DERR(false);
-		if (arg64[0] & PAGE_MASK || arg64[1] & PAGE_MASK)
+		if (PAGE_OFF(arg64[0]) || PAGE_OFF(arg64[1]))
 			return DERR(false);
 		if (arg64[0] > (uint64_t)size_)
 			return DERR(false);
@@ -207,7 +207,7 @@ device::ioctl(unsigned long cmd, void *arg)
 			auto r = write(iov, pages, off);
 			if (r < 0)
 				return r;
-			assert(!(r & PAGE_MASK));
+			assert(!PAGE_OFF(r));
 			off += r;
 			len -= r;
 			l.unlock();
@@ -268,7 +268,7 @@ device::transfer(const iovec *iov, size_t count, off_t off, bool write)
 		sync();
 
 	/* align start of transfer to page boundary */
-	if (const size_t align = off & PAGE_MASK; align) {
+	if (const size_t align = PAGE_OFF(off); align) {
 		if (auto r = fill(off); r < 0)
 			return r;
 		const auto fix = std::min(PAGE_SIZE - align, len);
@@ -294,7 +294,7 @@ device::transfer(const iovec *iov, size_t count, off_t off, bool write)
 		    : v_read(iov, iov_off, PAGE_TRUNC(len - t), off + t);
 		if (r < 0)
 			return r;
-		assert(!(r & PAGE_MASK));
+		assert(!PAGE_OFF(r));
 		t += r;
 		iov_off += r;
 		while (iov_off >= iov->iov_len) {
@@ -310,7 +310,7 @@ device::transfer(const iovec *iov, size_t count, off_t off, bool write)
 		while (t < len) {
 			std::byte *p = static_cast<std::byte *>(iov->iov_base);
 			auto cp = std::min(len - t, iov->iov_len - iov_off);
-			auto bufloc = buf + ((off + t) & PAGE_MASK);
+			auto bufloc = buf + PAGE_OFF(off + t);
 			if (write) {
 				memcpy(bufloc, p + iov_off, cp);
 				dirty_ = true;

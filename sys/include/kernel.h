@@ -69,6 +69,7 @@ virt_to_phys(const void *va)
  */
 #define PAGE_SIZE	CONFIG_PAGE_SIZE
 #define PAGE_MASK	(CONFIG_PAGE_SIZE-1)
+#define PAGE_OFF(n)	((unsigned)((intmax_t)(n) & PAGE_MASK))
 #define PAGE_ALIGN(n)	((__typeof__(n))(((((uintptr_t)(n)) + PAGE_MASK) & (uintptr_t)~PAGE_MASK)))
 #define PAGE_TRUNC(n)	((__typeof__(n))((((uintptr_t)(n)) & (uintptr_t)~PAGE_MASK)))
 

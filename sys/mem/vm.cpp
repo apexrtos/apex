@@ -160,7 +160,7 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
 {
 	int err = 0;
 
-	if ((uintptr_t)vaddr & PAGE_MASK || ulen & PAGE_MASK)
+	if (PAGE_OFF(vaddr) || PAGE_OFF(ulen))
 		return DERR(-EINVAL);
 	if (!ulen)
 		return 0;
@@ -297,7 +297,7 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 {
 	int err = 0;
 
-	if ((uintptr_t)vaddr & PAGE_MASK || ulen & PAGE_MASK)
+	if (PAGE_OFF(vaddr) || PAGE_OFF(ulen))
 		return DERR(-EINVAL);
 	if ((prot & (PROT_READ | PROT_WRITE | PROT_EXEC)) != prot)
 		return DERR(-EINVAL);
@@ -414,7 +414,7 @@ void
 vm_init_brk(as *a, void *brk)
 {
 	assert(!a->brk);
-	assert(!((uintptr_t)brk & PAGE_MASK));
+	assert(!PAGE_OFF(brk));
 	a->brk = brk;
 }
 
@@ -472,7 +472,7 @@ sc_mprotect(void *addr, size_t len, int prot)
 int
 sc_madvise(void *vaddr, size_t ulen, int advice)
 {
-	if ((uintptr_t)vaddr & PAGE_MASK || ulen & PAGE_MASK)
+	if (PAGE_OFF(vaddr) || PAGE_OFF(ulen))
 		return DERR(-EINVAL);
 	if (!ulen)
 		return 0;
