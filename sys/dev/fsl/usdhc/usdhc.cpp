@@ -464,6 +464,22 @@ fsl_usdhc::fsl_usdhc(const fsl_usdhc_desc &d, const regs::host_ctrl_cap cap)
 	event_init(&event_, "usdhc", event::ev_IO);
 	irq_attach(d.irq, d.ipl, 0, isr_wrapper, nullptr, this);
 
+	/* Initialise interrupt mask. */
+	int_mask.r = 0;
+	int_mask.CINS = d.mmc.removable;
+	int_mask.CRM = d.mmc.removable;
+	int_mask.RTE = 1;
+	int_mask.CTOE = 1;
+	int_mask.CCE = 1;
+	int_mask.CEBE = 1;
+	int_mask.CIE = 1;
+	int_mask.DTOE = 1;
+	int_mask.DCE = 1;
+	int_mask.DEBE = 1;
+	int_mask.AC12E = 1;
+	int_mask.TNE = 1;
+	int_mask.DMAE = 1;
+
 	dbg("FSL-USDHC initialised\n");
 }
 
@@ -527,24 +543,6 @@ fsl_usdhc::v_reset()
 		v.EN_BUSY_IRQ = 1;
 		return v.r;
 	}());
-
-	/* Initialise interrupt mask. */
-	int_mask.r = 0;
-	int_mask.CC = 1;
-	int_mask.TC = 1;
-	int_mask.CINS = 1;
-	int_mask.CRM = 1;
-	int_mask.RTE = 1;
-	int_mask.CTOE = 1;
-	int_mask.CCE = 1;
-	int_mask.CEBE = 1;
-	int_mask.CIE = 1;
-	int_mask.DTOE = 1;
-	int_mask.DCE = 1;
-	int_mask.DEBE = 1;
-	int_mask.AC12E = 1;
-	int_mask.TNE = 1;
-	int_mask.DMAE = 1;
 
 	/* configure interrupts */
 	write32(&r_->INT_STATUS_EN, 0xffffffff);
