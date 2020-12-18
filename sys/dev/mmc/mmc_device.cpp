@@ -721,7 +721,7 @@ device::add_partitions()
 		if (!(rpmb_dev_ = device_create(&rpmb_io, b, DF_CHR, this)))
 			return DERR(-ENOMEM);
 		info("%s: rpmb partition %s %s\n", h_->name(),
-		    dev->name, hr_size_fmt(sz, b, 32));
+		    rpmb_dev_->name, hr_size_fmt(sz, b, 32));
 	};
 
 	return 0;
