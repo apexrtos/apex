@@ -140,12 +140,13 @@ vn_lookup(struct vnode *parent, const char *name, size_t len)
 		if (vp->v_parent == parent &&
 		    !strncmp(vp->v_name, name, len) &&
 		    !vp->v_name[len] &&
-		    vp->v_refcnt > 0 &&
-		    !(vp->v_flags & VHIDDEN)) {
+		    vp->v_refcnt > 0) {
 			vp->v_refcnt++;
 			mutex_unlock(&vnode_mutex);
 			vn_lock(vp);
-			return vp;
+			if (!(vp->v_flags & VHIDDEN))
+				return vp;
+			vput(vp);
 		}
 	}
 	mutex_unlock(&vnode_mutex);
