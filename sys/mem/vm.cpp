@@ -34,6 +34,7 @@ struct seg {
 	long attr;	/* preferred memory attributes for pages */
 	off_t off;	/* (optional) offset into vnode */
 	vnode *vn;	/* (optional) vnode backing region */
+	size_t mapped;	/* (optional) size of file mapping */
 };
 
 struct as {
@@ -117,10 +118,11 @@ seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
 		return DERR(-ENOMEM);
 	ns->prot = prot;
 	ns->base = pages.release();
-	ns->len = len;
+	ns->len = PAGE_ALIGN(PAGE_OFF(off) + len);
 	ns->attr = attr;
 	ns->off = off;
 	ns->vn = vn.release();
+	ns->mapped = ns->vn ? len : 0;
 	list_insert(&prev->link, &ns->link);
 	return 0;
 }
@@ -136,8 +138,10 @@ seg_combine(as *a)
 	seg *p = list_entry(list_first(&a->segs), seg, link), *s, *tmp;
 	list_for_each_entry_safe(s, tmp, list_next(&a->segs), link) {
 		if (p->prot != s->prot || seg_end(p) != s->base ||
-		    p->attr != s->attr || p->vn != s->vn ||
-		    (p->vn && p->off + p->len != s->off)) {
+		    p->attr != s->attr ||
+		    (s->vn && (p->vn != s->vn ||
+			       (p->vn && (PAGE_OFF(p->off + p->mapped) ||
+					  p->off + p->mapped != s->off))))) {
 			p = s;
 			continue;
 		}
@@ -737,13 +741,15 @@ as_dump(const as *a)
 {
 	seg *s;
 	list_for_each_entry(s, &a->segs, link) {
-		info("  %p-%p %c%c%c%c %8lld %s\n",
+		info("  %p-%p %c%c%c%c %8zu %8lld %8zu %s\n",
 		    s->base, (char*)s->base + s->len,
 		    s->prot & PROT_READ ? 'r' : '-',
 		    s->prot & PROT_WRITE ? 'w' : '-',
 		    s->prot & PROT_EXEC ? 'x' : '-',
 		    'p',	/* REVISIT: shared regions */
+		    s->len,
 		    s->off,
+		    s->mapped,
 		    s->vn ? vn_name(s->vn) : "");
 	}
 }
@@ -820,8 +826,12 @@ as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
 	int err;
 	const bool fixed = flags & MAP_FIXED;
 
+	assert(vn || !off);
+
 	/* remove any existing mappings */
-	if (fixed && (err = do_munmapfor(a, pages.get(), len, true)) < 0)
+	if (fixed &&
+	    (err = do_munmapfor(a, pages.get(),
+				PAGE_ALIGN(PAGE_OFF(off) + len), true)) < 0)
 		return err;
 
 	/* find insertion point */

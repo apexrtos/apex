@@ -109,11 +109,11 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
 		    r != (ssize_t)len)
 			return (void*)(r < 0 ? r : DERR(-ENXIO));
 	r += pg_off;
-	len = PAGE_ALIGN(pg_off + len);
-	memset(addr + r, 0, len - r);
+	auto pg_len{PAGE_ALIGN(pg_off + len)};
+	memset(addr + r, 0, pg_len - r);
 
 	if (prot & PROT_EXEC)
-		cache_coherent_exec(addr, len);
+		cache_coherent_exec(addr, pg_len);
 
 	if ((r = as_insert(a, std::move(pages), len, prot, flags,
 	    std::move(vn), off, attr)) < 0)
@@ -121,7 +121,7 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
 
 #if defined(CONFIG_MPU)
 	if (a == task_cur()->as)
-		mpu_map(addr, len, prot);
+		mpu_map(addr, pg_len, prot);
 #endif
 
 	return addr + pg_off;
