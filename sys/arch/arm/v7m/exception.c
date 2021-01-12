@@ -167,7 +167,7 @@ exc_UsageFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 	dump_exception(e, handler_mode, exc);
 	if (handler_mode || !interrupt_from_userspace())
 		panic(what);
-	dbg(what);
+	dbg("%s", what);
 	sig_thread(thread_cur(), sig);
 
 	/* clear fault */
