@@ -202,8 +202,9 @@ host::supports(mmc::device_type mode) const
 {
 	switch (mode) {
 	case mmc::device_type::sdr26:
-	case mmc::device_type::sdr52:
 		return true;
+	case mmc::device_type::sdr52:
+		return sdr52_;
 	case mmc::device_type::ddr52_1v8_3v3:
 	case mmc::device_type::ddr52_1v2:
 		return ddr52_;
