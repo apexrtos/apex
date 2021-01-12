@@ -227,7 +227,7 @@ exc_SVCall:
 	bhi .Larch_syscall		/*	goto .Larch_syscall */
 	movw r0, :lower16:syscall_table
 	movt r0, :upper16:syscall_table
-	ldr r6, [r0, r7, lsl 2]		/* r6 = r0[r7 << 2] */
+	ldr r6, [r0, r7, lsl #2]	/* r6 = r0[r7 << 2] */
 	cmp r6, 0			/* if (r6 == NULL) */
 	beq .Larch_syscall		/*	goto .Larch_syscall */
 
@@ -298,13 +298,13 @@ return_to_user:
 	    2. returning from asynchronous signal via sigreturn
 	    3. thread is terminating
 	   In all cases there is no value to return to userspace. */
-	mov r1, -EINTERRUPT_RETURN
+	mov r1, #-EINTERRUPT_RETURN
 	cmp r0, r1
 	beq .Lout
 
 	/* If sigreturn returned -ERESTARTSYS a syscall was interrupted by a
 	   signal with SA_RESTART set. Adjust return address to restart. */
-	mov r1, -ERESTARTSYS
+	mov r1, #-ERESTARTSYS
 	cmp r0, r1			/* if (r0 != -ERESTARTSYS) */
 	strne r0, [r2, EFRAME_R0]	/*	    then return r0 */
 	ldreq r1, [r2, EFRAME_RA]	/* else load return addr */
@@ -361,7 +361,7 @@ exc_PendSV:
 #endif
 	ldr r0, [r1]			/* r0 = saved control register */
 	tst r0, CONTROL_NPRIV		/* if (r0 & CONTROL_NPRIV) */
-	movne r0, -EINTERRUPT_RETURN	/*	r0 = -EINTERRUPT_RETURN */
+	movne r0, #-EINTERRUPT_RETURN	/*	r0 = -EINTERRUPT_RETURN */
 	bne return_to_user		/*	goto return_to_user */
 
 	/* return to kernel thread */
