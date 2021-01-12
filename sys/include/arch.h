@@ -190,16 +190,16 @@ smp_write_memory_barrier()
 	(__typeof__(*p))mmio_read8(p);})
 #define read16(p) ({ \
 	static_assert(sizeof(*p) == 2, ""); \
-	static_assert(alignof(*p) >= 2); \
+	static_assert(alignof(__typeof(*p)) >= 2, ""); \
 	(__typeof__(*p))mmio_read16(p);})
 #define read32(p) ({ \
 	static_assert(sizeof(*p) == 4, ""); \
-	static_assert(alignof(*p) >= 4); \
+	static_assert(alignof(__typeof(*p)) >= 4, ""); \
 	(__typeof__(*p))mmio_read32(p);})
 #if UINTPTR_MAX == 0xffffffffffffffff
 #define read64(p) ({ \
 	static_assert(sizeof(*p) == 8, ""); \
-	static_assert(alignof(*p) >= 8); \
+	static_assert(alignof(__typeof(*p)) >= 8); \
 	(__typeof__(*p))mmio_read64(p);})
 #endif
 
@@ -208,16 +208,16 @@ smp_write_memory_barrier()
 	mmio_write8(p, __VA_ARGS__);})
 #define write16(p, ...) ({ \
 	static_assert(sizeof(*p) == 2, ""); \
-	static_assert(alignof(*p) >= 2); \
+	static_assert(alignof(__typeof(*p)) >= 2, ""); \
 	mmio_write16(p, __VA_ARGS__);})
 #define write32(p, ...) ({ \
 	static_assert(sizeof(*p) == 4, ""); \
-	static_assert(alignof(*p) >= 4); \
+	static_assert(alignof(__typeof(*p)) >= 4, ""); \
 	mmio_write32(p, __VA_ARGS__);})
 #if UINTPTR_MAX == 0xffffffffffffffff
 #define write64(p, ...) ({ \
 	static_assert(sizeof(*p) == 8, ""); \
-	static_assert(alignof(*p) >= 8); \
+	static_assert(alignof(__typeof(*p)) >= 8, ""); \
 	mmio_write64(p, __VA_ARGS__);})
 #endif
 
