@@ -9,7 +9,7 @@ int
 dirbuf_add(struct dirent **buf, size_t *remain, ino_t ino, off_t off,
     unsigned char type, const char *name)
 {
-	const size_t align = alignof(**buf);
+	const size_t align = alignof(struct dirent);
 	const size_t dirent_noname = offsetof(struct dirent, d_name);
 	const size_t name_max = *remain - dirent_noname;
 	if ((ssize_t)name_max < 2)
