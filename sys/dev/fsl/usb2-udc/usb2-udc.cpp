@@ -386,10 +386,10 @@ private:
 	int v_queue_setup(size_t endpoint, ch9::Direction,
 	    gadget::transaction*) override;
 	int v_flush(size_t endpoint, ch9::Direction) override;
-	void v_complete(size_t endpoint, ch9::Direction);
+	void v_complete(size_t endpoint, ch9::Direction) override;
 	void v_set_stall(size_t endpoint, bool) override;
 	void v_set_stall(size_t endpoint, ch9::Direction, bool) override;
-	int v_get_stall(size_t endpoint, ch9::Direction), override;
+	int v_get_stall(size_t endpoint, ch9::Direction) override;
 	void v_set_address(unsigned address) override;
 	void v_setup_aborted(size_t endpoint) override;
 
