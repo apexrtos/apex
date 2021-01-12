@@ -129,7 +129,7 @@ advance(struct ent **p)
 	assert(len && len < sizeof(log));
 
 	*p = (struct ent *)ALIGNn((char *)*p + sizeof(**p) + len,
-	    alignof(**p));
+	    alignof(struct ent));
 	if ((char *)(*p + 1) >= (log + sizeof(log)))
 		*p = (struct ent *)log;
 }
