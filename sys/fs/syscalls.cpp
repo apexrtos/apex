@@ -238,7 +238,7 @@ sc_ioctl(int fd, int request, void *argp)
 
 	/* fixup ioctls which don't contain direction or size */
 	if (dir == _IOC_NONE) {
-		switch (request) {
+		switch ((unsigned)request) {
 		case TCGETS:
 		case TCSETS:
 		case TCSETSW:
@@ -275,7 +275,7 @@ sc_ioctl(int fd, int request, void *argp)
 	}
 
 	/* fixup ioctls with incorrect size */
-	switch (request) {
+	switch ((unsigned)request) {
 	case BLKGETSIZE64:
 		size = sizeof(uint64_t);
 		break;

@@ -74,7 +74,7 @@ sc_reboot(unsigned long magic, unsigned long magic2, int cmd, void *arg)
 	if (magic != 0xfee1dead && magic2 != 672274793)
 		return DERR(-EINVAL);
 
-	switch (cmd) {
+	switch ((unsigned)cmd) {
 	case RB_AUTOBOOT:
 		info("Restarting system.\n");
 		machine_reset();
