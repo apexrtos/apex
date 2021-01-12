@@ -507,6 +507,12 @@ sc_getitimer(int timer, struct k_itimerval *o)
 /*
  * sc_setitimer - set the value of an interval timer
  */
+static void
+itimer_alarm(void *tv)
+{
+	sig_task((struct task *)tv, SIGALRM);
+}
+
 int
 sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 {
@@ -521,11 +527,6 @@ sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 	    (o && !u_access_ok(o, sizeof *o, PROT_WRITE))) {
 		u_access_end();
 		return DERR(-EFAULT);
-	}
-
-	void alarm(void *tv)
-	{
-		sig_task((struct task *)tv, SIGALRM);
 	}
 
 	struct timeval tmp;
@@ -578,7 +579,7 @@ sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 			timer_callout(&t->itimer_real, ns,
 			    tv_to_ns(&(struct timeval){n->it_interval.tv_sec,
 						       n->it_interval.tv_usec}),
-				     alarm, t);
+				     itimer_alarm, t);
 		break;
 	}
 
