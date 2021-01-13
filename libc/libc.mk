@@ -68,6 +68,8 @@ SOURCES := \
     src/stdlib/strtol.c \
     src/stdlib/wcstod.c \
     src/stdlib/wcstol.c \
+    src/string/bcmp.c \
+    src/string/bcopy.c \
     src/string/memchr.c \
     src/string/memcmp.c \
     src/string/memmove.c \
