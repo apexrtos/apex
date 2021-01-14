@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cassert>
+#include <compare>
 #include <cstddef>
 #include <cstring>
 #include <iterator>
@@ -37,257 +38,111 @@ public:
 	typedef T *pointer;
 	typedef const T *const_pointer;
 
-	class const_iterator;
-
-	class iterator {
+	template<bool const__>
+	class itr__ {
 		friend class cb_impl__;
-		friend class const_iterator;
+
 	public:
+		typedef std::conditional_t<const__, const cb_impl__, cb_impl__> container;
 		typedef typename cb_impl__<T, S, B>::difference_type difference_type;
 		typedef typename cb_impl__<T, S, B>::value_type value_type;
-		typedef typename cb_impl__<T, S, B>::reference reference;
-		typedef typename cb_impl__<T, S, B>::pointer pointer;
+		typedef std::conditional_t<const__,
+					   cb_impl__<T, S, B>::const_reference,
+					   cb_impl__<T, S, B>::reference>
+						reference;
+		typedef std::conditional_t<const__,
+					   cb_impl__<T, S, B>::const_pointer,
+					   cb_impl__<T, S, B>::pointer>
+						pointer;
 		typedef std::random_access_iterator_tag iterator_category;
 
-		iterator()
+		itr__()
 		: it_{}
 		, c_{}
 		{ }
 
-		iterator(size_type it, cb_impl__ *buf)
+		itr__(size_type it, container *buf)
 		: it_{it}
 		, c_{buf}
 		{ }
 
-		iterator(const iterator &) = default;
-		~iterator() = default;
-		iterator &operator=(const iterator &) = default;
+		itr__(const itr__ &) = default;
+		~itr__() = default;
+		itr__ &operator=(const itr__ &) = default;
 
-		bool operator==(const const_iterator &r) const
-		{
-			return it_ == r.it_;
-		}
-
-		bool operator!=(const const_iterator &r) const
-		{
-			return it_ != r.it_;
-		}
-
-		bool operator<(const const_iterator &r) const
-		{
-			return c_->offset(it_) < c_->offset(r.it_);
-		}
-
-		bool operator>(const const_iterator &r) const
-		{
-			return c_->offset(it_) > c_->offset(r.it_);
-		}
-
-		bool operator<=(const const_iterator &r) const
-		{
-			return c_->offset(it_) <= c_->offset(r.it_);
-		}
-
-		bool operator>=(const const_iterator &r) const
-		{
-			return c_->offset(it_) >= c_->offset(r.it_);
-		}
-
-		iterator &operator++()
-		{
-			++it_;
-			return *this;
-		}
-
-		iterator operator++(int)
-		{
-			auto tmp{*this};
-			++it_;
-			return tmp;
-		}
-
-		iterator &operator--()
-		{
-			--it_;
-			return *this;
-		}
-
-		iterator operator--(int)
-		{
-			auto tmp{*this};
-			--it_;
-			return tmp;
-		}
-
-		iterator &operator+=(size_type d)
-		{
-			it_ += d;
-			return *this;
-		}
-
-		iterator operator+(size_type d) const
-		{
-			auto tmp{*this};
-			return tmp += d;
-		}
-
-		friend iterator operator+(size_type d, const iterator &i)
-		{
-			return i + d;
-		}
-
-		iterator &operator-=(size_type d)
-		{
-			it_ -= d;
-			return *this;
-		}
-
-		iterator operator-(size_type d) const
-		{
-			auto tmp{*this};
-			return tmp -= d;
-		}
-
-		difference_type operator-(const const_iterator &r) const
-		{
-			return c_->offset(it_) - c_->offset(r.it_);
-		}
-
-		reference operator*() const
-		{
-			return c_->ref(it_);
-		}
-
-		pointer operator->() const
-		{
-			return &c_->ref(it_);
-		}
-
-		reference operator[](size_type d) const
-		{
-			return c_->ref(it_ + d);
-		}
-
-	private:
-		size_type it_;
-		cb_impl__ *c_;
-	};
-
-	class const_iterator {
-		friend class cb_impl__;
-	public:
-		typedef typename cb_impl__<T, S, B>::difference_type difference_type;
-		typedef typename cb_impl__<T, S, B>::value_type value_type;
-		typedef typename cb_impl__<T, S, B>::const_reference reference;
-		typedef typename cb_impl__<T, S, B>::const_pointer pointer;
-		typedef std::random_access_iterator_tag iterator_category;
-
-
-		const_iterator()
-		: it_{}
-		, c_{}
-		{ }
-
-		const_iterator(size_type it, const cb_impl__ *buf)
-		: it_{it}
-		, c_{buf}
-		{ }
-
-		const_iterator(const iterator &r)
+		/* iterator->const_iterator conversion */
+		template<bool c = const__, class = std::enable_if_t<c>>
+		itr__(const itr__<false> &r)
 		: it_{r.it_}
 		, c_{r.c_}
 		{ }
 
-		const_iterator(const const_iterator &) = default;
-		~const_iterator() = default;
-		const_iterator &operator=(const const_iterator &) = default;
+		std::strong_ordering operator<=>(const itr__ &r) const
+		{
+			return c_->offset(it_) <=> c_->offset(r.it_);
+		}
 
-		bool operator==(const const_iterator &r) const
+		bool operator==(const itr__ &r) const
 		{
 			return it_ == r.it_;
 		}
 
-		bool operator!=(const const_iterator &r) const
-		{
-			return it_ != r.it_;
-		}
-
-		bool operator<(const const_iterator &r) const
-		{
-			return c_->offset(it_) < c_->offset(r.it_);
-		}
-
-		bool operator>(const const_iterator &r) const
-		{
-			return c_->offset(it_) > c_->offset(r.it_);
-		}
-
-		bool operator<=(const const_iterator &r) const
-		{
-			return c_->offset(it_) <= c_->offset(r.it_);
-		}
-
-		bool operator>=(const const_iterator &r) const
-		{
-			return c_->offset(it_) >= c_->offset(r.it_);
-		}
-
-		const_iterator &operator++()
+		itr__ &operator++()
 		{
 			++it_;
 			return *this;
 		}
 
-		const_iterator operator++(int)
+		itr__ operator++(int)
 		{
 			auto tmp{*this};
 			++it_;
 			return tmp;
 		}
 
-		const_iterator &operator--()
+		itr__ &operator--()
 		{
 			--it_;
 			return *this;
 		}
 
-		const_iterator operator--(int)
+		itr__ operator--(int)
 		{
 			auto tmp{*this};
 			--it_;
 			return tmp;
 		}
 
-		const_iterator &operator+=(size_type d)
+		itr__ &operator+=(size_type d)
 		{
 			it_ += d;
 			return *this;
 		}
 
-		const_iterator operator+(size_type d) const
+		itr__ operator+(size_type d) const
 		{
 			auto tmp{*this};
 			return tmp += d;
 		}
 
-		friend const_iterator operator+(size_type d, const const_iterator &i)
+		friend itr__ operator+(size_type d, const itr__ &i)
 		{
 			return i + d;
 		}
 
-		const_iterator &operator-=(size_type d)
+		itr__ &operator-=(size_type d)
 		{
 			it_ -= d;
 			return *this;
 		}
 
-		const_iterator operator-(size_type d) const
+		itr__ operator-(size_type d) const
 		{
 			auto tmp{*this};
 			return tmp -= d;
 		}
 
-		difference_type operator-(const const_iterator &r) const
+		difference_type operator-(const itr__<true> &r) const
 		{
 			return c_->offset(it_) - c_->offset(r.it_);
 		}
@@ -309,9 +164,11 @@ public:
 
 	private:
 		size_type it_;
-		const cb_impl__ *c_;
+		container *c_;
 	};
 
+	typedef itr__<false> iterator;
+	typedef itr__<true> const_iterator;
 	typedef std::reverse_iterator<iterator> reverse_iterator;
 	typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
