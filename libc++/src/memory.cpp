@@ -14,7 +14,7 @@
 #if 0 /* Apex mutex is not compatible with libstdc++ yet */
 #include "mutex"
 #include "thread"
-#if defined(__unix__) &&  defined(__ELF__) && defined(_LIBCPP_HAS_COMMENT_LIB_PRAGMA)
+#if defined(__ELF__) && defined(_LIBCPP_LINK_PTHREAD_LIB)
 #pragma comment(lib, "pthread")
 #endif
 #endif
