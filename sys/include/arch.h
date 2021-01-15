@@ -185,6 +185,77 @@ smp_write_memory_barrier()
 }
 #endif
 
+#if defined(__cplusplus)
+} /* extern "C" */
+#undef noreturn
+
+template<typename T>
+inline T
+readN(const T *p)
+{
+	static_assert(sizeof(T) <= sizeof(uintptr_t));
+	static_assert(std::is_trivially_copyable_v<T>);
+
+	T tmp;
+
+	switch (sizeof(T)) {
+	case 1:
+		typedef uint8_t __attribute__((__may_alias__)) u8a;
+		*(u8a *)&tmp = mmio_read8(p);
+		break;
+	case 2:
+		typedef uint16_t __attribute__((__may_alias__)) u16a;
+		*(u16a *)&tmp = mmio_read16(p);
+		break;
+	case 4:
+		typedef uint32_t __attribute__((__may_alias__)) u32a;
+		*(u32a *)&tmp = mmio_read32(p);
+		break;
+#if UINTPTR_MAX == 0xffffffffffffffff
+	case 8:
+		typedef uint64_t __attribute__((__may_alias__)) u64a;
+		*(u64a *)&tmp = mmio_read64(p);
+		break;
+#endif
+	}
+
+	return tmp;
+}
+
+template<typename T>
+inline T
+read8(const T *p)
+{
+	static_assert(sizeof(T) == 1);
+	return readN(p);
+}
+
+template<typename T>
+inline T
+read16(const T *p)
+{
+	static_assert(sizeof(T) == 2);
+	return readN(p);
+}
+
+template<typename T>
+inline T
+read32(const T *p)
+{
+	static_assert(sizeof(T) == 4);
+	return readN(p);
+}
+
+template<typename T>
+inline T
+read64(const T *p)
+{
+	static_assert(sizeof(T) == 8);
+	return readN(p);
+}
+
+#else
+
 #define read8(p) ({ \
 	static_assert(sizeof(*p) == 1, ""); \
 	(__typeof__(*p))mmio_read8(p);})
@@ -203,6 +274,8 @@ smp_write_memory_barrier()
 	(__typeof__(*p))mmio_read64(p);})
 #endif
 
+#endif /* __cplusplus */
+
 #define write8(p, ...) ({ \
 	static_assert(sizeof(*p) == 1, ""); \
 	mmio_write8(p, __VA_ARGS__);})
@@ -219,11 +292,6 @@ smp_write_memory_barrier()
 	static_assert(sizeof(*p) == 8, ""); \
 	static_assert(alignof(__typeof(*p)) >= 8, ""); \
 	mmio_write64(p, __VA_ARGS__);})
-#endif
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#undef noreturn
 #endif
 
 #endif /* !arch_h */
