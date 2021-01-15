@@ -73,7 +73,7 @@ card::init()
 
 		if (!ocr_.busy()) {
 			dbg("%s: SD card took %ums to initialise\n",
-			    h_->name(), (unsigned)(dt / 1e6));
+			    h_->name(), (unsigned)(dt / 1000000));
 			break;
 		}
 
