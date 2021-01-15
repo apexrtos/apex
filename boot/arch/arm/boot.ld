@@ -41,4 +41,7 @@ SECTIONS {
 	__bss_size = SIZEOF(.bss);
 	__stack_top = ADDR(.stack) + SIZEOF(.stack);
 	__loader_end = LOADADDR(.data) + SIZEOF(.data);
+
+	/* Discard .ARM.exidx and .ARM.attributes */
+	/DISCARD/ : { *(.ARM.*) }
 }
