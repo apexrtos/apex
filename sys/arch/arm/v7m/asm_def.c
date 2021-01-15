@@ -2,8 +2,8 @@
 #include <stddef.h>
 #include <thread.h>
 
-#define text(t) __asm__("\n__OUT__" t)
-#define define(t, v) __asm__("\n__OUT__#define " t " %0" :: "n" (v))
+#define text(t) __asm__("\n@__OUT__" t)
+#define define(t, v) __asm__("\n@__OUT__#define " t " %0" :: "n" (v))
 
 void asm_def(void)
 {
