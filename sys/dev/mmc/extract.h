@@ -1,6 +1,8 @@
 #ifndef dev_mmc_extract_h
 #define dev_mmc_extract_h
 
+#include <cassert>
+
 namespace mmc {
 
 /*

@@ -1,5 +1,7 @@
 #include "transaction.h"
 
+#include <cassert>
+
 namespace usb::gadget {
 
 /*

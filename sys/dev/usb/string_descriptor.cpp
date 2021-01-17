@@ -1,5 +1,6 @@
 #include "string_descriptor.h"
 
+#include <cassert>
 #include <dev/usb/ch9.h>
 #include <endian.h>
 #include <uchar.h>
