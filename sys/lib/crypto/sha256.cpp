@@ -126,7 +126,7 @@ sha256::process(std::span<const std::byte> in)
 		in = in.subspan(rem);
         }
 	while (size(in) >= 64) {
-		compress(h_, in);
+		compress(h_, std::span<const std::byte, 64>(in));
 		in = in.subspan(64);
 	}
         memcpy(data(buf_), data(in), size(in));
@@ -151,7 +151,8 @@ sha256::complete()
         for (auto &v : h_)
 		v = htobe32(v);
 
-	return {reinterpret_cast<std::byte *>(data(h_)), size(h_)};
+	return std::span<const std::byte, 32>{
+			reinterpret_cast<std::byte *>(data(h_)), 32};
 }
 
 }
