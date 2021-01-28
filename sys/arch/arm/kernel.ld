@@ -44,15 +44,18 @@ SECTIONS {
 
 	.bss : {
 		*(.bss*)
-		*(.fast_bss)
 		*(COMMON)
 	} >ram : kernel
 
-	.stack : ALIGN(8) {
+	.fast_bss (NOLOAD) : {
+		*(.fast_bss)
+	} >ram : kernel
+
+	.stack (NOLOAD) : ALIGN(8) {
 		. += CONFIG_KSTACK_SIZE;
 	} >ram : kernel
 
-	.irqstack : ALIGN(8) {
+	.irqstack (NOLOAD) : ALIGN(8) {
 		. += CONFIG_IRQSTACK_SIZE;
 	} >ram : kernel
 

@@ -52,7 +52,7 @@ SECTIONS {
 		*(COMMON)
 	} >dram : dram
 
-	.stack : ALIGN(8) {
+	.stack (NOLOAD) : ALIGN(8) {
 		. += CONFIG_KSTACK_SIZE;
 	} >dram : dram
 
@@ -61,11 +61,11 @@ SECTIONS {
 		*(.fast_rodata)
 	} >dtcm : dtcm
 
-	 .fast_bss : {
+	 .fast_bss (NOLOAD) : {
 		*(.fast_bss)
 	} >dtcm : dtcm
 
-	.irqstack : ALIGN(8) {
+	.irqstack (NOLOAD) : ALIGN(8) {
 		. += CONFIG_IRQSTACK_SIZE;
 	} >dtcm : dtcm
 

@@ -30,7 +30,7 @@ SECTIONS {
 		*(COMMON)
 	} >ram
 
-	.stack : ALIGN(8) {
+	.stack (NOLOAD) : ALIGN(8) {
 		. += 0x1000;
 	} >ram
 
