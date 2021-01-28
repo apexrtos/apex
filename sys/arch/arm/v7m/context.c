@@ -354,7 +354,7 @@ static void
 fpu_lazy_sync(void)
 {
 #if defined(CONFIG_FPU)
-	asm("vmov s0, 1");
+	asm("vmov.f32 s0, #1.0");
 #endif
 }
 
