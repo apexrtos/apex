@@ -2,6 +2,6 @@
  * Options for building in thumb mode
  */
 makeoption CFLAGS += -mthumb
-makeoption CFLAGS += -Xlinker --thumb-entry=_start
+makeoption CFLAGS_gcc += -Xlinker --thumb-entry=_start
 makeoption CXXFLAGS += -mthumb
-makeoption CXXFLAGS += -Xlinker --thumb-entry=_start
+makeoption CXXFLAGS_gcc += -Xlinker --thumb-entry=_start

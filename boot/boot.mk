@@ -2,6 +2,14 @@
 # Boot loader
 #
 
+# APEX_CFLAGS are optional
+ifndef CONFIG_APEX_CFLAGS
+CONFIG_APEX_CFLAGS :=
+endif
+ifndef CONFIG_APEX_CFLAGS_$(COMPILER)
+CONFIG_APEX_CFLAGS_$(COMPILER) :=
+endif
+
 TYPE := binary
 TARGET := boot
 LDSCRIPT := arch/$(CONFIG_ARCH)/boot.ld
@@ -10,7 +18,9 @@ CFLAGS += -Wframe-larger-than=384
 CFLAGS += -fno-pie -no-pie
 CFLAGS += -z max-page-size=32
 CFLAGS += $(CONFIG_APEX_CFLAGS)
-LIBS := ../libc/libc.a -lgcc
+CFLAGS_$(COMPILER) += $(CONFIG_APEX_CFLAGS_$(COMPILER))
+LIBS := ../libc/libc.a \
+    $(shell $(CROSS_COMPILE)$(COMPILER) --print-libgcc-file-name)
 
 INCLUDE := \
     include \

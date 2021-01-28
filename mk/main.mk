@@ -61,6 +61,15 @@ endif
 ifeq ($(origin CONFIG_CROSS_COMPILE),undefined)
     CONFIG_CROSS_COMPILE :=
 endif
+ifeq ($(origin CONFIG_CFLAGS_$(CONFIG_COMPILER)),undefined)
+    CONFIG_CFLAGS_$(CONFIG_COMPILER) :=
+endif
+ifeq ($(origin CONFIG_CXXFLAGS_$(CONFIG_COMPILER)),undefined)
+    CONFIG_CXXFLAGS_$(CONFIG_COMPILER) :=
+endif
+ifeq ($(origin CONFIG_DEFS_$(CONFIG_COMPILER)),undefined)
+    CONFIG_DEFS_$(CONFIG_COMPILER) :=
+endif
 
 #
 # Make paths relative to $(CONFIG_SRCDIR) or absolute
@@ -113,7 +122,7 @@ define fn_process_sources
 
     # set target variables
     $(tgt)_CFLAGS := $$(CFLAGS)
-    $(tgt)_CXXFLAGS := $$(CXXFLAGS)
+    $(tgt)_CXXFLAGS := $$(CXXFLAGS) $$(CXXFLAGS_$$(COMPILER))
     $(tgt)_ASFLAGS := $$(ASFLAGS)
     $(tgt)_INCLUDE := $$(addprefix -I,$$(call fn_path_join,$$(mk_dir),$$(INCLUDE)))
     $(tgt)_SOURCES := $$(call fn_relative_path,$$(mk_dir),$$(SOURCES))
@@ -123,13 +132,21 @@ define fn_process_sources
     $(tgt)_FLAGS := $$(addsuffix .*flags,$$($(tgt)_BASENAME))
     $(tgt)_CLEAN := $$(addsuffix .*,$$($(tgt)_BASENAME))
     $(tgt)_CXX_SOURCES := $$(filter $(addprefix %.,$(CXX_EXT)),$$($(tgt)_SOURCES))
-    $(tgt)_CC := $$(CROSS_COMPILE)gcc
-    $(tgt)_CXX := $$(CROSS_COMPILE)g++
+    ifeq ($$(COMPILER),gcc)
+        $(tgt)_CC := $$(CROSS_COMPILE)gcc
+        $(tgt)_CXX := $$(CROSS_COMPILE)g++
+        $(tgt)_AS := $$(CROSS_COMPILE)as
+    endif
+    ifeq ($$(COMPILER),clang)
+        $(tgt)_CC := $$(CROSS_COMPILE)clang
+        $(tgt)_CXX := $$(CROSS_COMPILE)clang++
+        $(tgt)_AS := $$(CROSS_COMPILE)clang
+        $(tgt)_ASFLAGS += -c
+    endif
     $(tgt)_CPP := $$(CROSS_COMPILE)cpp
     $(tgt)_LD := $$(CROSS_COMPILE)ld
-    $(tgt)_AS := $$(CROSS_COMPILE)as
-    $(tgt)_AR := $$(CROSS_COMPILE)gcc-ar
-    $(tgt)_RANLIB := $$(CROSS_COMPILE)gcc-ranlib
+    $(tgt)_AR := $$(CROSS_COMPILE)ar
+    $(tgt)_RANLIB := $$(CROSS_COMPILE)ranlib
     $(tgt)_OBJCOPY := $$(CROSS_COMPILE)objcopy
     $(tgt)_OBJDUMP := $$(CROSS_COMPILE)objdump
     $(tgt)_STRIP := $$(CROSS_COMPILE)strip
@@ -307,7 +324,7 @@ define fn_archive_a_rule
     # include built object flags
     -include $(tgt).flags
 
-    $(tgt)_AR := $$(CROSS_COMPILE)gcc-ar
+    $(tgt)_AR := $$(CROSS_COMPILE)ar
     $(tgt)_CLEAN :=
     $(tgt)_SOURCES := $$(SOURCES)
 
@@ -394,7 +411,7 @@ $(foreach ext,$(CXX_EXT),$(eval $(call cpp_rule,$(ext))))
 	+$($($*_TGT)_CC) -c -MD -MP $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -o $@ $<
 
 %.s: %.S %.cflags
-	$($($*_TGT)_CPP) -MD -MP -MT $*.s $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -D__ASSEMBLY__ $< $@
+	$($($*_TGT)_CPP) -MD -MP -MT $*.s $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -D__ASSEMBLY__ $< -o $@
 
 %.o: %.s %.asflags
 	$($($*_TGT)_AS) $($($*_TGT)_ASFLAGS) $($($*_TGT)_INCLUDE) -o $@ $<
@@ -415,11 +432,15 @@ define fn_process_mkfile
 
     # reset all variables which can have configured defaults
     DEFS := $(CONFIG_DEFS)
-    CFLAGS := $(CONFIG_CFLAGS)
-    CXXFLAGS := $(CONFIG_CXXFLAGS)
-    ASFLAGS := $(CONFIG_ASFLAGS)
+    DEFS_$(CONFIG_COMPILER) := $(CONFIG_DEFS_$(CONFIG_COMPILER))
+    CFLAGS := $(CONFIG_MCPU) $(CONFIG_CFLAGS)
+    CFLAGS_$(CONFIG_COMPILER) := $(CONFIG_CFLAGS_$(CONFIG_COMPILER))
+    CXXFLAGS := $(CONFIG_MCPU) $(CONFIG_CXXFLAGS)
+    CXXFLAGS_$(CONFIG_COMPILER) := $(CONFIG_CXXFLAGS_$(CONFIG_COMPILER))
+    ASFLAGS := $(CONFIG_MCPU) $(CONFIG_ASFLAGS)
     MAP := $(CONFIG_MAP)
     CROSS_COMPILE := $(CONFIG_CROSS_COMPILE)
+    COMPILER := $(CONFIG_COMPILER)
     SSTRIP := $(CONFIG_SSTRIP)
 
     # remember MAKEFILE_LIST before including mk file
@@ -429,8 +450,8 @@ define fn_process_mkfile
     include $(1)
 
     # add definitions to CFLAGS and CXXFLAGS
-    CFLAGS += $$(DEFS)
-    CXXFLAGS += $$(DEFS)
+    CFLAGS += $$(DEFS) $$(DEFS_$$(COMPILER))
+    CXXFLAGS += $$(DEFS) $$(DEFS_$$(COMPILER))
 
     # directory containing mk file we just processed
     mk_dir := $$(dir $$(firstword $$(filter-out $$(prev),$$(abspath $$(MAKEFILE_LIST)))))

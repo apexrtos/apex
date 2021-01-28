@@ -2,12 +2,10 @@
  * Options for ARM Cortex-M4 (Hard Float)
  */
 arch arm
-subarch v7m
-makeoption CFLAGS += -mcpu=cortex-m4
-makeoption CFLAGS += -masm-syntax-unified
-makeoption ASFLAGS += -mcpu=cortex-m4
-makeoption CXXFLAGS += -mcpu=cortex-m4
-makeoption APEX_CFLAGS += -mslow-flash-data
+subarch v7em
+makeoption MCPU := -mcpu=cortex-m4
+makeoption CFLAGS_gcc += -masm-syntax-unified
+makeoption APEX_CFLAGS_gcc += -mslow-flash-data
 makeoption USER_CFLAGS += -static
 makeoption USER_CFLAGS += -pie -fPIE
 makeoption USER_CFLAGS += -fvisibility=hidden
@@ -17,6 +15,3 @@ option FPU
 include cpu/arm/thumb
 
 /* Cortex-M4 has optional MPU. Set option MPU if available. */
-
-/* musl & gcc can't build a gcc/musl/linux multilib toolchain yet */
-cross-compile armv7m-linux-musleabihf

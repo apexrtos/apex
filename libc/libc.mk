@@ -7,13 +7,19 @@
 
 TYPE := klib
 TARGET := libc.a
-CFLAGS := -std=c99 -ffreestanding -fexcess-precision=standard -frounding-math \
+CFLAGS := $(CONFIG_MCPU) \
+	  -std=c99 -ffreestanding -frounding-math \
 	  -D_XOPEN_SOURCE=700 -Os -pipe -fomit-frame-pointer \
 	  -fno-unwind-tables -fno-asynchronous-unwind-tables \
-	  -ffunction-sections -fdata-sections \
+	  -ffunction-sections -fdata-sections -w \
 	  -Werror=implicit-function-declaration \
 	  -Werror=implicit-int -Werror=pointer-sign \
 	  -Werror=pointer-arith -fPIC
+CFLAGS_gcc := -fexcess-precision=standard
+CFLAGS_clang := -flto
+DEFS :=
+DEFS_gcc :=
+DEFS_clang :=
 
 INCLUDE := \
 	$(CONFIG_BUILDDIR) \
@@ -110,11 +116,13 @@ SOURCES += \
     src/string/arm/memcpy_le.S
 endif
 
+CFLAGS_MEMOPS := $(if $(filter $(COMPILER),gcc),-fno-tree-loop-distribute-patterns,)
+
 $(APEX_SUBDIR)libc/src/string/memchr_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/memcmp_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
-$(APEX_SUBDIR)libc/src/string/memcpy_EXTRA_CFLAGS := -fno-tree-loop-distribute-patterns -fno-stack-protector
-$(APEX_SUBDIR)libc/src/string/memmove_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns
-$(APEX_SUBDIR)libc/src/string/memset_EXTRA_CFLAGS := -O3 -fno-tree-loop-distribute-patterns -fno-stack-protector
+$(APEX_SUBDIR)libc/src/string/memcmp_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS)
+$(APEX_SUBDIR)libc/src/string/memcpy_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS) -fno-stack-protector
+$(APEX_SUBDIR)libc/src/string/memmove_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS)
+$(APEX_SUBDIR)libc/src/string/memset_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS) -fno-stack-protector
 $(APEX_SUBDIR)libc/src/string/stpcpy_EXTRA_CFLAGS := -O3
 $(APEX_SUBDIR)libc/src/string/strchr_EXTRA_CFLAGS := -O3
 $(APEX_SUBDIR)libc/src/string/strchrnul_EXTRA_CFLAGS := -O3
@@ -137,3 +145,5 @@ $(APEX_SUBDIR)libc/src/string/wmemcmp_EXTRA_CFLAGS := -O3
 $(APEX_SUBDIR)libc/src/string/wmemcpy_EXTRA_CFLAGS := -O3
 $(APEX_SUBDIR)libc/src/string/wmemmove_EXTRA_CFLAGS := -O3
 $(APEX_SUBDIR)libc/src/string/wmemset_EXTRA_CFLAGS := -O3
+
+undefine CFLAGS_MEMOPS

@@ -3,11 +3,9 @@
  */
 arch arm
 subarch v7m
-makeoption CFLAGS += -mcpu=cortex-m3
-makeoption CFLAGS += -masm-syntax-unified
-makeoption ASFLAGS += -mcpu=cortex-m3
-makeoption CXXFLAGS += -mcpu=cortex-m3
-makeoption APEX_CFLAGS += -mslow-flash-data
+makeoption MCPU := -mcpu=cortex-m3
+makeoption CFLAGS_gcc += -masm-syntax-unified
+makeoption APEX_CFLAGS_gcc += -mslow-flash-data
 makeoption USER_CFLAGS += -static
 makeoption USER_CFLAGS += -pie -fPIE
 makeoption USER_CFLAGS += -fvisibility=hidden
@@ -16,6 +14,3 @@ makeoption USER_CFLAGS += -z max-page-size=0x1000
 include cpu/arm/thumb
 
 /* Cortex-M3 has optional MPU. Set option MPU if available. */
-
-/* musl & gcc can't build a gcc/musl/linux multilib toolchain yet */
-cross-compile armv7m-linux-musleabi

@@ -105,6 +105,7 @@ find_config()
 
 parse_config()
 {
+	$print "Processing configuration file $1..."
 	while read -r cmd rest; do
 		case $cmd in
 		option)
@@ -130,6 +131,7 @@ parse_config()
 					;;
 				esac
 			fi
+			[ "$param" = FPU ] && hf=hf
 			;;
 		makeoption)
 			echo "CONFIG_$rest" >> "$CONFIG_MK"
@@ -331,9 +333,6 @@ main()
 		echo
 	} > "$MACHCFG_C"
 
-	$print "Processing configuration files..."
-	$print
-
 	# Handle --cpu option
 	if [ "x$cpu" != x ]; then
 		find_config CPU_IN cpu "$cpu"
@@ -360,11 +359,6 @@ main()
 	[ "x$cpu" = x ] &&
 		quit "no cpu specified"
 
-	# Print configuration
-	$print "CPU:     $cpu"
-	$print "Machine: $machine"
-	$print "Project: $project"
-
 	# Verify architecture is sane
 	case $arch in
 	arm|i386|powerpc)
@@ -379,10 +373,26 @@ main()
 
 	# Guess cross compiler if it wasn't explicitly specified
 	if [ "x$cross" = x ]; then
-		cross=$arch-linux-musleabi
-		$print
-		$print "Guessing cross compiler prefix $cross"
+		cross=$arch$subarch-linux-musleabi$hf
+		$print "Guessing cross compiler prefix... $cross"
 	fi
+
+	# Detect compiler type
+	$print -n "Detecting compiler... "
+	compiler_output=$("$cross"-cc -v 2>&1)
+	case "$compiler_output" in
+	*gcc\ version*)
+		compiler=gcc
+		;;
+	*clang\ version*)
+		compiler=clang
+		;;
+	*)
+		quit "Unknown compiler, output was: $compiler_output"
+		;;
+	esac
+	$print $compiler
+
 
 	# Set general configuration options
 	{
@@ -395,6 +405,7 @@ main()
 		echo "CONFIG_CPU := $cpu"
 		echo "CONFIG_ARCH := $arch"
 		echo "CONFIG_CROSS_COMPILE := $cross-"
+		echo "CONFIG_COMPILER := $compiler"
 		echo "CONFIG_DRIVERS := \$(sort \$(CONFIG_DRIVER_LIST))"
 		[ "x$subarch" != x ] &&
 			echo "CONFIG_SUBARCH := $subarch"
@@ -439,8 +450,12 @@ else
 endif
 MAKEFILE
 
-	$print
-	$print "Apex is configured. Now run 'make'."
+	# Print configuration
+	$print "Apex configured for:"
+	$print "    CPU:      $cpu"
+	$print "    Machine:  $machine"
+	$print "    Project:  $project"
+	$print "    Compiler: $compiler"
 }
 
 main "$@"

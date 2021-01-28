@@ -2,17 +2,28 @@
 # Apex Kernel
 #
 
+# APEX_CFLAGS are optional
+ifndef CONFIG_APEX_CFLAGS
+CONFIG_APEX_CFLAGS :=
+endif
+ifndef CONFIG_APEX_CFLAGS_$(COMPILER)
+CONFIG_APEX_CFLAGS_$(COMPILER) :=
+endif
+
 TYPE := exec
 TARGET := apex
 FLAGS := -nostartfiles -nostdlib -static
 FLAGS += -Wframe-larger-than=384 -Wundef
 FLAGS += -fno-pie -no-pie
 FLAGS += -z max-page-size=32
-FLAGS += $(CONFIG_APEX_CFLAGS)
+FLAGS += $(CONFIG_APEX_CFLAGS) $(CONFIG_APEX_CFLAGS_$(COMPILER))
 CFLAGS += $(FLAGS)
-CXXFLAGS += $(FLAGS) -nostdinc++ -fno-exceptions -fno-use-cxa-atexit -std=gnu++20
+CXXFLAGS += $(FLAGS) -nostdinc++ -fno-exceptions -std=gnu++20
+CXXFLAGS_gcc += -fno-use-cxa-atexit
+CXXFLAGS_clang += -fno-c++-static-destructors
 DEFS += -DKERNEL -D_GNU_SOURCE
-LIBS := ../libc++/libc++.a ../libcxxrt/libcxxrt.a ../libc/libc.a -lgcc
+LIBS := ../libc++/libc++.a ../libcxxrt/libcxxrt.a ../libc/libc.a \
+    $(shell $(CROSS_COMPILE)$(COMPILER) --print-libgcc-file-name)
 
 INCLUDE := \
     include \
