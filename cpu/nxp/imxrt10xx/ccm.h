@@ -390,15 +390,7 @@ struct ccm {
 			enum ccm_cg can3_serial : 2;
 			enum ccm_cg aips_lite : 2;
 			enum ccm_cg flexio3 : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
-			enum ccm_cg : 2;
+			uint32_t : 18;
 		};
 		uint32_t r;
 	} CCGR7; /* For IMXRT106x only. RSV for IMXRT105x */
