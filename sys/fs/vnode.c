@@ -147,6 +147,7 @@ vn_lookup(struct vnode *parent, const char *name, size_t len)
 			if (!(vp->v_flags & VHIDDEN))
 				return vp;
 			vput(vp);
+			mutex_lock(&vnode_mutex);
 		}
 	}
 	mutex_unlock(&vnode_mutex);
