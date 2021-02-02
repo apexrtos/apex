@@ -20,4 +20,11 @@ SECTIONS {
 		. = CONFIG_LOADER_OFFSET;
 	} > rom = 0xff
 	entry = .;
+
+	/* lld complains if _start is not set */
+	_start = 0;
+
+	/* lld complains when no memory region is
+	 * specified for a section even if it's empty */
+	/DISCARD/ : { *(.text*) }
 }

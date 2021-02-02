@@ -20,4 +20,11 @@ SECTIONS {
 		. = CONFIG_LOADER_OFFSET;
 	} > rom
 	entry = . + CONFIG_LOAD_REGION_BASE_PHYS;
+
+	/* lld complains if _start is not set */
+	_start = 0;
+
+	/* lld complains when no memory region is
+	 * specified for a section even if it's empty */
+	/DISCARD/ : { *(.text*) }
 }
