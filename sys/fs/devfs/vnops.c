@@ -361,6 +361,7 @@ devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 		vp->v_data = dev;
 		vp->v_mode = ((dev->flags & DF_CHR) ? S_IFCHR : S_IFBLK) |
 		    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+		assert(!dev->vnode);
 		dev->vnode = vp;
 		spinlock_unlock(&device_list_lock);
 
