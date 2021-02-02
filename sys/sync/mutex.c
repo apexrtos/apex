@@ -235,6 +235,7 @@ mutex_unlock(struct mutex *m)
 	struct mutex_private *mp = (struct mutex_private*)m->storage;
 
 #if defined(CONFIG_DEBUG)
+	assert(thread_cur()->mutex_locks > 0);
 	--thread_cur()->mutex_locks;
 #endif
 
