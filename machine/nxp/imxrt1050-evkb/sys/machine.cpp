@@ -134,7 +134,9 @@ machine_reset(void)
 	}}.r);
 	memory_barrier();
 
-	while (1);
+	/* Workaround for ancient clang bug. Looks like this will be fixed
+	 * in clang 12,  https://reviews.llvm.org/D85393 */
+	while (1) asm("");
 }
 
 void
@@ -152,7 +154,9 @@ machine_suspend(void)
 [[noreturn]] void
 machine_panic(void)
 {
-	while (1);
+	/* Workaround for ancient clang bug. Looks like this will be fixed
+	 * in clang 12,  https://reviews.llvm.org/D85393 */
+	while (1) asm("");
 }
 
 void
