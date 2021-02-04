@@ -70,6 +70,12 @@ endif
 ifeq ($(origin CONFIG_DEFS_$(CONFIG_COMPILER)),undefined)
     CONFIG_DEFS_$(CONFIG_COMPILER) :=
 endif
+ifeq ($(origin CONFIG_LDFLAGS),undefined)
+    CONFIG_LDFLAGS :=
+endif
+ifeq ($(origin CONFIG_LDFLAGS_$(CONFIG_COMPILER)),undefined)
+    CONFIG_LDFLAGS_$(CONFIG_COMPILER) :=
+endif
 
 #
 # Make paths relative to $(CONFIG_SRCDIR) or absolute
@@ -132,6 +138,7 @@ define fn_process_sources
     $(tgt)_FLAGS := $$(addsuffix .*flags,$$($(tgt)_BASENAME))
     $(tgt)_CLEAN := $$(addsuffix .*,$$($(tgt)_BASENAME))
     $(tgt)_CXX_SOURCES := $$(filter $(addprefix %.,$(CXX_EXT)),$$($(tgt)_SOURCES))
+    $(tgt)_COMPILER := $$(COMPILER)
     ifeq ($$(COMPILER),gcc)
         $(tgt)_CC := $$(CROSS_COMPILE)gcc
         $(tgt)_CXX := $$(CROSS_COMPILE)g++
@@ -156,7 +163,7 @@ define fn_process_sources
     $$(foreach F,$$(addsuffix _TGT,$$($(tgt)_BASENAME)),$$(eval $$(F) := $(tgt)))
 
     # kill undefined variable warnings
-    $$(foreach X,$$($(tgt)_BASENAME),$$(eval $$(call fn_clear_extra_cflags,$$(X))))
+    $$(foreach X,$$($(tgt)_BASENAME),$$(eval $$(call fn_clear_extra_cflags,$$(X),$$(COMPILER))))
 
     # include dependencies
     -include $$($(tgt)_DEPS)
@@ -182,9 +189,6 @@ define fn_elf_rule
     ifeq ($$(origin LDSCRIPT),undefined)
         LDSCRIPT :=
     endif
-    ifeq ($$(origin LDFLAGS),undefined)
-        LDFLAGS :=
-    endif
 
     ifneq ($$(MAP),)
         LDFLAGS += -Xlinker -M=$(tgt).map
@@ -192,7 +196,7 @@ define fn_elf_rule
 
     # set target variables
     $(tgt)_LDSCRIPT := $$(call fn_path_join,$$(mk_dir),$$(LDSCRIPT))
-    $(tgt)_LDFLAGS := $$(LDFLAGS)
+    $(tgt)_LDFLAGS := $$(LDFLAGS) $$(LDFLAGS_$$(COMPILER))
     $(tgt)_LIBS := $$(patsubst $$(call fn_relative_path,$$(mk_dir),.)/-l%,-l%,$$(call fn_relative_path,$$(mk_dir),$$(LIBS)))
 
     # reset variables
@@ -267,6 +271,7 @@ define fn_prog_rule
 
     CFLAGS := $(CONFIG_USER_CFLAGS) $(CFLAGS)
     CXXFLAGS := $(CONFIG_USER_CFLAGS) $(CXXFLAGS)
+    LDFLAGS := $(CONFIG_USER_LDFLAGS) $(LDFLAGS)
 
     $$(eval $$(fn_exec_rule))
 endef
@@ -392,26 +397,30 @@ define fn_clear_extra_cflags
     ifndef $(1)_EXTRA_CFLAGS
         $(1)_EXTRA_CFLAGS :=
     endif
+
+    ifndef $(1)_EXTRA_CFLAGS_$(2)
+        $(1)_EXTRA_CFLAGS_$(2) :=
+    endif
 endef
 
 #
 # Rules to build objects
 #
-$(eval $(call fn_flags_rule,%.cflags,$$($$($$*_TGT)_CFLAGS) $$($$*_EXTRA_CFLAGS) $$($$($$*_TGT)_INCLUDE)))
-$(eval $(call fn_flags_rule,%.cxxflags,$$($$($$*_TGT)_CXXFLAGS) $$($$*_EXTRA_CFLAGS) $$($$($$*_TGT)_INCLUDE)))
+$(eval $(call fn_flags_rule,%.cflags,$$($$($$*_TGT)_CFLAGS) $$($$*_EXTRA_CFLAGS) $$($$*_EXTRA_CFLAGS_$$($$($$*_TGT)_COMPILER)) $$($$($$*_TGT)_INCLUDE)))
+$(eval $(call fn_flags_rule,%.cxxflags,$$($$($$*_TGT)_CXXFLAGS) $$($$*_EXTRA_CFLAGS) $$($$*_EXTRA_CFLAGS_$$($$($$*_TGT)_COMPILER)) $$($$($$*_TGT)_INCLUDE)))
 $(eval $(call fn_flags_rule,%.asflags,$$($$($$*_TGT)_ASFLAGS)))
 
 define cpp_rule
 %.o : %.$1 %.cxxflags
-	+$$($$($$*_TGT)_CXX) -c -MD -MP $$($$($$*_TGT)_CXXFLAGS) $$($$*_EXTRA_CFLAGS) $$($$($$*_TGT)_INCLUDE) -o $$@ $$<
+	+$$($$($$*_TGT)_CXX) -c -MD -MP $$($$($$*_TGT)_CXXFLAGS) $$($$*_EXTRA_CFLAGS) $$($$*_EXTRA_CFLAGS_$$($$($$*_TGT)_COMPILER)) $$($$($$*_TGT)_INCLUDE) -o $$@ $$<
 endef
 $(foreach ext,$(CXX_EXT),$(eval $(call cpp_rule,$(ext))))
 
 %.o: %.c %.cflags
-	+$($($*_TGT)_CC) -c -MD -MP $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -o $@ $<
+	+$($($*_TGT)_CC) -c -MD -MP $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($*_EXTRA_CFLAGS_$($($*_TGT)_COMPILER)) $($($*_TGT)_INCLUDE) -o $@ $<
 
 %.s: %.S %.cflags
-	$($($*_TGT)_CPP) -MD -MP -MT $*.s $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($($*_TGT)_INCLUDE) -D__ASSEMBLY__ $< -o $@
+	$($($*_TGT)_CPP) -MD -MP -MT $*.s $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($*_EXTRA_CFLAGS_$($($*_TGT)_COMPILER)) $($($*_TGT)_INCLUDE) -D__ASSEMBLY__ $< -o $@
 
 %.o: %.s %.asflags
 	$($($*_TGT)_AS) $($($*_TGT)_ASFLAGS) $($($*_TGT)_INCLUDE) -o $@ $<
@@ -438,6 +447,8 @@ define fn_process_mkfile
     CXXFLAGS := $(CONFIG_MCPU) $(CONFIG_CXXFLAGS)
     CXXFLAGS_$(CONFIG_COMPILER) := $(CONFIG_CXXFLAGS_$(CONFIG_COMPILER))
     ASFLAGS := $(CONFIG_MCPU) $(CONFIG_ASFLAGS)
+    LDFLAGS := $(CONFIG_LDFLAGS)
+    LDFLAGS_$(CONFIG_COMPILER) := $(CONFIG_LDFLAGS_$(CONFIG_COMPILER))
     MAP := $(CONFIG_MAP)
     CROSS_COMPILE := $(CONFIG_CROSS_COMPILE)
     COMPILER := $(CONFIG_COMPILER)

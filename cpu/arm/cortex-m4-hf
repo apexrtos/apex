@@ -4,13 +4,9 @@
 arch arm
 subarch v7em
 makeoption MCPU := -mcpu=cortex-m4
-makeoption CFLAGS_gcc += -masm-syntax-unified
-makeoption APEX_CFLAGS_gcc += -mslow-flash-data
-makeoption USER_CFLAGS += -static
-makeoption USER_CFLAGS += -pie -fPIE
-makeoption USER_CFLAGS += -fvisibility=hidden
-makeoption USER_CFLAGS += -Xlinker --exclude-libs=ALL
-makeoption USER_CFLAGS += -z max-page-size=0x1000
+makeoption APEX_CFLAGS_gcc += -masm-syntax-unified -mslow-flash-data
+makeoption USER_CFLAGS += -fPIE
+makeoption USER_LDFLAGS += -z max-page-size=0x1000 -static -static-pie
 option FPU
 include cpu/arm/thumb
 

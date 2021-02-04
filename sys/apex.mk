@@ -12,15 +12,14 @@ endif
 
 TYPE := exec
 TARGET := apex
-FLAGS := -nostartfiles -nostdlib -static
 FLAGS += -Wframe-larger-than=384 -Wundef
-FLAGS += -fno-pie -no-pie
-FLAGS += -z max-page-size=32
+FLAGS += -fno-pie
 FLAGS += $(CONFIG_APEX_CFLAGS) $(CONFIG_APEX_CFLAGS_$(COMPILER))
 CFLAGS += $(FLAGS)
 CXXFLAGS += $(FLAGS) -nostdinc++ -fno-exceptions -std=gnu++20
 CXXFLAGS_gcc += -fno-use-cxa-atexit
-CXXFLAGS_clang += -fno-c++-static-destructors
+CXXFLAGS_clang += -fno-c++-static-destructors -Wno-mismatched-tags
+LDFLAGS += -z max-page-size=32 -nostartfiles -nostdlib -static -no-pie
 DEFS += -DKERNEL -D_GNU_SOURCE
 LIBS := ../libc++/libc++.a ../libcxxrt/libcxxrt.a ../libc/libc.a \
     $(shell $(CROSS_COMPILE)$(COMPILER) --print-libgcc-file-name)

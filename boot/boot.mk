@@ -13,12 +13,11 @@ endif
 TYPE := binary
 TARGET := boot
 LDSCRIPT := arch/$(CONFIG_ARCH)/boot.ld
-CFLAGS += -nostartfiles -nostdlib -static
 CFLAGS += -Wframe-larger-than=384
-CFLAGS += -fno-pie -no-pie
-CFLAGS += -z max-page-size=32
+CFLAGS += -fno-pie
 CFLAGS += $(CONFIG_APEX_CFLAGS)
 CFLAGS_$(COMPILER) += $(CONFIG_APEX_CFLAGS_$(COMPILER))
+LDFLAGS += -z max-page-size=32 -nostartfiles -nostdlib -static -no-pie
 LIBS := ../libc/libc.a \
     $(shell $(CROSS_COMPILE)$(COMPILER) --print-libgcc-file-name)
 
