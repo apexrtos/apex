@@ -86,9 +86,11 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	/*
 	 * Run c++ global constructors.
 	 */
-	extern void (*__init_array_start[1])(void), (*__init_array_end[1])(void);
-	for (void (**p)(void) = __init_array_start; p != __init_array_end; ++p)
-		(*p)();
+	extern void (*const __init_array_start)(void), (*const __init_array_end)(void);
+	for (uintptr_t p = (uintptr_t)&__init_array_start;
+	     p < (uintptr_t)&__init_array_end;
+	     p += sizeof(void(*)()))
+		(*(void (**)(void))p)();
 
 	/*
 	 * Initialise kernel core.
