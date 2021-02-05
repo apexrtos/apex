@@ -433,13 +433,13 @@ $(foreach ext,$(CXX_EXT),$(eval $(call cpp_rule,$(ext))))
 define fn_process_mkfile
     # fn_process_mkfile
 
-    # reset base variables which can be defined by a mk file
+    # empty base variables which can be defined by a mk file
     DEFAULT :=
-    TYPE :=
+    TYPE := TYPE_is_not_set
     TARGET :=
     MK :=
 
-    # reset all variables which can have configured defaults
+    # set all variables which can have configured defaults
     DEFS := $(CONFIG_DEFS)
     DEFS_$(CONFIG_COMPILER) := $(CONFIG_DEFS_$(CONFIG_COMPILER))
     CFLAGS := $(CONFIG_MCPU) $(CONFIG_CFLAGS)
@@ -497,6 +497,25 @@ define fn_process_mkfile
             mk_dir_stack := $$(wordlist 2,$$(words $$(mk_dir_stack)),$$(mk_dir_stack))
         endif
     endif
+
+    # reset variables
+    $$(eval undefine ASFLAGS)
+    $$(eval undefine CFLAGS)
+    $$(eval undefine CFLAGS_$(CONFIG_COMPILER))
+    $$(eval undefine COMPILER)
+    $$(eval undefine CROSS_COMPILE)
+    $$(eval undefine CXXFLAGS)
+    $$(eval undefine CXXFLAGS_$(CONFIG_COMPILER))
+    $$(eval undefine DEFAULT)
+    $$(eval undefine DEFS)
+    $$(eval undefine DEFS_$(CONFIG_COMPILER))
+    $$(eval undefine LDFLAGS)
+    $$(eval undefine LDFLAGS_$(CONFIG_COMPILER))
+    $$(eval undefine MAP)
+    $$(eval undefine MK)
+    $$(eval undefine SSTRIP)
+    $$(eval undefine TARGET)
+    $$(eval undefine TYPE)
 endef
 
 # Check if this version of 'make' supports $(eval)
