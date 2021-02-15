@@ -1,0 +1,50 @@
+/*
+ * Kernel
+ */
+memory PAGE_OFFSET	0x00000000
+memory KSTACK_SIZE	4096	    // Kernel stack size
+memory IRQSTACK_SIZE	4096	    // IRQ stack size
+option TIME_SLICE_MS	50	    // milliseconds
+option HZ		1000
+option PAGE_SIZE	0x1000
+option IRQS		32	    // External interrupts
+option NVIC_PRIO_BITS	8
+option MA_NORMAL_ATTR	(MA_SPEED_0)	// Normal allocations in DRAM
+option MA_FAST_ATTR	(MA_SPEED_0)	// Fast allocations in DRAM
+
+/*
+ * Memory layout
+ */
+memory RAM_SIZE		0x1000000
+memory ROM_SIZE		0x400000
+memory LOADER_RAM_SIZE	0x2000
+memory ROM_BASE		0x00000000
+memory RAM_BASE		0x60000000
+memory KERNEL_BASE	(CONFIG_RAM_BASE_VIRT)
+memory LOADER_RAM_BASE	(CONFIG_RAM_BASE_VIRT + CONFIG_RAM_SIZE - CONFIG_LOADER_RAM_SIZE)
+memory LOADER_ROM_BASE	(CONFIG_ROM_BASE_PHYS)
+memory LOADER_ROM_SIZE	(CONFIG_ROM_SIZE)
+memory KERNEL_MAX_SIZE	(CONFIG_LOADER_RAM_BASE_VIRT - CONFIG_KERNEL_BASE_VIRT)
+
+/*
+ * Device drivers
+ */
+driver-1 sys/dev/arm/armv7m-systick{.clock = 25000000, .clksource = 1}
+driver sys/dev/arm/mps2-uart{.name = "ttyS0", .base = 0x40004000, .ipl = IPL_MIN, .rx_int = 0, .tx_int = 1, .overflow_int = 12}
+driver sys/dev/arm/mps2-uart{.name = "ttyS1", .base = 0x40005000, .ipl = IPL_MIN, .rx_int = 2, .tx_int = 3, .overflow_int = 12}
+driver sys/dev/arm/mps2-uart{.name = "ttyS2", .base = 0x40006000, .ipl = IPL_MIN, .rx_int = 4, .tx_int = 5, .overflow_int = 12}
+
+/*
+ * CPU
+ */
+cpu arm/cortex-m7-hf
+
+/*
+ * QEMU command line
+ */
+option QEMU_CMD qemu-system-arm -nographic -machine mps2-an500 -kernel
+
+/*
+ * Pretty machine name
+ */
+option MACHINE_NAME QEMU ARM MPS2+ with AN500 FPGA image for Cortex-M7
