@@ -103,7 +103,7 @@ SOURCES := \
     src/string/wmemmove.c \
     src/string/wmemset.c \
 
-ifeq ($(CONFIG_ARCH), arm)
+ifeq ($(CONFIG_ARCH),arm)
 ASFLAGS += -mimplicit-it=always
 SOURCES += \
     src/math/arm/fabs.c \
