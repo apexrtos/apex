@@ -87,7 +87,7 @@ mips64			| Future
 mipsn32			| Future
 or1k			| Future
 powerpc	(Classic)	| Future
-powerpc	(Book E)	| Planned
+powerpc	(Book E)	| In Progress
 powerpc64		| Future
 s390x			| Future
 sh			| Future
@@ -109,11 +109,13 @@ nxp	| mimxrt1060-evk    | Cortex-M7 (ARMv7-M)   | Complete
 Virtual (QEMU)
 --------------
 
-Architecture	| Board		| CPU (Architecture)	| Status
-------------	| -----		| ------------------	| ------
-arm		| mps2-an385	| Cortex-M3 (ARMv7-M)	| Complete
-arm		| virt		| Cortex-A15 (ARMv7-A)	| Future
-aarch64		| virt		| Cortex-A53 (ARMv8-A)	| Future
+Architecture	| Board		| CPU (Architecture)		| Status
+------------	| -----		| ------------------		| ------
+arm		| mps2-an385	| Cortex-M3 (ARMv7-M)		| Complete
+arm		| mps2-an500	| Cortex-M7 (ARMv7E-M)		| Complete
+arm		| virt		| Cortex-A15 (ARMv7-A)		| Future
+aarch64		| virt		| Cortex-A53 (ARMv8-A)		| Future
+powerpc		| ppce500	| e500v2 (PowerPC Book E)	| In Progress
 
 
 Toolchain
