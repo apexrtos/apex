@@ -3,7 +3,7 @@
 #
 TYPE := klib
 TARGET := libcxxrt.a
-CXXFLAGS += -nostdinc++ -fno-exceptions
+CXXFLAGS += -nostdinc++ -fno-exceptions -fno-pic
 
 INCLUDE := \
 	$(CONFIG_BUILDDIR) \

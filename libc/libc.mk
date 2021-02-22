@@ -14,7 +14,7 @@ CFLAGS := $(CONFIG_MCPU) \
 	  -ffunction-sections -fdata-sections -w \
 	  -Werror=implicit-function-declaration \
 	  -Werror=implicit-int -Werror=pointer-sign \
-	  -Werror=pointer-arith -fPIC
+	  -Werror=pointer-arith -fno-pic
 CFLAGS_gcc := -fexcess-precision=standard
 CFLAGS_clang := -flto
 DEFS :=
