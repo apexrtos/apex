@@ -30,7 +30,6 @@
 #ifndef irq_h
 #define irq_h
 
-#include <interrupt.h>
 #include <kernel.h>
 #include <types.h>
 
