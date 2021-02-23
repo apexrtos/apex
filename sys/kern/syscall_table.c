@@ -18,6 +18,49 @@
 #include <timer.h>
 #include <unistd.h>
 
+/* fixup legacy 16-bit junk */
+/* copied directly from musl */
+#ifdef SYS_getuid32
+#undef SYS_lchown
+#undef SYS_getuid
+#undef SYS_getgid
+#undef SYS_geteuid
+#undef SYS_getegid
+#undef SYS_setreuid
+#undef SYS_setregid
+#undef SYS_getgroups
+#undef SYS_setgroups
+#undef SYS_fchown
+#undef SYS_setresuid
+#undef SYS_getresuid
+#undef SYS_setresgid
+#undef SYS_getresgid
+#undef SYS_chown
+#undef SYS_setuid
+#undef SYS_setgid
+#undef SYS_setfsuid
+#undef SYS_setfsgid
+#define SYS_lchown SYS_lchown32
+#define SYS_getuid SYS_getuid32
+#define SYS_getgid SYS_getgid32
+#define SYS_geteuid SYS_geteuid32
+#define SYS_getegid SYS_getegid32
+#define SYS_setreuid SYS_setreuid32
+#define SYS_setregid SYS_setregid32
+#define SYS_getgroups SYS_getgroups32
+#define SYS_setgroups SYS_setgroups32
+#define SYS_fchown SYS_fchown32
+#define SYS_setresuid SYS_setresuid32
+#define SYS_getresuid SYS_getresuid32
+#define SYS_setresgid SYS_setresgid32
+#define SYS_getresgid SYS_getresgid32
+#define SYS_chown SYS_chown32
+#define SYS_setuid SYS_setuid32
+#define SYS_setgid SYS_setgid32
+#define SYS_setfsuid SYS_setfsuid32
+#define SYS_setfsgid SYS_setfsgid32
+#endif
+
 /*
  * System call table
  *
@@ -54,12 +97,10 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_brk] = sc_brk,
 	[SYS_chdir] = sc_chdir,
 	[SYS_chmod] = sc_chmod,				/* stub */
-	[SYS_chown32] = sc_chown,
+	[SYS_chown] = sc_chown,
 	[SYS_clock_gettime64] = sc_clock_gettime,
 	[SYS_clock_settime64] = sc_clock_settime,
-#ifdef SYS_clock_settime32
 	[SYS_clock_settime32] = sc_clock_settime32,
-#endif
 	[SYS_clone] = sc_clone,
 	[SYS_close] = close,
 	[SYS_dup2] = dup2,
@@ -70,7 +111,7 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_faccessat] = sc_faccessat,
 	[SYS_fchmod] = fchmod,				/* stub */
 	[SYS_fchmodat] = sc_fchmodat,			/* stub */
-	[SYS_fchown32] = fchown,			/* stub */
+	[SYS_fchown] = fchown,				/* stub */
 	[SYS_fchownat] = sc_fchownat,			/* stub */
 	[SYS_fcntl64] = sc_fcntl,
 	[SYS_fork] = sc_fork,
@@ -81,17 +122,17 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_futex] = sc_futex,
 	[SYS_getcwd] = sc_getcwd,
 	[SYS_getdents64] = sc_getdents,
-	[SYS_geteuid32] = geteuid,
+	[SYS_geteuid] = geteuid,
 	[SYS_getitimer] = sc_getitimer,
 	[SYS_getpgid] = getpgid,
 	[SYS_getpid] = getpid,
 	[SYS_getppid] = getppid,
 	[SYS_getsid] = getsid,
 	[SYS_gettid] = sc_gettid,
-	[SYS_getuid32] = getuid,			/* no user support */
+	[SYS_getuid] = getuid,			/* no user support */
 	[SYS_ioctl] = sc_ioctl,
 	[SYS_kill] = kill,
-	[SYS_lchown32] = sc_lchown,
+	[SYS_lchown] = sc_lchown,
 	[SYS_lstat64] = sc_lstat,
 	[SYS_madvise] = sc_madvise,
 	[SYS_mkdir] = sc_mkdir,
