@@ -474,7 +474,7 @@ define fn_process_mkfile
     ifneq ($$(mk_dir),)
         ifneq ($$(TARGET),)
             # relative path to target
-            tgt := $$(call fn_relative_path,$$(mk_dir),$$(TARGET))
+            tgt := $$(patsubst $(CONFIG_BUILDDIR)/%,%,$$(call fn_relative_path,$$(mk_dir),$$(TARGET)))
 
             # force dependency on default targets
             ifneq ($$(DEFAULT),)

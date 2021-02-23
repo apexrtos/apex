@@ -2,7 +2,7 @@ ifneq ($(origin apex/bootimg_rule_exists),undefined)
 
 DEFAULT := y
 TYPE := imxrt_boot
-TARGET := $(CONFIG_SRCDIR)/$(CONFIG_BOARD)_usdhc
+TARGET := $(CONFIG_BUILDDIR)/$(CONFIG_BOARD)_usdhc
 
 LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/image/usdhc_boot.ld
 CFLAGS := -fno-pie -O2
