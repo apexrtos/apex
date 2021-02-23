@@ -566,5 +566,5 @@ clean:
 
 # Convenience to run under qemu
 .PHONY: run
-run: bootimg
+run: $(CONFIG_QEMU_IMG)
 	$(CONFIG_QEMU_CMD) $<

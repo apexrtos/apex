@@ -42,6 +42,7 @@ cpu arm/cortex-m7-hf
 /*
  * QEMU command line
  */
+option QEMU_IMG bootimg
 option QEMU_CMD qemu-system-arm -nographic -machine mps2-an500 -kernel
 
 /*
