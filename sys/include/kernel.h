@@ -40,7 +40,6 @@
  */
 #if defined(KERNEL)
 extern struct task	kern_task;	/* kernel task */
-extern struct bootinfo	bootinfo;	/* boot information */
 #endif
 
 /*
