@@ -76,6 +76,9 @@ endif
 ifeq ($(origin CONFIG_LDFLAGS_$(CONFIG_COMPILER)),undefined)
     CONFIG_LDFLAGS_$(CONFIG_COMPILER) :=
 endif
+ifeq ($(origin CONFIG_USER_CFLAGS),undefined)
+    CONFIG_USER_CFLAGS :=
+endif
 
 #
 # Make paths relative to $(CONFIG_SRCDIR) or absolute
