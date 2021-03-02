@@ -565,6 +565,8 @@ all: $(default_tgts)
 clean:
 
 # Convenience to run under qemu
+ifneq ($(origin CONFIG_QEMU_CMD),undefined)
 .PHONY: run
 run: $(CONFIG_QEMU_IMG)
 	$(CONFIG_QEMU_CMD) $<
+endif
