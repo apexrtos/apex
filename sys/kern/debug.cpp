@@ -151,3 +151,9 @@ __assert_fail(const char *expr, const char *file, int line, const char *func)
 	syslog_panic();
 	machine_panic();
 }
+
+extern "C" _Noreturn void
+abort()
+{
+	panic("abort");
+}

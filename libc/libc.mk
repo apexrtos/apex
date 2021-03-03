@@ -30,7 +30,6 @@ INCLUDE := \
 
 SOURCES := \
     src/ctype/iswspace.c \
-    src/exit/abort.c \
     src/internal/floatscan.c \
     src/internal/intscan.c \
     src/internal/shgetc.c \
