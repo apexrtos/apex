@@ -109,7 +109,7 @@ __assert_fail(const char *expr, const char *file, int line, const char *func)
  * C entry point
  */
 noreturn void
-loader_main(void)
+loader_main()
 {
 	/*
 	 * Setup minimum hardware for boot

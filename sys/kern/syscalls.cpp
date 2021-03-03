@@ -195,7 +195,7 @@ int sc_clock_settime32(clockid_t id, const timespec32 *ts)
 }
 
 int
-sc_gettid(void)
+sc_gettid()
 {
 	return thread_id(thread_cur());
 }

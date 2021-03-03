@@ -63,7 +63,7 @@
 static struct list device_list;
 static struct spinlock device_list_lock;
 
-static int devfs_init(void);
+static int devfs_init();
 static int devfs_open(struct file *, int, mode_t);
 static int devfs_close(struct file *);
 static ssize_t devfs_read(struct file *, const struct iovec *, size_t, off_t);
@@ -110,7 +110,7 @@ static const struct vfsops devfs_vfsops = {
 };
 
 static int
-devfs_init(void)
+devfs_init()
 {
 	list_init(&device_list);
 	spinlock_init(&device_list_lock);

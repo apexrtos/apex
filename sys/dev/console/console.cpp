@@ -62,7 +62,7 @@ console_thread(void *unused)
  * Must be interrupt safe.
  */
 static void
-console_start(void)
+console_start()
 {
 	semaphore_post(&sem);
 }

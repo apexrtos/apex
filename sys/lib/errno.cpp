@@ -3,7 +3,7 @@
 #include <compiler.h>
 
 int *
-__errno_location(void)
+__errno_location()
 {
 	return &thread_cur()->errno_storage;
 }

@@ -19,9 +19,9 @@ extern "C" {
 /*
  * File system management
  */
-void	fs_init(void);
-void	fs_kinit(void);
-void	fs_shutdown(void);
+void	fs_init();
+void	fs_kinit();
+void	fs_shutdown();
 
 /*
  * These functions perform file system operations on behalf of another task.
@@ -92,7 +92,7 @@ int	sc_statfs(const char *, size_t, struct statfs *);
 int	sc_statx(int, const char *, int, unsigned, struct statx *);
 int	sc_symlink(const char*, const char*);
 int	sc_symlinkat(const char*, int, const char*);
-int	sc_sync(void);
+int	sc_sync();
 int	sc_umount2(const char *, int);
 int	sc_unlink(const char *);
 int	sc_unlinkat(int, const char *, int);

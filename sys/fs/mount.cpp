@@ -59,7 +59,7 @@ static struct mutex mount_mutex;
 /*
  * mount_init - initialise mount data structures
  */
-void mount_init(void)
+void mount_init()
 {
 	mutex_init(&mount_mutex);
 }
@@ -339,7 +339,7 @@ out:
  * sync
  */
 void
-sync(void)
+sync()
 {
 	struct mount *mp;
 
@@ -351,7 +351,7 @@ sync(void)
 }
 
 int
-sc_sync(void)
+sc_sync()
 {
 	sync();
 	return 0;
@@ -380,13 +380,13 @@ vfs_unbusy(struct mount *mp)
 }
 
 int
-vfs_nullop(void)
+vfs_nullop()
 {
 	return 0;
 }
 
 int
-vfs_einval(void)
+vfs_einval()
 {
 	return -EINVAL;
 }
@@ -395,7 +395,7 @@ vfs_einval(void)
  * mount_dump - dump mount data
  */
 void
-mount_dump(void)
+mount_dump()
 {
 	struct mount *mp;
 

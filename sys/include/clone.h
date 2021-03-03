@@ -9,8 +9,8 @@ extern "C" {
  * Syscalls
  */
 int sc_clone(unsigned long, void *, void *, unsigned long, void *);
-int sc_fork(void);
-int sc_vfork(void);
+int sc_fork();
+int sc_vfork();
 
 #if defined(__cplusplus)
 } /* extern "C" */

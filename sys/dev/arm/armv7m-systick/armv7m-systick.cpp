@@ -70,7 +70,7 @@ arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *d)
  * Must be called with SysTick interrupt disabled
  */
 unsigned long
-clock_ns_since_tick(void)
+clock_ns_since_tick()
 {
 	if (!read32(&SYST->CSR).ENABLE)
 		return 0;
@@ -92,7 +92,7 @@ clock_ns_since_tick(void)
  * SysTick exception
  */
 __fast_text void
-exc_SysTick(void)
+exc_SysTick()
 {
 	timer_tick(1);
 }

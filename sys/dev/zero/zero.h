@@ -4,4 +4,4 @@
  * /dev/zero
  */
 
-void zero_init(void);
+void zero_init();

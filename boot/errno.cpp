@@ -2,7 +2,7 @@
 #include <sys/include/compiler.h>
 
 int *
-__errno_location(void)
+__errno_location()
 {
 	static int v;
 	return &v;

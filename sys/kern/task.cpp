@@ -63,7 +63,7 @@ struct task *init_task;
  * task_cur - return current active task.
  */
 struct task *
-task_cur(void)
+task_cur()
 {
 	return thread_cur()->task;
 }
@@ -399,7 +399,7 @@ task_futexes(struct task *t)
 }
 
 void
-task_dump(void)
+task_dump()
 {
 	static const char state[][6] = { "INVAL", "  RUN", " ZOMB", " STOP" };
 	struct list *i, *j;
@@ -435,7 +435,7 @@ task_dump(void)
  * already been initialized in vm_init().
  */
 void
-task_init(void)
+task_init()
 {
 	/*
 	 * Create a kernel task as the first task.

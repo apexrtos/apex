@@ -106,7 +106,7 @@ sc_clone(unsigned long flags, void *sp, void *ptid, unsigned long tls,
  * sc_fork - fork a new process
  */
 int
-sc_fork(void)
+sc_fork()
 {
 	return sc_clone(SIGCHLD, 0, 0, 0, 0);
 }
@@ -115,7 +115,7 @@ sc_fork(void)
  * sc_vfork - fork a new process and suspend caller
  */
 int
-sc_vfork(void)
+sc_vfork()
 {
 	return sc_clone(CLONE_VM | CLONE_VFORK | SIGCHLD, 0, 0, 0, 0);
 }

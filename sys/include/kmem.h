@@ -39,9 +39,9 @@ extern "C" {
 
 void   *kmem_alloc(size_t, long mem_attr);
 void	kmem_free(void *);
-void	kmem_init(void);
-void	kmem_check(void);
-void	kmem_dump(void);
+void	kmem_init();
+void	kmem_check();
+void	kmem_dump();
 
 #if defined(__cplusplus)
 } /* extern "C" */

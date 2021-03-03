@@ -40,7 +40,7 @@ ph_flags_to_prot(const Phdr &ph)
  * elf_load - load an elf file, attempt to execute in place.
  */
 int
-elf_load(as *a, int fd, void (**entry)(void),
+elf_load(as *a, int fd, void (**entry)(),
 	 std::array<unsigned, AUX_CNT> &auxv, void **stack)
 {
 	Ehdr eh;
@@ -164,7 +164,7 @@ elf_load(as *a, int fd, void (**entry)(void),
 	    stack_prot)}; r < 0)
 		return r;
 	*stack = (std::byte*)*stack + stack_size + guard_size;
-	*entry = (void (*)(void))(base + eh.e_entry);
+	*entry = (void (*)())(base + eh.e_entry);
 
 	/*
 	 * Populate auxv

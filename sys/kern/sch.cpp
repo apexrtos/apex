@@ -126,7 +126,7 @@ __fast_bss static int locks;
  * Return priority of highest-priority runnable thread.
  */
 static int
-runq_top(void)
+runq_top()
 {
 	assert(!interrupt_enabled());
 
@@ -197,7 +197,7 @@ runq_insert(struct thread *th)
  * from the run queue.
  */
 static struct thread *
-runq_dequeue(void)
+runq_dequeue()
 {
 	assert(!interrupt_enabled());
 
@@ -223,7 +223,7 @@ runq_remove(struct thread *th)
  * Request reschedule if current thread needs to be switched
  */
 static void
-schedule(void)
+schedule()
 {
 	assert(!interrupt_enabled());
 
@@ -253,7 +253,7 @@ sleep_expire(void *arg)
  * queue.
  */
 __fast_text void
-sch_switch(void)
+sch_switch()
 {
 	assert(!interrupt_enabled());
 
@@ -325,7 +325,7 @@ sch_switch(void)
  * sch_active - get currently active thread
  */
 struct thread *
-sch_active(void)
+sch_active()
 {
 	return active_thread;
 }
@@ -508,7 +508,7 @@ sch_continue_sleep()
  * sch_cancel_sleep - cancel prepared sleep
  */
 void
-sch_cancel_sleep(void)
+sch_cancel_sleep()
 {
 	sch_unsleep(active_thread, 0);
 	sch_unlock();
@@ -566,7 +566,7 @@ sch_signal(struct thread *th)
  * if no other thread exists in the same priority queue.
  */
 void
-sch_yield(void)
+sch_yield()
 {
 	assert(!locks);
 
@@ -699,7 +699,7 @@ sch_stop(struct thread *th)
  * Thread is ready to quit
  */
 bool
-sch_testexit(void)
+sch_testexit()
 {
 	assert(interrupt_enabled());
 	assert(!locks);
@@ -727,7 +727,7 @@ sch_testexit(void)
  * Interrupts still run while preemption is disabled.
  */
 inline void
-sch_lock(void)
+sch_lock()
 {
 	write_once(&locks, locks + 1);
 	compiler_barrier();
@@ -741,7 +741,7 @@ sch_lock(void)
  * rescheduling flag and kick the scheduler if it's required.
  */
 inline void
-sch_unlock(void)
+sch_unlock()
 {
 	assert(locks > 0);
 	assert(locks > 1 || interrupt_enabled());
@@ -763,7 +763,7 @@ sch_unlock(void)
  * sch_locks - return number of scheduler locks.
  */
 int
-sch_locks(void)
+sch_locks()
 {
 	return locks;
 }
@@ -914,7 +914,7 @@ dpc_thread(void *unused_arg)
 }
 
 void
-sch_dump(void)
+sch_dump()
 {
 	info("scheduler dump\n");
 	info("==============\n");
@@ -932,7 +932,7 @@ sch_dump(void)
  * Initialize the global scheduler state.
  */
 void
-sch_init(void)
+sch_init()
 {
 	struct thread *th;
 

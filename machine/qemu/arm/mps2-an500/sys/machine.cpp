@@ -34,13 +34,13 @@ machine_driver_init(bootargs *bootargs)
 }
 
 void
-machine_idle(void)
+machine_idle()
 {
 	/* nothing to do for now */
 }
 
 [[noreturn]] void
-machine_reset(void)
+machine_reset()
 {
 	#warning implement
 
@@ -50,19 +50,19 @@ machine_reset(void)
 }
 
 void
-machine_poweroff(void)
+machine_poweroff()
 {
 	#warning implement
 }
 
 void
-machine_suspend(void)
+machine_suspend()
 {
 	#warning implement
 }
 
 [[noreturn]] void
-machine_panic(void)
+machine_panic()
 {
 	/* Workaround for ancient clang bug. Looks like this will be fixed
 	 * in clang 12,  https://reviews.llvm.org/D85393 */
@@ -70,7 +70,7 @@ machine_panic(void)
 }
 
 void
-early_console_init(void)
+early_console_init()
 {
 	/* QEMU doesn't care about baud rate */
 	arm_mps2_uart_early_init(UART0, CONFIG_EARLY_CONSOLE_CFLAG);

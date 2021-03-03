@@ -428,7 +428,7 @@ free(void *p)
  * Validate kmem
  */
 void
-kmem_check(void)
+kmem_check()
 {
 #ifdef CONFIG_KMEM_CHECK
 	struct list *head, *n;
@@ -455,7 +455,7 @@ kmem_check(void)
 }
 
 void
-kmem_dump(void)
+kmem_dump()
 {
 	spinlock_lock(&kmem_lock);
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
@@ -523,7 +523,7 @@ kmem_dump(void)
 }
 
 void
-kmem_init(void)
+kmem_init()
 {
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
 		list_init(&kmem_pages[type]);

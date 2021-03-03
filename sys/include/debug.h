@@ -40,9 +40,9 @@ void		backtrace_thread(struct thread *);
 int		syslog_printf(int, const char *, ...)
 			__attribute__((format (printf, 2, 3)));
 int		syslog_vprintf(int, const char *, va_list);
-void		syslog_output(void (*)(void));
+void		syslog_output(void (*)());
 int		syslog_format(char *, size_t);
-void		syslog_panic(void);
+void		syslog_panic();
 int		sc_syslog(int, char *, int);
 void		kmsg_init();
 

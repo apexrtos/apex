@@ -15,7 +15,7 @@
  * 5. Boot files
  */
 int
-load_bootimg(void)
+load_bootimg()
 {
 	extern phys __loader_end[1];
 	phys *p, *file_data;

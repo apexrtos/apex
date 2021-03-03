@@ -14,8 +14,8 @@ extern "C" {
 /*
  * Kernel interface
  */
-void		    vm_init(void);
-void		    vm_dump(void);
+void		    vm_init();
+void		    vm_dump();
 void		    vm_init_brk(struct as *, void *);
 ssize_t		    vm_readv(struct as *, const struct iovec *, size_t,
 			     const struct iovec *, size_t);

@@ -81,7 +81,7 @@ static struct devio zero_io = {
  * Initialize
  */
 void
-zero_init(void)
+zero_init()
 {
 	/* Create device object */
 	struct device *d = device_create(&zero_io, "zero", DF_CHR, NULL);

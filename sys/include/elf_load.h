@@ -12,7 +12,7 @@ constexpr auto AUX_CNT{24};
  * *entry is set to the entry point of the elf image on success.
  */
 int
-elf_load(as *, int fd, void (**entry)(void),
+elf_load(as *, int fd, void (**entry)(),
 	 std::array<unsigned, AUX_CNT> &auxv, void **stack);
 
 /*

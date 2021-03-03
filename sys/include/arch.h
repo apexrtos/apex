@@ -67,41 +67,41 @@ void		context_init_kthread(struct context *, void *kstack_top,
 				     void (*entry)(void *), void *arg);
 int		context_init_uthread(struct context *, struct as *,
 				     void *kstack_top, void *ustack_top,
-				     void (*entry)(void), long retval);
+				     void (*entry)(), long retval);
 void		context_restore_vfork(struct context *, struct as *);
 bool		context_set_signal(struct context *, const k_sigset_t *,
-				   void (*handler)(int), void (*restorer)(void),
+				   void (*handler)(int), void (*restorer)(),
 				   int, const siginfo_t *, int);
 void		context_set_tls(struct context *, void *);
 void		context_switch(struct thread *, struct thread *);
 bool		context_restore(struct context *, k_sigset_t *, int *, bool);
 void		context_terminate(struct thread *);
 void		context_free(struct context *);
-void		interrupt_enable(void);
-void		interrupt_disable(void);
+void		interrupt_enable();
+void		interrupt_disable();
 void		interrupt_save(int *);
 void		interrupt_restore(int);
-bool		interrupt_enabled(void);
+bool		interrupt_enabled();
 void		interrupt_mask(int);
 void		interrupt_unmask(int, int);
 void		interrupt_setup(int, int);
-void		interrupt_init(void);
+void		interrupt_init();
 int		interrupt_to_ist_priority(int);
-bool		interrupt_from_userspace(void);
-bool		interrupt_running(void);
-void		early_console_init(void);
+bool		interrupt_from_userspace();
+bool		interrupt_running();
+void		early_console_init();
 void		early_console_print(const char *, size_t);
 void		machine_init(struct bootargs *);
 void		machine_driver_init(struct bootargs *);
-void		machine_idle(void);
-noreturn void	machine_reset(void);
-void		machine_poweroff(void);
-void		machine_suspend(void);
-noreturn void	machine_panic(void);
-void		arch_schedule(void);
+void		machine_idle();
+noreturn void	machine_reset();
+void		machine_poweroff();
+void		machine_suspend();
+noreturn void	machine_panic();
+void		arch_schedule();
 void		arch_backtrace(struct thread *);
 bool		arch_check_elfhdr(const Elf32_Ehdr *);
-unsigned	arch_elf_hwcap(void);
+unsigned	arch_elf_hwcap();
 void	       *arch_ustack_align(void *);
 void	       *arch_kstack_align(void *);
 void		cache_coherent_exec(const void *, size_t);
@@ -110,9 +110,9 @@ void		cache_invalidate(const void *, size_t);
 void		cache_flush_invalidate(const void *, size_t);
 bool		cache_coherent_range(const void *, size_t);
 bool		cache_aligned(const void *, size_t);
-void		memory_barrier(void);
-void		read_memory_barrier(void);
-void		write_memory_barrier(void);
+void		memory_barrier();
+void		read_memory_barrier();
+void		write_memory_barrier();
 uint8_t		mmio_read8(const void *);
 uint16_t	mmio_read16(const void *);
 uint32_t	mmio_read32(const void *);
@@ -144,7 +144,7 @@ void		mpu_unmap(const void *, size_t);
 void		mpu_map(const void *, size_t, int);
 void		mpu_protect(const void *, size_t, int);
 void		mpu_fault(const void *, size_t);
-void		mpu_dump(void);
+void		mpu_dump();
 #endif
 
 #if defined(CONFIG_SMP)

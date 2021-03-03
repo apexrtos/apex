@@ -46,15 +46,15 @@ int	 lookup_t_dir(struct task *, int, const char *, struct vnode **,
 int	 lookup_t_noexist(struct task *, int, const char *, struct vnode **,
 			  const char **, size_t *, int);
 
-void	 vnode_init(void);
-void	 mount_init(void);
+void	 vnode_init();
+void	 mount_init();
 
 void	 vfs_busy(struct mount *);
 void	 vfs_unbusy(struct mount *);
 
-void	 mount_dump(void);
-void	 vnode_dump(void);
-void	 file_dump(void);
+void	 mount_dump();
+void	 vnode_dump();
+void	 file_dump();
 
 #if defined(__cplusplus)
 }

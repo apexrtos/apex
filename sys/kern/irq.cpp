@@ -168,7 +168,7 @@ irq_detach(struct irq *irq)
  * Current interrupt state is returned and must be passed to irq_restore.
  */
 inline int
-irq_disable(void)
+irq_disable()
 {
 	int s;
 	interrupt_save(&s);
@@ -227,7 +227,7 @@ irq_thread(void *arg)
 }
 
 void
-irq_dump(void)
+irq_dump()
 {
 	info("irq dump\n");
 	info("========\n");
@@ -286,7 +286,7 @@ irq_handler(int vector)
  * irq_init - initialise interrupt processing
  */
 void
-irq_init(void)
+irq_init()
 {
 	spinlock_init(&lock);
 	interrupt_init();

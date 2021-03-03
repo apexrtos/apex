@@ -746,7 +746,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 /*
  * page_dump - dump page allocator state
  */
-void page_dump(void)
+void page_dump()
 {
 	info("page dump\n");
 	info("=========\n");

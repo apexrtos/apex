@@ -355,7 +355,7 @@ getpgid(pid_t pid)
  * getpid - get the process ID of the current process
  */
 pid_t
-getpid(void)
+getpid()
 {
 	return task_pid(task_cur());
 }
@@ -364,7 +364,7 @@ getpid(void)
  * getppid - get the process ID of the parent of the current process
  */
 pid_t
-getppid(void)
+getppid()
 {
 	return task_pid(task_cur()->parent);
 }
@@ -373,7 +373,7 @@ getppid(void)
  * getuid - get the real user ID of the current process
  */
 uid_t
-getuid(void)
+getuid()
 {
 	/* TODO: users */
 	return 0;
@@ -383,7 +383,7 @@ getuid(void)
  * geteuid - get the effective user ID of the current process
  */
 uid_t
-geteuid(void)
+geteuid()
 {
 	/* TODO: users */
 	return 0;
@@ -392,7 +392,7 @@ geteuid(void)
 /*
  * setsid - create session and set process group ID.
  */
-pid_t setsid(void)
+pid_t setsid()
 {
 	struct task *cur = task_cur();
 	pid_t pid = task_pid(cur);

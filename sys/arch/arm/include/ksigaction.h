@@ -7,7 +7,7 @@
 struct k_sigaction {
 	void (*handler)(int);
 	unsigned long flags;
-	void (*restorer)(void);
+	void (*restorer)();
 	k_sigset_t mask;
 };
 

@@ -180,7 +180,7 @@ exc_UsageFault(struct exception_frame_basic *e, bool handler_mode, int exc)
  * If the systick driver is in use it will handle exc_SysTick.
  */
 void
-unhandled_SysTick(void)
+unhandled_SysTick()
 {
 	panic("Unhandled SysTick");
 }
@@ -190,7 +190,7 @@ weak_alias(unhandled_SysTick, exc_SysTick);
  * exc_NVIC
  */
 __fast_text void
-exc_NVIC(void)
+exc_NVIC()
 {
 	int ipsr;
 	asm("mrs %0, ipsr" : "=r" (ipsr));

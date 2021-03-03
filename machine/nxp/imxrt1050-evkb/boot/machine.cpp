@@ -16,7 +16,7 @@ static const unsigned long LPUART1 = 0x40184000;
  * Setup machine state
  */
 void
-machine_setup(void)
+machine_setup()
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
@@ -85,7 +85,7 @@ machine_putc(int c)
  * Load kernel image
  */
 int
-machine_load_image(void)
+machine_load_image()
 {
 	return load_bootimg();
 }
@@ -94,7 +94,7 @@ machine_load_image(void)
  * Panic handler
  */
 void
-machine_panic(void)
+machine_panic()
 {
 	/* Workaround for ancient clang bug. Looks like this will be fixed
 	 * in clang 12,  https://reviews.llvm.org/D85393 */
@@ -204,7 +204,7 @@ machine_panic(void)
  *	All clocks gated except what is necessary
  */
 void
-machine_clock_init(void)
+machine_clock_init()
 {
 	/* set core voltage to 1.25V for 600MHz operation */
 	for (union dcdc_reg3 v = DCDC->REG3; v.TRG < (1250 - 800) / 25;) {
@@ -255,7 +255,7 @@ machine_clock_init(void)
 }
 
 void
-machine_memory_init(void)
+machine_memory_init()
 {
 	/* SDRAM initialised by DCD */
 }

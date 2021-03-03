@@ -69,7 +69,7 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 	std::unique_ptr<as> as(as_create(getpid()));
 
 	/* load program image into new address space */
-	void (*entry)(void);
+	void (*entry)();
 	std::array<unsigned, AUX_CNT> auxv;
 	void *sp;
 	if (auto r = elf_load(as.get(), fd, &entry, auxv, &sp); r < 0)

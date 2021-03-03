@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-unsigned long clock_ns_since_tick(void);
+unsigned long clock_ns_since_tick();
 
 #ifdef __cplusplus
 } /* extern "C" */

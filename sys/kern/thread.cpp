@@ -132,7 +132,7 @@ thread_reap_zombies()
  * Get current thread
  */
 struct thread *
-thread_cur(void)
+thread_cur()
 {
 	return sch_active();
 }
@@ -154,7 +154,7 @@ thread_valid(struct thread *th)
  */
 int
 thread_createfor(struct task *task, struct as *as, struct thread **thp,
-    void *sp, long mem_attr, void (*entry)(void), long arg)
+    void *sp, long mem_attr, void (*entry)(), long arg)
 {
 	int r;
 	struct thread *th;
@@ -271,7 +271,7 @@ thread_find(int id)
  * because it does not have time quantum.
  */
 noreturn void
-thread_idle(void)
+thread_idle()
 {
 	for (;;) {
 		machine_idle();
@@ -326,7 +326,7 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 }
 
 void
-thread_check(void)
+thread_check()
 {
 #ifdef CONFIG_THREAD_CHECK
 	struct list *task_link;
@@ -349,7 +349,7 @@ thread_check(void)
 }
 
 void
-thread_dump(void)
+thread_dump()
 {
 	static const char pol[][5] =
 		{ "OTHR", "FIFO", "  RR", "BTCH", "IDLE", "DDLN" };
@@ -394,7 +394,7 @@ thread_dump(void)
  * is called later in main().
  */
 void
-thread_init(void)
+thread_init()
 {
 	extern char __stack_start[1], __stack_size[1];
 

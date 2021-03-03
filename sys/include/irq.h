@@ -48,11 +48,11 @@ extern "C" {
 struct irq *irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 		       void (*ist)(int, void *), void *data);
 void	    irq_detach(struct irq *);
-int	    irq_disable(void);
+int	    irq_disable();
 void	    irq_restore(int);
-void	    irq_dump(void);
+void	    irq_dump();
 void	    irq_handler(int);
-void	    irq_init(void);
+void	    irq_init();
 
 #ifdef __cplusplus
 } /* extern "C" */

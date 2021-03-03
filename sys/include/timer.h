@@ -69,12 +69,12 @@ void	      timer_redirect(struct timer *, void (*)(void *), void *);
 void	      timer_stop(struct timer *);
 uint_fast64_t timer_delay(uint_fast64_t);
 void	      timer_tick(int);
-uint_fast64_t timer_monotonic(void);
-uint_fast64_t timer_monotonic_coarse(void);
+uint_fast64_t timer_monotonic();
+uint_fast64_t timer_monotonic_coarse();
 int	      timer_realtime_set(uint_fast64_t);
-uint_fast64_t timer_realtime(void);
-uint_fast64_t timer_realtime_coarse(void);
-void	      timer_init(void);
+uint_fast64_t timer_realtime();
+uint_fast64_t timer_realtime_coarse();
+void	      timer_init();
 
 /*
  * Syscalls

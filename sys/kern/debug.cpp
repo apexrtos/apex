@@ -124,7 +124,7 @@ panic(const char *msg)
  * backtrace - print backtrace of current thread
  */
 void
-backtrace(void)
+backtrace()
 {
 	backtrace_thread(thread_cur());
 }

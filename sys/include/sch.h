@@ -53,34 +53,34 @@ extern "C" {
 /*
  * Scheduler interface
  */
-void		sch_switch(void);
-struct thread  *sch_active(void);
+void		sch_switch();
+struct thread  *sch_active();
 unsigned	sch_wakeup(struct event *, int);
 struct thread  *sch_wakeone(struct event *);
 struct thread  *sch_requeue(struct event *, struct event *);
 int		sch_prepare_sleep(struct event *, uint_fast64_t);
 int		sch_continue_sleep();
-void		sch_cancel_sleep(void);
+void		sch_cancel_sleep();
 void	        sch_unsleep(struct thread *, int);
 void	        sch_signal(struct thread *);
-void	        sch_yield(void);
+void	        sch_yield();
 void	        sch_suspend(struct thread *);
 void	        sch_resume(struct thread *);
 void	        sch_suspend_resume(struct thread *, struct thread *);
 void	        sch_elapse(uint_fast32_t);
 void	        sch_start(struct thread *);
 void	        sch_stop(struct thread *);
-bool		sch_testexit(void);
-void	        sch_lock(void);
-void	        sch_unlock(void);
-int		sch_locks(void);
+bool		sch_testexit();
+void	        sch_lock();
+void	        sch_unlock();
+int		sch_locks();
 int		sch_getprio(struct thread *);
 void		sch_setprio(struct thread *, int, int);
 int		sch_getpolicy(struct thread *);
 int		sch_setpolicy(struct thread *, int);
 void	        sch_dpc(struct dpc *, void (*)(void *), void *);
-void	        sch_dump(void);
-void	        sch_init(void);
+void	        sch_dump();
+void	        sch_init();
 
 #if defined(__cplusplus)
 } /* extern "C" */

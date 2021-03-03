@@ -25,7 +25,7 @@ arch_check_elfhdr(const Elf32_Ehdr *h)
 }
 
 unsigned
-arch_elf_hwcap(void)
+arch_elf_hwcap()
 {
 	/* TODO: incomplete */
 	return HWCAP_TLS;   /* emulated */

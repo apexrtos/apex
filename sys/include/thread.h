@@ -104,19 +104,19 @@ extern "C" {
 /*
  * Normal threads
  */
-struct thread  *thread_cur(void);
+struct thread  *thread_cur();
 bool		thread_valid(struct thread *);
 int	        thread_createfor(struct task *, struct as *, struct thread **,
-				 void *, long mem_attr, void (*)(void), long);
+				 void *, long mem_attr, void (*)(), long);
 int	        thread_name(struct thread *, const char *);
 int		thread_id(struct thread *);
 struct thread  *thread_find(int);
 void	        thread_terminate(struct thread *);
 void		thread_zombie(struct thread *);
-noreturn void	thread_idle(void);
-void	        thread_dump(void);
-void	        thread_check(void);
-void	        thread_init(void);
+noreturn void	thread_idle();
+void	        thread_dump();
+void	        thread_check();
+void	        thread_init();
 
 /*
  * Kernel threads

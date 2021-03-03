@@ -21,18 +21,18 @@ bool	k_access_ok(const void *, size_t, int);
 /*
  * User access locking
  */
-int	u_access_begin(void);
-int	u_access_begin_interruptible(void);
-void	u_access_end(void);
-void	u_access_suspend(void);
+int	u_access_begin();
+int	u_access_begin_interruptible();
+void	u_access_end();
+void	u_access_suspend();
 int	u_access_resume(const void *, size_t, int);
 bool	u_access_continue(const void *, size_t, int);
 
 /*
  * User access fault detection
  */
-bool	u_fault(void);
-void	u_fault_clear(void);
+bool	u_fault();
+void	u_fault_clear();
 
 /*
  * Address validation

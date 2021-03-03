@@ -15,7 +15,7 @@ typedef int clockid_t;
 extern "C" {
 #endif
 
-void sc_exit(void);
+void sc_exit();
 void sc_exit_group(int);
 int sc_set_tid_address(int *);
 int sc_uname(struct utsname *);

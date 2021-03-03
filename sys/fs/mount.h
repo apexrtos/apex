@@ -30,7 +30,7 @@ struct vfssw {
 /*
  * Operations supported on virtual file system
  */
-typedef int (*vfsop_init_fn)(void);
+typedef int (*vfsop_init_fn)();
 typedef int (*vfsop_mount_fn)(struct mount *, int, const void *);
 typedef int (*vfsop_umount_fn)(struct mount *);
 typedef int (*vfsop_sync_fn)(struct mount *);
@@ -69,5 +69,5 @@ struct vfsops {
 /*
  * Generic null/invalid operations
  */
-int vfs_nullop(void);
-int vfs_einval(void);
+int vfs_nullop();
+int vfs_einval();

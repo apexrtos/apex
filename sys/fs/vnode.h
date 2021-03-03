@@ -141,14 +141,14 @@ extern "C" {
 /*
  * Generic null/invalid operations
  */
-int vop_nullop(void);
-int vop_einval(void);
+int vop_nullop();
+int vop_einval();
 
 /*
  * vnode cache interface
  */
 struct vnode	*vget(struct mount *, struct vnode *, const char *, size_t);
-struct vnode	*vget_pipe(void);
+struct vnode	*vget_pipe();
 struct vnode	*vn_lookup(struct vnode *, const char *, size_t);
 int		 vn_lock_interruptible(struct vnode *);
 void		 vn_lock(struct vnode *);

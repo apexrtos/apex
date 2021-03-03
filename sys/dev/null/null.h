@@ -4,4 +4,4 @@
  * /dev/null
  */
 
-void null_init(void);
+void null_init();

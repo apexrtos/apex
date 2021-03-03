@@ -103,13 +103,13 @@ machine_driver_init(bootargs *bootargs)
 }
 
 void
-machine_idle(void)
+machine_idle()
 {
 	/* nothing to do for now */
 }
 
 [[noreturn]] void
-machine_reset(void)
+machine_reset()
 {
 	/* wait for console messages to finish printing */
 	timer_delay(0.25 * 1e9);
@@ -140,19 +140,19 @@ machine_reset(void)
 }
 
 void
-machine_poweroff(void)
+machine_poweroff()
 {
 	info("machine_poweroff not supported\n");
 }
 
 void
-machine_suspend(void)
+machine_suspend()
 {
 	info("machine_suspend not supported\n");
 }
 
 [[noreturn]] void
-machine_panic(void)
+machine_panic()
 {
 	/* Workaround for ancient clang bug. Looks like this will be fixed
 	 * in clang 12,  https://reviews.llvm.org/D85393 */
@@ -160,7 +160,7 @@ machine_panic(void)
 }
 
 void
-early_console_init(void)
+early_console_init()
 {
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
 	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_mux_ctl){{

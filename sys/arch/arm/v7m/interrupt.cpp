@@ -5,13 +5,13 @@
 #include <thread.h>
 
 void
-interrupt_enable(void)
+interrupt_enable()
 {
 	asm volatile("cpsie i" ::: "memory");
 }
 
 void
-interrupt_disable(void)
+interrupt_disable()
 {
 	asm volatile("cpsid i" ::: "memory");
 }
@@ -29,7 +29,7 @@ interrupt_restore(int l)
 }
 
 bool
-interrupt_enabled(void)
+interrupt_enabled()
 {
 	int primask;
 	interrupt_save(&primask);
@@ -64,7 +64,7 @@ interrupt_setup(int vector, int mode)
 }
 
 void
-interrupt_init(void)
+interrupt_init()
 {
 	/* nothing to do */
 }
@@ -79,7 +79,7 @@ interrupt_to_ist_priority(int prio)
 }
 
 bool
-interrupt_from_userspace(void)
+interrupt_from_userspace()
 {
 	assert(interrupt_running());
 
@@ -90,7 +90,7 @@ interrupt_from_userspace(void)
 }
 
 bool
-interrupt_running(void)
+interrupt_running()
 {
 	int ipsr;
 	asm("mrs %0, ipsr" : "=r" (ipsr));

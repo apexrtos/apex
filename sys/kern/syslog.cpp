@@ -63,8 +63,8 @@ static struct kmsg_output {
 static int conlev = CONFIG_CONSOLE_LOGLEVEL + 1;
 static const int min_conlev = LOG_WARNING + 1;
 
-static void console_print_all(void);
-static void (*log_output)(void) =
+static void console_print_all();
+static void (*log_output)() =
 #if defined(CONFIG_EARLY_CONSOLE)
 	console_print_all;
 #else
@@ -101,7 +101,7 @@ console_printf(const char *fmt, ...)
  * By default the early console is used.
  */
 static void
-panic_console_init_default(void)
+panic_console_init_default()
 {
 	early_console_init();
 }
@@ -140,7 +140,7 @@ advance(struct ent **p)
  * Must be interrupt save.
  */
 static void
-console_print_all(void)
+console_print_all()
 {
 	int len;
 	char buf[256];
@@ -153,7 +153,7 @@ console_print_all(void)
  * log_trim - drop one msg from log buffer
  */
 static void
-log_trim(void)
+log_trim()
 {
 	struct ent *entry = tail;
 	++log_first_seq;
@@ -220,7 +220,7 @@ syslog_end(struct ent *entry, long seq, int priority)
 	write_once(&entry->priority, priority);
 	write_once(&entry->seq, seq);	     /* entry not read until seq is valid */
 
-	void (*fn)(void) = read_once(&log_output);
+	void (*fn)() = read_once(&log_output);
 	if (fn)
 		fn();
 
@@ -271,7 +271,7 @@ syslog_vprintf(int level, const char *fmt, va_list ap)
  * syslog_output - register function to be called when new messages available
  */
 void
-syslog_output(void (*fn)(void))
+syslog_output(void (*fn)())
 {
 	write_once(&log_output, fn);
 }
@@ -390,7 +390,7 @@ kmsg_format(char *buf, const size_t len, struct kmsg_output *kmsg)
  * Called with all interrupts disabled.
  */
 void
-syslog_panic(void)
+syslog_panic()
 {
 	/* reset console output */
 	console_output.seq = 1;	   /* will report how many msg are dropped if panic is partial */
@@ -639,7 +639,7 @@ static struct devio kmsg_io = {
  * Initialize
  */
 void
-kmsg_init(void)
+kmsg_init()
 {
 	event_init(&log_wait, "kmsg_wait", ev_IO);
 

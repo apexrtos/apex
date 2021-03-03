@@ -49,7 +49,7 @@ static struct cmsdk_uart *const UART = (struct cmsdk_uart*)0x40004000;
 /*
  * Setup machine state
  */
-void machine_setup(void)
+void machine_setup()
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	write32(&UART->BAUDDIV, 16);	    /* QEMU doesn't care as long as >= 16 */
@@ -73,7 +73,7 @@ void machine_putc(int c)
 /*
  * Load kernel image
  */
-int machine_load_image(void)
+int machine_load_image()
 {
 	return load_bootimg();
 }
@@ -81,7 +81,7 @@ int machine_load_image(void)
 /*
  * Panic handler
  */
-void machine_panic(void)
+void machine_panic()
 {
 	/* Workaround for ancient clang bug. Looks like this will be fixed
 	 * in clang 12,  https://reviews.llvm.org/D85393 */
@@ -91,7 +91,7 @@ void machine_panic(void)
 /*
  * Initialise clocks.
  */
-void machine_clock_init(void)
+void machine_clock_init()
 {
 	/* QEMU doesn't require clock initialisation */
 }
@@ -99,7 +99,7 @@ void machine_clock_init(void)
 /*
  * Initialise stack
  */
-void machine_early_memory_init(void)
+void machine_early_memory_init()
 {
 	/* QEMU doesn't require stack initialisation */
 }
@@ -107,7 +107,7 @@ void machine_early_memory_init(void)
 /*
  * Initialise memory
  */
-void machine_memory_init(void)
+void machine_memory_init()
 {
 	/* QEMU doesn't require memory initialisation */
 }

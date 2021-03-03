@@ -382,7 +382,7 @@ timer_tick(int ticks)
  * Return monotonic time
  */
 uint_fast64_t
-timer_monotonic(void)
+timer_monotonic()
 {
 	const int s = irq_disable();
 	const uint_fast64_t r = monotonic + clock_ns_since_tick();
@@ -394,7 +394,7 @@ timer_monotonic(void)
  * Return monotonic time (coarse, fast version)
  */
 uint_fast64_t
-timer_monotonic_coarse(void)
+timer_monotonic_coarse()
 {
 	return monotonic;
 }
@@ -416,7 +416,7 @@ timer_realtime_set(uint_fast64_t ns)
  * Return real time
  */
 uint_fast64_t
-timer_realtime(void)
+timer_realtime()
 {
 	return timer_monotonic() + realtime_offset;
 }
@@ -425,7 +425,7 @@ timer_realtime(void)
  * Return real time (coarse, fast version)
  */
 uint_fast64_t
-timer_realtime_coarse(void)
+timer_realtime_coarse()
 {
 	return monotonic + realtime_offset;
 }
@@ -434,7 +434,7 @@ timer_realtime_coarse(void)
  * Initialize the timer facility, called at system startup time.
  */
 void
-timer_init(void)
+timer_init()
 {
 	struct thread *th;
 

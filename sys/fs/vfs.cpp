@@ -806,7 +806,7 @@ fs_thread(void *arg)
  * fs_init - Initialise data structures and file systems.
  */
 void
-fs_init(void)
+fs_init()
 {
 	mount_init();
 	vnode_init();
@@ -828,7 +828,7 @@ fs_init(void)
  * fs_kern_init - Initialise kernel task file system state
  */
 void
-fs_kinit(void)
+fs_kinit()
 {
 	struct task *t = &kern_task;
 	struct vnode *vp;
@@ -857,7 +857,7 @@ fs_kinit(void)
  * fs_shutdown - Prepare for shutdown
  */
 void
-fs_shutdown(void)
+fs_shutdown()
 {
 	sync();
 }
@@ -2649,7 +2649,7 @@ chown(const char *path, uid_t uid, gid_t gid)
  * file_dump - dump file information
  */
 void
-file_dump(void)
+file_dump()
 {
 	struct list *i;
 	struct task *t;

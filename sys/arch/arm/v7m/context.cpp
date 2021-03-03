@@ -87,7 +87,7 @@ static_assert(!(sizeof(struct rt_sigframe) & 7), "");
 /*
  * System call return entry point
  */
-extern void syscall_ret(void);
+extern void syscall_ret();
 
 /*
  * Test link register to determine if exception frame is basic or extended
@@ -109,7 +109,7 @@ is_exception_frame_extended(uint32_t lr)
  * we run the thread switch in exc_PendSV.
  */
 void
-arch_schedule(void)
+arch_schedule()
 {
 	write32(&SCB->ICSR, (union scb_icsr){.PENDSVSET = 1}.r);
 
@@ -180,7 +180,7 @@ context_init_kthread(struct context *ctx, void *kstack_top,
  */
 int
 context_init_uthread(struct context *child, struct as *as, void *kstack_top,
-    void *ustack_top, void (*entry)(void), long retval)
+    void *ustack_top, void (*entry)(), long retval)
 {
 	struct context *parent = &thread_cur()->ctx;
 	bool shared_ustack = false;
@@ -351,7 +351,7 @@ fpu_present(const void *p)
  * This will trigger lazy state preservation if it hasn't already happened
  */
 static void
-fpu_lazy_sync(void)
+fpu_lazy_sync()
 {
 #if defined(CONFIG_FPU)
 	asm("vmov.f32 s0, #1.0");
@@ -364,7 +364,7 @@ fpu_lazy_sync(void)
  * This will stop the core from performing lazy state preservation
  */
 static void
-fpu_lazy_drop(void)
+fpu_lazy_drop()
 {
 #if defined(CONFIG_FPU)
 	union fpu_fpccr r = read32(&FPU->FPCCR);
@@ -380,7 +380,7 @@ fpu_lazy_drop(void)
  */
 bool
 context_set_signal(struct context *ctx, const k_sigset_t *ss,
-    void (*handler)(int), void (*restorer)(void), const int sig,
+    void (*handler)(int), void (*restorer)(), const int sig,
     const siginfo_t *si, const int rval)
 {
 	/* can't signal kernel thread */

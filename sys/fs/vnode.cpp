@@ -261,7 +261,7 @@ vget(struct mount *mount, struct vnode *parent, const char *name, size_t len)
  * Allocate a new vnode for pipe
  */
 struct vnode *
-vget_pipe(void)
+vget_pipe()
 {
 	struct vnode *vp;
 
@@ -393,7 +393,7 @@ vnode_type(mode_t mode)
 }
 
 void
-vnode_dump(void)
+vnode_dump()
 {
 	int i;
 	struct list *head, *n;
@@ -419,19 +419,19 @@ vnode_dump(void)
 }
 
 int
-vop_nullop(void)
+vop_nullop()
 {
 	return 0;
 }
 
 int
-vop_einval(void)
+vop_einval()
 {
 	return -EINVAL;
 }
 
 void
-vnode_init(void)
+vnode_init()
 {
 	mutex_init(&vnode_mutex);
 	for (size_t i = 0; i < VNODE_BUCKETS; i++)

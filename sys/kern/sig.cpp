@@ -14,7 +14,7 @@
 #include <task.h>
 #include <thread.h>
 
-typedef void (*sig_restore_fn)(void);
+typedef void (*sig_restore_fn)();
 typedef void (*sig_handler_fn)(int);
 
 #define trace(...)
@@ -788,7 +788,7 @@ sigreturn(bool siginfo)
  * Return from signal handler (1 argument)
  */
 int
-sc_sigreturn(void)
+sc_sigreturn()
 {
 	return sigreturn(false);
 
@@ -798,7 +798,7 @@ sc_sigreturn(void)
  * Return from SA_SIGINFO signal handler (3 arguments)
  */
 int
-sc_rt_sigreturn(void)
+sc_rt_sigreturn()
 {
 	return sigreturn(true);
 }

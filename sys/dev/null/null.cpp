@@ -74,7 +74,7 @@ static struct devio null_io = {
  * Initialize
  */
 void
-null_init(void)
+null_init()
 {
 	/* Create device object */
 	struct device *d = device_create(&null_io, "null", DF_CHR, NULL);

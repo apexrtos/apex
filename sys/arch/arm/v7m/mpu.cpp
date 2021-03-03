@@ -20,7 +20,7 @@ __fast_bss const void *fault_addr;		/* last fault address */
 __fast_bss const struct thread *mapped_thread;	/* currently mapped thread */
 
 static void
-clear_dynamic(void)
+clear_dynamic()
 {
 	stack = 0;
 	mapped_thread = NULL;
@@ -263,7 +263,7 @@ again:;
  * mpu_dump - dump mpu state
  */
 void
-mpu_dump(void)
+mpu_dump()
 {
 #if defined(CONFIG_DEBUG)
 	dbg("*** MPU dump ***\n");

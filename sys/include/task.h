@@ -103,7 +103,7 @@ struct task {
 extern "C" {
 #endif
 
-struct task    *task_cur(void);
+struct task    *task_cur();
 struct task    *task_find(pid_t);
 pid_t		task_pid(struct task *);
 bool		task_valid(struct task *);
@@ -115,8 +115,8 @@ int	        task_path(struct task *, const char *);
 bool	        task_capable(unsigned);
 bool	        task_access(struct task *);
 struct futexes *task_futexes(struct task *);
-void		task_dump(void);
-void		task_init(void);
+void		task_dump();
+void		task_init();
 
 #ifdef __cplusplus
 } /* extern "C" */
