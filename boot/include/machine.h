@@ -29,9 +29,7 @@
 
 #pragma once
 
-#include <stdnoreturn.h>
-
 void machine_setup();
 void machine_putc(int);
 int machine_load_image();
-noreturn void machine_panic();
+[[noreturn]] void machine_panic();

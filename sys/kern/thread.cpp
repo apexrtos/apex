@@ -270,7 +270,7 @@ thread_find(int id)
  * system. An idle thread has FIFO scheduling policy
  * because it does not have time quantum.
  */
-noreturn void
+[[noreturn]] void
 thread_idle()
 {
 	for (;;) {

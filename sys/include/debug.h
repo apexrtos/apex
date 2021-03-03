@@ -3,7 +3,6 @@
 #include <conf/config.h>
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdnoreturn.h>
 #include <syslog.h>
 
 struct thread;
@@ -14,7 +13,6 @@ struct thread;
 })
 
 #if defined(__cplusplus)
-#define noreturn [[noreturn]]
 extern "C" {
 #endif
 
@@ -34,7 +32,7 @@ void		alert(const char *fmt, ...)
 			__attribute__((format (printf, 1, 2)));
 void		emergency(const char *fmt, ...)
 			__attribute__((format (printf, 1, 2)));
-noreturn void	panic(const char *);
+[[noreturn]] void panic(const char *);
 void		backtrace();
 void		backtrace_thread(struct thread *);
 int		syslog_printf(int, const char *, ...)
@@ -48,5 +46,4 @@ void		kmsg_init();
 
 #if defined(__cplusplus)
 } /* extern "C" */
-#undef noreturn
 #endif

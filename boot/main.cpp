@@ -84,7 +84,7 @@ debug_printf(const char *fmt, ...)
 #endif
 }
 
-noreturn void
+[[noreturn]] void
 panic(const char *msg)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
@@ -97,7 +97,7 @@ panic(const char *msg)
 /*
  * __assert_fail - print assertion message and halt system
  */
-noreturn void
+_Noreturn void
 __assert_fail(const char *expr, const char *file, int line, const char *func)
 {
 	debug_printf("Assertion failed: %s (%s: %s: %d)\n",
@@ -108,7 +108,7 @@ __assert_fail(const char *expr, const char *file, int line, const char *func)
 /*
  * C entry point
  */
-noreturn void
+[[noreturn]] void
 loader_main()
 {
 	/*

@@ -110,7 +110,7 @@ emergency(const char *fmt, ...)
 /*
  * panic - print panic message and halt system
  */
-noreturn void
+[[noreturn]] void
 panic(const char *msg)
 {
 	interrupt_disable();
@@ -141,7 +141,7 @@ backtrace_thread(struct thread *th)
 /*
  * __assert_fail - print assertion message and halt system
  */
-noreturn void
+_Noreturn void
 __assert_fail(const char *expr, const char *file, int line, const char *func)
 {
 	interrupt_disable();

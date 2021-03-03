@@ -56,4 +56,4 @@ int load_bootimg();
 void debug_puts(const char *);
 void debug_printf(const char *, ...)
 	__attribute__((format (printf, 1, 2)));
-noreturn void panic(const char *);
+[[noreturn]] void panic(const char *);

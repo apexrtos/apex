@@ -31,7 +31,6 @@
 
 #include <conf/config.h>
 #include <context.h>
-#include <stdnoreturn.h>
 #include <timer.h>
 #include <types.h>
 
@@ -97,7 +96,6 @@ struct thread {
 #define TH_U_ACCESS_S	0x20	/* thread access to userspace was suspended */
 
 #if defined(__cplusplus)
-#define noreturn [[noreturn]]
 extern "C" {
 #endif
 
@@ -113,7 +111,7 @@ int		thread_id(struct thread *);
 struct thread  *thread_find(int);
 void	        thread_terminate(struct thread *);
 void		thread_zombie(struct thread *);
-noreturn void	thread_idle();
+[[noreturn]] void thread_idle();
 void	        thread_dump();
 void	        thread_check();
 void	        thread_init();
@@ -126,5 +124,4 @@ struct thread  *kthread_create(void (*)(void *), void *, int, const char *,
 
 #if defined(__cplusplus)
 } /* extern "C" */
-#undef noreturn
 #endif
