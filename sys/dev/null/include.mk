@@ -3,4 +3,4 @@
 #
 
 SOURCES += \
-    dev/null/null.c \
+    dev/null/null.cpp \

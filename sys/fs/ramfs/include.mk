@@ -3,6 +3,6 @@
 #
 
 SOURCES += \
-    fs/ramfs/vfsops.c \
-    fs/ramfs/vnops.c \
+    fs/ramfs/vfsops.cpp \
+    fs/ramfs/vnops.cpp \
 

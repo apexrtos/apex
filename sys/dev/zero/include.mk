@@ -3,4 +3,4 @@
 #
 
 SOURCES += \
-    dev/zero/zero.c \
+    dev/zero/zero.cpp \

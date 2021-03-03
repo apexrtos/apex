@@ -3,4 +3,4 @@
 #
 
 SOURCES += \
-    dev/arm/armv7m-systick/armv7m-systick.c \
+    dev/arm/armv7m-systick/armv7m-systick.cpp \

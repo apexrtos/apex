@@ -1,2 +1,2 @@
 SOURCES += \
-    $(CONFIG_MACHINEDIR)/boot/machine.c
+    $(CONFIG_MACHINEDIR)/boot/machine.cpp

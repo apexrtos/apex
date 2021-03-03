@@ -3,4 +3,4 @@
 #
 
 SOURCES += \
-    fs/arfs/vnops.c \
+    fs/arfs/vnops.cpp \

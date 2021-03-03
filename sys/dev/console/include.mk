@@ -3,5 +3,5 @@
 #
 
 SOURCES += \
-    dev/console/console.c \
+    dev/console/console.cpp \
 

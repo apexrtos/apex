@@ -32,11 +32,11 @@ INCLUDE := \
     $(CONFIG_BUILDDIR) \
 
 SOURCES := \
-    errno.c \
-    load_bootimg.c \
-    load_elf.c \
-    main.c \
-    raise.c \
+    errno.cpp \
+    load_bootimg.cpp \
+    load_elf.cpp \
+    main.cpp \
+    raise.cpp \
 
 # Architecture specific boot sources
 ARCHDIR := arch/$(CONFIG_ARCH)

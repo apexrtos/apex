@@ -3,4 +3,4 @@
 #
 
 SOURCES += \
-    dev/fsl/imx-usbphy/imx-usbphy.c
+    dev/fsl/imx-usbphy/imx-usbphy.cpp

@@ -1,17 +1,17 @@
 SOURCES += \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/arch.c \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/atomic.c \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/cache.c \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/context.c \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/arch.cpp \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/atomic.cpp \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/cache.cpp \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/context.cpp \
     $(ARCHDIR)/$(CONFIG_SUBARCH)/emulate.S \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/exception.c \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/interrupt.c \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/io.c \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/exception.cpp \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/interrupt.cpp \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/io.cpp \
     $(ARCHDIR)/$(CONFIG_SUBARCH)/locore.S \
-    $(ARCHDIR)/$(CONFIG_SUBARCH)/syscall.c \
+    $(ARCHDIR)/$(CONFIG_SUBARCH)/syscall.cpp \
 
 ifneq ($(origin CONFIG_MPU),undefined)
-SOURCES += $(ARCHDIR)/$(CONFIG_SUBARCH)/mpu.c
+SOURCES += $(ARCHDIR)/$(CONFIG_SUBARCH)/mpu.cpp
 endif
 
 ASFLAGS += -mimplicit-it=thumb

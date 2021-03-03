@@ -34,46 +34,45 @@ INCLUDE := \
     $(CONFIG_SRCDIR) \
 
 SOURCES := \
-    fs/mount.c \
-    fs/pipe.c \
+    fs/mount.cpp \
+    fs/pipe.cpp \
     fs/syscalls.cpp \
-    fs/util/dirbuf_add.c \
-    fs/util/for_each_iov.c \
-    fs/vfs.c \
-    fs/vnode.c \
+    fs/util/dirbuf_add.cpp \
+    fs/vfs.cpp \
+    fs/vnode.cpp \
     kern/clone.cpp \
-    kern/debug.c \
+    kern/debug.cpp \
     kern/dma.cpp \
     kern/elf_load.cpp \
     kern/exec.cpp \
-    kern/irq.c \
-    kern/main.c \
+    kern/irq.cpp \
+    kern/main.cpp \
     kern/prctl.cpp \
-    kern/proc.c \
-    kern/sch.c \
-    kern/sig.c \
+    kern/proc.cpp \
+    kern/sch.cpp \
+    kern/sig.cpp \
     kern/syscall_table.c \
     kern/syscalls.cpp \
-    kern/syslog.c \
-    kern/task.c \
-    kern/thread.c \
-    kern/timer.c \
+    kern/syslog.cpp \
+    kern/task.cpp \
+    kern/thread.cpp \
+    kern/timer.cpp \
     lib/crypto/sha256.cpp \
-    lib/errno.c \
+    lib/errno.cpp \
     lib/jhash3.c \
-    lib/queue.c \
-    lib/raise.c \
+    lib/queue.cpp \
+    lib/raise.cpp \
     lib/string_utils.cpp \
     mem/access.cpp \
-    mem/kmem.c \
+    mem/kmem.cpp \
     mem/page.cpp \
     mem/vm.cpp \
-    sync/cond.c \
-    sync/futex.c \
-    sync/mutex.c \
-    sync/rwlock.c \
-    sync/semaphore.c \
-    sync/spinlock.c \
+    sync/cond.cpp \
+    sync/futex.cpp \
+    sync/mutex.cpp \
+    sync/rwlock.cpp \
+    sync/semaphore.cpp \
+    sync/spinlock.cpp \
 
 # Generic memory translation support
 ifneq ($(origin CONFIG_MMU),undefined)

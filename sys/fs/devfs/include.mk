@@ -3,5 +3,5 @@
 #
 
 SOURCES += \
-    fs/devfs/vnops.c \
+    fs/devfs/vnops.cpp \
 

@@ -3,4 +3,4 @@
 #
 
 SOURCES += \
-    dev/bootdisk/bootdisk.c \
+    dev/bootdisk/bootdisk.cpp \
