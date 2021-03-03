@@ -18,7 +18,7 @@ static const char *archive_addr;
 static size_t archive_size;
 
 static ssize_t
-bootdisk_read(struct file *f, void *buf, size_t len, off_t offset)
+bootdisk_read(void *buf, size_t len, off_t offset)
 {
 	rdbg("bootdisk_read: buf=%p len=%zu off=%jx\n", buf, len, offset);
 
@@ -38,7 +38,10 @@ static ssize_t
 bootdisk_read_iov(struct file *f, const struct iovec *iov, size_t count,
     off_t offset)
 {
-	return for_each_iov(f, iov, count, offset, bootdisk_read);
+	return for_each_iov(iov, count, offset,
+	    [](std::span<std::byte> buf, off_t offset) {
+		return bootdisk_read(data(buf), size(buf), offset);
+	});
 }
 
 /*

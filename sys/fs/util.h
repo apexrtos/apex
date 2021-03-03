@@ -1,11 +1,10 @@
 #pragma once
 
+#include <span>
 #include <sys/uio.h>
 #include <types.h>
 
 struct dirent;
-struct file;
-
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -16,17 +15,8 @@ extern "C" {
 int dirbuf_add(struct dirent **, size_t *remain, ino_t, off_t,
 	       unsigned char type, const char *name);
 
-/*
- * for_each_iov - walk iov, calling function fn for each entry and
- * accumulating results. Terminate on short result.
- */
-ssize_t	for_each_iov(struct file *, const struct iovec *, size_t, off_t,
-		     ssize_t (*fn)(struct file *, void *, size_t, off_t));
-
 #if defined(__cplusplus)
 }
-
-#include <span>
 
 /*
  * for_each_iov - C++ version of for_each_iov

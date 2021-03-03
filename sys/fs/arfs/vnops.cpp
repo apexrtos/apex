@@ -209,7 +209,10 @@ static ssize_t
 arfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
     off_t offset)
 {
-	return for_each_iov(fp, iov, count, offset, arfs_read);
+	return for_each_iov(iov, count, offset,
+	    [fp](std::span<std::byte> buf, off_t offset) {
+		return arfs_read(fp, data(buf), size(buf), offset);
+	});
 }
 
 static int

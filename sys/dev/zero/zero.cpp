@@ -40,17 +40,13 @@
  * All data read from this device is zero
  */
 static ssize_t
-zero_read(struct file *file, void *buf, size_t len, off_t offset)
+zero_read_iov(file *file, const iovec *iov, size_t count, off_t offset)
 {
-	memset(buf, 0, len);
-	return len;
-}
-
-static ssize_t
-zero_read_iov(struct file *file, const struct iovec *iov, size_t count,
-    off_t offset)
-{
-	return for_each_iov(file, iov, count, offset, zero_read);
+	return for_each_iov(iov, count, offset,
+	    [](std::span<std::byte> buf, off_t offset) {
+		memset(data(buf), 0, size(buf));
+		return buf.size();
+	});
 }
 
 /*

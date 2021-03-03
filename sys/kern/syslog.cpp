@@ -526,7 +526,10 @@ static ssize_t
 kmsg_read_iov(struct file *file, const struct iovec *iov, size_t count,
     off_t offset)
 {
-	return for_each_iov(file, iov, count, offset, kmsg_read);
+	return for_each_iov(iov, count, offset,
+	    [file](std::span<std::byte> buf, off_t offset) {
+		return kmsg_read(file, data(buf), size(buf), offset);
+	});
 }
 
 /*

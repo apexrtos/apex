@@ -1323,7 +1323,10 @@ do_readv(struct file *fp, const struct iovec *iov, int count, off_t offset,
 
 	switch (IFTODT(vp->v_mode)) {
 	case DT_FIFO:
-		res = for_each_iov(fp, iov, count, offset, pipe_read);
+		res = for_each_iov(iov, count, offset,
+		    [fp](std::span<std::byte> buf, off_t offset) {
+			return pipe_read(fp, data(buf), size(buf), offset);
+		});
 		break;
 	case DT_CHR:
 		update_offset = false;
@@ -1472,7 +1475,10 @@ do_writev(struct file *fp, const struct iovec *iov, int count, off_t offset,
 
 	switch (IFTODT(vp->v_mode)) {
 	case DT_FIFO:
-		res = for_each_iov(fp, iov, count, offset, pipe_write);
+		res = for_each_iov(iov, count, offset,
+		    [fp](std::span<std::byte> buf, off_t offset) {
+			return pipe_write(fp, data(buf), size(buf), offset);
+		});
 		break;
 	case DT_CHR:
 		update_offset = false;
