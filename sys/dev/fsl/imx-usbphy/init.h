@@ -1,5 +1,4 @@
-#ifndef dev_fsl_imx_usbphy_init_h
-#define dev_fsl_imx_usbphy_init_h
+#pragma once
 
 /*
  * Driver for USB PHY in IMX processors.
@@ -23,4 +22,3 @@ void fsl_imx_usbphy_init(const struct fsl_imx_usbphy_desc *);
 }
 #endif
 
-#endif

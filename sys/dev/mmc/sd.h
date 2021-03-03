@@ -1,5 +1,4 @@
-#ifndef dev_mmc_sd_h
-#define dev_mmc_sd_h
+#pragma once
 
 /*
  * SD support
@@ -270,5 +269,3 @@ int fule(host *, size_t start_lba, size_t end_lba);
 constexpr unsigned tuning_cmd_index = 19;
 
 }
-
-#endif

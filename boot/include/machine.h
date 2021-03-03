@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef machine_h
-#define machine_h
+#pragma once
 
 #include <stdnoreturn.h>
 
@@ -36,5 +35,3 @@ void machine_setup(void);
 void machine_putc(int);
 int machine_load_image(void);
 noreturn void machine_panic(void);
-
-#endif /* !machine_h */

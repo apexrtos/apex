@@ -1,5 +1,4 @@
-#ifndef debug_h
-#define debug_h
+#pragma once
 
 #include <conf/config.h>
 #include <stdarg.h>
@@ -51,5 +50,3 @@ void		kmsg_init();
 } /* extern "C" */
 #undef noreturn
 #endif
-
-#endif /* !debug_h */

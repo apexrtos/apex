@@ -1,5 +1,4 @@
-#ifndef dev_usb_class_cdc_h
-#define dev_usb_class_cdc_h
+#pragma once
 
 #include <dev/usb/ch9.h>
 
@@ -201,5 +200,3 @@ struct country_selection_functional_descriptor {
 } __attribute__((packed));
 
 }
-
-#endif

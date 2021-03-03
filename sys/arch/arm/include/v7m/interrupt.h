@@ -1,5 +1,4 @@
-#ifndef arm_v7m_interrupt_h
-#define arm_v7m_interrupt_h
+#pragma once
 
 #include <conf/config.h>
 
@@ -12,5 +11,3 @@
 #define IPL_PENDSV	(256 - 1 * NVIC_STEP)	/* deferred supervisor call */
 #define IPL_MIN		(256 - 2 * NVIC_STEP)	/* minimum interrupt priority */
 #define IPL_MAX		0			/* maximum interrupt priority */
-
-#endif /* arm_v7m_interrupt_h */

@@ -1,5 +1,4 @@
-#ifndef dev_mmc_mmc_block_h
-#define dev_mmc_mmc_block_h
+#pragma once
 
 /*
  * MMC Block Device
@@ -34,5 +33,3 @@ private:
 };
 
 }
-
-#endif

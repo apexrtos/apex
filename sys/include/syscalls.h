@@ -1,5 +1,4 @@
-#ifndef syscalls_h
-#define syscalls_h
+#pragma once
 
 /*
  * syscalls.h - syscall wrappers which have nowhere better to live
@@ -32,6 +31,4 @@ int sc_sched_setscheduler(int, int, const struct sched_param *);
 
 #if defined(__cplusplus)
 } /* extern "C" */
-#endif
-
 #endif

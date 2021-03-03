@@ -1,5 +1,4 @@
-#ifndef dev_gpio_irq_h
-#define dev_gpio_irq_h
+#pragma once
 
 /*
  * GPIO IRQ Modes
@@ -25,6 +24,4 @@ enum class irq_mode {
 };
 
 }
-#endif
-
 #endif

@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_function_h
-#define dev_usb_gadget_function_h
+#pragma once
 
 /*
  * Abstract USB Composite Function
@@ -113,5 +112,3 @@ function::add(std::string_view name)
 }
 
 }
-
-#endif

@@ -1,6 +1,3 @@
-#ifndef jhash3_h
-#define jhash3_h
-
 /*
  * Adapted for use in Apex by Patrick Oppenlander on 29/7/2011.
  * The original source can be found here
@@ -14,6 +11,8 @@
  * if SELF_TEST is defined.  You can use this free for any purpose.  It's in
  * the public domain.  It has no warranty.
  */
+
+#pragma once
 
 #include <stddef.h>
 #include <stdint.h>
@@ -58,5 +57,3 @@ uint32_t jhash_1word(uint32_t a);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* !jhash3_h */

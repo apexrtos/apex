@@ -1,5 +1,4 @@
-#ifndef dev_fsl_usdhc_init_h
-#define dev_fsl_usdhc_init_h
+#pragma once
 
 /*
  * Driver for Freescale Ultra Secured Digital Host Controller
@@ -23,6 +22,4 @@ void fsl_usdhc_init(const struct fsl_usdhc_desc *);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

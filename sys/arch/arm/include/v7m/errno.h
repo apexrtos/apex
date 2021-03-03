@@ -1,5 +1,4 @@
-#ifndef arm_v7m_errno_h
-#define arm_v7m_errno_h
+#pragma once
 
 #ifndef __ASSEMBLY__
 #include_next <errno.h>
@@ -21,5 +20,3 @@
  * by a signal with SA_RESTART set.
  */
 #define ERESTARTSYS 256
-
-#endif

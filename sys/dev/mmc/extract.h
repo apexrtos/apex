@@ -1,5 +1,4 @@
-#ifndef dev_mmc_extract_h
-#define dev_mmc_extract_h
+#pragma once
 
 #include <cassert>
 
@@ -89,5 +88,3 @@ bytes(const std::array<std::byte, N> &buf, size_t byte)
 }
 
 }
-
-#endif

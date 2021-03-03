@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_ivt_h
-#define imxrt10xx_ivt_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -22,5 +21,3 @@ struct ivt {
 	uint32_t reserved : 32;
 };
 static_assert(sizeof(struct ivt) == 32, "");
-
-#endif

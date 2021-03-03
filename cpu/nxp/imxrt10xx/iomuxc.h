@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_iomuxc_h
-#define imxrt10xx_iomuxc_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -735,5 +734,3 @@ static struct iomuxc *const IOMUXC = (struct iomuxc*)IOMUXC_ADDR;
 static struct iomuxc_gpr *const IOMUXC_GPR = (struct iomuxc_gpr*)IOMUXC_GPR_ADDR;
 static struct iomuxc_snvs *const IOMUXC_SNVS = (struct iomuxc_snvs*)IOMUXC_SNVS_ADDR;
 static struct iomuxc_snvs_gpr *const IOMUXC_SNVS_GPR = (struct iomuxc_snvs_gpr*)IOMUXC_SNVS_GPR_ADDR;
-
-#endif

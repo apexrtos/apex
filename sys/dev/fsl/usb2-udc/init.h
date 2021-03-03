@@ -1,5 +1,4 @@
-#ifndef dev_fsl_usb2_udc_init_h
-#define dev_fsl_usb2_udc_init_h
+#pragma once
 
 /*
  * Driver for Freescale USB2 USB Device Controller
@@ -20,6 +19,4 @@ void fsl_usb2_udc_init(const struct fsl_usb2_udc_desc *);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

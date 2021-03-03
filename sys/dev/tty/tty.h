@@ -34,8 +34,7 @@
  *	@(#)tty.h	8.7 (Berkeley) 1/9/95
  */
 
-#ifndef dev_tty_h
-#define dev_tty_h
+#pragma once
 
 #include <stddef.h>
 #include <types.h>
@@ -73,5 +72,3 @@ void	    tty_tx_complete(struct tty *);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* !tty_h */

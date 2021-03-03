@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef kernel_h
-#define kernel_h
+#pragma once
 
 #include <assert.h>
 #include <conf/config.h>
@@ -222,5 +221,3 @@ is_pow2(T v)
 }
 
 #endif
-
-#endif /* !kernel_h */

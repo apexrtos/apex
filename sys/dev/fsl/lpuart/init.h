@@ -1,5 +1,4 @@
-#ifndef dev_fsl_lpuart_init_h
-#define dev_fsl_lpuart_init_h
+#pragma once
 
 /*
  * Device driver for freescale LPUART generally found on imx processors
@@ -21,6 +20,4 @@ void fsl_lpuart_init(const struct fsl_lpuart_desc *);
 
 #ifdef __cplusplus
 } /* extern "C" */
-#endif
-
 #endif

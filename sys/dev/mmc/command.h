@@ -1,5 +1,4 @@
-#ifndef dev_mmc_command_h
-#define dev_mmc_command_h
+#pragma once
 
 /*
  * MMC/SD Command
@@ -79,5 +78,3 @@ private:
 };
 
 }
-
-#endif

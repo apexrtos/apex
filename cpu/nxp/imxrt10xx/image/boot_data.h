@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_boot_data_h
-#define imxrt10xx_boot_data_h
+#pragma once
 
 #include <stdint.h>
 
@@ -11,5 +10,3 @@ struct boot_data {
 	uint32_t length;
 	uint32_t plugin;
 };
-
-#endif

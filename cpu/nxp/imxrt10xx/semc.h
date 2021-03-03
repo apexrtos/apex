@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_semc_h
-#define imxrt10xx_semc_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -228,5 +227,3 @@ static_assert(sizeof(struct semc) == 0x100, "");
 
 #define SEMC_ADDR 0x402f0000
 static struct semc *const SEMC = (struct semc*)SEMC_ADDR;
-
-#endif

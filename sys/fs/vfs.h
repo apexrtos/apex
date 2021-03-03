@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef vfs_h
-#define vfs_h
+#pragma once
 
 #include <stddef.h>
 
@@ -60,5 +59,3 @@ void	 file_dump(void);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* !vfs_h */

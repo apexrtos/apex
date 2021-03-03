@@ -1,5 +1,4 @@
-#ifndef dev_mmc_sdio_h
-#define dev_mmc_sdio_h
+#pragma once
 
 /*
  * SDIO support
@@ -12,5 +11,3 @@ namespace mmc::sdio {
 int reset(host *);
 
 }
-
-#endif

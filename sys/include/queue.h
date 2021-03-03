@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef queue_h
-#define queue_h
+#pragma once
 
 struct queue {
 	struct queue *next;
@@ -59,5 +58,3 @@ void		queue_remove(struct queue *);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* !queue_h */

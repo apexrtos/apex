@@ -1,10 +1,7 @@
-#ifndef dev_zero_h
-#define dev_zero_h
+#pragma once
 
 /*
  * /dev/zero
  */
 
 void zero_init(void);
-
-#endif

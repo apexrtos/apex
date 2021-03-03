@@ -1,5 +1,4 @@
-#ifndef vm_h
-#define vm_h
+#pragma once
 
 #include <page.h>
 
@@ -76,4 +75,3 @@ struct default_delete<as> {
 
 #endif /* __cplusplus */
 
-#endif /* vm_h */

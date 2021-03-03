@@ -1,5 +1,4 @@
-#ifndef types_h
-#define types_h
+#pragma once
 
 #include <conf/config.h>
 #include <stdbool.h>
@@ -30,5 +29,3 @@ typedef struct k_sigset_t { unsigned long __bits[_NSIG / 8 / sizeof(long)]; } k_
 
 #define MA_NORMAL CONFIG_MA_NORMAL_ATTR
 #define MA_FAST CONFIG_MA_FAST_ATTR
-
-#endif /* !types_h */

@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_transaction_h
-#define dev_usb_gadget_transaction_h
+#pragma once
 
 #include <sys/uio.h>
 #include <vector>
@@ -51,5 +50,3 @@ private:
 };
 
 }
-
-#endif

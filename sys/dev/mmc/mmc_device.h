@@ -1,5 +1,4 @@
-#ifndef dev_mmc_mmc_device_h
-#define dev_mmc_mmc_device_h
+#pragma once
 
 /*
  * MMC Device Support
@@ -50,5 +49,3 @@ private:
 };
 
 }
-
-#endif

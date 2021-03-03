@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_ccm_h
-#define imxrt10xx_ccm_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -572,5 +571,3 @@ static_assert(sizeof(struct ccm_analog) == 0x180, "");
 #define CCM_ANALOG_ADDR 0x400d8000
 static struct ccm *const CCM = (struct ccm*)CCM_ADDR;
 static struct ccm_analog *const CCM_ANALOG = (struct ccm_analog*)CCM_ANALOG_ADDR;
-
-#endif

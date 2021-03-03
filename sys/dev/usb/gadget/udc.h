@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_udc_h
-#define dev_usb_gadget_udc_h
+#pragma once
 
 /*
  * Generic USB Device Controller
@@ -123,5 +122,3 @@ int udc::set_device(A &&...a)
 }
 
 }
-
-#endif

@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef event_h
-#define event_h
+#pragma once
 
 #include <queue.h>
 
@@ -58,5 +57,3 @@ struct event {
 	} while (0)
 
 #define event_waiting(event)   (!queue_empty(&(event)->sleepq))
-
-#endif /* !event_h */

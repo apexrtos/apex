@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef vnode_h
-#define vnode_h
+#pragma once
 
 #include <list.h>
 #include <sync.h>
@@ -164,6 +163,3 @@ void		 vgone(struct vnode *);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* !vnode_h */
-

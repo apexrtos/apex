@@ -1,5 +1,4 @@
-#ifndef fs_h
-#define fs_h
+#pragma once
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -152,5 +151,3 @@ private:
 } /* namespace a */
 
 #endif /* __cplusplus */
-
-#endif /* !fs_h */

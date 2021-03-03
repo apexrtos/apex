@@ -1,5 +1,4 @@
-#ifndef dev_usb_setup_request_h
-#define dev_usb_setup_request_h
+#pragma once
 
 /*
  * USB setup request
@@ -145,5 +144,3 @@ configuration(const setup_request &s)
 }
 
 }
-
-#endif

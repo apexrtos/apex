@@ -1,5 +1,4 @@
-#ifndef circular_buffer_h
-#define circular_buffer_h
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -741,5 +740,3 @@ using circular_buffer_wrapper = cb_impl__<T, S, cb_wrap__<T, S>>;
  */
 template<typename T, size_t N, typename S = size_t>
 using circular_buffer_fixed = cb_impl__<T, S, cb_fixed__<T, S, N>>;
-
-#endif

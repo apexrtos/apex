@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef thread_h
-#define thread_h
+#pragma once
 
 #include <conf/config.h>
 #include <context.h>
@@ -129,5 +128,3 @@ struct thread  *kthread_create(void (*)(void *), void *, int, const char *,
 } /* extern "C" */
 #undef noreturn
 #endif
-
-#endif /* !thread_h */

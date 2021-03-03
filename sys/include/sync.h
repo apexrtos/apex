@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef sync_h
-#define sync_h
+#pragma once
 
 #include <conf/config.h>
 #include <errno.h>
@@ -484,5 +483,3 @@ private:
 };
 
 #endif /* __cplusplus */
-
-#endif /* sync_h */

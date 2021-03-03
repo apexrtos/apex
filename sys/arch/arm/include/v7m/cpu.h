@@ -1,5 +1,4 @@
-#ifndef arm_v7m_cpu_h
-#define arm_v7m_cpu_h
+#pragma once
 
 /*
  * CONTROL register
@@ -428,5 +427,3 @@ static struct mpu *const MPU = (struct mpu*)0xe000ed90;
 #define RASR_NONE 0
 
 #endif /* !__ASSEMBLY__ */
-
-#endif /* !arm_v7m_cpu_h */

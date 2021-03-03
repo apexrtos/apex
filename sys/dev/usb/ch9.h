@@ -1,5 +1,4 @@
-#ifndef dev_usb_ch9_h
-#define dev_usb_ch9_h
+#pragma once
 
 /*
  * Definitions from Universal Serial Bus Specification Revision 2.0 Chapter 9:
@@ -220,5 +219,3 @@ struct interface_association_descriptor {
 static_assert(sizeof(interface_association_descriptor) == 8, "");
 
 }
-
-#endif

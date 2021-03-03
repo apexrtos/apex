@@ -1,5 +1,4 @@
-#ifndef dev_fsl_lpuart_h
-#define dev_fsl_lpuart_h
+#pragma once
 
 /*
  * Device driver for freescale LPUART generally found on imx processors
@@ -19,6 +18,4 @@ void fsl_lpuart_early_print(unsigned long base, const char *, size_t);
 
 #ifdef __cplusplus
 } /* extern "C" */
-#endif
-
 #endif

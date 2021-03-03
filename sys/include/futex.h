@@ -1,5 +1,4 @@
-#ifndef futex_h
-#define futex_h
+#pragma once
 
 struct task;
 
@@ -42,5 +41,3 @@ void futexes_destroy(struct futexes *);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* futex_h */

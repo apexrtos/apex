@@ -1,5 +1,4 @@
-#ifndef proc_h
-#define proc_h
+#pragma once
 
 #include <types.h>
 
@@ -25,5 +24,3 @@ int	     sc_tgkill(pid_t, int, int);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* !proc_h */

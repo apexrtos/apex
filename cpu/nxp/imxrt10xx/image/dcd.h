@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_dcd_h
-#define imxrt10xx_dcd_h
+#pragma once
 
 #include <stdint.h>
 
@@ -26,5 +25,3 @@ struct dcd_command {
 
 #define DCD_CHECK_DATA_TAG 0xcf
 #define DCD_CHECK_DATA_PARAM_ANY_SET32 0x1c
-
-#endif

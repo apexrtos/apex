@@ -1,5 +1,4 @@
-#ifndef dev_mmc_desc_h
-#define dev_mmc_desc_h
+#pragma once
 
 /*
  * Generic SD/MMC support
@@ -43,6 +42,4 @@ struct mmc_desc {
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

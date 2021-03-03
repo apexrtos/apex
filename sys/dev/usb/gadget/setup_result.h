@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_setup_result_h
-#define dev_usb_gadget_setup_result_h
+#pragma once
 
 namespace usb::gadget {
 
@@ -31,5 +30,3 @@ enum class setup_result {
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef dev_gpio_controller_h
-#define dev_gpio_controller_h
+#pragma once
 
 /*
  * Generic GPIO Controller
@@ -59,5 +58,3 @@ public:
 };
 
 }
-
-#endif

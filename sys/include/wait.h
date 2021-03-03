@@ -1,5 +1,4 @@
-#ifndef wait_h
-#define wait_h
+#pragma once
 
 #include <assert.h>
 #include <sch.h>
@@ -219,7 +218,5 @@ wait_event_lock(event &e, auto &lock, auto condition)
 	sig_restore(&__sig_mask); \
 	__r; \
 })
-
-#endif
 
 #endif

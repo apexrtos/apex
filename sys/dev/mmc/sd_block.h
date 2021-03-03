@@ -1,5 +1,4 @@
-#ifndef dev_mmc_sd_block_h
-#define dev_mmc_sd_block_h
+#pragma once
 
 /*
  * SD Card Block Device
@@ -32,5 +31,3 @@ private:
 };
 
 }
-
-#endif

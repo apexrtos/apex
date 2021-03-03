@@ -1,5 +1,4 @@
-#ifndef dev_block_device_h
-#define dev_block_device_h
+#pragma once
 
 /*
  * Generic Block Device
@@ -49,5 +48,3 @@ private:
 };
 
 }
-
-#endif

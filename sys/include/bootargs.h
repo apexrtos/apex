@@ -1,5 +1,4 @@
-#ifndef bootargs_h
-#define bootargs_h
+#pragma once
 
 #include <sys/include/types.h>
 
@@ -12,5 +11,3 @@ struct bootargs {
 	long machdep0;		/* machine dependent argument 0 */
 	long machdep1;		/* machine dependent argument 1 */
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef dev_mmc_mmc_h
-#define dev_mmc_mmc_h
+#pragma once
 
 /*
  * MMC support
@@ -475,5 +474,3 @@ int trim(host *, size_t start_lba, size_t end_lba);
 constexpr unsigned tuning_cmd_index = 21;
 
 }
-
-#endif

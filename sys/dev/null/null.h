@@ -1,10 +1,7 @@
-#ifndef dev_null_h
-#define dev_null_h
+#pragma once
 
 /*
  * /dev/null
  */
 
 void null_init(void);
-
-#endif

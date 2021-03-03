@@ -1,5 +1,4 @@
-#ifndef exec_h
-#define exec_h
+#pragma once
 
 struct task;
 struct thread;
@@ -20,5 +19,3 @@ int sc_execve(const char *path, const char *const argv[],
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-
-#endif /* !exec_h */

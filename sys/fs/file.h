@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef file_h
-#define file_h
+#pragma once
 
 #include <sys/types.h>
 
@@ -44,5 +43,3 @@ struct file {
 	void		*f_data;	/* per-handle data for drivers */
 	struct vnode	*f_vnode;	/* vnode */
 };
-
-#endif /* !file_h */

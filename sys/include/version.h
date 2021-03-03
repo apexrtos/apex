@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef version_h
-#define version_h
+#pragma once
 
 #include <conf/config.h>
 
@@ -36,5 +35,3 @@
 #define VERSION_MINOR	1
 #define VERSION_PATCH	0
 #define VERSION_STRING	"0.1.0"
-
-#endif /* !version_h */

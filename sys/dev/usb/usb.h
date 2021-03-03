@@ -1,5 +1,4 @@
-#ifndef dev_usb_usb_h
-#define dev_usb_usb_h
+#pragma once
 
 namespace usb {
 
@@ -60,5 +59,3 @@ interrupt_max_packet_len(const Speed spd)
 }
 
 }
-
-#endif

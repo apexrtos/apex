@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_device_h
-#define dev_usb_gadget_device_h
+#pragma once
 
 /*
  * Abstract USB Device
@@ -73,5 +72,3 @@ private:
 };
 
 }
-
-#endif

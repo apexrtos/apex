@@ -1,5 +1,4 @@
-#ifndef access_h
-#define access_h
+#pragma once
 
 #include <types.h>
 
@@ -63,5 +62,3 @@ std::string_view u_string(const char *, size_t);
 inline constexpr a::u_access u_access_lock;
 
 #endif
-
-#endif /* access_h */

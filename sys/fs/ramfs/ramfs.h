@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef ramfs_h
-#define ramfs_h
+#pragma once
 
 #include <sys/types.h>
 
@@ -50,5 +49,3 @@ struct ramfs_node {
 
 struct ramfs_node *ramfs_allocate_node(const char *, size_t, mode_t);
 extern const struct vnops ramfs_vnops;
-
-#endif /* !ramfs_h */

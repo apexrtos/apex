@@ -1,5 +1,4 @@
-#ifndef dev_mmc_host_h
-#define dev_mmc_host_h
+#pragma once
 
 /*
  * Generic MMC/SD Host Controller
@@ -127,5 +126,3 @@ public:
 };
 
 }
-
-#endif

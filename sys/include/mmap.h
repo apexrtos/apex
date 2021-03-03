@@ -1,5 +1,4 @@
-#ifndef mmap_h
-#define mmap_h
+#pragma once
 
 #include <types.h>
 
@@ -28,5 +27,3 @@ void   *sc_brk(void *addr);
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-
-#endif /* mmap_h */

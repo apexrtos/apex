@@ -1,5 +1,4 @@
-#ifndef dev_mmc_sd_card_h
-#define dev_mmc_sd_card_h
+#pragma once
 
 /*
  * SD Card Support
@@ -44,5 +43,3 @@ private:
 };
 
 }
-
-#endif

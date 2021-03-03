@@ -1,5 +1,4 @@
-#ifndef arm_v7m_asm_h
-#define arm_v7m_asm_h
+#pragma once
 
 /*
  * System Control Space Base Address
@@ -94,5 +93,3 @@
 #define A_DCCIMVAC  0xe000ef70  /* D-cache clean and invalidate by MVA to PoC */
 #define A_DCCISW    0xe000ef74  /* D-cache clean and invalidate by set-way */
 #define A_BPIALL    0xe000ef78  /* Branch predictor invalidate all */
-
-#endif

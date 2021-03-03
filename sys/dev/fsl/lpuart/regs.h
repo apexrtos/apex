@@ -1,5 +1,4 @@
-#ifndef dev_nxp_imxrt_lpuart_regs_h
-#define dev_nxp_imxrt_lpuart_regs_h
+#pragma once
 
 #include <assert.h>
 #include <endian.h>
@@ -141,5 +140,3 @@ struct lpuart_regs {
 };
 static_assert(sizeof(struct lpuart_regs) == 0x30, "");
 static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
-
-#endif

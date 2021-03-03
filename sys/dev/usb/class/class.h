@@ -1,5 +1,4 @@
-#ifndef dev_usb_class_class_h
-#define dev_usb_class_class_h
+#pragma once
 
 #include <cstdint>
 
@@ -33,5 +32,3 @@ enum class Class : uint8_t {
 };
 
 }
-
-#endif

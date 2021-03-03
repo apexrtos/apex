@@ -1,5 +1,4 @@
-#ifndef page_h
-#define page_h
+#pragma once
 
 #include <types.h>
 
@@ -59,5 +58,3 @@ private:
 } /* namespace std */
 
 #endif
-
-#endif /* !page_h */

@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_descriptors_h
-#define dev_usb_gadget_descriptors_h
+#pragma once
 
 /*
  * Convenience functions for building USB descriptors
@@ -87,5 +86,3 @@ interrupt_endpoint_descriptor(const size_t endpoint, const ch9::Direction dir,
 }
 
 };
-
-#endif

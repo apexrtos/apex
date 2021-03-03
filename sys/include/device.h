@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef device_h
-#define device_h
+#pragma once
 
 #include <list.h>
 #include <stdbool.h>
@@ -84,5 +83,3 @@ void		device_destroy(struct device *);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* !device_h */

@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_dcdc_h
-#define imxrt10xx_dcdc_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -87,4 +86,3 @@ static_assert(sizeof(struct dcdc) == 0x10, "");
 
 static struct dcdc *const DCDC = (struct dcdc*)0x40080000;
 
-#endif

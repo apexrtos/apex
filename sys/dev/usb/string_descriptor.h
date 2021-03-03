@@ -1,5 +1,4 @@
-#ifndef dev_usb_string_descriptor_h
-#define dev_usb_string_descriptor_h
+#pragma once
 
 /*
  * USB string descriptor
@@ -35,5 +34,3 @@ private:
 bool operator==(const string_descriptor &, const string_descriptor &);
 
 }
-
-#endif

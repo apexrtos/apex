@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef list_h
-#define list_h
+#pragma once
 
 struct list {
 	struct list *next;
@@ -100,5 +99,3 @@ list_remove(struct list *node)
 	     &ptr->member != (head);					\
 	     ptr = tmp,							\
 		     tmp = list_entry(tmp->member.next, typeof(*tmp), member))
-
-#endif /* !list_h */

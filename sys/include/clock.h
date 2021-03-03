@@ -1,5 +1,4 @@
-#ifndef clock_h
-#define clock_h
+#pragma once
 
 /*
  * Generic interface to clock drivers
@@ -13,6 +12,4 @@ unsigned long clock_ns_since_tick(void);
 
 #ifdef __cplusplus
 } /* extern "C" */
-#endif
-
 #endif

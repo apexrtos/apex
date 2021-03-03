@@ -1,8 +1,8 @@
+#pragma once
+
 /*
  * sig - signal handling, generation and delivery
  */
-#ifndef sig_h
-#define sig_h
 
 #include <stdbool.h>
 #include <types.h>
@@ -40,5 +40,3 @@ int	sc_sigreturn(void);
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-
-#endif /* !sig_h */

@@ -1,5 +1,4 @@
-#ifndef fs_util_h
-#define fs_util_h
+#pragma once
 
 #include <sys/uio.h>
 #include <types.h>
@@ -53,5 +52,3 @@ for_each_iov(const iovec *iov, size_t count, off_t offset, Fn &&fn)
 	return total > 0 ? total : res;
 }
 #endif
-
-#endif /* fs_util_h */

@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef kmem_h
-#define kmem_h
+#pragma once
 
 #include <types.h>
 
@@ -47,5 +46,3 @@ void	kmem_dump(void);
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-
-#endif /* !kmem_h */

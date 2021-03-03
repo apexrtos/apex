@@ -1,5 +1,4 @@
-#ifndef dev_mmc_bitfield_h
-#define dev_mmc_bitfield_h
+#pragma once
 
 namespace mmc {
 
@@ -33,5 +32,3 @@ bitfield<E>::is_set(E v) const
 }
 
 }
-
-#endif

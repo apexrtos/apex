@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_configuration_h
-#define dev_usb_gadget_configuration_h
+#pragma once
 
 /*
  * USB Composite Device Configuration
@@ -50,5 +49,3 @@ private:
 };
 
 }
-
-#endif

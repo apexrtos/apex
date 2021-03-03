@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_ioctl_h
-#define dev_usb_gadget_ioctl_h
+#pragma once
 
 #include <stdint.h>
 #include <sys/ioctl.h>
@@ -70,5 +69,3 @@ struct usbg_ioctl_add_function {
  *  7: Failed
  */
 #define USBG_IOC_STATE _IOW('u', 5, const char *)
-
-#endif

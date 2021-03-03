@@ -1,5 +1,4 @@
-#ifndef compiler_h
-#define compiler_h
+#pragma once
 
 #include <stdint.h>
 
@@ -155,5 +154,3 @@ constexpr size_t ARRAY_SIZE(const T(&)[N])
  */
 #define weak_alias(old, new) \
 	extern __typeof(old) new __attribute__((weak, alias(#old))) ATTR_COPY(old)
-
-#endif

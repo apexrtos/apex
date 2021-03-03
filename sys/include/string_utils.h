@@ -1,5 +1,4 @@
-#ifndef string_utils_h
-#define string_utils_h
+#pragma once
 
 #include <functional>
 #include <string>
@@ -30,5 +29,3 @@ int parse_options(std::string_view s,
  * format a size as human readable
  */
 char *hr_size_fmt(uintmax_t sz, char *buf, size_t bufsz);
-
-#endif

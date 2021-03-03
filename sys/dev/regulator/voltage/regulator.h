@@ -1,5 +1,4 @@
-#ifndef dev_regulator_voltage_regulator_h
-#define dev_regulator_voltage_regulator_h
+#pragma once
 
 /*
  * Generic Voltage Regulator
@@ -36,5 +35,3 @@ public:
 };
 
 }
-
-#endif

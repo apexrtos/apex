@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef boot_h
-#define boot_h
+#pragma once
 
 #include <conf/config.h>
 #include <machine.h>
@@ -58,6 +57,3 @@ void debug_puts(const char *);
 void debug_printf(const char *, ...)
 	__attribute__((format (printf, 1, 2)));
 noreturn void panic(const char *);
-
-#endif /* !boot_h */
-

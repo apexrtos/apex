@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_function_cdc_acm_init_h
-#define dev_usb_gadget_function_cdc_acm_init_h
+#pragma once
 
 /*
  * USB Gadget CDC ACM (Abstract Control Model) Function
@@ -13,6 +12,4 @@ void usb_gadget_function_cdc_acm_init();
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

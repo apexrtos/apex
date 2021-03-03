@@ -1,5 +1,4 @@
-#ifndef dev_tty_buffer_queue_h
-#define dev_tty_buffer_queue_h
+#pragma once
 
 #include <cassert>
 #include <circular_buffer.h>
@@ -375,5 +374,3 @@ private:
 	const size_t bufsiz_;
 	std::unique_ptr<phys> pages_;	/* pages for receive buffers */
 };
-
-#endif

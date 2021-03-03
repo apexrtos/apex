@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef timer_h
-#define timer_h
+#pragma once
 
 #include <event.h>
 #include <list.h>
@@ -86,5 +85,3 @@ int	      sc_setitimer(int, const struct k_itimerval *, struct k_itimerval *);
 #if defined(__cplusplus)
 }
 #endif
-
-#endif /* !timer_h */

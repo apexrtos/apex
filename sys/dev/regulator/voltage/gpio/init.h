@@ -1,5 +1,4 @@
-#ifndef dev_regulator_voltage_gpio_init_h
-#define dev_regulator_voltage_gpio_init_h
+#pragma once
 
 /*
  * Driver for GPIO voltage regulator
@@ -25,6 +24,4 @@ void regulator_voltage_gpio_init(const struct regulator_voltage_gpio_desc *);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

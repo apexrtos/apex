@@ -1,5 +1,4 @@
-#ifndef usb_class_cdc_pstn_h
-#define usb_class_cdc_pstn_h
+#pragma once
 
 #include <dev/usb/class/cdc.h>
 
@@ -85,5 +84,3 @@ struct line_coding {
 } __attribute__((packed));
 
 }
-
-#endif

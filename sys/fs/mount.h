@@ -1,5 +1,4 @@
-#ifndef mount_h
-#define mount_h
+#pragma once
 
 #include <list.h>
 #include <sys/mount.h>
@@ -72,5 +71,3 @@ struct vfsops {
  */
 int vfs_nullop(void);
 int vfs_einval(void);
-
-#endif /* !mount_h */

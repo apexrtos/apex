@@ -1,5 +1,4 @@
-#ifndef dev_mmc_device_h
-#define dev_mmc_device_h
+#pragma once
 
 /*
  * Generic MMC/SD Device
@@ -34,5 +33,3 @@ private:
 };
 
 }
-
-#endif

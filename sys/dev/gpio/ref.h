@@ -1,5 +1,4 @@
-#ifndef dev_gpio_ref_h
-#define dev_gpio_ref_h
+#pragma once
 
 /*
  * GPIO Pin Reference
@@ -38,5 +37,3 @@ public:
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_src_h
-#define imxrt10xx_src_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -44,5 +43,3 @@ struct src {
 static_assert(sizeof(struct src) == 0x48, "");
 
 static struct src *const SRC = (struct src*)0x400f8000;
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_composite_h
-#define dev_usb_gadget_composite_h
+#pragma once
 
 /*
  * USB Composite Device
@@ -52,5 +51,3 @@ private:
 };
 
 }
-
-#endif

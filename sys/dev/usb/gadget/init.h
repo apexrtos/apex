@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_init_h
-#define dev_usb_gadget_init_h
+#pragma once
 
 /*
  * USB gadget userspace interface /dev/usbgadget
@@ -13,6 +12,4 @@ void usb_gadget_init();
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

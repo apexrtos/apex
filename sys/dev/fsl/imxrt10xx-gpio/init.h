@@ -1,5 +1,4 @@
-#ifndef dev_fsl_imxrt10xx_gpio_init_h
-#define dev_fsl_imxrt10xx_gpio_init_h
+#pragma once
 
 #include <dev/gpio/gpio.h>
 
@@ -22,6 +21,4 @@ void fsl_imxrt10xx_gpio_init(const struct fsl_imxrt10xx_gpio_desc *);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

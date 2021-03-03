@@ -1,5 +1,4 @@
-#ifndef ksigaction_h
-#define ksigaction_h
+#pragma once
 
 #include <assert.h>
 #include <types.h>
@@ -13,5 +12,3 @@ struct k_sigaction {
 };
 
 static_assert(sizeof(k_sigset_t) == sizeof(unsigned) * 2, "");
-
-#endif /* !ksigaction_h */

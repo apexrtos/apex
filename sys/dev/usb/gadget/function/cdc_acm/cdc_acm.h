@@ -1,5 +1,4 @@
-#ifndef dev_usb_gadget_function_cdc_acm_h
-#define dev_usb_gadget_function_cdc_acm_h
+#pragma once
 
 /*
  * USB Gadget CDC ACM (Abstract Control Model) Function
@@ -54,5 +53,3 @@ private:
 };
 
 }
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_pads_h
-#define imxrt10xx_pads_h
+#pragma once
 
 #include <assert.h>
 
@@ -164,5 +163,3 @@ enum {
 	PAD_XTALO,
 };
 static_assert(PAD_GPIO_SD_B1_11 == 123, "");
-
-#endif

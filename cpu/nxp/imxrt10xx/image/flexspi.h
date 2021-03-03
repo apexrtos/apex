@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_flexspi_h
-#define imxrt10xx_flexspi_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -143,5 +142,3 @@ struct flexspi_boot_nor {
 	uint32_t : 32;
 };
 static_assert(sizeof(struct flexspi_boot_nor) == 512, "");
-
-#endif

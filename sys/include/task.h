@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef task_h
-#define task_h
+#pragma once
 
 #include <futex.h>
 #include <ksigaction.h>
@@ -122,5 +121,3 @@ void		task_init(void);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* !task_h */

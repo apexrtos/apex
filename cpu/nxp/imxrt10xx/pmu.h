@@ -1,5 +1,4 @@
-#ifndef imxrt10xx_pmu_h
-#define imxrt10xx_pmu_h
+#pragma once
 
 #include <assert.h>
 #include <stdint.h>
@@ -56,5 +55,3 @@ struct pmu {
 static_assert(sizeof(struct pmu) == 0x70, "");
 
 static struct pmu *const PMU = (struct pmu*)0x400d8110;
-
-#endif

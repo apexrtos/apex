@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef sch_h
-#define sch_h
+#pragma once
 
 #include <queue.h>
 #include <stdbool.h>
@@ -86,5 +85,3 @@ void	        sch_init(void);
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif /* __cplusplus */
-
-#endif /* !sch_h */

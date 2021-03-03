@@ -27,8 +27,7 @@
  * SUCH DAMAGE.
  */
 
-#ifndef irq_h
-#define irq_h
+#pragma once
 
 #include <kernel.h>
 #include <types.h>
@@ -58,5 +57,3 @@ void	    irq_init(void);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#endif /* !irq_h */
