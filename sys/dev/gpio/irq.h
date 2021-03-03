@@ -4,14 +4,6 @@
  * GPIO IRQ Modes
  */
 
-enum GPIO_IRQ_MODE {
-	GPIO_IRQ_MODE_EDGE_RISING,
-	GPIO_IRQ_MODE_EDGE_FALLING,
-	GPIO_IRQ_MODE_EDGE_BOTH,
-	GPIO_IRQ_MODE_HIGH,
-	GPIO_IRQ_MODE_LOW,
-};
-
 #ifdef __cplusplus
 namespace gpio {
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <dev/gpio/gpio.h>
-
 /*
  * Driver for GPIO controller on IMXRT10xx processors
  */
