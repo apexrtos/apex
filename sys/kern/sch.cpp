@@ -726,7 +726,7 @@ sch_testexit()
  *
  * Interrupts still run while preemption is disabled.
  */
-inline void
+void
 sch_lock()
 {
 	write_once(&locks, locks + 1);
@@ -740,7 +740,7 @@ sch_lock()
  * If nobody locks the scheduler anymore, it checks the
  * rescheduling flag and kick the scheduler if it's required.
  */
-inline void
+void
 sch_unlock()
 {
 	assert(locks > 0);

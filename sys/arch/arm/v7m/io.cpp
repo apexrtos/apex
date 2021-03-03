@@ -6,7 +6,7 @@
 /*
  * Complete all memory accesses before starting next memory access
  */
-inline void
+void
 memory_barrier()
 {
 	asm volatile("dmb" ::: "memory");
@@ -15,7 +15,7 @@ memory_barrier()
 /*
  * Complete all memory reads before starting next memory access
  */
-inline void
+void
 read_memory_barrier()
 {
 	asm volatile("dmb" ::: "memory");
@@ -24,7 +24,7 @@ read_memory_barrier()
 /*
  * Complete all memory writes before starting next memory access
  */
-inline void
+void
 write_memory_barrier()
 {
 	asm volatile("dmb" ::: "memory");
@@ -33,7 +33,7 @@ write_memory_barrier()
 /*
  * Read uint8_t from memory location p
  */
-inline uint8_t
+uint8_t
 mmio_read8(const void *p)
 {
 	uint8_t v;
@@ -44,7 +44,7 @@ mmio_read8(const void *p)
 /*
  * Read uint16_t from memory location p
  */
-inline uint16_t
+uint16_t
 mmio_read16(const void *p)
 {
 	uint16_t v;
@@ -55,7 +55,7 @@ mmio_read16(const void *p)
 /*
  * Read uint32_t from memory location p
  */
-inline uint32_t
+uint32_t
 mmio_read32(const void *p)
 {
 	uint32_t v;
@@ -66,7 +66,7 @@ mmio_read32(const void *p)
 /*
  * Write uint8_t to memory location p
  */
-inline void
+void
 mmio_write8(void *p, uint8_t v)
 {
 	asm volatile("strb %1, %0" : "=m"(*(uint8_t *)p) : "lh"(v));
@@ -75,7 +75,7 @@ mmio_write8(void *p, uint8_t v)
 /*
  * Write uint16_t to memory location p
  */
-inline void
+void
 mmio_write16(void *p, uint16_t v)
 {
 	asm volatile("strh %1, %0" : "=m"(*(uint16_t *)p) : "lh"(v));
@@ -84,7 +84,7 @@ mmio_write16(void *p, uint16_t v)
 /*
  * Write uint32_t to memory location p
  */
-inline void
+void
 mmio_write32(void *p, uint32_t v)
 {
 	asm volatile("str %1, %0" : "=m"(*(uint32_t *)p) : "lh"(v));

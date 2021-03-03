@@ -73,7 +73,7 @@ read_once(const T *p)
  */
 #if defined(__cplusplus)
 template<typename T>
-inline T
+T
 write_once(T *p, const T &v)
 {
 	static_assert(std::is_trivially_copyable_v<T>);

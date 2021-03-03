@@ -167,7 +167,7 @@ irq_detach(struct irq *irq)
  * All H/W interrupts are masked off.
  * Current interrupt state is returned and must be passed to irq_restore.
  */
-inline int
+int
 irq_disable()
 {
 	int s;
@@ -181,7 +181,7 @@ irq_disable()
  *
  * Resture interrupt state to original state before irq_disable call.
  */
-inline void
+void
 irq_restore(int s)
 {
 	interrupt_restore(s);

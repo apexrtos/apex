@@ -11,7 +11,7 @@
 
 #else
 
-inline void
+void
 spinlock_init(struct spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
@@ -19,7 +19,7 @@ spinlock_init(struct spinlock *s)
 #endif
 }
 
-inline void
+void
 spinlock_lock(struct spinlock *s)
 {
 	sch_lock();
@@ -31,7 +31,7 @@ spinlock_lock(struct spinlock *s)
 #endif
 }
 
-inline void
+void
 spinlock_unlock(struct spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
@@ -43,7 +43,7 @@ spinlock_unlock(struct spinlock *s)
 	sch_unlock();
 }
 
-inline int
+int
 spinlock_lock_irq_disable(struct spinlock *s)
 {
 	const int i = irq_disable();
@@ -55,7 +55,7 @@ spinlock_lock_irq_disable(struct spinlock *s)
 	return i;
 }
 
-inline void
+void
 spinlock_unlock_irq_restore(struct spinlock *s, int v)
 {
 #if defined(CONFIG_DEBUG)
@@ -65,7 +65,7 @@ spinlock_unlock_irq_restore(struct spinlock *s, int v)
 	irq_restore(v);
 }
 
-inline void
+void
 spinlock_assert_locked(const struct spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
