@@ -79,7 +79,7 @@ semaphore_wait_interruptible(struct semaphore *s)
 	int r;
 	struct private *p = (struct private *)s->storage;
 
-	if ((r = wait_event_interruptible(p->event, p->count > 0)) < 0)
+	if ((r = wait_event_interruptible(p->event, [p] { return p->count > 0; })) < 0)
 		return r;
 	--p->count;
 	assert(p->count >= 0);

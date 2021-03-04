@@ -510,7 +510,9 @@ kmsg_read(struct file *file, void *buf, size_t len, off_t offset)
 		rc = -EAGAIN;
 	else {
 		u_access_suspend();
-		rc = wait_event_interruptible(log_wait, (log_last_seq - kmsg->seq) >= 0);
+		rc = wait_event_interruptible(log_wait, [&] {
+			return (log_last_seq - kmsg->seq) >= 0;
+		});
 		int r = u_access_resume(buf, len, PROT_WRITE);
 		if (r < 0)
 			return r;

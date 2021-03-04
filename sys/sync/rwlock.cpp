@@ -23,7 +23,7 @@
 #include <wait.h>
 
 struct rwlock_private {
-	struct spinlock lock;
+	a::spinlock lock;
 	struct event event;
 	/*
 	 * state == 0, unlocked
@@ -42,7 +42,6 @@ void
 rwlock_init(struct rwlock *o)
 {
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
-	spinlock_init(&p->lock);
 	event_init(&p->event, "rwlock", ev_LOCK);
 	p->state = 0;
 }
@@ -62,22 +61,20 @@ rwlock_read_lock_s(struct rwlock *o, bool block_signals)
 	if (!block_signals && sig_unblocked_pending(thread_cur()))
 		return -EINTR;
 
-	spinlock_lock(&p->lock);
+	std::unique_lock l{p->lock};
 
 	/* state < 0 while writing */
+	auto cond = [p] { return p->state >= 0; };
 	if (block_signals)
-		err = wait_event_lock(p->event, p->state >= 0, &p->lock);
+		err = wait_event_lock(p->event, l, cond);
 	else
-		err = wait_event_interruptible_lock(p->event, p->state >= 0,
-						    &p->lock);
+		err = wait_event_interruptible_lock(p->event, l, cond);
 	if (!err) {
 		++p->state;
 #if defined(CONFIG_DEBUG)
 		++thread_cur()->rwlock_locks;
 #endif
 	}
-
-	spinlock_unlock(&p->lock);
 
 	return err;
 }
@@ -110,7 +107,7 @@ rwlock_read_unlock(struct rwlock *o)
 
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	spinlock_lock(&p->lock);
+	std::lock_guard l{p->lock};
 
 	assert(p->state > 0);
 
@@ -120,7 +117,6 @@ rwlock_read_unlock(struct rwlock *o)
 #if defined(CONFIG_DEBUG)
 	--thread_cur()->rwlock_locks;
 #endif
-	spinlock_unlock(&p->lock);
 }
 
 /*
@@ -131,11 +127,9 @@ rwlock_read_locked(struct rwlock *o)
 {
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	spinlock_lock(&p->lock);
+	std::lock_guard l{p->lock};
 
 	bool r =  p->state > 0;
-
-	spinlock_unlock(&p->lock);
 
 	return r;
 }
@@ -155,22 +149,20 @@ rwlock_write_lock_s(struct rwlock *o, bool block_signals)
 	if (!block_signals && sig_unblocked_pending(thread_cur()))
 		return -EINTR;
 
-	spinlock_lock(&p->lock);
+	std::unique_lock l{p->lock};
 
 	/* state == 0, no writers or readers */
+	auto cond = [p] { return p->state == 0; };
 	if (block_signals)
-		err = wait_event_lock(p->event, p->state == 0, &p->lock);
+		err = wait_event_lock(p->event, l, cond);
 	else
-		err = wait_event_interruptible_lock(p->event, p->state == 0,
-						    &p->lock);
+		err = wait_event_interruptible_lock(p->event, l, cond);
 	if (!err) {
 		--p->state;
 #if defined(CONFIG_DEBUG)
 		++thread_cur()->rwlock_locks;
 #endif
 	}
-
-	spinlock_unlock(&p->lock);
 
 	return err;
 }
@@ -197,7 +189,7 @@ rwlock_write_unlock(struct rwlock *o)
 
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	spinlock_lock(&p->lock);
+	std::lock_guard l{p->lock};
 
 	assert(p->state < 0);
 
@@ -207,7 +199,6 @@ rwlock_write_unlock(struct rwlock *o)
 #if defined(CONFIG_DEBUG)
 	--thread_cur()->rwlock_locks;
 #endif
-	spinlock_unlock(&p->lock);
 }
 
 /*
@@ -218,13 +209,9 @@ rwlock_write_locked(struct rwlock *o)
 {
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	spinlock_lock(&p->lock);
+	std::lock_guard l{p->lock};
 
-	bool r =  p->state < 0;
-
-	spinlock_unlock(&p->lock);
-
-	return r;
+	return p->state < 0;
 }
 
 /*
@@ -235,11 +222,7 @@ rwlock_locked(struct rwlock *o)
 {
 	struct rwlock_private *p = (struct rwlock_private *)o->storage;
 
-	spinlock_lock(&p->lock);
+	std::lock_guard l{p->lock};
 
-	bool r =  p->state != 0;
-
-	spinlock_unlock(&p->lock);
-
-	return r;
+	return p->state != 0;
 }
