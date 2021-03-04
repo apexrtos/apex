@@ -108,7 +108,9 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 			break;
 		sch_prepare_sleep(&t->thread_event, 0);
 		sch_unlock();
+		as_modify_end(task_cur()->as);
 		sch_continue_sleep();
+		as_modify_begin(task_cur()->as);
 		sch_lock();
 	}
 	sig_restore(&sig_mask);
