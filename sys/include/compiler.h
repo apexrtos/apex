@@ -2,9 +2,7 @@
 
 #include <stdint.h>
 
-#if defined(__cplusplus)
 #include <type_traits>
-#endif
 
 /*
  * Inform the compiler that it must not reorder.
@@ -18,7 +16,6 @@ compiler_barrier()
 /*
  * Ask the compiler to read a value.
  */
-#if defined(__cplusplus)
 template<typename T>
 inline T
 read_once(const T *p)
@@ -52,26 +49,10 @@ read_once(const T *p)
 
 	return tmp;
 }
-#else
-#define read_once(p) ({ \
-	typeof(*(p)) tmp; \
-	switch (sizeof(*(p))) { \
-	case 1 ... 8: \
-		tmp = *(const volatile typeof(*(p)) *)(p); \
-		break; \
-	default: \
-		compiler_barrier(); \
-		memcpy(&tmp, (p), sizeof(*(p))); \
-		compiler_barrier(); \
-	} \
-	tmp; \
-})
-#endif
 
 /*
  * Ask the compiler to write a value.
  */
-#if defined(__cplusplus)
 template<typename T>
 void
 write_once(T *p, const T &v)
@@ -101,44 +82,15 @@ write_once(T *p, const T &v)
 		compiler_barrier();
 	}
 }
-#else
-#define write_once(p, v) ({ \
-	typeof(*(p)) tmp; \
-	switch (sizeof(*(p))) { \
-	case 1 ... 8: \
-		*(volatile typeof(*(p)) *)(p) = v; \
-		break; \
-	default: \
-		tmp = v; \
-		compiler_barrier(); \
-		memcpy((p), &tmp, sizeof(*(p))); \
-		compiler_barrier(); \
-	} \
-})
-#endif
 
 /*
  * ARRAY_SIZE
  */
-#ifdef __cplusplus
 template<class T, size_t N>
 constexpr size_t ARRAY_SIZE(const T(&)[N])
 {
 	return N;
 }
-#else
-#define ARRAY_SIZE(arr) \
-    (sizeof(arr) / sizeof((arr)[0]) + sizeof(typeof(int[1 - 2 * \
-    !!__builtin_types_compatible_p(typeof(arr), typeof(&arr[0]))])) * 0)
-#endif
-
-/*
- * Optimiser hints.
- */
-#ifndef __cplusplus
-#define likely(x) __builtin_expect((!!(x)),1)
-#define unlikely(x) __builtin_expect((!!(x)),0)
-#endif
 
 /*
  * Copy symbol attributes (GCC 9+)

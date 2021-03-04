@@ -32,10 +32,7 @@
 #include <conf/config.h>
 #include <errno.h>
 #include <types.h>
-
-#if defined(__cplusplus)
 #include <mutex>
-#endif
 
 struct list;
 struct thread;

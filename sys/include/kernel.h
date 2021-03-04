@@ -94,59 +94,6 @@ virt_to_phys(const void *va)
  */
 #define ALIGNED(p, t) (!((uintptr_t)(p) & (alignof(t) - 1)))
 
-#ifndef __cplusplus
-
-/*
- * Calculate integer logarithm of an integer
- */
-static inline unsigned
-floor_log2(unsigned long n)
-{
-	assert(n != 0);
-	return sizeof(n) * 8 - __builtin_clzl(n) - 1;
-}
-
-static inline unsigned
-ceil_log2(unsigned long n)
-{
-	return floor_log2(n) + (n & (n - 1) ? 1 : 0);
-}
-
-/*
- * Integer division to closest integer
- */
-static inline long
-div_closest(long n, long d)
-{
-	if ((n > 0) == (d > 0))
-		return (n + d / 2) / d;
-	else
-		return (n - d / 2) / d;
-}
-
-/*
- * Integer division to ceiling of quotient
- */
-static inline long
-div_ceil(long n, long d)
-{
-	if (n % d)
-		return n / d + 1;
-	else
-		return n / d;
-}
-
-/*
- * Determine if integer is a non-zero power of 2.
- */
-static inline bool
-is_pow2(unsigned long v)
-{
-	return v && !(v & (v - 1));
-}
-
-#else
-
 /*
  * Count the number of leading zeroes in n
  */
@@ -219,5 +166,3 @@ is_pow2(T v)
 {
 	return v && !(v & (v - 1));
 }
-
-#endif

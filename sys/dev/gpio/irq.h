@@ -4,7 +4,6 @@
  * GPIO IRQ Modes
  */
 
-#ifdef __cplusplus
 namespace gpio {
 
 enum class irq_mode {
@@ -16,4 +15,3 @@ enum class irq_mode {
 };
 
 }
-#endif
