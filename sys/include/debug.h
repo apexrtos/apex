@@ -37,5 +37,4 @@ int		syslog_vprintf(int, const char *, va_list);
 void		syslog_output(void (*)());
 int		syslog_format(char *, size_t);
 void		syslog_panic();
-int		sc_syslog(int, char *, int);
 void		kmsg_init();

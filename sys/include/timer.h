@@ -72,9 +72,3 @@ int	      timer_realtime_set(uint_fast64_t);
 uint_fast64_t timer_realtime();
 uint_fast64_t timer_realtime_coarse();
 void	      timer_init();
-
-/*
- * Syscalls
- */
-int	      sc_getitimer(int, struct k_itimerval *);
-int	      sc_setitimer(int, const struct k_itimerval *, struct k_itimerval *);
