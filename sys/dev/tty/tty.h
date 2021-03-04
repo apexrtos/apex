@@ -43,9 +43,6 @@ struct termios;
 struct tty;
 typedef unsigned int tcflag_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 typedef int (*tty_tproc)(struct tty *, tcflag_t);
 typedef void (*tty_oproc)(struct tty *);
@@ -69,6 +66,3 @@ bool	    tty_tx_empty(struct tty *);
 void	    tty_tx_advance(struct tty *, size_t);
 void	    tty_tx_complete(struct tty *);
 
-#ifdef __cplusplus
-}
-#endif

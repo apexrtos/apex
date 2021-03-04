@@ -4,10 +4,6 @@
 
 struct as;
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 /*
  * Kernel interface
  */
@@ -23,7 +19,3 @@ int	sc_munmap(void *, size_t);
 int     sc_mprotect(void *, size_t, int);
 int	sc_madvise(void *, size_t, int);
 void   *sc_brk(void *addr);
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif

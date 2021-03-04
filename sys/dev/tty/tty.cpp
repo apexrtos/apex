@@ -1252,8 +1252,6 @@ tty_ioctl(file *f, u_long cmd, void *data)
 
 }
 
-extern "C" {
-
 /*
  * tty_create - create a tty device
  *
@@ -1478,6 +1476,4 @@ void
 tty_tx_complete(tty *t)
 {
 	t->tx_complete();
-}
-
 }

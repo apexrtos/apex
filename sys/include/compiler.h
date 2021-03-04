@@ -153,4 +153,4 @@ constexpr size_t ARRAY_SIZE(const T(&)[N])
  * Create create a weak alias (from musl).
  */
 #define weak_alias(old, new) \
-	extern __typeof(old) new __attribute__((weak, alias(#old))) ATTR_COPY(old)
+	extern "C" __typeof(old) new __attribute__((weak, alias(#old))) ATTR_COPY(old)

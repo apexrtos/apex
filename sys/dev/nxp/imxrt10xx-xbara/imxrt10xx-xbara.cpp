@@ -70,7 +70,7 @@ xbara::set_connection(output out, input in)
 /*
  * nxp_imxrt10xx_xbara_init
  */
-extern "C" void
+void
 nxp_imxrt10xx_xbara_init(const nxp_imxrt10xx_xbara_desc *d)
 {
 	dbg("XBARA(%p) Init\n", (void*)d->base);

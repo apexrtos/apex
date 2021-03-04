@@ -8,10 +8,6 @@
  *
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct arm_mps2_uart_desc {
 	const char *name;
 	unsigned long base;
@@ -22,7 +18,3 @@ struct arm_mps2_uart_desc {
 };
 
 void arm_mps2_uart_init(const struct arm_mps2_uart_desc *);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

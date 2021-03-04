@@ -61,7 +61,7 @@ derived_exception(int sig)
 /*
  * exc_Unhandled
  */
-void
+extern "C" void
 exc_Unhandled(struct exception_frame_basic *e, bool handler_mode, int exc)
 {
 	switch (exc) {
@@ -81,6 +81,7 @@ exc_Unhandled(struct exception_frame_basic *e, bool handler_mode, int exc)
 /*
  * exc_MemManage
  */
+extern "C"
 #if defined(CONFIG_MPU)
 __fast_text
 #endif
@@ -118,7 +119,7 @@ exc_MemManage(struct exception_frame_basic *e, bool handler_mode, int exc)
 /*
  * exc_BusFault
  */
-void
+extern "C" void
 exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 {
 	dump_exception(e, handler_mode, exc);
@@ -142,7 +143,7 @@ exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 /*
  * exc_UsageFault
  */
-void
+extern "C" void
 exc_UsageFault(struct exception_frame_basic *e, bool handler_mode, int exc)
 {
 	const union scb_cfsr_ufsr ufsr = read16(&SCB->CFSR.UFSR);
@@ -179,7 +180,7 @@ exc_UsageFault(struct exception_frame_basic *e, bool handler_mode, int exc)
  *
  * If the systick driver is in use it will handle exc_SysTick.
  */
-void
+extern "C" void
 unhandled_SysTick()
 {
 	panic("Unhandled SysTick");
@@ -189,7 +190,7 @@ weak_alias(unhandled_SysTick, exc_SysTick);
 /*
  * exc_NVIC
  */
-__fast_text void
+extern "C" __fast_text void
 exc_NVIC()
 {
 	int ipsr;

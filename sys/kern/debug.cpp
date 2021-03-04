@@ -141,7 +141,7 @@ backtrace_thread(struct thread *th)
 /*
  * __assert_fail - print assertion message and halt system
  */
-_Noreturn void
+extern "C" _Noreturn void
 __assert_fail(const char *expr, const char *file, int line, const char *func)
 {
 	interrupt_disable();

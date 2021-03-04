@@ -15,7 +15,7 @@
 /*
  * atomic_load
  */
-uint64_t
+extern "C" uint64_t
 __atomic_load_8(const volatile void *p, int m)
 {
 	/* ldrd is restarted on interrupt */
@@ -31,7 +31,7 @@ __atomic_load_8(const volatile void *p, int m)
 }
 
 #pragma redefine_extname atomic_load __atomic_load
-void
+extern "C" void
 atomic_load(size_t len, const void *p, void *r, int m)
 {
 	const int s = irq_disable();
@@ -42,7 +42,7 @@ atomic_load(size_t len, const void *p, void *r, int m)
 /*
  * atomic_store
  */
-void
+extern "C" void
 __atomic_store_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -59,7 +59,7 @@ __atomic_store_8(volatile void *p, uint64_t v, int m)
 }
 
 #pragma redefine_extname atomic_store __atomic_store
-void
+extern "C" void
 atomic_store(size_t len, void *p, const void *v, int m)
 {
 	const int s = irq_disable();
@@ -70,7 +70,7 @@ atomic_store(size_t len, void *p, const void *v, int m)
 /*
  * atomic_exchange
  */
-uint64_t
+extern "C" uint64_t
 __atomic_exchange_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -90,7 +90,7 @@ __atomic_exchange_8(volatile void *p, uint64_t v, int m)
 }
 
 #pragma redefine_extname atomic_exchange __atomic_exchange
-void
+extern "C" void
 atomic_exchange(size_t len, void *p, const void *v, void *r, int m)
 {
 	const int s = irq_disable();
@@ -102,7 +102,7 @@ atomic_exchange(size_t len, void *p, const void *v, void *r, int m)
 /*
  * atomic_compare_exchange
  */
-bool
+extern "C" bool
 __atomic_compare_exchange_8(volatile void *p, const void *e, uint64_t d,
     bool weak, int sm, int fm)
 {
@@ -117,7 +117,7 @@ __atomic_compare_exchange_8(volatile void *p, const void *e, uint64_t d,
 }
 
 #pragma redefine_extname atomic_compare_exchange __atomic_compare_exchange
-bool
+extern "C" bool
 atomic_compare_exchange(size_t len, void *p, const void *e, void *d,
     int sm, int fm)
 {
@@ -132,7 +132,7 @@ atomic_compare_exchange(size_t len, void *p, const void *e, void *d,
 /*
  * atomic_add_fetch
  */
-uint64_t
+extern "C" uint64_t
 __atomic_add_fetch_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -146,7 +146,7 @@ __atomic_add_fetch_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_sub_fetch
  */
-uint64_t
+extern "C" uint64_t
 __atomic_sub_fetch_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -160,7 +160,7 @@ __atomic_sub_fetch_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_and_fetch
  */
-uint64_t
+extern "C" uint64_t
 __atomic_and_fetch_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -174,7 +174,7 @@ __atomic_and_fetch_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_xor_fetch
  */
-uint64_t
+extern "C" uint64_t
 __atomic_xor_fetch_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -188,7 +188,7 @@ __atomic_xor_fetch_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_or_fetch
  */
-uint64_t
+extern "C" uint64_t
 __atomic_or_fetch_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -202,7 +202,7 @@ __atomic_or_fetch_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_nand_fetch
  */
-uint64_t
+extern "C" uint64_t
 __atomic_nand_fetch_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -216,7 +216,7 @@ __atomic_nand_fetch_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_fetch_add
  */
-uint64_t
+extern "C" uint64_t
 __atomic_fetch_add_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -231,7 +231,7 @@ __atomic_fetch_add_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_fetch_sub
  */
-uint64_t
+extern "C" uint64_t
 __atomic_fetch_sub_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -246,7 +246,7 @@ __atomic_fetch_sub_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_fetch_and
  */
-uint64_t
+extern "C" uint64_t
 __atomic_fetch_and_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -261,7 +261,7 @@ __atomic_fetch_and_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_fetch_xor
  */
-uint64_t
+extern "C" uint64_t
 __atomic_fetch_xor_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -276,7 +276,7 @@ __atomic_fetch_xor_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_fetch_or
  */
-uint64_t
+extern "C" uint64_t
 __atomic_fetch_or_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;
@@ -291,7 +291,7 @@ __atomic_fetch_or_8(volatile void *p, uint64_t v, int m)
 /*
  * atomic_fetch_nand
  */
-uint64_t
+extern "C" uint64_t
 __atomic_fetch_nand_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = p;

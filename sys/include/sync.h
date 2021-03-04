@@ -82,10 +82,6 @@ struct semaphore {
 	};
 };
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 bool	       mutex_valid(const struct mutex *);
 void	       mutex_init(struct mutex *);
 int	       mutex_lock_interruptible(struct mutex *);
@@ -126,9 +122,6 @@ void	       semaphore_init(struct semaphore *);
 int	       semaphore_post(struct semaphore *);
 int	       semaphore_post_once(struct semaphore *);
 int	       semaphore_wait_interruptible(struct semaphore *);
-
-#if defined(__cplusplus)
-} /* extern "C" */
 
 namespace a {
 
@@ -481,5 +474,3 @@ private:
 	T &m_;
 	bool locked_;
 };
-
-#endif /* __cplusplus */

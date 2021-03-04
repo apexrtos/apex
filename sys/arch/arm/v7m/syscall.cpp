@@ -14,7 +14,7 @@ const char *syscall_string(long);
 /*
  * architecture specific syscalls for arm v7m.
  */
-int
+extern "C" int
 arch_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6,
     long sc)
 {

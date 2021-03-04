@@ -7,10 +7,6 @@ struct iovec;
 struct seg;
 struct vnode;
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 /*
  * Kernel interface
  */
@@ -43,10 +39,6 @@ void		   *seg_end(const struct seg *);
 size_t		    seg_size(const struct seg *);
 int		    seg_prot(const struct seg *);
 struct vnode	   *seg_vnode(struct seg *);
-
-#if defined(__cplusplus)
-} /* extern "C" */
-
 #include <memory>
 
 /*
@@ -72,6 +64,3 @@ struct default_delete<as> {
 };
 
 } /* namespace std */
-
-#endif /* __cplusplus */
-

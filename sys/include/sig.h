@@ -11,10 +11,6 @@ struct k_sigaction;
 struct task;
 struct thread;
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 /*
  * Kernel interface
  */
@@ -25,7 +21,7 @@ k_sigset_t  sig_block_all();
 void	    sig_restore(const k_sigset_t *);
 void	    sig_exec(struct task *);
 void	    sig_wait();
-int	    sig_deliver(int);
+extern "C" int sig_deliver(int);
 
 /*
  * Syscalls
@@ -36,7 +32,3 @@ int	sc_rt_sigprocmask(int how, const k_sigset_t *set, k_sigset_t *oldset,
 			  size_t size);
 int	sc_rt_sigreturn();
 int	sc_sigreturn();
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif

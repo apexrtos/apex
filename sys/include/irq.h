@@ -41,10 +41,6 @@ struct irq;
 #define INT_ERROR	1	/* interrupt not handled */
 #define INT_CONTINUE	2	/* continue processing (Request IST) */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct irq *irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 		       void (*ist)(int, void *), void *data);
 void	    irq_detach(struct irq *);
@@ -53,7 +49,3 @@ void	    irq_restore(int);
 void	    irq_dump();
 void	    irq_handler(int);
 void	    irq_init();
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

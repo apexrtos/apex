@@ -12,10 +12,6 @@ struct thread;
 	err; \
 })
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 void		dbg(const char *fmt, ...)
 			__attribute__((format (printf, 1, 2)));
 void		info(const char *fmt, ...)
@@ -43,7 +39,3 @@ int		syslog_format(char *, size_t);
 void		syslog_panic();
 int		sc_syslog(int, char *, int);
 void		kmsg_init();
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif

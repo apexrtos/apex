@@ -46,14 +46,10 @@ struct dpc {
 	void	       *arg;		/* Argument to pass */
 };
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 /*
  * Scheduler interface
  */
-void		sch_switch();
+extern "C" void sch_switch();
 struct thread  *sch_active();
 unsigned	sch_wakeup(struct event *, int);
 struct thread  *sch_wakeone(struct event *);
@@ -81,7 +77,3 @@ int		sch_setpolicy(struct thread *, int);
 void	        sch_dpc(struct dpc *, void (*)(void *), void *);
 void	        sch_dump();
 void	        sch_init();
-
-#if defined(__cplusplus)
-} /* extern "C" */
-#endif /* __cplusplus */

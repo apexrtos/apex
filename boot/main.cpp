@@ -97,7 +97,7 @@ panic(const char *msg)
 /*
  * __assert_fail - print assertion message and halt system
  */
-_Noreturn void
+extern "C" _Noreturn void
 __assert_fail(const char *expr, const char *file, int line, const char *func)
 {
 	debug_printf("Assertion failed: %s (%s: %s: %d)\n",
@@ -108,7 +108,7 @@ __assert_fail(const char *expr, const char *file, int line, const char *func)
 /*
  * C entry point
  */
-[[noreturn]] void
+extern "C" [[noreturn]] void
 loader_main()
 {
 	/*

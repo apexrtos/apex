@@ -338,7 +338,7 @@ out:
 /*
  * sync
  */
-void
+extern "C" void
 sync()
 {
 	struct mount *mp;

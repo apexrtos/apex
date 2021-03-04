@@ -5,18 +5,12 @@
 #include <types.h>
 
 struct dirent;
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 /*
  * dirbuf_add - helper for adding entries to a dirent buffer
  */
 int dirbuf_add(struct dirent **, size_t *remain, ino_t, off_t,
 	       unsigned char type, const char *name);
-
-#if defined(__cplusplus)
-}
 
 /*
  * for_each_iov - C++ version of for_each_iov
@@ -41,4 +35,3 @@ for_each_iov(const iovec *iov, size_t count, off_t offset, Fn &&fn)
 	}
 	return total > 0 ? total : res;
 }
-#endif

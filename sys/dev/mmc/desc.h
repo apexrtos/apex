@@ -6,10 +6,6 @@
 
 #include <dev/regulator/voltage/desc.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /*
  * Supported power supply configurations:
  *
@@ -39,7 +35,3 @@ struct mmc_desc {
 	unsigned load_capacitance_pf;	    /* bulk capacitive load on data lines */
 	unsigned long max_rate;		    /* maximum clock/data rate (Hz) */
 };
-
-#ifdef __cplusplus
-}
-#endif

@@ -378,7 +378,7 @@ ocotp_write_iov(file *f, const iovec *iov, size_t count, off_t offset)
 /*
  * nxp_imxrt10xx_ocotp_init
  */
-extern "C" void
+void
 nxp_imxrt10xx_ocotp_init(const nxp_imxrt10xx_ocotp_desc *d)
 {
 	new(&mem) imxrt10xx::ocotp{d};

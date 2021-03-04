@@ -230,8 +230,6 @@ isr(int vector, void *data)
 
 }
 
-extern "C" {
-
 /*
  * fsl_imxrt10xx_gpio_init
  */
@@ -242,6 +240,4 @@ fsl_imxrt10xx_gpio_init(const fsl_imxrt10xx_gpio_desc *d)
 	gpio::controller::add(g);
 	irq_attach(d->irqs[0], d->ipl, 0, isr, nullptr, g);
 	irq_attach(d->irqs[1], d->ipl, 0, isr, nullptr, g);
-}
-
 }

@@ -4,10 +4,6 @@
  * Driver for USB PHY in IMX processors.
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct fsl_imx_usbphy_desc {
 	unsigned long base;
 	unsigned long analog_base;
@@ -17,8 +13,3 @@ struct fsl_imx_usbphy_desc {
 };
 
 void fsl_imx_usbphy_init(const struct fsl_imx_usbphy_desc *);
-
-#ifdef __cplusplus
-}
-#endif
-

@@ -91,7 +91,7 @@ void machine_panic()
 /*
  * Initialise clocks.
  */
-void machine_clock_init()
+extern "C" void machine_clock_init()
 {
 	/* QEMU doesn't require clock initialisation */
 }
@@ -99,7 +99,7 @@ void machine_clock_init()
 /*
  * Initialise stack
  */
-void machine_early_memory_init()
+extern "C" void machine_early_memory_init()
 {
 	/* QEMU doesn't require stack initialisation */
 }
@@ -107,7 +107,7 @@ void machine_early_memory_init()
 /*
  * Initialise memory
  */
-void machine_memory_init()
+extern "C" void machine_memory_init()
 {
 	/* QEMU doesn't require memory initialisation */
 }

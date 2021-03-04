@@ -214,7 +214,7 @@ pit::isr_wrapper(int vector, void *data)
 /*
  * nxp_imxrt10xx_pit_init
  */
-extern "C" void
+void
 nxp_imxrt10xx_pit_init(const nxp_imxrt10xx_pit_desc *d)
 {
 	notice("PIT(%p) Init\n", (void*)d->base);

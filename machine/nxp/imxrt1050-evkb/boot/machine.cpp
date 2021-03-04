@@ -203,7 +203,7 @@ machine_panic()
  *	UART_CLK_ROOT = 24MHz
  *	All clocks gated except what is necessary
  */
-void
+extern "C" void
 machine_clock_init()
 {
 	/* set core voltage to 1.25V for 600MHz operation */
@@ -254,7 +254,7 @@ machine_clock_init()
 	write32(&CCM->CCGR6, 0xffffffff);
 }
 
-void
+extern "C" void
 machine_memory_init()
 {
 	/* SDRAM initialised by DCD */

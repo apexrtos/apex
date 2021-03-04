@@ -87,7 +87,7 @@ static_assert(!(sizeof(struct rt_sigframe) & 7), "");
 /*
  * System call return entry point
  */
-extern void syscall_ret();
+extern "C" void syscall_ret();
 
 /*
  * Test link register to determine if exception frame is basic or extended

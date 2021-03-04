@@ -99,9 +99,6 @@ struct task {
 #define CAP_DEBUG	0x00000800  /* debugging requests */
 #define CAP_ADMIN	0x00010000  /* mount,umount,sethostname,setdomainname,etc */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 struct task    *task_cur();
 struct task    *task_find(pid_t);
@@ -117,7 +114,3 @@ bool	        task_access(struct task *);
 struct futexes *task_futexes(struct task *);
 void		task_dump();
 void		task_init();
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

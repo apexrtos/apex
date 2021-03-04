@@ -5,7 +5,7 @@
 #include <sync.h>
 
 struct nxp_imxrt10xx_pit_desc;
-extern "C" void nxp_imxrt10xx_pit_init(const nxp_imxrt10xx_pit_desc *);
+void nxp_imxrt10xx_pit_init(const nxp_imxrt10xx_pit_desc *);
 
 namespace imxrt10xx {
 

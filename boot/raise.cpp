@@ -1,6 +1,6 @@
 #include <boot.h>
 
-int
+extern "C" int
 raise(int sig)
 {
 	panic("fatal signal");

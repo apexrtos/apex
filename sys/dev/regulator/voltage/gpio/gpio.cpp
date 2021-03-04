@@ -137,7 +137,7 @@ gpio_reg::find(float voltage_min, float voltage_max) const
 /*
  * regulator_voltage_gpio_init
  */
-extern "C" void
+void
 regulator_voltage_gpio_init(const regulator_voltage_gpio_desc *d)
 {
 	regulator::voltage::add(new gpio_reg(d));

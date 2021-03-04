@@ -63,7 +63,7 @@ fixed::v_supports(float min_voltage, float max_voltage) const
 /*
  * regulator_voltage_fixed_init
  */
-extern "C" void
+void
 regulator_voltage_fixed_init(const regulator_voltage_fixed_desc *d)
 {
 	regulator::voltage::add(new fixed(d->name, d->voltage));

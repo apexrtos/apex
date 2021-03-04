@@ -19,9 +19,6 @@ struct meminfo {
 	unsigned priority;	    /* lowest priority allocated first */
 };
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 phys *page_alloc_order(size_t order, unsigned long ma_paf, void *);
 phys *page_alloc(size_t, unsigned long ma_paf, void *);
@@ -31,9 +28,6 @@ bool page_valid(const phys *, size_t, void *);
 unsigned long page_attr(const phys *, size_t len);
 void page_init(const struct meminfo *, size_t, const struct bootargs *);
 void page_dump();
-
-#if defined(__cplusplus)
-} /* extern "C" */
 
 #include <memory>
 
@@ -57,4 +51,3 @@ private:
 
 } /* namespace std */
 
-#endif

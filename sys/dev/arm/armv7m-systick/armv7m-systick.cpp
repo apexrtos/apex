@@ -91,7 +91,7 @@ clock_ns_since_tick()
 /*
  * SysTick exception
  */
-__fast_text void
+extern "C" __fast_text void
 exc_SysTick()
 {
 	timer_tick(1);

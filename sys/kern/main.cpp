@@ -60,7 +60,7 @@ boot_thread(void *arg);
  *	- interrupts are disabled
  *	- minimum page table is set (MMU systems only)
  */
-void
+extern "C" void
 kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 {
 #if defined(CONFIG_EARLY_CONSOLE)

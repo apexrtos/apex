@@ -130,7 +130,7 @@ fsl_gpt_systick_init(const fsl_gpt_systick_desc *d)
  *
  * Must be called with gpt interrupt disabled
  */
-extern "C" unsigned long
+unsigned long
 clock_ns_since_tick()
 {
 	if (!gpt)

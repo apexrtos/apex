@@ -12,10 +12,6 @@ struct statfs;
 struct statx;
 struct task;
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 /*
  * File system management
  */
@@ -114,9 +110,6 @@ ssize_t	sc_preadv(int, const struct iovec *, int, off_t);
 ssize_t	sc_pwritev(int, const struct iovec *, int, off_t);
 #endif
 
-#if defined(__cplusplus)
-} /* extern "C" */
-
 #include <memory>
 extern "C" int close(int fd);
 extern "C" int open(const char *pathname, int flags, ...);
@@ -149,5 +142,3 @@ private:
 };
 
 } /* namespace a */
-
-#endif /* __cplusplus */

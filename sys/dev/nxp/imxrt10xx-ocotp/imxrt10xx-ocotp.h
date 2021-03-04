@@ -5,7 +5,7 @@
 #include <sync.h>
 
 struct nxp_imxrt10xx_ocotp_desc;
-extern "C" void nxp_imxrt10xx_ocotp_init(const nxp_imxrt10xx_ocotp_desc *);
+void nxp_imxrt10xx_ocotp_init(const nxp_imxrt10xx_ocotp_desc *);
 
 namespace imxrt10xx {
 

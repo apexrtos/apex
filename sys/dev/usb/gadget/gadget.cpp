@@ -119,7 +119,7 @@ gadget_ioctl(file *file, unsigned long cmd, void *data)
 /*
  * usb_gadget_init - create /dev/usbgadget device node
  */
-extern "C" void
+void
 usb_gadget_init()
 {
 	static constinit devio io{

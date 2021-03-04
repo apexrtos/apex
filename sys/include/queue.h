@@ -46,15 +46,7 @@ struct queue {
 #define queue_entry(q, type, member) \
     ((type *)((char *)(q) - (unsigned long)(&((type *)0)->member)))
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 void		enqueue(struct queue *, struct queue *);
 struct queue   *dequeue(struct queue *);
 void		queue_insert(struct queue *, struct queue *);
 void		queue_remove(struct queue *);
-
-#if defined(__cplusplus)
-}
-#endif

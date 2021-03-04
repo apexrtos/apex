@@ -1111,7 +1111,7 @@ fsl_usdhc::isr_wrapper(int vector, void *data)
 
 }
 
-extern "C" void
+void
 fsl_usdhc_init(const fsl_usdhc_desc *d)
 {
 	auto cap = read32(&reinterpret_cast<regs *>(d->base)->HOST_CTRL_CAP);

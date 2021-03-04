@@ -4,10 +4,6 @@
 
 struct as;
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
-
 /*
  * Memory access checking
  */
@@ -40,10 +36,6 @@ void	u_fault_clear();
 bool	k_address(const void *);
 bool	u_address(const void *);
 bool	u_addressfor(const struct as *, const void *);
-
-#if defined(__cplusplus)
-} /* extern "C" */
-
 #include <string_view>
 
 namespace a {
@@ -60,5 +52,3 @@ public:
 std::string_view u_string(const char *, size_t);
 
 inline constexpr a::u_access u_access_lock;
-
-#endif

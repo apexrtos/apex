@@ -4,10 +4,6 @@
  * Device driver for freescale LPUART generally found on imx processors
  */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct fsl_lpuart_desc {
 	const char *name;
 	unsigned long base;
@@ -17,7 +13,3 @@ struct fsl_lpuart_desc {
 };
 
 void fsl_lpuart_init(const struct fsl_lpuart_desc *);
-
-#ifdef __cplusplus
-} /* extern "C" */
-#endif

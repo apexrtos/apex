@@ -100,7 +100,7 @@ console_printf(const char *fmt, ...)
  *
  * By default the early console is used.
  */
-static void
+extern "C" void
 panic_console_init_default()
 {
 	early_console_init();
@@ -112,7 +112,7 @@ weak_alias(panic_console_init_default, panic_console_init);
  *
  * By default the early console is used.
  */
-static void
+extern "C" void
 panic_console_print_default(const char *s, size_t len)
 {
 	early_console_print(s, len);

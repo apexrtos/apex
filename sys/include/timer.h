@@ -52,9 +52,6 @@ struct itimer {
 	uint_fast64_t interval;		/* reload interval, 0 if disabled */
 };
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 uint_fast64_t ts_to_ns(const struct timespec *);
 uint_fast64_t ts32_to_ns(const struct timespec32 *);
@@ -81,7 +78,3 @@ void	      timer_init();
  */
 int	      sc_getitimer(int, struct k_itimerval *);
 int	      sc_setitimer(int, const struct k_itimerval *, struct k_itimerval *);
-
-#if defined(__cplusplus)
-}
-#endif
