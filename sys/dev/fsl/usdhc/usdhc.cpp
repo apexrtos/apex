@@ -324,7 +324,7 @@ static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
 struct adma2_descriptor {
 	uint16_t attr;
 	uint16_t length;
-	phys *address;
+	uint32_t address;
 };
 static_assert(sizeof(adma2_descriptor) == 8);
 constexpr auto adma2_attr_tran = 0x20;
@@ -738,8 +738,7 @@ fsl_usdhc::v_run_command(mmc::command &c)
 			write_memory_barrier();
 
 			/* Set DMA descriptor table address. */
-			write32(&r_->ADMA_SYS_ADDR, reinterpret_cast<uint32_t>(
-			    virt_to_phys(dma_desc_)));
+			write32(&r_->ADMA_SYS_ADDR, virt_to_phys(dma_desc_).phys());
 		}
 
 		const auto blkcnt = len / c.transfer_block_size();
@@ -1038,8 +1037,8 @@ fsl_usdhc::setup_adma2_transfer(const mmc::command &c, size_t dma_min)
 	    c.data_direction() == mmc::command::data_direction::host_to_device,
 	    c.iov(), c.iov_offset(), c.data_size(), dma_min, adma2_max_length,
 	    adma2_length_align, adma2_address_align, bounce_, bounce_sz_,
-	    [&](phys *p, size_t len) {
-		d->address = p;
+	    [&](phys p, size_t len) {
+		d->address = p.phys();
 		d->length = len;
 		d->attr = adma2_attr_tran | adma2_attr_valid;
 		return ++d < dma_end_;

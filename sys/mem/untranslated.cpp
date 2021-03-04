@@ -147,7 +147,7 @@ as_unmap(as *a, void *addr, size_t len, vnode *vn, off_t off)
 		mpu_unmap(addr, len);
 #endif
 
-	return page_free((phys*)addr, len, a);
+	return page_free(virt_to_phys(addr), len, a);
 }
 
 /*
@@ -245,7 +245,7 @@ u_access_okfor(as *a, const void *u_addr, size_t len, int access)
 bool
 k_access_ok(const void *k_addr, size_t len, int access)
 {
-	return page_valid((const phys *)k_addr, len, &kern_task);
+	return page_valid(virt_to_phys(k_addr), len, &kern_task);
 }
 
 int
@@ -332,5 +332,5 @@ u_addressfor(const as *a, const void *u_addr)
 bool
 k_address(const void *k_addr)
 {
-	return page_valid((const phys *)k_addr, 0, &kern_task);
+	return page_valid(virt_to_phys(k_addr), 0, &kern_task);
 }

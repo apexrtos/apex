@@ -17,7 +17,7 @@ machine_init(bootargs *args)
 	const meminfo memory[] = {
 		/* Main memory */
 		{
-			.base = (phys *)CONFIG_RAM_BASE_PHYS,
+			.base = phys{CONFIG_RAM_BASE_PHYS},
 			.size = CONFIG_RAM_SIZE,
 			.attr = MA_SPEED_0,
 			.priority = 0,

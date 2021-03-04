@@ -18,7 +18,7 @@ int
 load_bootimg()
 {
 	extern uint32_t __loader_end;
-	phys *p, *file_data;
+	std::byte *p, *file_data;
 	uint32_t *file_sizes = &__loader_end;
 	size_t files = 0;
 

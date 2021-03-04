@@ -244,7 +244,7 @@ int
 thread_id(thread *t)
 {
 	const unsigned shift = floor_log2(alignof(thread));
-	return (unsigned long)virt_to_phys(t) >> shift;
+	return (unsigned long)virt_to_phys(t).phys() >> shift;
 }
 
 /*
@@ -254,7 +254,7 @@ thread *
 thread_find(int id)
 {
 	const unsigned shift = floor_log2(alignof(thread));
-	thread *th = (thread *)phys_to_virt((phys*)(id << shift));
+	thread *th = (thread *)phys_to_virt(phys(id << shift));
 	if (!k_access_ok(th, sizeof *th, PROT_WRITE))
 		return 0;
 	if (!thread_valid(th))

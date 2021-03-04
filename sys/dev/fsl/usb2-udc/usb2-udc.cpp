@@ -316,7 +316,7 @@ struct dtd {
 		};
 		uint32_t r;
 	} token;
-	phys *buffer[5];
+	uint32_t buffer[5];
 	uint32_t : 32;			/* for 32-byte alignment */
 };
 static_assert(sizeof(dtd) == 32, "");
@@ -1047,7 +1047,7 @@ fsl_usb2_udc::hw_init()
 
 	/* configure queue head */
 	write32(&r_->ENDPOINTLISTADDR,
-	    reinterpret_cast<uintptr_t>(virt_to_phys(dqh_)));
+	    reinterpret_cast<uintptr_t>(virt_to_phys(dqh_).phys()));
 
 	/* configure interrupts */
 	write32(&r_->USBINTR, []{
@@ -1201,7 +1201,7 @@ fsl_usb2_transaction::start(const size_t max_packet_len,
 			dtd_tail_ = n;
 		}
 
-		auto base = virt_to_phys(tbuf);
+		auto base = virt_to_phys(tbuf).phys();
 
 		dtd_tail_->buffer[0] = base;
 		base = TRUNCn(base, dtd_max_buffer_size);
@@ -1212,7 +1212,7 @@ fsl_usb2_transaction::start(const size_t max_packet_len,
 
 		const auto l = std::min({
 			static_cast<size_t>(
-				static_cast<char *>(phys_to_virt(base)) - tbuf),
+				static_cast<char *>(phys_to_virt(phys{base})) - tbuf),
 			tlen,
 			max_packet_len});
 

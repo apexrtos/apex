@@ -42,27 +42,6 @@ extern struct task	kern_task;	/* kernel task */
 #endif
 
 /*
- * Address translation
- */
-static inline void *
-phys_to_virt(const phys *pa)
-{
-#if defined(CONFIG_MMU)
-	assert((uintptr_t)pa < CONFIG_PAGE_OFFSET);
-#endif
-	return (void *)((uintptr_t)pa + CONFIG_PAGE_OFFSET);
-}
-
-static inline phys *
-virt_to_phys(const void *va)
-{
-#if defined(CONFIG_MMU)
-	assert((uintptr_t)va >= CONFIG_PAGE_OFFSET);
-#endif
-	return (phys *)((uintptr_t)va - CONFIG_PAGE_OFFSET);
-}
-
-/*
  * Memory page
  */
 #define PAGE_SIZE	CONFIG_PAGE_SIZE

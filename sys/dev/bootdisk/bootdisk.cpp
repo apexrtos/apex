@@ -59,7 +59,7 @@ bootdisk_init(bootargs *args)
 	if (!args->archive_size)
 		return;
 
-	archive_addr = (char *)phys_to_virt(args->archive_addr);
+	archive_addr = (char *)phys_to_virt(phys{args->archive_addr});
 	archive_size = args->archive_size;
 
 	dbg("Bootdisk at %p (%uK bytes)\n", archive_addr, archive_size / 1024);

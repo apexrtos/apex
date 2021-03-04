@@ -44,6 +44,14 @@ enum PG_STATE {
 	PG_MAPPED,		/* Page is part of a vm mapping, can move */
 };
 
+using paddr_t = phys::value_type;
+
+#if defined(CONFIG_PAE)
+#define PRIpa PRIx64
+#else
+#define PRIpa PRIxPTR
+#endif
+
 struct page {
 	PG_STATE state;
 	void *owner;
@@ -53,9 +61,9 @@ struct page {
 struct region {
 	unsigned long attr;	/* Region attributes, bitfield of MA_* */
 	a::spinlock lock;	/* For pages, blocks & bitmap */
-	phys *begin;		/* First physical address in region */
-	phys *end;		/* Last physical address in region + 1 */
-	phys *base;		/* power-of-2 aligned base address of region */
+	paddr_t begin;		/* First physical address in region */
+	paddr_t end;		/* Last physical address in region + 1 */
+	paddr_t base;		/* power-of-2 aligned base address of region */
 	size_t usable;		/* Total usable bytes in region */
 	size_t free;		/* Total free bytes in region */
 	size_t size;		/* Total size of region */
@@ -167,9 +175,9 @@ page_to_max_order(const region &r, const size_t page)
  * find_region - find region containing pages
  */
 static region *
-find_region(const phys *begin, size_t len)
+find_region(const paddr_t begin, size_t len)
 {
-	const phys *end = begin + len;
+	const paddr_t end = begin + len;
 	if (end < begin)
 		return nullptr;
 	for (size_t i = 0; i < s.nr_regions; ++i) {
@@ -184,7 +192,7 @@ find_region(const phys *begin, size_t len)
  * page_num - get page number for address in region
  */
 static size_t
-page_num(const region &r, const phys *addr)
+page_num(const region &r, const paddr_t addr)
 {
 	assert(addr >= r.base && addr < (r.base + r.size));
 	return (addr - r.base) / PAGE_SIZE;
@@ -193,11 +201,11 @@ page_num(const region &r, const phys *addr)
 /*
  * page_addr - get page address for page in region
  */
-static phys *
+static phys
 page_addr(const region &r, const size_t page)
 {
 	assert(page < r.nr_pages);
-	return r.base + page * PAGE_SIZE;
+	return phys{r.base + page * PAGE_SIZE};
 }
 
 /*
@@ -258,7 +266,7 @@ block_free(region &r, const size_t page, size_t o)
 /*
  * do_alloc
  */
-static phys *
+static phys
 do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
     void *owner)
 {
@@ -291,9 +299,9 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
  *		      attributes 'attr'
  *
  * tries to allocate using requested attributes but falls back if memory is low.
- * returns 0 on failure, physical address otherwise.
+ * returns invalid on failure, physical address otherwise.
  */
-phys *
+phys
 page_alloc_order(const size_t o, unsigned long attr, void *owner)
 {
 	/* extract page allocation flags */
@@ -335,10 +343,10 @@ page_alloc_order(const size_t o, unsigned long attr, void *owner)
 		}
 
 		/* can't find suitable pages */
-		return 0;
+		return phys{};
 	}
 
-	return 0;
+	return phys{};
 }
 
 /*
@@ -347,21 +355,21 @@ page_alloc_order(const size_t o, unsigned long attr, void *owner)
  *
  * tries to allocate using requested type but falls back if memory is low.
  * 'len' is rounded up to next page sized boundary.
- * returns 0 on failure, physical address otherwise.
+ * returns invalid address on failure, physical address otherwise.
  */
-phys *
+phys
 page_alloc(size_t len, unsigned long attr, void *owner)
 {
 	if (len == 0)
-		return 0;
+		return phys{};
 	len = PAGE_ALIGN(len);
 	const auto order = ceil_log2(len) - floor_log2(PAGE_SIZE);
 	const auto addr = page_alloc_order(order, attr, owner);
-	if (addr == 0)
-		return 0;
+	if (!addr)
+		return phys{};
 	const auto excess = (PAGE_SIZE << order) - len;
 	page_free(addr, excess, owner);
-	return addr + excess;
+	return phys{addr.phys() + excess};
 }
 
 /*
@@ -370,15 +378,15 @@ page_alloc(size_t len, unsigned long attr, void *owner)
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
  * extending an existing allocation is supported.
- * returns 0 on failure, physical address otherwise.
+ * returns invalid address on failure, physical address otherwise.
  */
-static phys *
-page_reserve(region &r, phys *const addr, const size_t len,
+static phys
+page_reserve(region &r, const paddr_t addr, const size_t len,
     const PG_STATE st, unsigned long attr, void *owner)
 {
 	assert(st == PG_HOLE || st == PG_SYSTEM || st == PG_FIXED);
 	if (len == 0)
-		return addr;
+		return phys{addr};
 
 	/* find page range */
 	const auto begin = page_num(r, addr);
@@ -391,7 +399,7 @@ page_reserve(region &r, phys *const addr, const size_t len,
 		if (r.pages[i].state == st && r.pages[i].owner == owner &&
 		    attr & PAF_REALLOC)
 			continue;
-		return 0;
+		return phys{};
 	}
 
 	/* reserve pages */
@@ -409,15 +417,15 @@ page_reserve(region &r, phys *const addr, const size_t len,
  *		  'len' with state 'st'
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
- * returns 0 on failure, physical address otherwise.
+ * returns invalid address on failure, physical address otherwise.
  */
-static phys *
-page_reserve(phys *addr, size_t len, const PG_STATE st, unsigned long attr,
+static phys
+page_reserve(paddr_t addr, size_t len, const PG_STATE st, unsigned long attr,
 	     void *owner)
 {
 	auto *r = find_region(addr, len);
 	if (!r)
-		return 0;
+		return phys{};
 	return page_reserve(*r, addr, len, st, attr, owner);
 }
 
@@ -426,16 +434,16 @@ page_reserve(phys *addr, size_t len, const PG_STATE st, unsigned long attr,
  *                'len'
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
- * returns 0 on failure, physical address otherwise.
+ * returns invalid address on failure, physical address otherwise.
  */
-phys *
-page_reserve(phys *addr, size_t len, unsigned long attr, void *owner)
+phys
+page_reserve(phys addr, size_t len, unsigned long attr, void *owner)
 {
 	const auto st = attr & PAF_MAPPED ? PG_MAPPED : PG_FIXED;
 
-	auto *r = find_region(addr, len);
+	auto *r = find_region(addr.phys(), len);
 	if (!r)
-		return 0;
+		return phys{};
 	std::lock_guard l(r->lock);
 	return page_reserve(*r, addr, len, st, attr, owner);
 }
@@ -469,20 +477,20 @@ page_free(region &r, const size_t page, const size_t o)
  * returns 0 on success, -ve error code on failure
  */
 int
-page_free(phys *addr, size_t len, void *owner)
+page_free(phys addr, size_t len, void *owner)
 {
 	if (len == 0)
 		return 0;
 
-	auto *r = find_region(addr, len);
+	auto *r = find_region(addr.phys(), len);
 	if (!r)
 		return DERR(-EFAULT);
 
 	std::lock_guard l(r->lock);
 
 	/* find page range */
-	const auto begin = page_num(*r, addr);
-	const auto end = page_num(*r, addr + len - 1) + 1;
+	const auto begin = page_num(*r, addr.phys());
+	const auto end = page_num(*r, addr.phys() + len - 1) + 1;
 
 	/* verify that range is allocated and correctly owned */
 	for (auto i = begin; i != end; ++i) {
@@ -515,13 +523,13 @@ page_free(phys *addr, size_t len, void *owner)
  * page_valid - check if address range refers to valid, writable pages
  */
 bool
-page_valid(const phys *addr, size_t len, void *owner)
+page_valid(const phys addr, size_t len, void *owner)
 {
 	/* no need to lock - we aren't modifying anything, and after page_init
 	   the page layout is immutable */
 
 	/* find region */
-	auto *r = find_region(addr, len);
+	auto *r = find_region(addr.phys(), len);
 	if (!r)
 		return false;
 
@@ -530,8 +538,8 @@ page_valid(const phys *addr, size_t len, void *owner)
 		return true;
 
 	/* find page range */
-	const auto begin = page_num(*r, addr);
-	const auto end = page_num(*r, addr + len - 1) + 1;
+	const auto begin = page_num(*r, addr.phys());
+	const auto end = page_num(*r, addr.phys() + len - 1) + 1;
 
 	/* verify that range is allocated and correctly owned */
 	for (auto i = begin; i != end; ++i) {
@@ -555,13 +563,13 @@ page_valid(const phys *addr, size_t len, void *owner)
  * page_attr - retrieve page attributes
  */
 unsigned long
-page_attr(const phys *addr, size_t len)
+page_attr(const phys addr, size_t len)
 {
 	/* no need to lock - we aren't modifying anything, and after page_init
 	   the page layout is immutable */
 
 	/* find region */
-	auto *r = find_region(addr, len);
+	auto *r = find_region(addr.phys(), len);
 	if (!r)
 		return DERR(-EINVAL);
 
@@ -588,8 +596,8 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 
 	/* analyse meminfo to count regions & find the first piece of
 	 * contiguous normal memory in which to allocate state */
-	phys *m_alloc = 0;
-	phys *m_end = 0;
+	paddr_t m_alloc = 0;
+	paddr_t m_end = 0;
 	for (size_t i = 0; i < mi_size; ++i) {
 		const auto &m = mi[i];
 		++s.nr_regions;
@@ -597,8 +605,8 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 			continue;
 		if ((m.attr & MA_SPEED_MASK) != MA_NORMAL)
 			continue;
-		m_alloc = (phys*)m.base;
-		m_end = (phys*)m.base + m.size;
+		m_alloc = m.base.phys();
+		m_end = m.base.phys() + m.size;
 	}
 
 	if (!m_end)
@@ -612,14 +620,14 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 		for (size_t i = 0; i < eh->e_phnum; ++i, ++ph) {
 			if (ph->p_type != PT_LOAD)
 				continue;
-			fn(virt_to_phys((void *)ph->p_vaddr), ph->p_memsz);
+			fn(virt_to_phys((void *)ph->p_vaddr).phys(), ph->p_memsz);
 		}
 	};
 
 	/* adjust m_alloc and m_end for reserved areas */
-	for_each_reserved_region([&] (phys *p, size_t len) {
-		phys *const r_begin = PAGE_TRUNC(p);
-		phys *const r_end = PAGE_ALIGN(p + len);
+	for_each_reserved_region([&] (paddr_t p, size_t len) {
+		const paddr_t r_begin = PAGE_TRUNC(p);
+		const paddr_t r_end = PAGE_ALIGN(p + len);
 
 		/* no overlap */
 		if (r_end < m_alloc || r_begin >= m_end)
@@ -641,15 +649,15 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 			panic("no memory");
 	});
 
-	dbg("page_init: allocate state at %p (%" PRIuPTR " bytes "
+	dbg("page_init: allocate state at %" PRIpa "(%" PRIpa " bytes "
 	    "usable), %zu regions\n", m_alloc, m_end - m_alloc, s.nr_regions);
 
-	phys *const m_begin = m_alloc;
+	const paddr_t m_begin = m_alloc;
 	auto alloc = [&](size_t len) {
 		len = ALIGN(len);
 		if (len > (size_t)(m_end - m_alloc))
 			panic("OOM");
-		void *tmp = phys_to_virt(m_alloc);
+		void *tmp = phys_to_virt(phys{m_alloc});
 		m_alloc += len;
 		memset(tmp, 0, len);
 		return tmp;
@@ -660,22 +668,23 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	s.regions_by_priority = (region**)alloc(sizeof(s.regions) * s.nr_regions);
 
 	/* initialise regions & pages in ascending address order */
-	phys *init_addr = nullptr;
+	paddr_t init_addr = 0;
 	for (size_t i = 0; i != s.nr_regions; ++i) {
 		const meminfo *m = nullptr;
 		for (size_t j = 0; j < mi_size; ++j) {
 			const auto &t = mi[j];
-			if (t.base < init_addr)
+			if (t.base.phys() < init_addr)
 				continue;
-			if (!m || (t.base >= init_addr && t.base < m->base))
+			if (!m || (t.base.phys() >= init_addr &&
+				   t.base.phys() < m->base.phys()))
 				m = &t;
 		}
 		assert(m);
 
 		region &r = *new(s.regions + i) region;
 		r.attr = m->attr;
-		r.begin = (phys*)PAGE_ALIGN(m->base);
-		r.end = (phys*)PAGE_TRUNC(m->base + m->size);
+		r.begin = PAGE_ALIGN(m->base.phys());
+		r.end = PAGE_TRUNC(m->base.phys() + m->size);
 		const size_t size_order = ceil_log2(r.end - r.begin);
 		r.base = TRUNCn(r.begin, 1 << size_order);
 		r.size = ALIGNn(r.end, 1 << size_order) - r.base;
@@ -703,7 +712,8 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 		if (!page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, 0, nullptr))
 			panic("bad meminfo");
 
-		dbg("page_init: region %zu: %p -> %p covering %p -> %p\n",
+		dbg("page_init: region %zu: %" PRIpa " -> %" PRIpa" covering "
+		    "%" PRIpa " -> %" PRIpa "\n",
 		    i, r.base, r.base + r.size, r.begin, r.end);
 
 		init_addr = r.end;
@@ -716,12 +726,12 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	}
 
 	/* reserve unusable memory */
-	for_each_reserved_region([&](phys *p, size_t len) {
+	for_each_reserved_region([&](paddr_t p, size_t len) {
 		auto r = page_reserve(p, len, PG_SYSTEM, 0, &kern_task);
 		/* reservation can fail for ROM addresses or other unmappable
 		 * memory */
-		dbg("page_init: reserve %p -> %p %s\n", p, p + len,
-		   r ? "OK" : "Failed");
+		dbg("page_init: reserve %" PRIpa " -> %" PRIpa" %s\n",
+		    p, p + len, r ? "OK" : "Failed");
 	});
 
 	/* reserve memory allocated for region & page structures */
@@ -754,14 +764,14 @@ void page_dump()
 #if defined(CONFIG_INFO)
 		const region &r = s.regions[i];
 #endif
-		info(" %p -> %p\n", r.begin, r.end);
+		info(" %" PRIpa " -> %" PRIpa "\n", r.begin, r.end);
 		info("  attr      speed %ld%s%s%s%s\n",
 		    r.attr & MA_SPEED_MASK,
 		    r.attr & MA_DMA ? ", dma" : "",
 		    r.attr & MA_CACHE_COHERENT ? ", coherent" : "",
 		    r.attr & MA_PERSISTENT ? ", persistent" : "",
 		    r.attr & MA_SECURE ? ", secure" : "");
-		info("  base      %p\n", r.base);
+		info("  base      %" PRIpa "\n", r.base);
 		info("  size      %zu\n", r.size);
 		info("  usable    %zu\n", r.usable);
 		info("  free      %zu\n", r.free);

@@ -39,12 +39,12 @@ static_region(const mmumap *map, size_t i)
 {
 	if (!is_pow2(map->size))
 		panic("region must be power-of-2 sized");
-	if ((uintptr_t)map->paddr & (map->size - 1))
+	if (map->paddr.phys() & (map->size - 1))
 		panic("region must be aligned on size boundary");
 	write32(&MPU->RBAR, (mpu::rbar){{
 		.REGION = i,
 		.VALID = 1,
-		.ADDR = (uintptr_t)map->paddr >> 5,
+		.ADDR = map->paddr.phys() >> 5,
 	}}.r);
 	write32(&MPU->RASR, map->flags | (mpu::rasr){{
 		.ENABLE = 1,

@@ -14,19 +14,19 @@ struct bootargs;
 #define PAF_MASK 0xe0000000
 
 struct meminfo {
-	phys *base;		    /* start address */
+	phys base;		    /* start address */
 	size_t size;		    /* size in bytes */
 	unsigned long attr;	    /* bitfield of MA_... attributes */
 	unsigned priority;	    /* lowest priority allocated first */
 };
 
 
-phys *page_alloc_order(size_t order, unsigned long ma_paf, void *);
-phys *page_alloc(size_t, unsigned long ma_paf, void *);
-phys *page_reserve(phys *, size_t, unsigned long paf, void *);
-int page_free(phys *, size_t, void *);
-bool page_valid(const phys *, size_t, void *);
-unsigned long page_attr(const phys *, size_t len);
+phys page_alloc_order(size_t order, unsigned long ma_paf, void *);
+phys page_alloc(size_t, unsigned long ma_paf, void *);
+phys page_reserve(phys, size_t, unsigned long paf, void *);
+int page_free(phys, size_t, void *);
+bool page_valid(const phys, size_t, void *);
+unsigned long page_attr(const phys, size_t len);
 void page_init(const meminfo *, size_t, const bootargs *);
 void page_dump();
 

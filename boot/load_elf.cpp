@@ -7,8 +7,14 @@
 
 #define edbg(...)
 
+static inline phys
+virt_to_phys(Elf32_Addr va)
+{
+	return virt_to_phys((void *)va);
+}
+
 static int
-load_executable(const phys *img)
+load_executable(const std::byte *img)
 {
 	Elf32_Ehdr *ehdr;
 	Elf32_Phdr *phdr;
@@ -33,35 +39,37 @@ load_executable(const phys *img)
 			continue;
 		}
 
-		if (phys_to_virt(img + phdr->p_offset) == (void*)phdr->p_vaddr)
-			continue;
-
 		if (phdr->p_filesz > 0) {
+			const void *src = img + phdr->p_offset;
+			phys pa = virt_to_phys((void *)phdr->p_vaddr);
+
+			if (pa.phys_ptr() == src) {
+				edbg("XIP: addr=%p size=%zu\n",
+				     pa.phys_ptr(), (size_t)phdr->p_filesz);
+				continue;
+			}
+
 			edbg("load: addr=%p from=%p size=%zu\n",
-			    virt_to_phys((void*)phdr->p_vaddr),
-			    img + phdr->p_offset,
-			    (size_t)phdr->p_filesz);
-			memcpy(virt_to_phys((void*)phdr->p_vaddr),
-			    img + phdr->p_offset,
-			    (size_t)phdr->p_filesz);
+			     pa.phys_ptr(), src, (size_t)phdr->p_filesz);
+			memcpy(pa.phys_ptr(), src, (size_t)phdr->p_filesz);
 		}
 
 		if (phdr->p_memsz > phdr->p_filesz) {
-			char *offset = (char *)phdr->p_vaddr + phdr->p_filesz;
+			phys pa = virt_to_phys(phdr->p_vaddr + phdr->p_filesz);
 			size_t size = phdr->p_memsz - phdr->p_filesz;
-			edbg("zero: addr=%p size=%zu\n", virt_to_phys(offset),
-			    size);
-			memset((void *)virt_to_phys(offset), 0, size);
+			edbg("zero: addr=%p size=%zu\n", addr.phys_ptr(), size);
+			memset(pa.phys_ptr(), 0, size);
 		}
 
-		if (phdr->p_flags & PF_X)
-			cache_coherent_exec(virt_to_phys((void*)phdr->p_vaddr),
-			    phdr->p_memsz);
+		if (phdr->p_flags & PF_X) {
+			phys pa = virt_to_phys(phdr->p_vaddr);
+			cache_coherent_exec(pa.phys_ptr(), phdr->p_memsz);
+		}
 	}
 
 	edbg("\n");
 
-	kernel_entry = (kernel_entry_fn)virt_to_phys((void*)ehdr->e_entry);
+	kernel_entry = (kernel_entry_fn)virt_to_phys(ehdr->e_entry).phys_ptr();
 	return 0;
 }
 
@@ -70,7 +78,7 @@ load_executable(const phys *img)
  * The boot information is filled after loading the program.
  */
 int
-load_elf(const phys *img)
+load_elf(const std::byte *img)
 {
 	const Elf32_Ehdr *ehdr = (Elf32_Ehdr *)img;
 

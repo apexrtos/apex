@@ -6,11 +6,6 @@
 #include <sys/types.h>
 
 #define _NSIG 65
-
-typedef struct {
-	char dummy;
-} phys;
-
 typedef struct k_sigset_t { unsigned long __bits[_NSIG / 8 / sizeof(long)]; } k_sigset_t;
 
 /*

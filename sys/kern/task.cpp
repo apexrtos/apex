@@ -78,7 +78,7 @@ task_find(pid_t pid)
 	if (pid == 1)
 		return init_task;
 	const unsigned shift = floor_log2(alignof(task));
-	task *t = (task *)phys_to_virt((phys*)(pid << shift));
+	task *t = (task *)phys_to_virt(phys(static_cast<uintptr_t>(pid << shift)));
 	if (!k_access_ok(t, sizeof *t, PROT_WRITE))
 		return 0;
 	if (!task_valid(t))
@@ -97,7 +97,7 @@ task_pid(task *t)
 	if (t == init_task)
 		return 1;
 	const unsigned shift = floor_log2(alignof(task));
-	return (unsigned long)virt_to_phys(t) >> shift;
+	return virt_to_phys(t).phys() >> shift;
 }
 
 /*

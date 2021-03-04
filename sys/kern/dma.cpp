@@ -271,7 +271,7 @@ dma_prepare(
     const size_t address_align,	    /* minimum address alignment */
     void *const bounce_buf,	    /* address of bounce buffer */
     const size_t bounce_size,	    /* size of bounce buffer */
-    std::function<bool(phys *, size_t)> add_transfer)
+    std::function<bool(phys, size_t)> add_transfer)
 {
 	dmadbg("dma_prepare: from_iov %d iov_offset %zu transfer_min %zu\n",
 	    from_iov, iov_offset, transfer_min);

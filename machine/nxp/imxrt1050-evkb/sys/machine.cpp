@@ -29,14 +29,14 @@ machine_init(bootargs *args)
 		/* IMXRT10xx places external SDRAM in a default write-through
 		 * memory region. Override this as write-back. */
 		{
-			.paddr = (phys *)CONFIG_DRAM_BASE_PHYS,
+			.paddr = phys{CONFIG_DRAM_BASE_PHYS},
 			.size = CONFIG_DRAM_SIZE,
 			.flags = RASR_KERNEL_RWX_WBWA,
 		},
 #if (CONFIG_KERNEL_NULL_GUARD_SIZE > 0)
 		/* REVISIT: Use debug hardware instead of wasting MPU entry? */
 		{
-			.paddr = (phys *)0,
+			.paddr = 0_phys,
 			.size = CONFIG_KERNEL_NULL_GUARD_SIZE,
 			.flags = RASR_NONE,
 		},
@@ -45,7 +45,7 @@ machine_init(bootargs *args)
 		/* IMXRT10xx places internal SRAM in default write-back
 		 * memory region. Override DMA pool as uncached. */
 		{
-			.paddr = (phys *)CONFIG_DMA_BASE_PHYS,
+			.paddr = phys{CONFIG_DMA_BASE_PHYS},
 			.size = CONFIG_DMA_SIZE,
 			.flags = RASR_KERNEL_RW,
 		}
@@ -56,21 +56,21 @@ machine_init(bootargs *args)
 	const meminfo memory[] = {
 		/* DRAM */
 		{
-			.base = (phys*)CONFIG_DRAM_BASE_PHYS,
+			.base = phys{CONFIG_DRAM_BASE_PHYS},
 			.size = CONFIG_DRAM_SIZE,
 			.attr = MA_SPEED_0 | MA_DMA,
 			.priority = 0,
 		},
 		/* DTCM */
 		{
-			.base = (phys*)CONFIG_DTCM_BASE_PHYS,
+			.base = phys{CONFIG_DTCM_BASE_PHYS},
 			.size = CONFIG_DTCM_SIZE,
 			.attr = MA_SPEED_2 | MA_SECURE,
 			.priority = 2,
 		},
 		/* DMA */
 		{
-			.base = (phys*)CONFIG_DMA_BASE_PHYS,
+			.base = phys{CONFIG_DMA_BASE_PHYS},
 			.size = CONFIG_DMA_SIZE,
 			.attr = MA_SPEED_1 | MA_DMA | MA_CACHE_COHERENT | MA_SECURE,
 			.priority = 3,
@@ -78,7 +78,7 @@ machine_init(bootargs *args)
 #if defined(CONFIG_SRAM_SIZE)
 		/* SRAM */
 		{
-			.base = (phys*)CONFIG_SRAM_BASE_PHYS,
+			.base = phys{CONFIG_SRAM_BASE_PHYS},
 			.size = CONFIG_SRAM_SIZE,
 			.attr = MA_SPEED_1 | MA_DMA | MA_SECURE,
 			.priority = 1,
