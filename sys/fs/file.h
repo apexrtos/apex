@@ -41,5 +41,5 @@ struct file {
 	int		f_count;	/* reference count */
 	off_t		f_offset;	/* current position in file */
 	void		*f_data;	/* per-handle data for drivers */
-	struct vnode	*f_vnode;	/* vnode */
+	vnode *f_vnode;	/* vnode */
 };

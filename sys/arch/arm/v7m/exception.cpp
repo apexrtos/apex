@@ -17,7 +17,7 @@
  * dump_exception
  */
 static void
-dump_exception(struct exception_frame_basic *e, bool handler_mode, int exc)
+dump_exception(exception_frame_basic *e, bool handler_mode, int exc)
 {
 	emergency("%s mode exception %d, thread %p\n",
 	    handler_mode ? "Handler" : "Thread", exc, thread_cur());
@@ -64,7 +64,7 @@ derived_exception(int sig)
  * exc_Unhandled
  */
 extern "C" void
-exc_Unhandled(struct exception_frame_basic *e, bool handler_mode, int exc)
+exc_Unhandled(exception_frame_basic *e, bool handler_mode, int exc)
 {
 	switch (exc) {
 	case 3:
@@ -88,7 +88,7 @@ extern "C"
 __fast_text
 #endif
 void
-exc_MemManage(struct exception_frame_basic *e, bool handler_mode, int exc)
+exc_MemManage(exception_frame_basic *e, bool handler_mode, int exc)
 {
 #if !defined(CONFIG_MPU)
 	dump_exception(e, handler_mode, exc);
@@ -122,7 +122,7 @@ exc_MemManage(struct exception_frame_basic *e, bool handler_mode, int exc)
  * exc_BusFault
  */
 extern "C" void
-exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
+exc_BusFault(exception_frame_basic *e, bool handler_mode, int exc)
 {
 	dump_exception(e, handler_mode, exc);
 
@@ -146,7 +146,7 @@ exc_BusFault(struct exception_frame_basic *e, bool handler_mode, int exc)
  * exc_UsageFault
  */
 extern "C" void
-exc_UsageFault(struct exception_frame_basic *e, bool handler_mode, int exc)
+exc_UsageFault(exception_frame_basic *e, bool handler_mode, int exc)
 {
 	const union scb_cfsr_ufsr ufsr = read16(&SCB->CFSR.UFSR);
 	const char *what = "Usage Fault\n";

@@ -33,8 +33,8 @@ struct syst {
 		uint32_t r;
 	} CALIB;
 };
-static_assert(sizeof(struct syst) == 16, "Bad SYST size");
-static struct syst *const SYST = (struct syst*)0xe000e010;
+static_assert(sizeof(syst) == 16, "Bad SYST size");
+static syst *const SYST = (syst*)0xe000e010;
 
 __fast_bss uint64_t scale;
 
@@ -42,7 +42,7 @@ __fast_bss uint64_t scale;
  * Initialise
  */
 void
-arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *d)
+arm_armv7m_systick_init(const arm_armv7m_systick_desc *d)
 {
 	/* do not configure twice */
 	assert(!read32(&SYST->CSR).ENABLE);

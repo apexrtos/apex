@@ -43,8 +43,8 @@ struct cond_private {
 	struct event event;
 };
 
-static_assert(sizeof(struct cond_private) == sizeof(struct cond), "");
-static_assert(alignof(struct cond_private) == alignof(struct cond), "");
+static_assert(sizeof(cond_private) == sizeof(cond), "");
+static_assert(alignof(cond_private) == alignof(cond), "");
 
 /*
  * cond_init - Create and initialize a condition variable.
@@ -53,9 +53,9 @@ static_assert(alignof(struct cond_private) == alignof(struct cond), "");
  * undefined behavior results.
  */
 void
-cond_init(struct cond *c)
+cond_init(cond *c)
 {
-	struct cond_private *cp = (struct cond_private*)c->storage;
+	cond_private *cp = (cond_private*)c->storage;
 
 	event_init(&cp->event, "condition", ev_COND);
 }
@@ -64,13 +64,13 @@ cond_init(struct cond *c)
  * cond_wait - Wait on a condition.
  */
 int
-cond_wait_interruptible(struct cond *c, struct mutex *m)
+cond_wait_interruptible(cond *c, mutex *m)
 {
 	return cond_timedwait_interruptible(c, m, 0);
 }
 
 int
-cond_wait(struct cond *c, struct mutex *m)
+cond_wait(cond *c, mutex *m)
 {
 	const k_sigset_t sig_mask = sig_block_all();
 	const int ret = cond_wait_interruptible(c, m);
@@ -85,13 +85,13 @@ cond_wait(struct cond *c, struct mutex *m)
  * returned.
  */
 int
-cond_timedwait_interruptible(struct cond *c, struct mutex *m,
+cond_timedwait_interruptible(cond *c, mutex *m,
 			     uint_fast64_t nsec)
 {
 	assert(!sch_locks());
 	assert(!interrupt_running());
 
-	struct cond_private *cp = (struct cond_private*)c->storage;
+	cond_private *cp = (cond_private*)c->storage;
 
 	int r;
 
@@ -105,7 +105,7 @@ cond_timedwait_interruptible(struct cond *c, struct mutex *m,
 }
 
 int
-cond_timedwait(struct cond *c, struct mutex *m, uint_fast64_t nsec)
+cond_timedwait(cond *c, mutex *m, uint_fast64_t nsec)
 {
 	const k_sigset_t sig_mask = sig_block_all();
 	const int ret = cond_timedwait_interruptible(c, m, nsec);
@@ -119,9 +119,9 @@ cond_timedwait(struct cond *c, struct mutex *m, uint_fast64_t nsec)
  * The thread which has highest priority will be unblocked.
  */
 int
-cond_signal(struct cond *c)
+cond_signal(cond *c)
 {
-	struct cond_private *cp = (struct cond_private*)c->storage;
+	cond_private *cp = (cond_private*)c->storage;
 
 	sch_wakeone(&cp->event);
 	return 0;
@@ -131,9 +131,9 @@ cond_signal(struct cond *c)
  * cond_broadcast - Unblock all threads that are blocked on the specified CV.
  */
 int
-cond_broadcast(struct cond *c)
+cond_broadcast(cond *c)
 {
-	struct cond_private *cp = (struct cond_private*)c->storage;
+	cond_private *cp = (cond_private*)c->storage;
 
 	sch_wakeup(&cp->event, 0);
 	return 0;

@@ -100,7 +100,7 @@ struct usbphy {
 		uint32_t r;
 	} VERSION;
 };
-static_assert(sizeof(struct usbphy) == 0x84, "");
+static_assert(sizeof(usbphy) == 0x84, "");
 
 /*
  * USB_ANALOG registers
@@ -141,13 +141,13 @@ struct usb_analog {
 	uint32_t MISC_CLR;
 	uint32_t MISC_TOG;
 };
-static_assert(sizeof(struct usb_analog) == 0x60, "");
+static_assert(sizeof(usb_analog) == 0x60, "");
 
 void
-fsl_imx_usbphy_init(const struct fsl_imx_usbphy_desc *d)
+fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 {
-	struct usbphy *const USBPHY = (struct usbphy *)d->base;
-	struct usb_analog *const USB_ANALOG = (struct usb_analog *)d->analog_base;
+	usbphy *const USBPHY = (usbphy *)d->base;
+	usb_analog *const USB_ANALOG = (usb_analog *)d->analog_base;
 
 	/* disable charger & data pin contact detection */
 	write32(&USB_ANALOG->CHRG_DETECT, (union usb_analog_chrg_detect) {

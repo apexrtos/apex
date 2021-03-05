@@ -27,7 +27,7 @@ phys *page_reserve(phys *, size_t, unsigned long paf, void *);
 int page_free(phys *, size_t, void *);
 bool page_valid(const phys *, size_t, void *);
 unsigned long page_attr(const phys *, size_t len);
-void page_init(const struct meminfo *, size_t, const struct bootargs *);
+void page_init(const meminfo *, size_t, const bootargs *);
 void page_dump();
 
 #include <memory>

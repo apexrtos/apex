@@ -7,11 +7,11 @@
 #include <dev/mmc/desc.h>
 
 struct fsl_usdhc_desc {
-	struct mmc_desc mmc;	    /* mmc host controller descriptor */
+	mmc_desc mmc;		    /* mmc host controller descriptor */
 	unsigned long base;	    /* module base address */
 	unsigned long clock;	    /* module clock frequency */
 	int irq;		    /* interrupt number */
 	int ipl;		    /* interrupt priotity level */
 };
 
-void fsl_usdhc_init(const struct fsl_usdhc_desc *);
+void fsl_usdhc_init(const fsl_usdhc_desc *);

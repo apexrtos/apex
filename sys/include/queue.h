@@ -46,7 +46,7 @@ struct queue {
 #define queue_entry(q, type, member) \
     ((type *)((char *)(q) - (unsigned long)(&((type *)0)->member)))
 
-void		enqueue(struct queue *, struct queue *);
-struct queue   *dequeue(struct queue *);
-void		queue_insert(struct queue *, struct queue *);
-void		queue_remove(struct queue *);
+void		enqueue(queue *, queue *);
+queue   *dequeue(queue *);
+void		queue_insert(queue *, queue *);
+void		queue_remove(queue *);

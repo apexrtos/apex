@@ -14,8 +14,8 @@ struct timespec32 {
  */
 struct k_itimerval {
 #if defined(__ILP32__)
-	struct timeval it_interval;
-	struct timeval it_value;
+	timeval it_interval;
+	timeval it_value;
 #else
 	struct {
 		long tv_sec;

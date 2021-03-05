@@ -58,19 +58,19 @@ static char ramfs_id;
  * - don't duplicate tests guaranteed by vfs
  */
 
-static ssize_t ramfs_read_iov(struct file *, const struct iovec *, size_t, off_t);
-static ssize_t ramfs_write_iov(struct file *, const struct iovec *, size_t, off_t);
-static int ramfs_readdir(struct file *, struct dirent *, size_t);
-static int ramfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
-static int ramfs_mknod(struct vnode *, const char *, size_t, int, mode_t);
-static int ramfs_unlink(struct vnode *, struct vnode *);
-static int ramfs_rename(struct vnode *, struct vnode *, struct vnode *, struct vnode *, const char *, size_t);
-static int ramfs_truncate(struct vnode *);
+static ssize_t ramfs_read_iov(file *, const iovec *, size_t, off_t);
+static ssize_t ramfs_write_iov(file *, const iovec *, size_t, off_t);
+static int ramfs_readdir(file *, dirent *, size_t);
+static int ramfs_lookup(vnode *, const char *, size_t, vnode *);
+static int ramfs_mknod(vnode *, const char *, size_t, int, mode_t);
+static int ramfs_unlink(vnode *, vnode *);
+static int ramfs_rename(vnode *, vnode *, vnode *, vnode *, const char *, size_t);
+static int ramfs_truncate(vnode *);
 
 /*
  * vnode operations
  */
-const struct vnops ramfs_vnops = {
+const vnops ramfs_vnops = {
 	.vop_open = ((vnop_open_fn)vop_nullop),
 	.vop_close = ((vnop_close_fn)vop_nullop),
 	.vop_read = ramfs_read_iov,
@@ -89,13 +89,13 @@ const struct vnops ramfs_vnops = {
 	.vop_truncate = ramfs_truncate,
 };
 
-struct ramfs_node *
+ramfs_node *
 ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 {
 	char *rn_name;
-	struct ramfs_node *np;
+	ramfs_node *np;
 
-	if (!(np = malloc(sizeof(struct ramfs_node))))
+	if (!(np = malloc(sizeof(ramfs_node))))
 		return NULL;
 	if (!(rn_name = malloc(name_len + 1))) {
 		free(np);
@@ -104,7 +104,7 @@ ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 
 	memcpy(rn_name, name, name_len);
 	rn_name[name_len] = 0;
-	*np = (struct ramfs_node) {
+	*np = (ramfs_node) {
 		.rn_namelen = name_len,
 		.rn_name = rn_name,
 		.rn_mode = mode,
@@ -114,16 +114,16 @@ ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 }
 
 void
-ramfs_free_node(struct ramfs_node *np)
+ramfs_free_node(ramfs_node *np)
 {
 	free(np->rn_name);
 	free(np);
 }
 
-static struct ramfs_node *
-ramfs_add_node(struct ramfs_node *dnp, const char *name, size_t name_len, mode_t mode)
+static ramfs_node *
+ramfs_add_node(ramfs_node *dnp, const char *name, size_t name_len, mode_t mode)
 {
-	struct ramfs_node *np, *prev;
+	ramfs_node *np, *prev;
 
 	if (!(np = ramfs_allocate_node(name, name_len, mode)))
 		return NULL;
@@ -141,9 +141,9 @@ ramfs_add_node(struct ramfs_node *dnp, const char *name, size_t name_len, mode_t
 }
 
 static int
-ramfs_remove_node(struct ramfs_node *dnp, struct ramfs_node *np)
+ramfs_remove_node(ramfs_node *dnp, ramfs_node *np)
 {
-	struct ramfs_node *prev;
+	ramfs_node *prev;
 
 	if (dnp->rn_child == NULL)
 		return -ENOENT;
@@ -164,7 +164,7 @@ ramfs_remove_node(struct ramfs_node *dnp, struct ramfs_node *np)
 }
 
 static int
-ramfs_rename_node(struct ramfs_node *np, const char *name, size_t name_len)
+ramfs_rename_node(ramfs_node *np, const char *name, size_t name_len)
 {
 	char *tmp;
 
@@ -184,10 +184,10 @@ ramfs_rename_node(struct ramfs_node *np, const char *name, size_t name_len)
 }
 
 static int
-ramfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode *vp)
+ramfs_lookup(vnode *dvp, const char *name, size_t name_len, vnode *vp)
 {
-	struct ramfs_node *np;
-	struct ramfs_node *dnp = dvp->v_data;
+	ramfs_node *np;
+	ramfs_node *dnp = dvp->v_data;
 	int found;
 
 	if (*name == '\0')
@@ -212,9 +212,9 @@ ramfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 
 /* Unlink a node */
 static int
-ramfs_unlink(struct vnode *dvp, struct vnode *vp)
+ramfs_unlink(vnode *dvp, vnode *vp)
 {
-	struct ramfs_node *np;
+	ramfs_node *np;
 
 	rfsdbg("unlink %s in %s\n", vp->v_path, dvp->v_path);
 
@@ -239,9 +239,9 @@ ramfs_unlink(struct vnode *dvp, struct vnode *vp)
 
 /* Truncate file */
 static int
-ramfs_truncate(struct vnode *vp)
+ramfs_truncate(vnode *vp)
 {
-	struct ramfs_node *np = vp->v_data;
+	ramfs_node *np = vp->v_data;
 
 	rfsdbg("truncate %s\n", vp->v_path);
 	if (np->rn_buf != NULL) {
@@ -262,10 +262,10 @@ ramfs_truncate(struct vnode *vp)
  * Create file system node
  */
 static int
-ramfs_mknod(struct vnode *dvp, const char *name, size_t name_len, int flags, mode_t mode)
+ramfs_mknod(vnode *dvp, const char *name, size_t name_len, int flags, mode_t mode)
 {
-	struct ramfs_node *dnp = dvp->v_data;
-	struct ramfs_node *np;
+	ramfs_node *dnp = dvp->v_data;
+	ramfs_node *np;
 
 	rfsdbg("create (%zu):%s in %s\n", name_len, name, dvp->v_path);
 
@@ -276,10 +276,10 @@ ramfs_mknod(struct vnode *dvp, const char *name, size_t name_len, int flags, mod
 }
 
 static ssize_t
-ramfs_read(struct file *fp, void *buf, size_t size, off_t offset)
+ramfs_read(file *fp, void *buf, size_t size, off_t offset)
 {
-	struct vnode *vp = fp->f_vnode;
-	struct ramfs_node *np = fp->f_vnode->v_data;
+	vnode *vp = fp->f_vnode;
+	ramfs_node *np = fp->f_vnode->v_data;
 
 	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
 		return -EINVAL;
@@ -296,7 +296,7 @@ ramfs_read(struct file *fp, void *buf, size_t size, off_t offset)
 }
 
 static ssize_t
-ramfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
+ramfs_read_iov(file *fp, const iovec *iov, size_t count,
     off_t offset)
 {
 	return for_each_iov(iov, count, offset,
@@ -306,7 +306,7 @@ ramfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
 }
 
 static int
-ramfs_grow(struct ramfs_node *np, off_t new_size)
+ramfs_grow(ramfs_node *np, off_t new_size)
 {
 	void *new_buf = NULL;
 
@@ -351,10 +351,10 @@ ramfs_grow(struct ramfs_node *np, off_t new_size)
 }
 
 static ssize_t
-ramfs_write(struct file *fp, void *buf, size_t size, off_t offset)
+ramfs_write(file *fp, void *buf, size_t size, off_t offset)
 {
-	struct ramfs_node *np = fp->f_vnode->v_data;
-	struct vnode *vp = fp->f_vnode;
+	ramfs_node *np = fp->f_vnode->v_data;
+	vnode *vp = fp->f_vnode;
 
 	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
 		return -EINVAL;
@@ -378,7 +378,7 @@ ramfs_write(struct file *fp, void *buf, size_t size, off_t offset)
 }
 
 static ssize_t
-ramfs_write_iov(struct file *fp, const struct iovec *iov, size_t count,
+ramfs_write_iov(file *fp, const iovec *iov, size_t count,
     off_t offset)
 {
 	return for_each_iov(iov, count, offset,
@@ -388,10 +388,10 @@ ramfs_write_iov(struct file *fp, const struct iovec *iov, size_t count,
 }
 
 static int
-ramfs_rename(struct vnode *dvp1, struct vnode *vp1, struct vnode *dvp2,
-    struct vnode *vp2, const char *name, size_t name_len)
+ramfs_rename(vnode *dvp1, vnode *vp1, vnode *dvp2,
+    vnode *vp2, const char *name, size_t name_len)
 {
-	struct ramfs_node *np, *old_np;
+	ramfs_node *np, *old_np;
 	int err;
 
 	if (vp2) {
@@ -428,11 +428,11 @@ ramfs_rename(struct vnode *dvp1, struct vnode *vp1, struct vnode *dvp2,
  * @vp: vnode of the directory.
  */
 static int
-ramfs_readdir(struct file *fp, struct dirent *buf, size_t len)
+ramfs_readdir(file *fp, dirent *buf, size_t len)
 {
 	size_t remain = len;
-	struct ramfs_node *dnp = fp->f_vnode->v_data;
-	struct ramfs_node *np;
+	ramfs_node *dnp = fp->f_vnode->v_data;
+	ramfs_node *np;
 
 	if (fp->f_offset == 0) {
 		if (dirbuf_add(&buf, &remain, 0, fp->f_offset, DT_DIR, "."))

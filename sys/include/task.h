@@ -41,33 +41,33 @@
 struct task {
 	int		magic;		    /* magic number */
 	char	       *path;		    /* path to executable */
-	struct list	link;		    /* link for all tasks in system */
-	struct list	threads;	    /* threads in this task */
+	list link;			/* link for all tasks in system */
+	list threads;			/* threads in this task */
 	struct as      *as;		    /* address space description */
 	int		suscnt;		    /* suspend counter */
 	unsigned	capability;	    /* security permission flag */
-	struct task    *parent;		    /* parent task */
+	task *parent;			/* parent task */
 	struct futexes	futexes;	    /* futex state for task */
-	struct itimer	itimer_prof;	    /* interval timer ITIMER_PROF */
-	struct itimer	itimer_virtual;	    /* interval timer ITIMER_VIRTUAL */
-	struct timer	itimer_real;	    /* interval timer ITIMER_REAL */
+	itimer itimer_prof;		/* interval timer ITIMER_PROF */
+	itimer itimer_virtual;		/* interval timer ITIMER_VIRTUAL */
+	timer itimer_real;		/* interval timer ITIMER_REAL */
 
 	/* Signal Management */
 	k_sigset_t	    sig_pending;	/* pending signals */
-	struct k_sigaction  sig_action[NSIG];	/* signal handlers */
+	k_sigaction sig_action[NSIG];   /* signal handlers */
 
 	/* Process Management */
 	pid_t		pgid;		    /* process group id */
 	pid_t		sid;		    /* session id */
 	int	        state;		    /* process state */
 	int	        exitcode;	    /* process exit code */
-	struct event	child_event;	    /* child exited event */
+	event child_event;		/* child exited event */
 	int		termsig;	    /* signal to parent on terminate */
-	struct thread  *vfork;		    /* vfork thread to wake */
-	struct event	thread_event;	    /* thread exited event */
+	thread *vfork;			/* vfork thread to wake */
+	event thread_event;		/* thread exited event */
 
 	/* File System State */
-	struct rwlock	fs_lock;	    /* lock for file system data */
+	rwlock fs_lock;			/* lock for file system data */
 	uintptr_t	file[64];	    /* array of file pointers */
 	struct file    *cwdfp;		    /* directory for cwd */
 	mode_t		umask;		    /* current file creation mask */
@@ -99,17 +99,17 @@ struct task {
 #define CAP_ADMIN	0x00010000  /* mount,umount,sethostname,setdomainname,etc */
 
 
-struct task    *task_cur();
-struct task    *task_find(pid_t);
-pid_t		task_pid(struct task *);
-bool		task_valid(struct task *);
-int		task_create(struct task *, int, struct task **);
-int		task_destroy(struct task *);
-int	        task_suspend(struct task *);
-int	        task_resume(struct task *);
-int	        task_path(struct task *, const char *);
+task    *task_cur();
+task    *task_find(pid_t);
+pid_t		task_pid(task *);
+bool		task_valid(task *);
+int		task_create(task *, int, task **);
+int		task_destroy(task *);
+int	        task_suspend(task *);
+int	        task_resume(task *);
+int	        task_path(task *, const char *);
 bool	        task_capable(unsigned);
-bool	        task_access(struct task *);
-struct futexes *task_futexes(struct task *);
+bool	        task_access(task *);
+futexes *task_futexes(task *);
 void		task_dump();
 void		task_init();

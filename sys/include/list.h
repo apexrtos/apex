@@ -54,8 +54,8 @@ struct list {
 /*
  * Insert new node after specified node
  */
-static inline struct list *
-list_insert(struct list *prev, struct list *node)
+static inline list *
+list_insert(list *prev, list *node)
 {
 	/* order is important when a node is asynchronously inserted */
 	node->next = prev->next;
@@ -68,8 +68,8 @@ list_insert(struct list *prev, struct list *node)
 /*
  * Remove specified node from list
  */
-static inline struct list *
-list_remove(struct list *node)
+static inline list *
+list_remove(list *node)
 {
 	node->prev->next = node->next;
 	node->next->prev = node->prev;

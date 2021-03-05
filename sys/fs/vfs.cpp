@@ -47,7 +47,7 @@ static char vfs_id;
 /*
  * Semaphore for cleaning up zombie tasks
  */
-static struct semaphore exit_sem;
+static semaphore exit_sem;
 
 /*
  * Flags on file member of task (low 2 bits of pointer)
@@ -63,13 +63,13 @@ static struct semaphore exit_sem;
  * unlock task file system lock
  */
 static void
-task_read_unlock(struct task *t)
+task_read_unlock(task *t)
 {
 	rwlock_read_unlock(&t->fs_lock);
 }
 
 static void
-task_write_unlock(struct task *t)
+task_write_unlock(task *t)
 {
 	rwlock_write_unlock(&t->fs_lock);
 }
@@ -78,13 +78,13 @@ task_write_unlock(struct task *t)
  * lock task file system lock
  */
 static int
-task_read_lock_interruptible(struct task *t)
+task_read_lock_interruptible(task *t)
 {
 	return rwlock_read_lock_interruptible(&t->fs_lock);
 }
 
 static int
-task_write_lock_interruptible(struct task *t)
+task_write_lock_interruptible(task *t)
 {
 	return rwlock_write_lock_interruptible(&t->fs_lock);
 }
@@ -93,13 +93,13 @@ task_write_lock_interruptible(struct task *t)
  * lock task file system lock
  */
 static void
-task_read_lock(struct task *t)
+task_read_lock(task *t)
 {
 	rwlock_read_lock(&t->fs_lock);
 }
 
 static void
-task_write_lock(struct task *t)
+task_write_lock(task *t)
 {
 	rwlock_write_lock(&t->fs_lock);
 }
@@ -107,12 +107,12 @@ task_write_lock(struct task *t)
 /*
  * fp_ptr - get file pointer from stored file
  */
-static struct file *
+static file *
 fp_ptr(uintptr_t file)
 {
 	if (file == FP_RESERVED)
 		return NULL;
-	return (struct file *)(file & -4);
+	return (file *)(file & -4);
 }
 
 /*
@@ -130,12 +130,12 @@ fp_flags(uintptr_t file)
  *
  * returns NULL if fd is invalid, valid file pointer otherwise.
  */
-static struct file *
-task_getfp_unlocked(struct task *t, int fd)
+static file *
+task_getfp_unlocked(task *t, int fd)
 {
 	assert(rwlock_locked(&t->fs_lock));
 
-	struct file *fp;
+	file *fp;
 
 	if (fd == AT_FDCWD)
 		fp = t->cwdfp;
@@ -154,10 +154,10 @@ task_getfp_unlocked(struct task *t, int fd)
  *
  * returns NULL if fd is invalid, valid file pointer otherwise.
  */
-static struct file *
-task_getfp(struct task *t, int fd)
+static file *
+task_getfp(task *t, int fd)
 {
-	struct file *fp;
+	file *fp;
 	if ((fp = task_getfp_unlocked(t, fd)))
 		vn_lock(fp->f_vnode);
 	return fp;
@@ -168,15 +168,15 @@ task_getfp(struct task *t, int fd)
  *
  * returns -ve error code on failure, valid file pointer otherwise.
  */
-static struct file *
-task_getfp_interruptible(struct task *t, int fd)
+static file *
+task_getfp_interruptible(task *t, int fd)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 	if (!(fp = task_getfp_unlocked(t, fd)))
-		return (struct file *)DERR(-EBADF);
+		return (file *)DERR(-EBADF);
 	if ((err = vn_lock_interruptible(fp->f_vnode)))
-		return (struct file*)err;
+		return (file*)err;
 	return fp;
 }
 
@@ -185,11 +185,11 @@ task_getfp_interruptible(struct task *t, int fd)
  *
  * returns NULL if fd is invalid, valid file pointer otherwise.
  */
-static struct file *
-task_file(struct task *t, int fd)
+static file *
+task_file(task *t, int fd)
 {
 	task_read_lock(t);
-	struct file *fp = task_getfp(t, fd);
+	file *fp = task_getfp(t, fd);
 	task_read_unlock(t);
 	return fp;
 }
@@ -199,13 +199,13 @@ task_file(struct task *t, int fd)
  *
  * returns -ve error code on failure, valid file pointer otherwise.
  */
-static struct file *
-task_file_interruptible(struct task *t, int fd)
+static file *
+task_file_interruptible(task *t, int fd)
 {
 	int err;
 	if ((err = task_read_lock_interruptible(t)))
-		return (struct file *)err;
-	struct file *fp = task_getfp_interruptible(t, fd);
+		return (file *)err;
+	file *fp = task_getfp_interruptible(t, fd);
 	task_read_unlock(t);
 	return fp;
 }
@@ -217,7 +217,7 @@ task_file_interruptible(struct task *t, int fd)
  * Must be called with task locked.
  */
 static int
-task_newfd(struct task *t, int start)
+task_newfd(task *t, size_t start)
 {
 	assert(rwlock_write_locked(&t->fs_lock));
 	assert(start < ARRAY_SIZE(t->file));
@@ -255,7 +255,7 @@ flags_allow_read(int flags)
  * mount_readonly - Check if vnode mount is read only
  */
 static bool
-mount_readonly(const struct vnode *vp)
+mount_readonly(const vnode *vp)
 {
 	return vp->v_mount->m_flags & MS_RDONLY;
 }
@@ -273,7 +273,7 @@ mount_readonly(const struct vnode *vp)
  * -E*:					*		    *
  */
 static int
-lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
+lookup_v(vnode *vp, const char *path, vnode **vpp,
     const char **node, size_t *node_len, int flags, size_t linkcount)
 {
 	int err = 0;
@@ -305,7 +305,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 	 * We must not hold a child node lock while locking a parent node.
 	 */
 	while (*path || (S_ISLNK(vp->v_mode) && !(flags & O_NOFOLLOW))) {
-		struct vnode *child;
+		vnode *child;
 
 		assert(mutex_owner(&vp->v_lock) == thread_cur());
 
@@ -344,7 +344,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 			}
 
 			/* read link target */
-			struct file f = {
+			file f = {
 				.f_flags = O_RDONLY,
 				.f_count = 1,
 				.f_offset = 0,
@@ -352,7 +352,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 			};
 			if ((err = VOP_OPEN(&f, f.f_flags, 0)))
 				goto out;
-			struct iovec iov = {
+			iovec iov = {
 				.iov_base = link_buf,
 				.iov_len = link_buf_size,
 			};
@@ -367,7 +367,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 			link_buf[tgt_len] = 0;
 
 			/* lookup relative to parent node */
-			struct vnode *parent = vp->v_parent;
+			vnode *parent = vp->v_parent;
 			vref(parent);
 			vput(vp);
 			vn_lock(parent);
@@ -408,7 +408,7 @@ lookup_v(struct vnode *vp, const char *path, struct vnode **vpp,
 		    (path[2] == '/' || !path[2])) {
 			/* ".." from root is still root */
 			if (vp->v_parent) {
-				struct vnode *parent = vp->v_parent;
+				vnode *parent = vp->v_parent;
 				vref(parent);
 				vput(vp);
 				vn_lock(parent);
@@ -486,13 +486,13 @@ out:
  * 0:		file exists		refed/locked node   *
  */
 int
-lookup_t(struct task *t, const int fd, const char *path, struct vnode **vpp,
+lookup_t(task *t, const int fd, const char *path, vnode **vpp,
     const char **node, size_t *node_len, int flags)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 
-	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
@@ -519,12 +519,12 @@ lookup_t(struct task *t, const int fd, const char *path, struct vnode **vpp,
  * 0:		file exists		refed/locked node   *
  */
 int
-lookup_t_dir(struct task *t, const int fd, const char *path,
-    struct vnode **vpp, const char **node, size_t *node_len, int flags)
+lookup_t_dir(task *t, const int fd, const char *path,
+    vnode **vpp, const char **node, size_t *node_len, int flags)
 {
-	struct file *fp;
+	file *fp;
 
-	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
@@ -548,15 +548,15 @@ lookup_t_dir(struct task *t, const int fd, const char *path,
  *  0:		node does not exist	refed/locked dir    remainder of path
  */
 int
-lookup_t_noexist(struct task *t, const int fd, const char *path,
-    struct vnode **vpp, const char **node, size_t *node_len, int flags)
+lookup_t_noexist(task *t, const int fd, const char *path,
+    vnode **vpp, const char **node, size_t *node_len, int flags)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 	size_t node_len_;
 	const char *node_;
 
-	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	/* lookup_v always calls vput on vp */
@@ -594,14 +594,14 @@ out:
  * fs_openfp - file pointer based open
  */
 static int
-fs_openfp(struct task *t, const int dirfd, const char *path, int flags,
+fs_openfp(task *t, const int dirfd, const char *path, int flags,
     mode_t mode, uintptr_t *pfp)
 {
 	const char *node;
 	int err;
 	size_t node_len;
-	struct file *fp = NULL;
-	struct vnode *vp = NULL;
+	file *fp = NULL;
+	vnode *vp = NULL;
 
 	vdbgsys("fs_openfp: path=%s flags=%x mode=%x\n", path, flags, mode);
 
@@ -610,7 +610,7 @@ fs_openfp(struct task *t, const int dirfd, const char *path, int flags,
 	/* handle create request */
 	if (flags & O_CREAT) {
 		if (err == -ENOENT) {
-			struct vnode *nvp;
+			vnode *nvp;
 
 			/* file doesn't exist */
 			if (mount_readonly(vp)) {
@@ -682,10 +682,10 @@ fs_openfp(struct task *t, const int dirfd, const char *path, int flags,
 
 	/* create file structure */
 	if (*pfp)
-		fp = (struct file *)pfp;
-	else if (!(fp = malloc(sizeof(struct file))))
+		fp = (file *)pfp;
+	else if (!(fp = malloc(sizeof(file))))
 			return DERR(-ENOMEM);
-	*fp = (struct file) {
+	*fp = (file) {
 		.f_flags = flags & ~O_CLOEXEC,
 		.f_count = 1,
 		.f_offset = 0,
@@ -719,7 +719,7 @@ out:
  * for use by vm layer
  */
 void
-vn_reference(struct vnode *vn)
+vn_reference(vnode *vn)
 {
 	vref(vn);
 }
@@ -730,7 +730,7 @@ vn_reference(struct vnode *vn)
  * for use by vm layer
  */
 char *
-vn_name(struct vnode *vn)
+vn_name(vnode *vn)
 {
 	return vn->v_name;
 }
@@ -739,10 +739,10 @@ vn_name(struct vnode *vn)
  * putfp - release reference on file pointer
  */
 static int
-putfp(struct file *fp)
+putfp(file *fp)
 {
 	int err;
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	assert(fp->f_count > 0);
 	assert(mutex_owner(&vp->v_lock) == thread_cur());
@@ -768,7 +768,7 @@ putfp(struct file *fp)
  * fs_closefp - file pointer based close
  */
 static int
-fs_closefp(struct file *fp)
+fs_closefp(file *fp)
 {
 	vdbgsys("fs_closefp: fp=%x count=%d\n", (u_int)fp, fp->f_count);
 	assert(fp->f_count > 1);
@@ -782,7 +782,7 @@ fs_closefp(struct file *fp)
 static void
 fs_thread(void *arg)
 {
-	struct task *t;
+	task *t;
 
 	while (true) {
 		semaphore_wait_interruptible(&exit_sem);
@@ -820,8 +820,8 @@ fs_init()
 	/*
 	 * Initialize each file system.
 	 */
-	extern const struct vfssw __filesystems, __filesystems_end;
-	for (const struct vfssw *fs = &__filesystems; fs != &__filesystems_end; ++fs) {
+	extern const vfssw __filesystems, __filesystems_end;
+	for (const vfssw *fs = &__filesystems; fs != &__filesystems_end; ++fs) {
 		dbg("Initialise %s\n", fs->vs_name);
 		fs->vs_op->vfs_init();
 	}
@@ -833,16 +833,16 @@ fs_init()
 void
 fs_kinit()
 {
-	struct task *t = &kern_task;
-	struct vnode *vp;
+	task *t = &kern_task;
+	vnode *vp;
 
 	if (!(vp = vn_lookup(NULL, "", 0)))
 		panic("vn_lookup");
 
 	/* create file structure */
-	if (!(t->cwdfp = malloc(sizeof(struct file))))
+	if (!(t->cwdfp = malloc(sizeof(file))))
 		panic("malloc");
-	*t->cwdfp = (struct file) {
+	*t->cwdfp = (file) {
 		.f_flags = O_RDONLY,
 		.f_count = 1,
 		.f_offset = 0,
@@ -871,9 +871,9 @@ fs_shutdown()
  * Can be called under interrupt.
  */
 void
-fs_exit(struct task *t)
+fs_exit(task *t)
 {
-	struct file *fp;
+	file *fp;
 	int fd;
 
 	/*
@@ -923,16 +923,16 @@ fs_exit(struct task *t)
  * fs_fork - Called when a new task is forked.
  */
 void
-fs_fork(struct task *t)
+fs_fork(task *t)
 {
-	struct task *p = task_cur();
+	task *p = task_cur();
 
 	task_read_lock(p);
 	task_write_lock(t);
 
 	/* Copy cwd and increment reference count */
 	t->cwdfp = p->cwdfp;
-	struct vnode *cwd_vp = t->cwdfp->f_vnode;
+	vnode *cwd_vp = t->cwdfp->f_vnode;
 	vn_lock(cwd_vp);
 	t->cwdfp->f_count++;
 	vn_unlock(cwd_vp);
@@ -944,10 +944,10 @@ fs_fork(struct task *t)
 	if (p == &kern_task)
 		goto out;
 	for (size_t i = 0; i < ARRAY_SIZE(t->file); i++) {
-		struct file *fp;
+		file *fp;
 		if (!(fp = task_getfp(p, i)))
 			continue;
-		struct vnode *vp = fp->f_vnode;
+		vnode *vp = fp->f_vnode;
 		/* copy FF_CLOEXEC, keep file reference from task_getfp */
 		t->file[i] = p->file[i];
 		vn_unlock(vp);
@@ -962,7 +962,7 @@ out:
  * fs_exec - Called when a task calls 'exec'.
  */
 void
-fs_exec(struct task *t)
+fs_exec(task *t)
 {
 	/*
 	 * Close directory file descripters and file
@@ -970,10 +970,10 @@ fs_exec(struct task *t)
 	 */
 	task_write_lock(t);
 	for (size_t i = 0; i < ARRAY_SIZE(t->file); ++i) {
-		struct file *fp;
+		file *fp;
 		if (!(fp = task_getfp(t, i)))
 			continue;
-		struct vnode *vp = fp->f_vnode;
+		vnode *vp = fp->f_vnode;
 		if (S_ISDIR(vp->v_mode) || fp_flags(t->file[i]) & FF_CLOEXEC) {
 			fs_closefp(fp);
 			t->file[i] = 0;
@@ -988,12 +988,12 @@ fs_exec(struct task *t)
  * open
  */
 int
-openfor(struct task *t, int dirfd, const char *path, int flags, ...)
+openfor(task *t, int dirfd, const char *path, int flags, ...)
 {
 	int ret, fd;
 	mode_t mode;
 	uintptr_t fp = 0;
-	struct file *fpp;
+	file *fpp;
 	va_list args;
 	int err;
 
@@ -1079,16 +1079,16 @@ kopen(const char *path, int flags, ...)
 	return openfor(&kern_task, AT_FDCWD, path, flags, mode);
 }
 
-struct vnode *
+vnode *
 vn_open(int fd, int flags)
 {
-	struct task *t = task_cur();
-	struct file *fp;
+	task *t = task_cur();
+	file *fp;
 
 	if (!(fp = task_file(t, fd)))
 		return NULL;
 
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	/* cannot vn_open if filesystem/device requires per-handle data or if
 	 * fd was not opened with compatible flags */
@@ -1106,11 +1106,11 @@ vn_open(int fd, int flags)
  * utimensat
  */
 int
-utimensat(int dirfd, const char *path, const struct timespec *times,
+utimensat(int dirfd, const char *path, const timespec *times,
     int flags)
 {
 	int err;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("utimensat: dirfd=%d path=%s flags=%x\n",
 	    dirfd, path, flags);
@@ -1129,14 +1129,14 @@ utimensat(int dirfd, const char *path, const struct timespec *times,
  * close
  */
 int
-closefor(struct task *t, int fd)
+closefor(task *t, int fd)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 
 	vdbgsys("closefor: task=%p fd=%d\n", t, fd);
 
-	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	task_write_lock(t);
@@ -1160,7 +1160,7 @@ kclose(int fd)
 }
 
 void
-vn_close(struct vnode *vp)
+vn_close(vnode *vp)
 {
 	vn_lock(vp);
 	vput(vp);
@@ -1175,7 +1175,7 @@ mknodat(int dirfd, const char *path, mode_t mode, dev_t dev)
 	const char *node;
 	int err;
 	size_t node_len;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("sys_mknod: dirfd=%d path=%s mode=%d dev=%llu\n",
 	    dirfd, path, mode, dev);
@@ -1248,14 +1248,14 @@ off_t
 lseek(int fd, off_t off, int whence)
 {
 	off_t err;
-	struct file *fp;
+	file *fp;
 
 	vdbgsys("lseek: fd=%d off=%lld whence=%d\n", fd, off, whence);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (int)fp;
 
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	if (S_ISFIFO(vp->v_mode)) {
 		err = DERR(-ESPIPE);
@@ -1309,11 +1309,11 @@ out:
  * read
  */
 static ssize_t
-do_readv(struct file *fp, const struct iovec *iov, int count, off_t offset,
+do_readv(file *fp, const iovec *iov, int count, off_t offset,
     bool update_offset)
 {
 	ssize_t res;
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	vdbgsys("readv: fp=%p iov=%p count=%d offset=%lld\n",
 	    fp, iov, count, offset);
@@ -1360,7 +1360,7 @@ out:
 ssize_t
 read(int fd, void *buf, size_t len)
 {
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = buf,
 		.iov_len = len,
 	};
@@ -1369,10 +1369,10 @@ read(int fd, void *buf, size_t len)
 }
 
 ssize_t
-readv(int fd, const struct iovec *iov, int count)
+readv(int fd, const iovec *iov, int count)
 {
-	struct file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	file *fp;
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (ssize_t)fp;
 
 	const bool update_offset = true;
@@ -1382,7 +1382,7 @@ readv(int fd, const struct iovec *iov, int count)
 ssize_t
 pread(int fd, void *buf, size_t len, off_t offset)
 {
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = buf,
 		.iov_len = len,
 	};
@@ -1391,10 +1391,10 @@ pread(int fd, void *buf, size_t len, off_t offset)
 }
 
 ssize_t
-preadv(int fd, const struct iovec *iov, int count, off_t offset)
+preadv(int fd, const iovec *iov, int count, off_t offset)
 {
-	struct file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	file *fp;
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (ssize_t)fp;
 
 	const bool update_offset = false;
@@ -1404,7 +1404,7 @@ preadv(int fd, const struct iovec *iov, int count, off_t offset)
 ssize_t
 kpread(int fd, void *buf, size_t len, off_t offset)
 {
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = buf,
 		.iov_len = len,
 	};
@@ -1413,10 +1413,10 @@ kpread(int fd, void *buf, size_t len, off_t offset)
 }
 
 ssize_t
-kpreadv(int fd, const struct iovec *iov, int count, off_t offset)
+kpreadv(int fd, const iovec *iov, int count, off_t offset)
 {
-	struct file *fp;
-	if ((fp = task_file_interruptible(&kern_task, fd)) > (struct file *)-4096UL)
+	file *fp;
+	if ((fp = task_file_interruptible(&kern_task, fd)) > (file *)-4096UL)
 		return (ssize_t)fp;
 
 	const bool update_offset = false;
@@ -1424,9 +1424,9 @@ kpreadv(int fd, const struct iovec *iov, int count, off_t offset)
 }
 
 ssize_t
-vn_pread(struct vnode *vp, void *buf, size_t len, off_t offset)
+vn_pread(vnode *vp, void *buf, size_t len, off_t offset)
 {
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = buf,
 		.iov_len = len,
 	};
@@ -1435,10 +1435,10 @@ vn_pread(struct vnode *vp, void *buf, size_t len, off_t offset)
 }
 
 ssize_t
-vn_preadv(struct vnode *vp, const struct iovec *iov, int count, off_t offset)
+vn_preadv(vnode *vp, const iovec *iov, int count, off_t offset)
 {
 	/* read from dummy file */
-	struct file f = {
+	file f = {
 		.f_flags = O_RDONLY,
 		.f_count = 99,
 		.f_offset = 0,
@@ -1456,11 +1456,11 @@ vn_preadv(struct vnode *vp, const struct iovec *iov, int count, off_t offset)
  * write
  */
 static ssize_t
-do_writev(struct file *fp, const struct iovec *iov, int count, off_t offset,
+do_writev(file *fp, const iovec *iov, int count, off_t offset,
     bool update_offset)
 {
 	ssize_t res;
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	/* console driver calls write.. */
 	vdbgsys("writev: fp=%p iov=%p count=%d, offset=%lld\n",
@@ -1516,7 +1516,7 @@ write(int fd, const void *buf, size_t len)
 	if (len == 0)
 		return 0;
 
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = (void*)buf,
 		.iov_len = len,
 	};
@@ -1525,10 +1525,10 @@ write(int fd, const void *buf, size_t len)
 }
 
 ssize_t
-writev(int fd, const struct iovec *iov, int count)
+writev(int fd, const iovec *iov, int count)
 {
-	struct file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	file *fp;
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (ssize_t)fp;
 
 	/* append sets file position to end before writing */
@@ -1545,7 +1545,7 @@ pwrite(int fd, const void *buf, size_t len, off_t offset)
 	if (len == 0)
 		return 0;
 
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = (void*)buf,
 		.iov_len = len,
 	};
@@ -1554,10 +1554,10 @@ pwrite(int fd, const void *buf, size_t len, off_t offset)
 }
 
 ssize_t
-pwritev(int fd, const struct iovec *iov, int count, off_t offset)
+pwritev(int fd, const iovec *iov, int count, off_t offset)
 {
-	struct file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	file *fp;
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (ssize_t)fp;
 
 	const bool update_offset = false;
@@ -1567,7 +1567,7 @@ pwritev(int fd, const struct iovec *iov, int count, off_t offset)
 ssize_t
 kpwrite(int fd, const void *buf, size_t len, off_t offset)
 {
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = (void*)buf,
 		.iov_len = len,
 	};
@@ -1576,10 +1576,10 @@ kpwrite(int fd, const void *buf, size_t len, off_t offset)
 }
 
 ssize_t
-kpwritev(int fd, const struct iovec *iov, int count, off_t offset)
+kpwritev(int fd, const iovec *iov, int count, off_t offset)
 {
-	struct file *fp;
-	if ((fp = task_file_interruptible(&kern_task, fd)) > (struct file *)-4096UL)
+	file *fp;
+	if ((fp = task_file_interruptible(&kern_task, fd)) > (file *)-4096UL)
 		return (ssize_t)fp;
 
 	const bool update_offset = false;
@@ -1590,10 +1590,10 @@ kpwritev(int fd, const struct iovec *iov, int count, off_t offset)
  * ioctl
  */
 static int
-do_ioctl(struct task *t, int fd, int request, va_list ap)
+do_ioctl(task *t, int fd, int request, va_list ap)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 	char *arg;
 
 	arg = va_arg(ap, char *);
@@ -1601,7 +1601,7 @@ do_ioctl(struct task *t, int fd, int request, va_list ap)
 	vdbgsys("ioctl: task=%p fd=%d request=%x arg=%p\n",
 	    t, fd, request, arg);
 
-	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	if (!fp->f_vnode->v_mount)
@@ -1646,11 +1646,11 @@ int
 fsync(int fd)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 
 	vdbgsys("fs_fsync: fd=%d\n", fd);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	if (!flags_allow_write(fp->f_flags)) {
@@ -1671,7 +1671,7 @@ int
 fstatat(int dirfd, const char *path, struct stat *st, int flags)
 {
 	int err;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("fstatat: dirfd=%d path=%s st=%p flags=%x\n",
 	    dirfd, path, st, flags);
@@ -1693,14 +1693,14 @@ stat(const char *path, struct stat *st)
 }
 
 static int
-do_fstat(struct task *t, int fd, struct stat *st)
+do_fstat(task *t, int fd, struct stat *st)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 
 	vdbgsys("fstat: task=%p fd=%d st=%p\n", t, fd, st);
 
-	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	err = vn_stat(fp->f_vnode, st);
@@ -1725,14 +1725,14 @@ kfstat(int fd, struct stat *st)
  * getdents
  */
 int
-getdents(int dirfd, struct dirent *buf, size_t len)
+getdents(int dirfd, dirent *buf, size_t len)
 {
 	int err;
-	struct file *fp;
+	file *fp;
 
 	vdbgsys("getdents: dirfd=%d buf=%p len=%zu\n", dirfd, buf, len);
 
-	if ((fp = task_file_interruptible(task_cur(), dirfd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(task_cur(), dirfd)) > (file *)-4096UL)
 		return (int)fp;
 
 	if (!S_ISDIR(fp->f_vnode->v_mode)) {
@@ -1756,7 +1756,7 @@ mkdirat(int dirfd, const char *path, mode_t mode)
 	const char *node;
 	int err;
 	size_t node_len;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("mkdirat: dirfd=%d path=%s mode=%d\n", dirfd, path, mode);
 
@@ -1800,7 +1800,7 @@ rmdir(const char *path)
 int
 faccessat(int dirfd, const char *path, int mode, int flags)
 {
-	struct vnode *vp;
+	vnode *vp;
 	int err;
 
 	vdbgsys("fs_access: path=%s\n", path);
@@ -1829,10 +1829,10 @@ access(const char *path, int mode)
 int
 dup(int fildes)
 {
-	struct task *t = task_cur();
-	struct file *fp;
+	task *t = task_cur();
+	file *fp;
 	int fildes2;
-	struct vnode *vp;
+	vnode *vp;
 	int err;
 
 	vdbgsys("dup: fildes=%d\n", fildes);
@@ -1843,7 +1843,7 @@ dup(int fildes)
 	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
-	if ((fp = task_getfp_interruptible(t, fildes)) > (struct file *)-4096UL) {
+	if ((fp = task_getfp_interruptible(t, fildes)) > (file *)-4096UL) {
 		task_write_unlock(t);
 		return (int)fp;
 	}
@@ -1871,9 +1871,9 @@ dup(int fildes)
  * dup2
  */
 int
-dup2for(struct task *t, int fildes, int fildes2)
+dup2for(task *t, int fildes, int fildes2)
 {
-	struct file *fp, *fp2;
+	file *fp, *fp2;
 	int err;
 
 	vdbgsys("dup2for t=%p fildes=%d fildes2=%d\n", t, fildes, fildes2);
@@ -1888,7 +1888,7 @@ dup2for(struct task *t, int fildes, int fildes2)
 	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
-	if ((fp = task_getfp_interruptible(t, fildes)) > (struct file *)-4096UL) {
+	if ((fp = task_getfp_interruptible(t, fildes)) > (file *)-4096UL) {
 		task_write_unlock(t);
 		return (int)fp;
 	}
@@ -1925,7 +1925,7 @@ dup2(int fildes, int fildes2)
 mode_t
 umask(mode_t mask)
 {
-	struct task *t = task_cur();
+	task *t = task_cur();
 	int err;
 
 	vdbgsys("umask mask=0%03o\n", mask);
@@ -1946,7 +1946,7 @@ umask(mode_t mask)
 char *
 getcwd(char *buf, size_t size)
 {
-	struct file *fp;
+	file *fp;
 
 	vdbgsys("getcwd buf=%p size=%zu\n", buf, size);
 
@@ -1955,14 +1955,14 @@ getcwd(char *buf, size_t size)
 	if (size < 2)
 		return (char*)DERR(-ERANGE);
 
-	if ((fp = task_file_interruptible(task_cur(), AT_FDCWD)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(task_cur(), AT_FDCWD)) > (file *)-4096UL)
 		return (char*)fp;
 
 	/* build path from child to parent node */
 	char *p = buf + size - 1;
 	*p = 0;
 
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 	--fp->f_count;
 	vref(vp);
 	while (vp->v_parent) {
@@ -1977,7 +1977,7 @@ getcwd(char *buf, size_t size)
 		memcpy(p + 1, vp->v_name, len - 1);
 
 		/* move to parent */
-		struct vnode *parent = vp->v_parent;
+		vnode *parent = vp->v_parent;
 		vref(parent);
 		vput(vp);
 		vn_lock(parent);
@@ -2003,9 +2003,9 @@ getcwd(char *buf, size_t size)
 int
 chdir(const char *path)
 {
-	struct task *t = task_cur();
+	task *t = task_cur();
 	uintptr_t fp = 0;
-	struct file *fpp;
+	file *fpp;
 	int err;
 
 	vdbgsys("chdir path=%s\n", path);
@@ -2035,7 +2035,7 @@ int
 unlinkat(int dirfd, const char *path, int flags)
 {
 	int err;
-	struct vnode *vp, *dvp;
+	vnode *vp, *dvp;
 
 	vdbgsys("unlinkat dirfd=%d path=%s flags=%x\n", dirfd, path, flags);
 
@@ -2098,8 +2098,8 @@ unlink(const char *path)
 int
 fcntl(int fd, int cmd, ...)
 {
-	struct task *t = task_cur();
-	struct file *fp;
+	task *t = task_cur();
+	file *fp;
 	va_list args;
 	long arg;
 	int err;
@@ -2113,7 +2113,7 @@ fcntl(int fd, int cmd, ...)
 	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
-	if ((fp = task_getfp_interruptible(t, fd)) > (struct file *)-4096UL) {
+	if ((fp = task_getfp_interruptible(t, fd)) > (file *)-4096UL) {
 		task_write_unlock(t);
 		return (int)fp;
 	}
@@ -2173,14 +2173,14 @@ fcntl(int fd, int cmd, ...)
 int
 fstatfs(int fd, struct statfs *stf)
 {
-	struct task *t = task_cur();
-	struct file *fp;
-	struct vnode *vp;
+	task *t = task_cur();
+	file *fp;
+	vnode *vp;
 	int err;
 
 	vdbgsys("fstatfs fd=%d stf=%p\n", fd, stf);
 
-	if ((fp = task_file_interruptible(t, fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	vp = fp->f_vnode;
@@ -2201,7 +2201,7 @@ int
 statfs(const char *path, struct statfs *stf)
 {
 	int err;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("statfs path=%s stf=%p\n", path, stf);
 
@@ -2226,9 +2226,9 @@ pipe2(int fd[2], int flags)
 	if ((flags & (O_CLOEXEC | O_NONBLOCK)) != flags)
 		return DERR(-EINVAL);
 
-	struct task *t = task_cur();
-	struct file *rfp, *wfp;
-	struct vnode *vp;
+	task *t = task_cur();
+	file *rfp, *wfp;
+	vnode *vp;
 	int r, rfd, wfd;
 	int err;
 
@@ -2257,21 +2257,21 @@ pipe2(int fd[2], int flags)
 	}
 
 	/* create file structures */
-	if (!(rfp = malloc(sizeof(struct file)))) {
+	if (!(rfp = malloc(sizeof(file)))) {
 		r = DERR(-ENOMEM);
 		goto out1;
 	}
-	if (!(wfp = malloc(sizeof(struct file)))) {
+	if (!(wfp = malloc(sizeof(file)))) {
 		r = DERR(-ENOMEM);
 		goto out2;
 	}
 
-	*rfp = (struct file){
+	*rfp = (file){
 		.f_flags = O_RDONLY | (flags & ~O_CLOEXEC),
 		.f_count = 1,
 		.f_vnode = vp,
 	};
-	*wfp = (struct file){
+	*wfp = (file){
 		.f_flags = O_WRONLY | (flags & ~O_CLOEXEC),
 		.f_count = 1,
 		.f_vnode = vp,
@@ -2326,8 +2326,8 @@ symlinkat(const char *target, int dirfd, const char *path)
 	const char *node;
 	int err;
 	size_t node_len;
-	struct vnode *dvp;
-	struct file f;
+	vnode *dvp;
+	file f;
 	size_t target_len;
 
 	vdbgsys("symlinkat target=%s dirfd=%d path=%s\n", target, dirfd, path);
@@ -2398,7 +2398,7 @@ ssize_t
 readlinkat(int dirfd, const char *path, char *buf, size_t len)
 {
 	int res;
-	struct file f;
+	file f;
 
 	vdbgsys("readlinkat dirfd=%d path=%s buf=%p len=%zu\n",
 	    dirfd, path, buf, len);
@@ -2412,7 +2412,7 @@ readlinkat(int dirfd, const char *path, char *buf, size_t len)
 		return res;
 	}
 
-	struct iovec iov = {
+	iovec iov = {
 		.iov_base = buf,
 		.iov_len = len,
 	};
@@ -2439,8 +2439,8 @@ int
 renameat(int fromdirfd, const char *from, int todirfd, const char *to)
 {
 	int err;
-	struct vnode *fvp, *tvp;
-	struct vnode *fdvp, *tdvp;
+	vnode *fvp, *tvp;
+	vnode *fdvp, *tdvp;
 	const char *node;
 	size_t node_len;
 
@@ -2548,7 +2548,7 @@ rename(const char *from, const char *to)
  * chmod
  */
 static int
-do_chmod(struct vnode *vp, mode_t mode)
+do_chmod(vnode *vp, mode_t mode)
 {
 	/* TODO(chmod): implement */
 
@@ -2560,7 +2560,7 @@ int
 fchmodat(int dirfd, const char *path, mode_t mode, int flags)
 {
 	int err;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("fchmodat dirfd=%d path=%s mode=0%03o flags=%x\n",
 	    dirfd, path, mode, flags);
@@ -2575,12 +2575,12 @@ fchmodat(int dirfd, const char *path, mode_t mode, int flags)
 int
 fchmod(int fd, mode_t mode)
 {
-	struct file *fp;
-	struct vnode *vp;
+	file *fp;
+	vnode *vp;
 
 	vdbgsys("fchmod fd=%d mode=0%03o\n", fd, mode);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	vp = fp->f_vnode;
@@ -2600,7 +2600,7 @@ chmod(const char *path, mode_t mode)
  * chown
  */
 static int
-do_chown(struct vnode *vp, uid_t uid, gid_t gid)
+do_chown(vnode *vp, uid_t uid, gid_t gid)
 {
 	/* TODO(chown): implement */
 
@@ -2612,7 +2612,7 @@ int
 fchownat(int dirfd, const char *path, uid_t uid, gid_t gid, int flags)
 {
 	int err;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("fchownat dirfd=%d path=%s uid=%d gid=%d flags=%x\n",
 	    dirfd, path, uid, gid, flags);
@@ -2627,12 +2627,12 @@ fchownat(int dirfd, const char *path, uid_t uid, gid_t gid, int flags)
 int
 fchown(int fd, uid_t uid, gid_t gid)
 {
-	struct file *fp;
-	struct vnode *vp;
+	file *fp;
+	vnode *vp;
 
 	vdbgsys("fchown fd=%d uid=%d gid=%d\n", fd, uid, gid);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (struct file *)-4096UL)
+	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
 		return (int)fp;
 
 	vp = fp->f_vnode;
@@ -2660,20 +2660,20 @@ chown(const char *path, uid_t uid, gid_t gid)
 void
 file_dump()
 {
-	struct list *i;
-	struct task *t;
+	list *i;
+	task *t;
 
 	info("file dump\n");
 	info("=========\n");
 	sch_lock();
 	i = &kern_task.link;
 	do {
-		t = list_entry(i, struct task, link);
+		t = list_entry(i, task, link);
 		info(" %s (%08x) cwd: %p\n", t->path, (int)t, t->cwdfp->f_vnode);
 		info("   fd         fp fp_flags fd_flags count   offset      vnode\n");
 		info("  --- ---------- -------- -------- ----- -------- ----------\n");
 		for (size_t j = 0; j < ARRAY_SIZE(t->file); ++j) {
-			struct file *f = fp_ptr(t->file[j]);
+			file *f = fp_ptr(t->file[j]);
 			if (!f)
 				continue;
 			int fd_flags = fp_flags(t->file[j]);

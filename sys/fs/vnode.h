@@ -42,14 +42,14 @@ struct stat;
  * appropriate lock.
  */
 struct vnode {
-	struct list	 v_link;	/* link for hash map */
+	list v_link;		/* link for hash map */
 	struct mount	*v_mount;	/* mounted vfs pointer */
-	struct vnode	*v_parent;	/* pointer to parent vnode */
+	vnode* v_parent;	/* pointer to parent vnode */
 	unsigned	 v_refcnt;	/* reference count */
 	short		 v_flags;	/* vnode flag */
 	mode_t		 v_mode;	/* file mode */
 	off_t		 v_size;	/* file size */
-	struct mutex	 v_lock;	/* lock for this vnode */
+	mutex v_lock;		/* lock for this vnode */
 	int		 v_blkno;	/* block number */
 	char		*v_name;	/* name of node */
 	void		*v_data;	/* private data for fs */
@@ -78,22 +78,22 @@ struct vattr {
 /*
  * vnode operations
  */
-typedef	int (*vnop_open_fn)	(struct file *, int flags, mode_t);
-typedef	int (*vnop_close_fn)	(struct file *);
-typedef	ssize_t (*vnop_read_fn)	(struct file *, const struct iovec *, size_t, off_t);
-typedef	ssize_t (*vnop_write_fn)(struct file *, const struct iovec *, size_t, off_t);
-typedef	int (*vnop_seek_fn)	(struct file *, off_t, int);
-typedef	int (*vnop_ioctl_fn)	(struct file *, u_long, void *);
-typedef	int (*vnop_fsync_fn)	(struct file *);
-typedef	int (*vnop_readdir_fn)	(struct file *, struct dirent *, size_t);
-typedef	int (*vnop_lookup_fn)	(struct vnode *, const char *, size_t, struct vnode *);
-typedef	int (*vnop_mknod_fn)	(struct vnode *, const char *, size_t, int flags, mode_t);
-typedef	int (*vnop_unlink_fn)	(struct vnode *, struct vnode *);
-typedef	int (*vnop_rename_fn)	(struct vnode *, struct vnode *, struct vnode *, struct vnode *, const char *, size_t);
-typedef	int (*vnop_getattr_fn)	(struct vnode *, struct vattr *);
-typedef	int (*vnop_setattr_fn)	(struct vnode *, struct vattr *);
-typedef	int (*vnop_inactive_fn)	(struct vnode *);
-typedef	int (*vnop_truncate_fn)	(struct vnode *);
+typedef	int (*vnop_open_fn)	(file *, int flags, mode_t);
+typedef	int (*vnop_close_fn)	(file *);
+typedef	ssize_t (*vnop_read_fn)	(file *, const iovec *, size_t, off_t);
+typedef	ssize_t (*vnop_write_fn)(file *, const iovec *, size_t, off_t);
+typedef	int (*vnop_seek_fn)	(file *, off_t, int);
+typedef	int (*vnop_ioctl_fn)	(file *, u_long, void *);
+typedef	int (*vnop_fsync_fn)	(file *);
+typedef	int (*vnop_readdir_fn)	(file *, dirent *, size_t);
+typedef	int (*vnop_lookup_fn)	(vnode *, const char *, size_t, vnode *);
+typedef	int (*vnop_mknod_fn)	(vnode *, const char *, size_t, int flags, mode_t);
+typedef	int (*vnop_unlink_fn)	(vnode *, vnode *);
+typedef	int (*vnop_rename_fn)	(vnode *, vnode *, vnode *, vnode *, const char *, size_t);
+typedef	int (*vnop_getattr_fn)	(vnode *, vattr *);
+typedef	int (*vnop_setattr_fn)	(vnode *, vattr *);
+typedef	int (*vnop_inactive_fn)	(vnode *);
+typedef	int (*vnop_truncate_fn)	(vnode *);
 
 struct vnops {
 	vnop_open_fn	    vop_open;
@@ -143,15 +143,15 @@ int vop_einval();
 /*
  * vnode cache interface
  */
-struct vnode	*vget(struct mount *, struct vnode *, const char *, size_t);
-struct vnode	*vget_pipe();
-struct vnode	*vn_lookup(struct vnode *, const char *, size_t);
-int		 vn_lock_interruptible(struct vnode *);
-void		 vn_lock(struct vnode *);
-void		 vn_unlock(struct vnode *);
-void		 vn_hide(struct vnode *);
-void		 vn_unhide(struct vnode *);
-int		 vn_stat(struct vnode *, struct stat *);
-void		 vput(struct vnode *);
-void		 vref(struct vnode *);
-void		 vgone(struct vnode *);
+vnode	*vget(struct mount *, vnode *, const char *, size_t);
+vnode	*vget_pipe();
+vnode	*vn_lookup(vnode *, const char *, size_t);
+int		 vn_lock_interruptible(vnode *);
+void		 vn_lock(vnode *);
+void		 vn_unlock(vnode *);
+void		 vn_hide(vnode *);
+void		 vn_unhide(vnode *);
+int		 vn_stat(vnode *, struct stat *);
+void		 vput(vnode *);
+void		 vref(vnode *);
+void		 vgone(vnode *);

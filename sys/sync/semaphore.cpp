@@ -13,16 +13,16 @@ struct private {
 	atomic_int count;
 	struct event event;
 };
-static_assert(sizeof(struct private) == sizeof(struct semaphore), "");
-static_assert(alignof(struct private) == alignof(struct semaphore), "");
+static_assert(sizeof(private) == sizeof(semaphore), "");
+static_assert(alignof(private) == alignof(semaphore), "");
 
 /*
  * semaphore_init - initialise semaphore.
  */
 void
-semaphore_init(struct semaphore *s)
+semaphore_init(semaphore *s)
 {
-	struct private *p = (struct private *)s->storage;
+	private *p = (private *)s->storage;
 
 	event_init(&p->event, "semaphore", ev_LOCK);
 	p->count = 0;
@@ -34,9 +34,9 @@ semaphore_init(struct semaphore *s)
  * Safe to call from interrupt context.
  */
 int
-semaphore_post(struct semaphore *s)
+semaphore_post(semaphore *s)
 {
-	struct private *p = (struct private *)s->storage;
+	private *p = (private *)s->storage;
 
 	if (p->count == INT_MAX)
 		return -EOVERFLOW;
@@ -54,9 +54,9 @@ semaphore_post(struct semaphore *s)
  * Safe to call from interrupt context.
  */
 int
-semaphore_post_once(struct semaphore *s)
+semaphore_post_once(semaphore *s)
 {
-	struct private *p = (struct private *)s->storage;
+	private *p = (private *)s->storage;
 
 	if (p->count)
 		return 0;
@@ -70,13 +70,13 @@ semaphore_post_once(struct semaphore *s)
  * semaphore_wait - decrement (lock) semaphore.
  */
 int
-semaphore_wait_interruptible(struct semaphore *s)
+semaphore_wait_interruptible(semaphore *s)
 {
 	assert(!sch_locks());
 	assert(!interrupt_running());
 
 	int r;
-	struct private *p = (struct private *)s->storage;
+	private *p = (private *)s->storage;
 
 	if ((r = wait_event_interruptible(p->event, [p] { return p->count > 0; })) < 0)
 		return r;

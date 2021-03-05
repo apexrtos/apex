@@ -11,4 +11,4 @@ struct fsl_imxrt10xx_gpio_desc {
 	int ipl;
 };
 
-void fsl_imxrt10xx_gpio_init(const struct fsl_imxrt10xx_gpio_desc *);
+void fsl_imxrt10xx_gpio_init(const fsl_imxrt10xx_gpio_desc *);

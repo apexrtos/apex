@@ -50,12 +50,12 @@
 /*
  * List of mount points.
  */
-static struct list mount_list = LIST_INIT(mount_list);
+static list mount_list = LIST_INIT(mount_list);
 
 /*
  * Global mount point lock.
  */
-static struct mutex mount_mutex;
+static mutex mount_mutex;
 
 /*
  * mount_init - initialise mount data structures
@@ -68,12 +68,12 @@ void mount_init()
 /*
  * fs_lookup - lookup file system.
  */
-static const struct vfssw *
+static const vfssw *
 fs_lookup(const char *name)
 {
-	extern const struct vfssw __filesystems, __filesystems_end;
+	extern const vfssw __filesystems, __filesystems_end;
 
-	for (const struct vfssw *fs = &__filesystems; fs != &__filesystems_end; ++fs) {
+	for (const vfssw *fs = &__filesystems; fs != &__filesystems_end; ++fs) {
 		if (!strcmp(name, fs->vs_name))
 			return fs;
 	}
@@ -88,7 +88,7 @@ static int do_root_mount(struct mount *mp, unsigned long flags,
     const void *data)
 {
 	int err;
-	struct vnode *vp_root;
+	vnode *vp_root;
 
 	/* get root node */
 	if (!(vp_root = vget(mp, NULL, "", 0)))
@@ -120,7 +120,7 @@ static int do_mount(struct mount *mp, const char *dir, unsigned long flags,
     const void *data)
 {
 	int err;
-	struct vnode *vp_covered, *vp_root;
+	vnode *vp_covered, *vp_root;
 
 	if ((err = lookup_t(task_cur(), AT_FDCWD, dir, &vp_covered, NULL, NULL, 0)))
 		return err;
@@ -177,7 +177,7 @@ int
 mount(const char *dev, const char *dir, const char *type, unsigned long flags,
     const void *data)
 {
-	const struct vfssw *fs;
+	const vfssw *fs;
 	dev_t device;
 	int devfd = -1;
 	int err;
@@ -280,7 +280,7 @@ umount2(const char *path, int flags)
 {
 	int err;
 	struct mount *mp;
-	struct vnode *vp;
+	vnode *vp;
 
 	vdbgsys("umount: path=%s\n", path);
 

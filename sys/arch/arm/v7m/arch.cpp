@@ -6,7 +6,7 @@
 #include <sys/auxv.h>
 
 void
-arch_backtrace(struct thread *th)
+arch_backtrace(thread *th)
 {
 	/* TODO: backtrace support for ARM. Requires unwind tables */
 }

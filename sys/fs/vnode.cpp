@@ -67,7 +67,7 @@
  * vnode table.
  * All active (opened) vnodes are stored on this hash table.
  */
-static struct list vnode_table[VNODE_BUCKETS];
+static list vnode_table[VNODE_BUCKETS];
 
 /*
  * Global lock to access vnode table.
@@ -76,13 +76,13 @@ static struct list vnode_table[VNODE_BUCKETS];
  *
  * DO NOT modify the contents of struct vnode without holding v_lock.
  */
-static struct mutex vnode_mutex;
+static mutex vnode_mutex;
 
 /*
  * vn_hash - Get the hash value for a vnode from its parent and name.
  */
 static unsigned
-vn_hash(struct vnode *parent, const char *name, size_t len)
+vn_hash(vnode *parent, const char *name, size_t len)
 {
 	return jhash_2words(jhash(name, len, 0), (uint32_t)parent) &
 	    (VNODE_BUCKETS - 1);
@@ -92,7 +92,7 @@ vn_hash(struct vnode *parent, const char *name, size_t len)
  * vn_lock_interruptible - lock vnode
  */
 int
-vn_lock_interruptible(struct vnode *vp)
+vn_lock_interruptible(vnode *vp)
 {
 	assert(vp->v_refcnt > 0);
 
@@ -103,7 +103,7 @@ vn_lock_interruptible(struct vnode *vp)
  * vn_lock - lock vnode
  */
 void
-vn_lock(struct vnode *vp)
+vn_lock(vnode *vp)
 {
 	assert(vp->v_refcnt > 0);
 
@@ -114,7 +114,7 @@ vn_lock(struct vnode *vp)
  * vn_unlock - unlock vnode
  */
 void
-vn_unlock(struct vnode *vp)
+vn_unlock(vnode *vp)
 {
 	assert(vp->v_refcnt > 0);
 
@@ -124,11 +124,11 @@ vn_unlock(struct vnode *vp)
 /*
  * Returns locked vnode for specified parent and name.
  */
-struct vnode *
-vn_lookup(struct vnode *parent, const char *name, size_t len)
+vnode *
+vn_lookup(vnode *parent, const char *name, size_t len)
 {
-	struct list *head, *n;
-	struct vnode *vp;
+	list *head, *n;
+	vnode *vp;
 
 	vdbgvn("vn_lookup: parent=%p name=%s len=%zu\n", parent, name, len);
 
@@ -136,7 +136,7 @@ vn_lookup(struct vnode *parent, const char *name, size_t len)
 
 	mutex_lock(&vnode_mutex);
 	for (n = list_first(head); n != head; n = list_next(n)) {
-		vp = list_entry(n, struct vnode, v_link);
+		vp = list_entry(n, vnode, v_link);
 		if (vp->v_parent == parent &&
 		    !strncmp(vp->v_name, name, len) &&
 		    !vp->v_name[len] &&
@@ -158,7 +158,7 @@ vn_lookup(struct vnode *parent, const char *name, size_t len)
  * Hide a vnode
  */
 void
-vn_hide(struct vnode *vp)
+vn_hide(vnode *vp)
 {
 	assert(mutex_owner(&vp->v_lock) == thread_cur());
 
@@ -169,7 +169,7 @@ vn_hide(struct vnode *vp)
  * Unhide a vnode
  */
 void
-vn_unhide(struct vnode *vp)
+vn_unhide(vnode *vp)
 {
 	assert(mutex_owner(&vp->v_lock) == thread_cur());
 
@@ -180,7 +180,7 @@ vn_unhide(struct vnode *vp)
  * vn_stat - get stat from vnode
  */
 int
-vn_stat(struct vnode *vp, struct stat *st)
+vn_stat(vnode *vp, struct stat *st)
 {
 	assert(mutex_owner(&vp->v_lock) == thread_cur());
 
@@ -203,19 +203,19 @@ vn_stat(struct vnode *vp, struct stat *st)
  *
  * Returns locked vnode with reference count 1.
  */
-struct vnode *
-vget(struct mount *mount, struct vnode *parent, const char *name, size_t len)
+vnode *
+vget(struct mount *mount, vnode *parent, const char *name, size_t len)
 {
 	char *v_name;
 	int err;
-	struct list *head;
-	struct vnode *vp;
+	list *head;
+	vnode *vp;
 
 	assert(len < PATH_MAX);
 
 	vdbgvn("vget: parent=%p name=%s len=%zu\n", parent, name, len);
 
-	if (!(vp = malloc(sizeof(struct vnode))))
+	if (!(vp = malloc(sizeof(vnode))))
 		return NULL;
 	if (!(v_name = malloc(len + 1))) {
 		free(vp);
@@ -224,7 +224,7 @@ vget(struct mount *mount, struct vnode *parent, const char *name, size_t len)
 
 	strlcpy(v_name, name, len + 1);
 
-	*vp = (struct vnode) {
+	*vp = (vnode) {
 		.v_parent = parent,
 		.v_mount = mount,
 		.v_refcnt = 1,
@@ -260,15 +260,15 @@ vget(struct mount *mount, struct vnode *parent, const char *name, size_t len)
 /*
  * Allocate a new vnode for pipe
  */
-struct vnode *
+vnode *
 vget_pipe()
 {
-	struct vnode *vp;
+	vnode *vp;
 
-	if (!(vp = malloc(sizeof(struct vnode))))
+	if (!(vp = malloc(sizeof(vnode))))
 		return NULL;
 
-	*vp = (struct vnode) {
+	*vp = (vnode) {
 		.v_mode = S_IFIFO,
 		.v_refcnt = 1,
 	};
@@ -286,7 +286,7 @@ vget_pipe()
  * Releases vnode if reference count reaches 0.
  */
 void
-vput(struct vnode *vp)
+vput(vnode *vp)
 {
 	vdbgvn("vput: vp=%p v_refcnt=%u v_name=%s\n",
 	    vp, vp->v_refcnt, vp->v_name);
@@ -295,7 +295,7 @@ vput(struct vnode *vp)
 	assert(vp->v_refcnt > 0);
 	assert(mutex_owner(&vp->v_lock) == thread_cur());
 
-	struct vnode *pvp = vp->v_parent;
+	vnode *pvp = vp->v_parent;
 
 	mutex_lock(&vnode_mutex);
 	--vp->v_refcnt;
@@ -330,7 +330,7 @@ vput(struct vnode *vp)
  * Increment the reference count on an active vnode.
  */
 void
-vref(struct vnode *vp)
+vref(vnode *vp)
 {
 	assert(vp->v_refcnt > 0);	/* Need vget */
 
@@ -346,7 +346,7 @@ vref(struct vnode *vp)
  * vgone() is called when unreferenced vnode is no longer valid.
  */
 void
-vgone(struct vnode *vp)
+vgone(vnode *vp)
 {
 	assert(vp->v_refcnt == 1);
 	assert(mutex_owner(&vp->v_lock) == thread_cur());
@@ -396,8 +396,8 @@ void
 vnode_dump()
 {
 	int i;
-	struct list *head, *n;
-	struct vnode *vp;
+	list *head, *n;
+	vnode *vp;
 
 	mutex_lock(&vnode_mutex);
 	info("vnode dump\n");
@@ -408,7 +408,7 @@ vnode_dump()
 	for (i = 0; i < VNODE_BUCKETS; i++) {
 		head = &vnode_table[i];
 		for (n = list_first(head); n != head; n = list_next(n)) {
-			vp = list_entry(n, struct vnode, v_link);
+			vp = list_entry(n, vnode, v_link);
 
 			info(" %10p %10p %10p %4s %6d %8d %10p %s\n",
 			    vp, vp->v_parent, vp->v_mount, vnode_type(vp->v_mode),

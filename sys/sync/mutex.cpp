@@ -54,21 +54,21 @@
 
 struct mutex_private {
 	atomic_intptr_t owner;	/* owner thread locking this mutex */
-	struct spinlock lock;	/* lock to protect struct mutex contents */
+	spinlock lock;		    /* lock to protect struct mutex contents */
 	unsigned count;		/* counter for recursive lock */
 	struct event event;	/* event */
 };
 
-static_assert(sizeof(struct mutex_private) == sizeof(struct mutex), "");
-static_assert(alignof(struct mutex_private) == alignof(struct mutex), "");
+static_assert(sizeof(mutex_private) == sizeof(mutex), "");
+static_assert(alignof(mutex_private) == alignof(mutex), "");
 
 /*
  * mutex_init - Initialize a mutex.
  */
 void
-mutex_init(struct mutex *m)
+mutex_init(mutex *m)
 {
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	mutex_private *mp = (mutex_private*)m->storage;
 
 	atomic_store_explicit(&mp->owner, 0, memory_order_relaxed);
 	spinlock_init(&mp->lock);
@@ -84,10 +84,10 @@ mutex_init(struct mutex *m)
  * waiting mutex, this routine returns EINTR.
  */
 static int __attribute__((noinline))
-mutex_lock_slowpath(struct mutex *m)
+mutex_lock_slowpath(mutex *m)
 {
 	int r;
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	mutex_private *mp = (mutex_private*)m->storage;
 
 	spinlock_lock(&mp->lock);
 
@@ -135,12 +135,12 @@ mutex_lock_slowpath(struct mutex *m)
 }
 
 static int
-mutex_lock_s(struct mutex *m, bool block_signals)
+mutex_lock_s(mutex *m, bool block_signals)
 {
 	assert(!sch_locks());
 	assert(!interrupt_running());
 
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	mutex_private *mp = (mutex_private*)m->storage;
 
 	if (!block_signals && sig_unblocked_pending(thread_cur()))
 		return -EINTR;
@@ -170,13 +170,13 @@ mutex_lock_s(struct mutex *m, bool block_signals)
 }
 
 int
-mutex_lock_interruptible(struct mutex *m)
+mutex_lock_interruptible(mutex *m)
 {
 	return mutex_lock_s(m, false);
 }
 
 int
-mutex_lock(struct mutex *m)
+mutex_lock(mutex *m)
 {
 	return mutex_lock_s(m, true);
 
@@ -186,13 +186,13 @@ mutex_lock(struct mutex *m)
  * mutex_unlock - Unlock a mutex.
  */
 static int __attribute__((noinline))
-mutex_unlock_slowpath(struct mutex *m)
+mutex_unlock_slowpath(mutex *m)
 {
 	/* can't unlock if we don't hold */
 	if (mutex_owner(m) != thread_cur())
 		return DERR(-EINVAL);
 
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	mutex_private *mp = (mutex_private*)m->storage;
 
 	spinlock_lock(&mp->lock);
 
@@ -211,7 +211,7 @@ mutex_unlock_slowpath(struct mutex *m)
 	}
 
 	/* wake up one waiter and set new owner */
-	struct thread *waiter = sch_wakeone(&mp->event);
+	thread *waiter = sch_wakeone(&mp->event);
 	atomic_store_explicit(
 	    &mp->owner,
 	    (intptr_t)waiter | (event_waiting(&mp->event) ? MUTEX_WAITERS : 0),
@@ -227,11 +227,11 @@ mutex_unlock_slowpath(struct mutex *m)
 }
 
 int
-mutex_unlock(struct mutex *m)
+mutex_unlock(mutex *m)
 {
 	assert(!interrupt_running());
 
-	struct mutex_private *mp = (struct mutex_private*)m->storage;
+	mutex_private *mp = (mutex_private*)m->storage;
 
 #if defined(CONFIG_DEBUG)
 	assert(thread_cur()->mutex_locks > 0);
@@ -254,11 +254,11 @@ mutex_unlock(struct mutex *m)
 /*
  * mutex_owner - get owner of mutex
  */
-struct thread*
-mutex_owner(const struct mutex *m)
+thread*
+mutex_owner(const mutex *m)
 {
-	const struct mutex_private *mp = (const struct mutex_private*)m->storage;
-	return (struct thread *)(atomic_load_explicit(
+	const mutex_private *mp = (const mutex_private*)m->storage;
+	return (thread *)(atomic_load_explicit(
 	    &mp->owner,
 	    memory_order_relaxed) & MUTEX_TID_MASK);
 }
@@ -267,7 +267,7 @@ mutex_owner(const struct mutex *m)
  * mutex_assert_locked - ensure that current thread owns mutex
  */
 void
-mutex_assert_locked(const struct mutex *m)
+mutex_assert_locked(const mutex *m)
 {
 	assert(mutex_owner(m) == thread_cur());
 }

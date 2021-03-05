@@ -9,4 +9,4 @@ struct regulator_voltage_fixed_desc {
 	float voltage;
 };
 
-void regulator_voltage_fixed_init(const struct regulator_voltage_fixed_desc *);
+void regulator_voltage_fixed_init(const regulator_voltage_fixed_desc *);

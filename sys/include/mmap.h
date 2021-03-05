@@ -7,6 +7,6 @@ struct as;
 /*
  * Kernel interface
  */
-void   *mmapfor(struct as *, void *, size_t, int, int, int, off_t, long mem_attr);
-int	munmapfor(struct as *, void *, size_t);
-int     mprotectfor(struct as *, void *, size_t, int);
+void   *mmapfor(as *, void *, size_t, int, int, int, off_t, long mem_attr);
+int	munmapfor(as *, void *, size_t);
+int     mprotectfor(as *, void *, size_t, int);

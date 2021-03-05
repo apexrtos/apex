@@ -395,7 +395,7 @@ struct ccm {
 	} CCGR7; /* For IMXRT106x only. RSV for IMXRT105x */
 	uint32_t CMEOR;
 };
-static_assert(sizeof(struct ccm) == 0x8c, "");
+static_assert(sizeof(ccm) == 0x8c, "");
 
 enum BYPASS_CLK_SRC {
 	BYPASS_CLK_SRC_REF_CLK_24M,
@@ -565,9 +565,9 @@ struct ccm_analog {
 	uint32_t MISC2_CLR;
 	uint32_t MISC2_TOG;
 };
-static_assert(sizeof(struct ccm_analog) == 0x180, "");
+static_assert(sizeof(ccm_analog) == 0x180, "");
 
 #define CCM_ADDR 0x400fc000
 #define CCM_ANALOG_ADDR 0x400d8000
-static struct ccm *const CCM = (struct ccm*)CCM_ADDR;
-static struct ccm_analog *const CCM_ANALOG = (struct ccm_analog*)CCM_ANALOG_ADDR;
+static ccm *const CCM = (ccm*)CCM_ADDR;
+static ccm_analog *const CCM_ANALOG = (ccm_analog*)CCM_ANALOG_ADDR;

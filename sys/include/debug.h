@@ -30,7 +30,7 @@ void		emergency(const char *fmt, ...)
 			__attribute__((format (printf, 1, 2)));
 [[noreturn]] void panic(const char *);
 void		backtrace();
-void		backtrace_thread(struct thread *);
+void		backtrace_thread(thread *);
 int		syslog_printf(int, const char *, ...)
 			__attribute__((format (printf, 2, 3)));
 int		syslog_vprintf(int, const char *, va_list);

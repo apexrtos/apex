@@ -30,7 +30,7 @@ struct nvregs {
 	uint32_t r11;
 	uint32_t lr;
 };
-static_assert(!(sizeof(struct nvregs) & 7), "");
+static_assert(!(sizeof(nvregs) & 7), "");
 
 /*
  * Non-volatile FPU registers switched by context switch.
@@ -53,7 +53,7 @@ struct fpu_nvregs {
 	uint32_t s30;
 	uint32_t s31;
 };
-static_assert(!(sizeof(struct fpu_nvregs) & 7), "");
+static_assert(!(sizeof(fpu_nvregs) & 7), "");
 
 /*
  * System call arguments pushed by system call entry.
@@ -64,7 +64,7 @@ struct syscall_args {
 	uint32_t a6;			    /* syscall argument 6 */
 	uint32_t syscall;		    /* syscall number */
 };
-static_assert(!(sizeof(struct syscall_args) & 7), "");
+static_assert(!(sizeof(syscall_args) & 7), "");
 
 /*
  * Frame on userspace stack for signal delivery
@@ -74,16 +74,16 @@ struct sigframe {
 	int rval;
 	uint32_t pad;
 };
-static_assert(!(sizeof(struct sigframe) & 7), "");
+static_assert(!(sizeof(sigframe) & 7), "");
 
 /*
  * Frame on userspace stack for real time signal delivery
  */
 struct rt_sigframe {
-	struct sigframe sf;
+	sigframe sf;
 	siginfo_t si;
 };
-static_assert(!(sizeof(struct rt_sigframe) & 7), "");
+static_assert(!(sizeof(rt_sigframe) & 7), "");
 
 /*
  * System call return entry point
@@ -122,7 +122,7 @@ arch_schedule()
  * context_switch - switch thread contexts
  */
 void
-context_switch(struct thread *prev, struct thread *next)
+context_switch(thread *prev, thread *next)
 {
 	/* context switch handled in PendSV */
 }
@@ -134,7 +134,7 @@ context_switch(struct thread *prev, struct thread *next)
  * has an existing stack.
  */
 void
-context_init_idle(struct context *ctx, void *kstack_top)
+context_init_idle(context *ctx, void *kstack_top)
 {
 	/* nothing to do */
 }
@@ -143,8 +143,8 @@ context_init_idle(struct context *ctx, void *kstack_top)
  * Initialise context for kernel thread
  */
 void
-context_init_kthread(struct context *ctx, void *kstack_top,
-    void (*entry)(void *), void *arg)
+context_init_kthread(context *ctx, void *kstack_top, void (*entry)(void *),
+		     void *arg)
 {
 	/* stack must be 8-byte aligned */
 	assert(!((uint32_t)kstack_top & 7));
@@ -152,15 +152,15 @@ context_init_kthread(struct context *ctx, void *kstack_top,
 	/* stack layout for new kernel thread */
 	struct stack {
 #if defined(CONFIG_FPU)
-		struct fpu_nvregs fpu;
+		fpu_nvregs fpu;
 #endif
-		struct nvregs nv;
-		struct exception_frame_basic ef;
+		nvregs nv;
+		exception_frame_basic ef;
 	};
 
 	/* allocate a new kernel thread stack */
-	kstack_top -= sizeof(struct stack);
-	struct stack *s = kstack_top;
+	kstack_top -= sizeof(stack);
+	stack *s = kstack_top;
 
 	/* set thread arguments */
 	s->ef.r0 = (uint32_t)arg;
@@ -180,10 +180,10 @@ context_init_kthread(struct context *ctx, void *kstack_top,
  * Initialise context for userspace thread
  */
 int
-context_init_uthread(struct context *child, struct as *as, void *kstack_top,
-    void *ustack_top, void (*entry)(), long retval)
+context_init_uthread(context *child, as *as, void *kstack_top,
+		     void *ustack_top, void (*entry)(), long retval)
 {
-	struct context *parent = &thread_cur()->ctx;
+	context *parent = &thread_cur()->ctx;
 	bool shared_ustack = false;
 
 	/* if thread was created by vfork it shares stack with parent */
@@ -200,33 +200,32 @@ context_init_uthread(struct context *child, struct as *as, void *kstack_top,
 	/* stack layout for new userspace thread */
 	struct stack {
 #if defined(CONFIG_FPU)
-		struct fpu_nvregs fpu;
+		fpu_nvregs fpu;
 #endif
-		struct nvregs knv;		    /* kernel context */
-		struct exception_frame_basic ef;    /* for return to thread */
-		struct syscall_args args;
-		struct nvregs unv;		    /* user context */
+		nvregs knv;		    /* kernel context */
+		exception_frame_basic ef;   /* for return to thread */
+		syscall_args args;
+		nvregs unv;		    /* user context */
 	};
 
 	/* allocate a new thread frame */
 	void *kstack = kstack_top;
-	kstack_top -= sizeof(struct stack);
-	struct stack *s = kstack_top;
+	kstack_top -= sizeof(stack);
+	stack *s = kstack_top;
 
 	/* threads created by fork/vfork/clone don't specify an entry point and
 	   must return to userspace as an exact clone of their parent */
 	if (!entry) {
 		/* copy user non volatile registers from parent */
-		s->unv = *(struct nvregs *)(parent->kstack -
-		    sizeof(struct nvregs));
+		s->unv = *(nvregs *)((char *)parent->kstack - sizeof(nvregs));
 
 		/* copy tls pointer */
 		child->tls = parent->tls;
 
 		/* copy or preserve userspace exception frame */
-		const size_t sz = is_exception_frame_extended(s->unv.lr)
-		    ? sizeof(struct exception_frame_extended)
-		    : sizeof(struct exception_frame_basic);
+		const ssize_t sz = is_exception_frame_extended(s->unv.lr)
+		    ? sizeof(exception_frame_extended)
+		    : sizeof(exception_frame_basic);
 		if (!shared_ustack) {
 			/* copy userspace exception frame */
 			ustack_top -= sz;
@@ -248,12 +247,12 @@ context_init_uthread(struct context *child, struct as *as, void *kstack_top,
 		assert(!shared_ustack);
 
 		/* allocate a new exception frame for return to userspace */
-		const size_t sz = sizeof(struct exception_frame_basic);
+		const size_t sz = sizeof(exception_frame_basic);
 		ustack_top -= sz;
 
 		/* Loading an unaligned value from the stack into the PC on an
 		   exception return is UNPREDICTABLE. */
-		struct exception_frame_basic ef = {
+		exception_frame_basic ef = {
 			.ra = (uint32_t)entry & -2,
 			.xpsr = EPSR_T,
 		};
@@ -285,17 +284,17 @@ context_init_uthread(struct context *child, struct as *as, void *kstack_top,
  * Restore context after vfork
  */
 void
-context_restore_vfork(struct context *ctx, struct as *as)
+context_restore_vfork(context *ctx, as *as)
 {
 	/* thread was not created by vfork so nothing to restore */
 	if (!ctx->vfork_eframe)
 		return;
 
 	/* restore userspace exception frame */
-	struct nvregs *unv = ctx->kstack - sizeof(struct nvregs);
+	nvregs *unv = ctx->kstack - sizeof(nvregs);
 	const size_t sz = is_exception_frame_extended(unv->lr)
-	    ? sizeof(struct exception_frame_extended)
-	    : sizeof(struct exception_frame_basic);
+	    ? sizeof(exception_frame_extended)
+	    : sizeof(exception_frame_basic);
 	vm_write(as, ctx->vfork_eframe, ctx->usp, sz);
 	kmem_free(ctx->vfork_eframe);
 	ctx->vfork_eframe = 0;
@@ -305,7 +304,7 @@ context_restore_vfork(struct context *ctx, struct as *as)
  * Save FPU state to vfp_sigframe struct
  */
 static void
-fpu_save(struct vfp_sigframe *f, const struct exception_frame_extended *uef)
+fpu_save(vfp_sigframe *f, const exception_frame_extended *uef)
 {
 #if defined(CONFIG_FPU)
 	f->magic = VFP_SIGFRAME_MAGIC;
@@ -322,7 +321,7 @@ fpu_save(struct vfp_sigframe *f, const struct exception_frame_extended *uef)
  * Load FPU state from vfp_sigframe struct
  */
 static void
-fpu_load(const struct vfp_sigframe *f, struct exception_frame_extended *uef)
+fpu_load(const vfp_sigframe *f, exception_frame_extended *uef)
 {
 #if defined(CONFIG_FPU)
 	memcpy(&uef->s0, f->regs, 16 * 4);
@@ -339,7 +338,7 @@ static bool
 fpu_present(const void *p)
 {
 #if defined(CONFIG_FPU)
-	const struct vfp_sigframe *f = p;
+	const vfp_sigframe *f = p;
 	return f->magic == VFP_SIGFRAME_MAGIC && f->size == sizeof(*f);
 #else
 	return false;
@@ -380,7 +379,7 @@ fpu_lazy_drop()
  * Always called in handler mode on interrupt stack.
  */
 bool
-context_set_signal(struct context *ctx, const k_sigset_t *ss,
+context_set_signal(context *ctx, const k_sigset_t *ss,
     void (*handler)(int), void (*restorer)(), const int sig,
     const siginfo_t *si, const int rval)
 {
@@ -392,13 +391,13 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 	assert(!((uintptr_t)ctx->usp & 7));
 
 	/* registers stored on entry to kernel */
-	struct nvregs *unv = ctx->kstack - sizeof(*unv);
+	nvregs *unv = ctx->kstack - sizeof(*unv);
 
 	/* userspace exception frame from kernel entry */
 	const bool uef_extended = is_exception_frame_extended(unv->lr);
 	const size_t uef_sz = uef_extended
-	    ? sizeof(struct exception_frame_extended)
-	    : sizeof(struct exception_frame_basic);
+	    ? sizeof(exception_frame_extended)
+	    : sizeof(exception_frame_basic);
 
 	/* make sure FPU registers are written to userspace exception frame */
 	if (uef_extended)
@@ -406,21 +405,21 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 
 	/* allocate stack frame for signal */
 	void *usp = ctx->usp + uef_sz;
-	struct exception_frame_basic *sef;
-	struct sigframe *ssf;
+	exception_frame_basic *sef;
+	sigframe *ssf;
 	siginfo_t *ssi = 0;
 	if (si) {
 		struct rt_sigframe_ef {
-			struct exception_frame_basic ef;
-			struct rt_sigframe rsf;
+			exception_frame_basic ef;
+			rt_sigframe rsf;
 		} *f = usp -= sizeof(*f);
 		sef = &f->ef;
 		ssf = &f->rsf.sf;
 		ssi = &f->rsf.si;
 	} else {
 		struct sigframe_ef {
-			struct exception_frame_basic ef;
-			struct sigframe sf;
+			exception_frame_basic ef;
+			sigframe sf;
 		} *f = usp -= sizeof(*f);
 		sef = &f->ef;
 		ssf = &f->sf;
@@ -432,7 +431,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 
 	/* make a copy of the userspace exception frame as we are going to
 	 * overwrite it's location with the signal frame */
-	struct exception_frame_extended *uef = alloca(uef_sz);
+	exception_frame_extended *uef = alloca(uef_sz);
 	memcpy(uef, ctx->usp, uef_sz);
 
 	/* did exception entry add 4 bytes to align the userspace stack? */
@@ -464,7 +463,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
 		.__bits[1] = ss->__bits[1],
 	};
 	if (uef_extended)
-		fpu_save((struct vfp_sigframe *)ssf->uc.uc_regspace, uef);
+		fpu_save((vfp_sigframe *)ssf->uc.uc_regspace, uef);
 	if (si)
 		*ssi = *si;
 	ssf->rval = rval;
@@ -490,7 +489,7 @@ context_set_signal(struct context *ctx, const k_sigset_t *ss,
  * Set thread local storage pointer in context
  */
 void
-context_set_tls(struct context *ctx, void *tls)
+context_set_tls(context *ctx, void *tls)
 {
 	ctx->tls = tls;
 }
@@ -499,7 +498,7 @@ context_set_tls(struct context *ctx, void *tls)
  * Restore signal context
  */
 bool
-context_restore(struct context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
+context_restore(context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 {
 	if (!ctx->usp)
 		panic("signal kthread");
@@ -508,20 +507,20 @@ context_restore(struct context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 	assert(!((uintptr_t)ctx->usp & 7));
 
 	/* registers stored on sigreturn entry to kernel */
-	struct nvregs *unv = ctx->kstack - sizeof(*unv);
+	nvregs *unv = ctx->kstack - sizeof(*unv);
 
 	/* userspace exception frame from sigreturn kernel entry */
 	const bool sef_extended = is_exception_frame_extended(unv->lr);
 	const size_t sef_sz = sef_extended
-	    ? sizeof(struct exception_frame_extended)
-	    : sizeof(struct exception_frame_basic);
+	    ? sizeof(exception_frame_extended)
+	    : sizeof(exception_frame_basic);
 
 	/* throw away any FPU context from signal handler */
 	if (sef_extended)
 		fpu_lazy_drop();
 
 	/* retrieve signal frame from user stack */
-	struct sigframe sf;
+	sigframe sf;
 	void *ssp = ctx->usp + sef_sz;
 
 	/* check access to signal frame on user stack */
@@ -538,11 +537,11 @@ context_restore(struct context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 	/* size of exception frame depends on whether there's FPU context */
 	const bool uef_extended = fpu_present(sf.uc.uc_regspace);
 	const size_t uef_sz = uef_extended
-	    ? sizeof(struct exception_frame_extended)
-	    : sizeof(struct exception_frame_basic);
+	    ? sizeof(exception_frame_extended)
+	    : sizeof(exception_frame_basic);
 
 	/* allocate exception frame on userspace stack */
-	struct exception_frame_extended *uef = usp -= uef_sz;
+	exception_frame_extended *uef = usp -= uef_sz;
 
 	/* check access to exception frame on userspace stack */
 	if (!u_access_ok(uef, uef_sz, PROT_WRITE))
@@ -570,7 +569,7 @@ context_restore(struct context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 		.__bits[1] = sf.uc.uc_sigmask.__bits[1],
 	};
 	if (uef_extended)
-		fpu_load((struct vfp_sigframe *)sf.uc.uc_regspace, uef);
+		fpu_load((vfp_sigframe *)sf.uc.uc_regspace, uef);
 
 	/* adjust nvregs for userspace return */
 	unv->control = CONTROL_NPRIV;
@@ -589,7 +588,7 @@ context_restore(struct context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
  * context_termiante - thread is terminating
  */
 void
-context_terminate(struct thread *th)
+context_terminate(thread *th)
 {
 	/* If thread is terminating due to exec it's userspace stack has been
 	   unmapped and is no longer writable. Make sure the core doesn't try
@@ -604,7 +603,7 @@ context_terminate(struct thread *th)
 }
 
 void
-context_free(struct context *ctx)
+context_free(context *ctx)
 {
 	kmem_free(ctx->vfork_eframe);
 }

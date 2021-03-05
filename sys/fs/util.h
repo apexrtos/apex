@@ -9,7 +9,7 @@ struct dirent;
 /*
  * dirbuf_add - helper for adding entries to a dirent buffer
  */
-int dirbuf_add(struct dirent **, size_t *remain, ino_t, off_t,
+int dirbuf_add(dirent **, size_t *remain, ino_t, off_t,
 	       unsigned char type, const char *name);
 
 /*

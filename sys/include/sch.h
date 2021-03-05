@@ -39,7 +39,7 @@ struct thread;
  * DPC (Deferred Procedure Call) object
  */
 struct dpc {
-	struct queue	link;		/* Linkage on DPC queue */
+	queue link;		/* Linkage on DPC queue */
 	int		state;		/* DPC_* */
 	void	      (*func)(void *);	/* Callback routine */
 	void	       *arg;		/* Argument to pass */
@@ -49,30 +49,30 @@ struct dpc {
  * Scheduler interface
  */
 extern "C" void sch_switch();
-struct thread  *sch_active();
-unsigned	sch_wakeup(struct event *, int);
-struct thread  *sch_wakeone(struct event *);
-struct thread  *sch_requeue(struct event *, struct event *);
-int		sch_prepare_sleep(struct event *, uint_fast64_t);
+thread  *sch_active();
+unsigned	sch_wakeup(event *, int);
+thread  *sch_wakeone(event *);
+thread  *sch_requeue(event *, event *);
+int		sch_prepare_sleep(event *, uint_fast64_t);
 int		sch_continue_sleep();
 void		sch_cancel_sleep();
-void	        sch_unsleep(struct thread *, int);
-void	        sch_signal(struct thread *);
+void	        sch_unsleep(thread *, int);
+void	        sch_signal(thread *);
 void	        sch_yield();
-void	        sch_suspend(struct thread *);
-void	        sch_resume(struct thread *);
-void	        sch_suspend_resume(struct thread *, struct thread *);
+void	        sch_suspend(thread *);
+void	        sch_resume(thread *);
+void	        sch_suspend_resume(thread *, thread *);
 void	        sch_elapse(uint_fast32_t);
-void	        sch_start(struct thread *);
-void	        sch_stop(struct thread *);
+void	        sch_start(thread *);
+void	        sch_stop(thread *);
 bool		sch_testexit();
 void	        sch_lock();
 void	        sch_unlock();
 int		sch_locks();
-int		sch_getprio(struct thread *);
-void		sch_setprio(struct thread *, int, int);
-int		sch_getpolicy(struct thread *);
-int		sch_setpolicy(struct thread *, int);
-void	        sch_dpc(struct dpc *, void (*)(void *), void *);
+int		sch_getprio(thread *);
+void		sch_setprio(thread *, int, int);
+int		sch_getpolicy(thread *);
+int		sch_setpolicy(thread *, int);
+void	        sch_dpc(dpc *, void (*)(void *), void *);
 void	        sch_dump();
 void	        sch_init();

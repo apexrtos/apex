@@ -45,19 +45,19 @@ struct ent {
 	char msg[];		/* message text */
 };
 
-static alignas(struct ent) char log[CONFIG_SYSLOG_SIZE];
+static alignas(ent) char log[CONFIG_SYSLOG_SIZE];
 static atomic_long log_first_seq = 1, log_last_seq;
 static long clear_seq = 1;
-static struct ent *head = (struct ent *)log;
-static struct ent *tail = (struct ent *)log;
-static struct ent *clear_ent = (struct ent *)log;
+static ent *head = (ent *)log;
+static ent *tail = (ent *)log;
+static ent *clear_ent = (ent *)log;
 
-static struct event log_wait;
-static struct spinlock lock;	/* REVISIT: may need init for SMP */
+static event log_wait;
+static spinlock lock;	/* REVISIT: may need init for SMP */
 static struct kmsg_output {
 	long seq;
 	struct ent *ent;
-} console_output = { .seq = 1, .ent = (struct ent *)log };
+} console_output = { .seq = 1, .ent = (ent *)log };
 
 static int conlev = CONFIG_CONSOLE_LOGLEVEL + 1;
 static const int min_conlev = LOG_WARNING + 1;
@@ -122,15 +122,15 @@ weak_alias(panic_console_print_default, panic_console_print);
  * advance - move pointer to next entry
  */
 static void
-advance(struct ent **p)
+advance(ent **p)
 {
 	size_t len = (*p)->len_term;
 	assert(len && len < sizeof(log));
 
-	*p = (struct ent *)ALIGNn((char *)*p + sizeof(**p) + len,
-	    alignof(struct ent));
+	*p = (ent *)ALIGNn((char *)*p + sizeof(**p) + len,
+	    alignof(ent));
 	if ((char *)(*p + 1) >= (log + sizeof(log)))
-		*p = (struct ent *)log;
+		*p = (ent *)log;
 }
 
 /*
@@ -154,11 +154,11 @@ console_print_all()
 static void
 log_trim()
 {
-	struct ent *entry = tail;
+	ent *entry = tail;
 	++log_first_seq;
 	advance(&tail);
 	if (!tail->len_term) /* sentinel: wrap */
-		tail = (struct ent *)log;
+		tail = (ent *)log;
 	entry->len_term = -1;
 }
 
@@ -166,10 +166,10 @@ log_trim()
  * syslog_begin - start writing a message
  */
 static ssize_t
-syslog_begin(struct ent **entry, long *seq, const size_t len)
+syslog_begin(ent **entry, long *seq, const size_t len)
 {
 	const size_t len_term = len + 1; /* terminating '\0' */
-	const size_t ent_len = sizeof(struct ent) + len_term;
+	const size_t ent_len = sizeof(ent) + len_term;
 	if (ent_len > sizeof(log))
 		return -ENOSPC;
 
@@ -191,7 +191,7 @@ check_len:
 			 * back to start
 			 */
 			head->len_term = 0;	/* sentinel: wrap */
-			head = (struct ent *)log;
+			head = (ent *)log;
 			if (tail == head) /* catch wrap to completely full */
 				log_trim();
 			goto check_len;
@@ -214,7 +214,7 @@ check_len:
  * syslog_end - finish writing a message
  */
 static void
-syslog_end(struct ent *entry, long seq, int priority)
+syslog_end(ent *entry, long seq, long priority)
 {
 	write_once(&entry->priority, priority);
 	write_once(&entry->seq, seq);	     /* entry not read until seq is valid */
@@ -255,7 +255,7 @@ syslog_vprintf(int level, const char *fmt, va_list ap)
 	if (len < 0)
 		return len;
 
-	struct ent *entry;
+	ent *entry;
 	long seq;
 	ssize_t len_term = syslog_begin(&entry, &seq, len);
 	if (len_term < 0)
@@ -283,12 +283,12 @@ syslog_output(void (*fn)())
 int
 syslog_format(char *buf, const size_t len)
 {
-	struct kmsg_output *kmsg = &console_output;
+	kmsg_output *kmsg = &console_output;
 	int rem = len;
 
 	/* lock-less read of log message */
 	while ((log_last_seq - kmsg->seq) >= 0) { /* seq can rollover */
-		struct ent entry = read_once(kmsg->ent);
+		ent entry = read_once(kmsg->ent);
 		long overrun = log_first_seq - kmsg->seq;
 		if (overrun > 0) {
 			int n = snprintf(buf, rem, "*** missed %ld messages\n",
@@ -303,13 +303,13 @@ syslog_format(char *buf, const size_t len)
 		}
 		if (entry.seq != kmsg->seq) { /* entry not valid */
 			if (!entry.len_term) { /* sentinel: wrap */
-				kmsg->ent = (struct ent *)log;
+				kmsg->ent = (ent *)log;
 				continue;
 			} else
 				break; /* still being written... */
 		}
 		if (LOG_PRI(entry.priority) < conlev) {
-			struct timeval tv;
+			timeval tv;
 			ns_to_tv(entry.nsec, &tv);
 			int n = snprintf(buf, rem, "[%5lld.%06lld] ", tv.tv_sec, tv.tv_usec);
 			size_t l = entry.len_term - 1;
@@ -344,10 +344,10 @@ syslog_format(char *buf, const size_t len)
  * kmsg_format - format one log message for userspace
  */
 int
-kmsg_format(char *buf, const size_t len, struct kmsg_output *kmsg)
+kmsg_format(char *buf, const size_t len, kmsg_output *kmsg)
 {
 	/* lock-less read of log message */
-	struct ent entry = read_once(kmsg->ent);
+	ent entry = read_once(kmsg->ent);
 	long overrun = log_first_seq - kmsg->seq;
 	if (overrun > 0) {
 	overrun:
@@ -359,7 +359,7 @@ kmsg_format(char *buf, const size_t len, struct kmsg_output *kmsg)
 
 	if (entry.seq != kmsg->seq) { /* entry not valid */
 		if (!entry.len_term) /* sentinel: wrap */
-			kmsg->ent = (struct ent *)log;
+			kmsg->ent = (ent *)log;
 		else
 			return -EAGAIN;	/* still being written... */
 	}
@@ -393,7 +393,7 @@ syslog_panic()
 {
 	/* reset console output */
 	console_output.seq = 1;	   /* will report how many msg are dropped if panic is partial */
-	console_output.ent = (struct ent *)log;
+	console_output.ent = (ent *)log;
 
 	panic_console_init();
 	panic_console_print("\n*** syslog_panic\n", 18);
@@ -465,9 +465,9 @@ sc_syslog(int type, char *buf, int len)
 /*
  * /dev/kmsg interface
  */
-static int kmsg_open(struct file *file)
+static int kmsg_open(file *file)
 {
-	struct kmsg_output *kmsg = malloc(sizeof (struct kmsg_output));
+	kmsg_output *kmsg = malloc(sizeof (kmsg_output));
 	if (!kmsg)
 		return -ENOMEM;
 
@@ -479,9 +479,9 @@ static int kmsg_open(struct file *file)
 	return 0;
 }
 
-static int kmsg_close(struct file *file)
+static int kmsg_close(file *file)
 {
-	struct kmsg_output *kmsg = file->f_data;
+	kmsg_output *kmsg = file->f_data;
 	if (!kmsg)
 		return -EBADF;
 
@@ -491,9 +491,9 @@ static int kmsg_close(struct file *file)
 }
 
 static ssize_t
-kmsg_read(struct file *file, void *buf, size_t len, off_t offset)
+kmsg_read(file *file, void *buf, size_t len, off_t offset)
 {
-	struct kmsg_output *kmsg = file->f_data;
+	kmsg_output *kmsg = file->f_data;
 	if (!kmsg)
 		return -EBADF;
 
@@ -524,8 +524,7 @@ kmsg_read(struct file *file, void *buf, size_t len, off_t offset)
 }
 
 static ssize_t
-kmsg_read_iov(struct file *file, const struct iovec *iov, size_t count,
-    off_t offset)
+kmsg_read_iov(file *file, const iovec *iov, size_t count, off_t offset)
 {
 	return for_each_iov(iov, count, offset,
 	    [file](std::span<std::byte> buf, off_t offset) {
@@ -537,11 +536,11 @@ kmsg_read_iov(struct file *file, const struct iovec *iov, size_t count,
  * receive data from syslogd.
  */
 static ssize_t
-kmsg_write_iov(struct file *file, const struct iovec *iov, size_t count,
+kmsg_write_iov(file *file, const iovec *iov, size_t count,
     off_t offset)
 {
 	ssize_t msg_len = 0;
-	const struct iovec *p = iov;
+	const iovec *p = iov;
 	for (size_t i = count; i > 0; --i)
 		msg_len += p++->iov_len;
 	if (msg_len <= 0) {
@@ -578,7 +577,7 @@ kmsg_write_iov(struct file *file, const struct iovec *iov, size_t count,
 		}
 	}
 
-	struct ent *entry;
+	ent *entry;
 	long seq;
 	ssize_t len_term = syslog_begin(&entry, &seq, msg_len - pri_len);
 	if (len_term < 0)
@@ -601,9 +600,9 @@ kmsg_write_iov(struct file *file, const struct iovec *iov, size_t count,
 }
 
 static int
-kmsg_seek(struct file *file, off_t offset, int whence)
+kmsg_seek(file *file, off_t offset, int whence)
 {
-	struct kmsg_output *kmsg = file->f_data;
+	kmsg_output *kmsg = file->f_data;
 	if (!kmsg)
 		return -EBADF;
 
@@ -631,7 +630,7 @@ kmsg_seek(struct file *file, off_t offset, int whence)
 /*
  * Device I/O table
  */
-static struct devio kmsg_io = {
+static devio kmsg_io = {
 	.open = kmsg_open,
 	.close = kmsg_close,
 	.read = kmsg_read_iov,
@@ -648,6 +647,6 @@ kmsg_init()
 	event_init(&log_wait, "kmsg_wait", ev_IO);
 
 	/* Create device object */
-	struct device *d = device_create(&kmsg_io, "kmsg", DF_CHR, NULL);
+	device *d = device_create(&kmsg_io, "kmsg", DF_CHR, NULL);
 	assert(d);
 }

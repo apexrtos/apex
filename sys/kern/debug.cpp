@@ -136,7 +136,7 @@ backtrace()
  * backtrace_thread - print backtrace of specified thread
  */
 void
-backtrace_thread(struct thread *th)
+backtrace_thread(thread *th)
 {
 	arch_backtrace(th);
 }

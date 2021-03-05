@@ -31,16 +31,16 @@ struct rwlock_private {
 	 */
 	int state;
 };
-static_assert(sizeof(struct rwlock_private) == sizeof(struct rwlock), "");
-static_assert(alignof(struct rwlock_private) == alignof(struct rwlock), "");
+static_assert(sizeof(rwlock_private) == sizeof(rwlock), "");
+static_assert(alignof(rwlock_private) == alignof(rwlock), "");
 
 /*
  * rwlock_init
  */
 void
-rwlock_init(struct rwlock *o)
+rwlock_init(rwlock *o)
 {
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 	event_init(&p->event, "rwlock", ev_LOCK);
 	p->state = 0;
 }
@@ -49,13 +49,13 @@ rwlock_init(struct rwlock *o)
  * rwlock_read_lock
  */
 static int
-rwlock_read_lock_s(struct rwlock *o, bool block_signals)
+rwlock_read_lock_s(rwlock *o, bool block_signals)
 {
 	assert(!interrupt_running());
 	assert(!sch_locks());
 
 	int err;
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 
 	if (!block_signals && sig_unblocked_pending(thread_cur()))
 		return -EINTR;
@@ -82,7 +82,7 @@ rwlock_read_lock_s(struct rwlock *o, bool block_signals)
  * rwlock_read_lock_interruptible
  */
 int
-rwlock_read_lock_interruptible(struct rwlock *o)
+rwlock_read_lock_interruptible(rwlock *o)
 {
 	return rwlock_read_lock_s(o, false);
 }
@@ -91,7 +91,7 @@ rwlock_read_lock_interruptible(struct rwlock *o)
  * rwlock_read_lock - non interruptible read lock
  */
 int
-rwlock_read_lock(struct rwlock *o)
+rwlock_read_lock(rwlock *o)
 {
 	return rwlock_read_lock_s(o, true);
 }
@@ -100,11 +100,11 @@ rwlock_read_lock(struct rwlock *o)
  * rwlock_read_unlock
  */
 void
-rwlock_read_unlock(struct rwlock *o)
+rwlock_read_unlock(rwlock *o)
 {
 	assert(!interrupt_running());
 
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 
 	std::lock_guard l{p->lock};
 
@@ -122,9 +122,9 @@ rwlock_read_unlock(struct rwlock *o)
  * rwlock_read_locked
  */
 bool
-rwlock_read_locked(struct rwlock *o)
+rwlock_read_locked(rwlock *o)
 {
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 
 	std::lock_guard l{p->lock};
 
@@ -137,13 +137,13 @@ rwlock_read_locked(struct rwlock *o)
  * rwlock_write_lock
  */
 static int
-rwlock_write_lock_s(struct rwlock *o, bool block_signals)
+rwlock_write_lock_s(rwlock *o, bool block_signals)
 {
 	assert(!interrupt_running());
 	assert(!sch_locks());
 
 	int err;
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 
 	if (!block_signals && sig_unblocked_pending(thread_cur()))
 		return -EINTR;
@@ -167,13 +167,13 @@ rwlock_write_lock_s(struct rwlock *o, bool block_signals)
 }
 
 int
-rwlock_write_lock_interruptible(struct rwlock *o)
+rwlock_write_lock_interruptible(rwlock *o)
 {
 	return rwlock_write_lock_s(o, false);
 }
 
 int
-rwlock_write_lock(struct rwlock *o)
+rwlock_write_lock(rwlock *o)
 {
 	return rwlock_write_lock_s(o, true);
 }
@@ -182,11 +182,11 @@ rwlock_write_lock(struct rwlock *o)
  * rwlock_write_unlock
  */
 void
-rwlock_write_unlock(struct rwlock *o)
+rwlock_write_unlock(rwlock *o)
 {
 	assert(!interrupt_running());
 
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 
 	std::lock_guard l{p->lock};
 
@@ -204,9 +204,9 @@ rwlock_write_unlock(struct rwlock *o)
  * rwlock_write_locked
  */
 bool
-rwlock_write_locked(struct rwlock *o)
+rwlock_write_locked(rwlock *o)
 {
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 
 	std::lock_guard l{p->lock};
 
@@ -217,9 +217,9 @@ rwlock_write_locked(struct rwlock *o)
  * rwlock_locked - test if rwlock is locked for reading or writing
  */
 bool
-rwlock_locked(struct rwlock *o)
+rwlock_locked(rwlock *o)
 {
-	struct rwlock_private *p = (struct rwlock_private *)o->storage;
+	rwlock_private *p = (rwlock_private *)o->storage;
 
 	std::lock_guard l{p->lock};
 

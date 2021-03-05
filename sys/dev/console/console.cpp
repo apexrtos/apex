@@ -13,12 +13,12 @@
 #include <thread.h>
 
 static int fd;
-static struct semaphore sem;
+static semaphore sem;
 
 /*
  * read
  */
-static ssize_t console_read(struct file *file, const struct iovec *iov,
+static ssize_t console_read(file *file, const iovec *iov,
     size_t count, off_t offset)
 {
 	return kpreadv(fd, iov, count, offset);
@@ -27,7 +27,7 @@ static ssize_t console_read(struct file *file, const struct iovec *iov,
 /*
  * write
  */
-static ssize_t console_write(struct file *file, const struct iovec *iov,
+static ssize_t console_write(file *file, const iovec *iov,
     size_t count, off_t offset)
 {
 	return kpwritev(fd, iov, count, offset);
@@ -36,7 +36,7 @@ static ssize_t console_write(struct file *file, const struct iovec *iov,
 /*
  * ioctl
  */
-int console_ioctl(struct file *file, unsigned long cmd, void *data)
+int console_ioctl(file *file, unsigned long cmd, void *data)
 {
 	return kioctl(fd, cmd, data);
 }
@@ -73,7 +73,7 @@ console_start()
 void
 console_init(const char *dev, tcflag_t cflag)
 {
-	static struct devio io = {
+	static devio io = {
 		.read = console_read,
 		.write = console_write,
 		.ioctl = console_ioctl,
@@ -84,7 +84,7 @@ console_init(const char *dev, tcflag_t cflag)
 		panic("console_init");
 
 	/* Configure console baud rate, etc. */
-	struct termios tio;
+	termios tio;
 	if (kioctl(fd, TCGETS, &tio))
 		panic("console_init");
 	tio.c_cflag = cflag;

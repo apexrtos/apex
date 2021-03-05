@@ -11,4 +11,4 @@ struct nxp_imxrt10xx_pit_desc {
 	int ipl;			/* interrupt priotity level */
 };
 
-void nxp_imxrt10xx_pit_init(const struct nxp_imxrt10xx_pit_desc *);
+void nxp_imxrt10xx_pit_init(const nxp_imxrt10xx_pit_desc *);

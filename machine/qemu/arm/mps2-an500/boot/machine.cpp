@@ -43,7 +43,7 @@ struct cmsdk_uart {
 };
 
 #if defined(CONFIG_BOOT_CONSOLE)
-static struct cmsdk_uart *const UART = (struct cmsdk_uart*)0x40004000;
+static cmsdk_uart *const UART = (cmsdk_uart*)0x40004000;
 #endif
 
 /*

@@ -18,7 +18,7 @@ __fast_bss size_t fixed;			/* number of fixed regions */
 __fast_bss size_t stack;			/* number of stack regions */
 __fast_bss size_t victim;			/* next victim to evict */
 __fast_bss const void *fault_addr;		/* last fault address */
-__fast_bss const struct thread *mapped_thread;	/* currently mapped thread */
+__fast_bss const thread *mapped_thread;	    /* currently mapped thread */
 
 static void
 clear_dynamic()
@@ -35,7 +35,7 @@ clear_dynamic()
 }
 
 static void
-static_region(const struct mmumap *map, size_t i)
+static_region(const mmumap *map, size_t i)
 {
 	if (!is_pow2(map->size))
 		panic("region must be power-of-2 sized");
@@ -73,7 +73,7 @@ prot_to_rasr(int prot)
  * mpu_init - initialise memory protection unit
  */
 void
-mpu_init(const struct mmumap *map, size_t count, int flags)
+mpu_init(const mmumap *map, size_t count, int flags)
 {
 	const size_t regions = read32(&MPU->TYPE).DREGION;
 
@@ -102,7 +102,7 @@ mpu_init(const struct mmumap *map, size_t count, int flags)
  * mpu_switch - switch mpu to new address space
  */
 void
-mpu_switch(const struct as *as)
+mpu_switch(const as *as)
 {
 	const int s = irq_disable();
 	clear_dynamic();
@@ -116,7 +116,7 @@ mpu_switch(const struct as *as)
 __fast_text void
 mpu_user_thread_switch()
 {
-	struct thread *t = thread_cur();
+	thread *t = thread_cur();
 
 	assert(t->task != &kern_task);
 
@@ -131,7 +131,7 @@ mpu_user_thread_switch()
 
 	/* map stack */
 	const size_t regions = read32(&MPU->TYPE).DREGION;
-	const struct seg *seg = as_find_seg(t->task->as, (void *)t->ctx.usp);
+	const seg *seg = as_find_seg(t->task->as, (void *)t->ctx.usp);
 	if (!seg || seg_prot(seg) == PROT_NONE) {
 		sig_thread(t, SIGSEGV);
 		return;
@@ -169,7 +169,7 @@ mpu_user_thread_switch()
  * mpu_thread_terminate - notify mpu of terminated thread
  */
 void
-mpu_thread_terminate(struct thread *th)
+mpu_thread_terminate(thread *th)
 {
 	const int s = irq_disable();
 	if (th == mapped_thread)
@@ -217,7 +217,7 @@ mpu_protect(const void *addr, size_t len, int prot)
 __fast_text void
 mpu_fault(const void *addr, size_t len)
 {
-	const struct seg *seg = as_find_seg(task_cur()->as, addr);
+	const seg *seg = as_find_seg(task_cur()->as, addr);
 
 	/* double fault at the same address means that last time we faulted in
 	   a region it didn't satisfy the MPU */

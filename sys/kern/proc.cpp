@@ -36,10 +36,10 @@
  * Can be called under interrupt.
  */
 void
-proc_exit(struct task *task, int status, int signal)
+proc_exit(task *task, int status, int signal)
 {
-	struct list *head, *n;
-	struct thread *th;
+	list *head, *n;
+	thread *th;
 
 	if (task->state == PS_ZOMB)
 		return;
@@ -56,7 +56,7 @@ proc_exit(struct task *task, int status, int signal)
 	 * Set the parent pid of all child processes to init.
 	 * Clear all child process vfork thread references.
 	 */
-	struct task *child;
+	task *child;
 	list_for_each_entry(child, &kern_task.link, link) {
 		if (child->parent == task) {
 			child->parent = task_find(1);
@@ -96,7 +96,7 @@ proc_exit(struct task *task, int status, int signal)
 	 */
 	head = &task->threads;
 	for (n = list_first(head); n != head; n = list_next(n)) {
-		th = list_entry(n, struct thread, task_link);
+		th = list_entry(n, thread, task_link);
 		thread_terminate(th);
 	}
 
@@ -128,10 +128,10 @@ proc_exit(struct task *task, int status, int signal)
  *    Wait for a child process whose process group id is equal to -pid.
  */
 pid_t
-sc_wait4(pid_t pid, int *ustatus, int options, struct rusage *rusage)
+sc_wait4(pid_t pid, int *ustatus, int options, rusage *rusage)
 {
 	int err, status;
-	struct task *task, *cur = task_cur();
+	task *task, *cur = task_cur();
 	pid_t cpid = 0;
 	int have_children;
 
@@ -261,7 +261,7 @@ again:
 int
 sc_tkill(int tid, int sig)
 {
-	struct thread *th;
+	thread *th;
 	if (!(th = thread_find(tid)))
 		return DERR(-ESRCH);
 	if (sig <= 0 || sig > NSIG)
@@ -276,7 +276,7 @@ sc_tkill(int tid, int sig)
 int
 sc_tgkill(pid_t pid, int tid, int sig)
 {
-	struct thread *th;
+	thread *th;
 	if (!(th = thread_find(tid)))
 		return DERR(-ESRCH);
 	if (task_pid(th->task) != pid)
@@ -297,7 +297,7 @@ sc_tgkill(pid_t pid, int tid, int sig)
 int
 setpgid(pid_t pid, pid_t pgid)
 {
-	struct task *task;
+	task *task;
 
 	if ((pid < 0) || (pgid < 0))
 		return DERR(-EINVAL);
@@ -334,7 +334,7 @@ setpgid(pid_t pid, pid_t pgid)
 pid_t
 getpgid(pid_t pid)
 {
-	struct task *task;
+	task *task;
 	pid_t pgid;
 
 	if (pid < 0)
@@ -395,7 +395,7 @@ geteuid()
  */
 pid_t setsid()
 {
-	struct task *cur = task_cur();
+	task *cur = task_cur();
 	pid_t pid = task_pid(cur);
 
 	/*
@@ -415,7 +415,7 @@ pid_t setsid()
 pid_t
 getsid(pid_t pid)
 {
-	struct task *task;
+	task *task;
 	pid_t sid;
 
 	if (pid < 0)
@@ -467,7 +467,7 @@ kill(pid_t pid, int sig)
 	}
 
 	int err = 0;
-	struct task *task, *cur = task_cur();
+	task *task, *cur = task_cur();
 
 	sch_lock();
 	if (pid > 0) {

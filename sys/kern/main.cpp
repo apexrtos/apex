@@ -75,7 +75,7 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	dbg("Kernel arguments: 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
 	    (long)archive_addr, archive_size, machdep0, machdep1);
 
-	struct bootargs args = {archive_addr, archive_size, machdep0, machdep1};
+	bootargs args = {archive_addr, archive_size, machdep0, machdep1};
 
 	/*
 	 * Do machine dependent initialisation.
@@ -132,7 +132,7 @@ run_init()
 	/*
 	 * Create init task
 	 */
-	struct task *task;
+	task *task;
 	if (task_create(&kern_task, VM_NEW, &task) < 0)
 		panic("task_create");
 	fs_fork(task);
@@ -140,9 +140,9 @@ run_init()
 	/*
 	 * Run init
 	 */
-	struct thread *th;
+	thread *th;
 	as_modify_begin(task->as);
-	if ((th = exec_into(task, argv[0], argv, 0)) > (struct thread*)-4096UL)
+	if ((th = exec_into(task, argv[0], argv, 0)) > (thread*)-4096UL)
 		panic("failed to run init");
 
 	/*
@@ -163,7 +163,7 @@ run_init()
 static void
 boot_thread(void *arg)
 {
-	struct bootargs *args = arg;
+	bootargs *args = arg;
 
 	/*
 	 * Initialise filesystem.

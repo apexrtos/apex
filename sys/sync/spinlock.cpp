@@ -12,7 +12,7 @@
 #else
 
 void
-spinlock_init(struct spinlock *s)
+spinlock_init(spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
 	s->owner = 0;
@@ -20,7 +20,7 @@ spinlock_init(struct spinlock *s)
 }
 
 void
-spinlock_lock(struct spinlock *s)
+spinlock_lock(spinlock *s)
 {
 	sch_lock();
 #if defined(CONFIG_DEBUG)
@@ -32,7 +32,7 @@ spinlock_lock(struct spinlock *s)
 }
 
 void
-spinlock_unlock(struct spinlock *s)
+spinlock_unlock(spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
 	assert(s->owner == thread_cur());
@@ -44,7 +44,7 @@ spinlock_unlock(struct spinlock *s)
 }
 
 int
-spinlock_lock_irq_disable(struct spinlock *s)
+spinlock_lock_irq_disable(spinlock *s)
 {
 	const int i = irq_disable();
 #if defined(CONFIG_DEBUG)
@@ -56,7 +56,7 @@ spinlock_lock_irq_disable(struct spinlock *s)
 }
 
 void
-spinlock_unlock_irq_restore(struct spinlock *s, int v)
+spinlock_unlock_irq_restore(spinlock *s, int v)
 {
 #if defined(CONFIG_DEBUG)
 	s->owner = 0;
@@ -66,7 +66,7 @@ spinlock_unlock_irq_restore(struct spinlock *s, int v)
 }
 
 void
-spinlock_assert_locked(const struct spinlock *s)
+spinlock_assert_locked(const spinlock *s)
 {
 #if defined(CONFIG_DEBUG)
 	assert(s->owner == thread_cur());

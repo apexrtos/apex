@@ -130,7 +130,7 @@ sig_ignore(void *handler, int sig)
  * Get handler for signal
  */
 static void *
-sig_handler(struct task *t, int sig)
+sig_handler(task *t, int sig)
 {
 	assert(sig > 0 && sig <= NSIG);
 	return t->sig_action[sig - 1].handler;
@@ -140,7 +140,7 @@ sig_handler(struct task *t, int sig)
  * Get flags for signal
  */
 static unsigned long
-sig_flags(struct task *t, int sig)
+sig_flags(task *t, int sig)
 {
 	assert(sig > 0 && sig <= NSIG);
 	return t->sig_action[sig - 1].flags;
@@ -150,7 +150,7 @@ sig_flags(struct task *t, int sig)
  * Get context restore trampoline for signal
  */
 static sig_restore_fn
-sig_restorer(struct task *t, int sig)
+sig_restorer(task *t, int sig)
 {
 	assert(sig > 0 && sig <= NSIG);
 	return sig_flags(t, sig) & SA_RESTORER ? t->sig_action[sig - 1].restorer : 0;
@@ -160,7 +160,7 @@ sig_restorer(struct task *t, int sig)
  * Get signal mask for signal
  */
 static k_sigset_t*
-sig_mask(struct task *t, int sig)
+sig_mask(task *t, int sig)
 {
 	assert(sig > 0 && sig <= NSIG);
 	return &t->sig_action[sig - 1].mask;
@@ -174,12 +174,12 @@ sig_mask(struct task *t, int sig)
  * Can be called under interrupt
  */
 static void
-sig_flush(struct task *task)
+sig_flush(task *task)
 {
 	if (ksigisemptyset(&task->sig_pending))
 		return;
 
-	struct thread *th;
+	thread *th;
 	list_for_each_entry(th, &task->threads, task_link) {
 		k_sigset_t unblocked;
 		ksigandnset(&unblocked, &task->sig_pending, &th->sig_blocked);
@@ -224,7 +224,7 @@ sig_flush(struct task *task)
  * Call with scheduler locked
  */
 static int
-process_signal(struct task *task, int sig)
+process_signal(task *task, int sig)
 {
 	int ret;
 
@@ -258,7 +258,7 @@ process_signal(struct task *task, int sig)
  * If sig == 0 no signal is sent but error checking is still performed.
  */
 int
-sig_task(struct task *task, int sig)
+sig_task(task *task, int sig)
 {
 	trace("sig_task sig:%d\n", sig);
 
@@ -311,7 +311,7 @@ out:
  * Signal 0 is a special signal sent to kill a thread
  */
 void
-sig_thread(struct thread *th, int sig)
+sig_thread(thread *th, int sig)
 {
 	trace("sig_thread th:%p sig:%d\n", th, sig);
 
@@ -354,7 +354,7 @@ out:
 }
 
 bool
-sig_unblocked_pending(struct thread *th)
+sig_unblocked_pending(thread *th)
 {
 	k_sigset_t unblocked;
 	ksigandnset(&unblocked, &th->sig_pending, &th->sig_blocked);
@@ -380,7 +380,7 @@ sig_block_all()
 void
 sig_restore(const k_sigset_t *old)
 {
-	struct thread *th = thread_cur();
+	thread *th = thread_cur();
 	sch_lock();
 	th->sig_blocked = *old;
 	sig_flush(th->task);
@@ -397,7 +397,7 @@ sig_restore(const k_sigset_t *old)
  * Adjust signal handlers after exec call
  */
 void
-sig_exec(struct task *t)
+sig_exec(task *t)
 {
 	/*
 	 * http://pubs.opengroup.org/onlinepubs/009695399/functions/exec.html
@@ -444,8 +444,8 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	if (sch_testexit())
 		return -ETHREAD_EXIT;
 
-	struct thread *th = thread_cur();
-	struct task *task = task_cur();
+	thread *th = thread_cur();
+	task *task = task_cur();
 
 	sch_lock();
 
@@ -578,7 +578,7 @@ out:
 __fast_text int
 sig_deliver(int rval)
 {
-	struct thread *th = thread_cur();
+	thread *th = thread_cur();
 	const k_sigset_t pending = th->sig_pending;
 
 	/*
@@ -673,8 +673,8 @@ out:
  * Set signal action for current task
  */
 int
-sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
-    struct k_sigaction *uoldact, size_t size)
+sc_rt_sigaction(const int sig, const k_sigaction *uact,
+    k_sigaction *uoldact, size_t size)
 {
 	trace("rt_sigaction sig:%d uact:%p uoldact:%p size:%zu\n",
 	    sig, uact, uoldact, size);
@@ -695,7 +695,7 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 			goto out;
 		}
 		memcpy(uoldact, &task_cur()->sig_action[sig - 1],
-		    sizeof(struct k_sigaction));
+		    sizeof(k_sigaction));
 	}
 
 	if (!uact)
@@ -715,7 +715,7 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 		goto out;
 	}
 
-	struct k_sigaction kact = *uact;
+	k_sigaction kact = *uact;
 
 	if (sizeof(kact.mask) != size) {
 		ret = DERR(-EINVAL);
@@ -746,7 +746,7 @@ sc_rt_sigaction(const int sig, const struct k_sigaction *uact,
 	 * blocked.
 	 */
 	if (sig_ignore(sig_handler(task_cur(), sig), sig)) {
-		struct thread *th;
+		thread *th;
 		const int s = irq_disable();
 		list_for_each_entry(th, &task_cur()->threads, task_link) {
 			ksigdelset(&th->sig_pending, sig);
@@ -768,7 +768,7 @@ static int
 sigreturn(bool siginfo)
 {
 	int ret;
-	struct thread *th = thread_cur();
+	thread *th = thread_cur();
 
 	sch_lock();
 	if (!context_restore(&th->ctx, &th->sig_blocked, &ret, siginfo)) {

@@ -138,5 +138,5 @@ struct lpuart_regs {
 		uint32_t r;
 	} WATER;
 };
-static_assert(sizeof(struct lpuart_regs) == 0x30, "");
+static_assert(sizeof(lpuart_regs) == 0x30, "");
 static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");

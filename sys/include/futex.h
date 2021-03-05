@@ -29,6 +29,6 @@ struct futexes {
 	};
 };
 
-int futex(struct task *, int *, int, int, void *, int *);
-void futexes_init(struct futexes *);
-void futexes_destroy(struct futexes *);
+int futex(task *, int *, int, int, void *, int *);
+void futexes_init(futexes *);
+void futexes_destroy(futexes *);

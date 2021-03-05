@@ -77,14 +77,14 @@ struct irq {
 	int		istreq;		    /* number of ist request */
 	void	       *data;		    /* handler data */
 	struct thread  *thread;		    /* thread id of ist */
-	struct event	istevt;		    /* event for ist */
+	event istevt;		    /* event for ist */
 };
 
 static void irq_thread(void *);
 
 /* IRQ descriptor table */
-static struct irq *irq_table[CONFIG_IRQS] __fast_bss;
-static struct spinlock lock __fast_bss;
+static irq *irq_table[CONFIG_IRQS] __fast_bss;
+static spinlock lock __fast_bss;
 
 /*
  * irq_attach - attach ISR and IST to the specified interrupt.
@@ -92,11 +92,11 @@ static struct spinlock lock __fast_bss;
  * Returns irq handle, or NULL on failure.  The interrupt of
  * attached irq will be unmasked (enabled) in this routine.
  */
-struct irq *
+irq *
 irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
     void (*ist)(int, void *), void *data)
 {
-	struct irq *irq;
+	irq *irq;
 
 	assert(isr != NULL);
 	assert(vector < CONFIG_IRQS);
@@ -145,7 +145,7 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
  * irq_detach - detach ISR and IST from interrupt.
  */
 void
-irq_detach(struct irq *irq)
+irq_detach(irq *irq)
 {
 	assert(irq);
 	assert(irq->vector < CONFIG_IRQS);
@@ -196,9 +196,9 @@ irq_thread(void *arg)
 	int vec;
 	void (*func)(int, void *);
 	void *data;
-	struct irq *irq;
+	irq *irq;
 
-	irq = (struct irq *)arg;
+	irq = (irq *)arg;
 	func = irq->ist;
 	vec = irq->vector;
 	data = irq->data;
@@ -235,7 +235,7 @@ irq_dump()
 	info(" --- ----------\n");
 	const int s = spinlock_lock_irq_disable(&lock);
 	for (size_t vector = 0; vector < ARRAY_SIZE(irq_table); vector++) {
-		const struct irq *irq = irq_table[vector];
+		const irq *irq = irq_table[vector];
 		if (!irq || irq->isrreq == 0)
 			continue;
 		info(" %3d %10d\n", vector, irq->isrreq);
@@ -254,7 +254,7 @@ irq_dump()
 __fast_text void
 irq_handler(int vector)
 {
-	struct irq *irq;
+	irq *irq;
 	int rc;
 
 	const int s = spinlock_lock_irq_disable(&lock);

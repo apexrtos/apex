@@ -60,24 +60,24 @@
 /*
  * list of devices
  */
-static struct list device_list;
-static struct spinlock device_list_lock;
+static list device_list;
+static spinlock device_list_lock;
 
 static int devfs_init();
-static int devfs_open(struct file *, int, mode_t);
-static int devfs_close(struct file *);
-static ssize_t devfs_read(struct file *, const struct iovec *, size_t, off_t);
-static ssize_t devfs_write(struct file *, const struct iovec *, size_t, off_t);
-static int devfs_seek (struct file *, off_t, int);
-static int devfs_ioctl(struct file *, u_long, void *);
-static int devfs_readdir(struct file *, struct dirent *, size_t);
-static int devfs_lookup(struct vnode *, const char *, size_t, struct vnode *);
-static int devfs_inactive(struct vnode *);
+static int devfs_open(file *, int, mode_t);
+static int devfs_close(file *);
+static ssize_t devfs_read(file *, const iovec *, size_t, off_t);
+static ssize_t devfs_write(file *, const iovec *, size_t, off_t);
+static int devfs_seek (file *, off_t, int);
+static int devfs_ioctl(file *, u_long, void *);
+static int devfs_readdir(file *, dirent *, size_t);
+static int devfs_lookup(vnode *, const char *, size_t, vnode *);
+static int devfs_inactive(vnode *);
 
 /*
  * vnode operations
  */
-static const struct vnops devfs_vnops = {
+static const vnops devfs_vnops = {
 	.vop_open = devfs_open,
 	.vop_close = devfs_close,
 	.vop_read = devfs_read,
@@ -99,7 +99,7 @@ static const struct vnops devfs_vnops = {
 /*
  * File system operations
  */
-static const struct vfsops devfs_vfsops = {
+static const vfsops devfs_vfsops = {
 	.vfs_init = devfs_init,
 	.vfs_mount = ((vfsop_mount_fn)vfs_nullop),
 	.vfs_umount = ((vfsop_umount_fn)vfs_nullop),
@@ -119,7 +119,7 @@ devfs_init()
 }
 
 static int
-devfs_open(struct file *fp, int flags, mode_t mode)
+devfs_open(file *fp, int flags, mode_t mode)
 {
 	dfsdbg("devfs_open: fp=%p name=%s\n", fp, fp->f_vnode->v_name);
 
@@ -129,7 +129,7 @@ devfs_open(struct file *fp, int flags, mode_t mode)
 	if (fp->f_vnode->v_flags & VROOT)
 		return 0;
 
-	struct device *dev = (struct device *)fp->f_vnode->v_data;
+	device *dev = (device *)fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -160,7 +160,7 @@ devfs_open(struct file *fp, int flags, mode_t mode)
 }
 
 static int
-devfs_close(struct file *fp)
+devfs_close(file *fp)
 {
 	dfsdbg("devfs_close: fp=%p name=%s\n", fp, fp->f_vnode->v_name);
 
@@ -170,7 +170,7 @@ devfs_close(struct file *fp)
 	if (fp->f_vnode->v_flags & VROOT)
 		return 0;
 
-	struct device *dev = fp->f_vnode->v_data;
+	device *dev = fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -196,10 +196,10 @@ devfs_close(struct file *fp)
 }
 
 static ssize_t
-devfs_read(struct file *fp, const struct iovec *iov, size_t count,
+devfs_read(file *fp, const iovec *iov, size_t count,
     off_t offset)
 {
-	struct device *dev = fp->f_vnode->v_data;
+	device *dev = fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -222,10 +222,10 @@ devfs_read(struct file *fp, const struct iovec *iov, size_t count,
 }
 
 static ssize_t
-devfs_write(struct file *fp, const struct iovec *iov, size_t count,
+devfs_write(file *fp, const iovec *iov, size_t count,
     off_t offset)
 {
-	struct device *dev = fp->f_vnode->v_data;
+	device *dev = fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -248,9 +248,9 @@ devfs_write(struct file *fp, const struct iovec *iov, size_t count,
 }
 
 static int
-devfs_seek(struct file *fp, off_t off, int whence)
+devfs_seek(file *fp, off_t off, int whence)
 {
-	struct device *dev = fp->f_vnode->v_data;
+	device *dev = fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -274,9 +274,9 @@ devfs_seek(struct file *fp, off_t off, int whence)
 }
 
 static int
-devfs_ioctl(struct file *fp, u_long cmd, void *arg)
+devfs_ioctl(file *fp, u_long cmd, void *arg)
 {
-	struct device *dev = fp->f_vnode->v_data;
+	device *dev = fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -299,7 +299,7 @@ devfs_ioctl(struct file *fp, u_long cmd, void *arg)
 }
 
 static int
-devfs_readdir(struct file *fp, struct dirent *buf, size_t len)
+devfs_readdir(file *fp, dirent *buf, size_t len)
 {
 	size_t remain = len;
 
@@ -347,9 +347,9 @@ out:
 }
 
 static int
-devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode *vp)
+devfs_lookup(vnode *dvp, const char *name, size_t name_len, vnode *vp)
 {
-	struct device *dev;
+	device *dev;
 
 	dfsdbg("devfs_lookup: (%zu):%s\n", name_len, name);
 
@@ -373,9 +373,9 @@ devfs_lookup(struct vnode *dvp, const char *name, size_t name_len, struct vnode 
 }
 
 static int
-devfs_inactive(struct vnode *vp)
+devfs_inactive(vnode *vp)
 {
-	struct device *dev = vp->v_data;
+	device *dev = vp->v_data;
 
 	if (dev) {
 		assert(!dev->busy);
@@ -388,10 +388,10 @@ devfs_inactive(struct vnode *vp)
 /*
  * device_create - create a device and add to device list
  */
-struct device *
-device_create(const struct devio *io, const char *name, int flags, void *info)
+device *
+device_create(const devio *io, const char *name, int flags, void *info)
 {
-	struct device *dev;
+	device *dev;
 	size_t len;
 
 	len = strlen(name);
@@ -426,10 +426,10 @@ device_create(const struct devio *io, const char *name, int flags, void *info)
 /*
  * device_reserve - reserve a device name
  */
-struct device *
+device *
 device_reserve(const char *name, bool indexed)
 {
-	struct device *dev;
+	device *dev;
 	char namei[ARRAY_SIZE(dev->name)];
 
 	if (!indexed)
@@ -448,7 +448,7 @@ device_reserve(const char *name, bool indexed)
  * device_attach - attach reserved device name to device instance
  */
 void
-device_attach(struct device *dev, const struct devio *io, int flags, void *info)
+device_attach(device *dev, const devio *io, int flags, void *info)
 {
 	spinlock_lock(&device_list_lock);
 	assert(!dev->devio);
@@ -465,13 +465,13 @@ device_attach(struct device *dev, const struct devio *io, int flags, void *info)
  * Once a device has been removed no more operations can be started on it.
  */
 void
-device_hide(struct device *dev)
+device_hide(device *dev)
 {
 	spinlock_lock(&device_list_lock);
 	list_remove(&dev->link);
 	spinlock_unlock(&device_list_lock);
 
-	struct vnode *vp = dev->vnode;
+	vnode *vp = dev->vnode;
 	if (vp) {
 		vn_lock(vp);
 		vn_hide(vp);
@@ -487,10 +487,10 @@ device_hide(struct device *dev)
  * device_busy - check if a any operations are running on device
  */
 bool
-device_busy(struct device *dev)
+device_busy(device *dev)
 {
 	bool r = false;
-	struct vnode *vp = dev->vnode;
+	vnode *vp = dev->vnode;
 
 	if (vp) {
 		vn_lock(vp);
@@ -507,14 +507,14 @@ device_busy(struct device *dev)
  * A device must be hidden and have no running operations before destroying.
  */
 void
-device_destroy(struct device *dev)
+device_destroy(device *dev)
 {
 #if defined(CONFIG_DEBUG)
 	assert(list_empty(&dev->link));
 #endif
 	assert(dev->busy == 0);
 
-	struct vnode *vp = dev->vnode;
+	vnode *vp = dev->vnode;
 
 	if (vp) {
 		vn_lock(vp);

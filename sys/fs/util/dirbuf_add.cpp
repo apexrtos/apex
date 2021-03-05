@@ -5,11 +5,11 @@
 #include <dirent.h>
 
 int
-dirbuf_add(struct dirent **buf, size_t *remain, ino_t ino, off_t off,
+dirbuf_add(dirent **buf, size_t *remain, ino_t ino, off_t off,
     unsigned char type, const char *name)
 {
-	const size_t align = alignof(struct dirent);
-	const size_t dirent_noname = offsetof(struct dirent, d_name);
+	const size_t align = alignof(dirent);
+	const size_t dirent_noname = offsetof(dirent, d_name);
 	const size_t name_max = *remain - dirent_noname;
 	if ((ssize_t)name_max < 2)
 		return -1;
@@ -22,6 +22,6 @@ dirbuf_add(struct dirent **buf, size_t *remain, ino_t ino, off_t off,
 	(*buf)->d_reclen = reclen;
 	(*buf)->d_type = type;
 	*remain -= reclen;
-	*buf = (struct dirent *)((char *)*buf + reclen);
+	*buf = (dirent *)((char *)*buf + reclen);
 	return 0;
 }

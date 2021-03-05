@@ -55,13 +55,13 @@
  * Kernel task.
  * kern_task acts as a list head of all tasks in the system.
  */
-struct task kern_task;
-struct task *init_task;
+task kern_task;
+task *init_task;
 
 /*
  * task_cur - return current active task.
  */
-struct task *
+task *
 task_cur()
 {
 	return thread_cur()->task;
@@ -70,15 +70,15 @@ task_cur()
 /*
  * task_find - convert process id to task pointer
  */
-struct task *
+task *
 task_find(pid_t pid)
 {
 	if (pid == 0)
 		return task_cur();
 	if (pid == 1)
 		return init_task;
-	const unsigned shift = floor_log2(alignof(struct task));
-	struct task *t = phys_to_virt((phys*)(pid << shift));
+	const unsigned shift = floor_log2(alignof(task));
+	task *t = phys_to_virt((phys*)(pid << shift));
 	if (!k_access_ok(t, sizeof *t, PROT_WRITE))
 		return 0;
 	if (!task_valid(t))
@@ -90,13 +90,13 @@ task_find(pid_t pid)
  * task_pid - convert task pointer to process id
  */
 pid_t
-task_pid(struct task *t)
+task_pid(task *t)
 {
 	if (t == &kern_task)
 		return 0;
 	if (t == init_task)
 		return 1;
-	const unsigned shift = floor_log2(alignof(struct task));
+	const unsigned shift = floor_log2(alignof(task));
 	return (unsigned long)virt_to_phys(t) >> shift;
 }
 
@@ -104,7 +104,7 @@ task_pid(struct task *t)
  * task_valid - test task validity.
  */
 bool
-task_valid(struct task *t)
+task_valid(task *t)
 {
 	return k_address(t) && t->magic == TASK_MAGIC;
 }
@@ -136,9 +136,9 @@ task_valid(struct task *t)
  * Note: The child task initially contains no threads.
  */
 int
-task_create(struct task *parent, int vm_option, struct task **child)
+task_create(task *parent, int vm_option, task **child)
 {
-	struct task *task;
+	task *task;
 	int err = 0;
 
 	sch_lock();
@@ -183,7 +183,7 @@ task_create(struct task *parent, int vm_option, struct task **child)
 		err = task_path(task, parent->path);
 		break;
 	case VM_COPY:
-		if ((task->as = as_copy(parent->as, task_pid(task))) > (struct as*)-4096UL) {
+		if ((task->as = as_copy(parent->as, task_pid(task))) > (as*)-4096UL) {
 			err = (int)task->as;
 			task->as = 0;
 			break;
@@ -236,7 +236,7 @@ task_create(struct task *parent, int vm_option, struct task **child)
  * This function only releases resources allocated by task_create.
  */
 int
-task_destroy(struct task *task)
+task_destroy(task *task)
 {
 	assert(task != task_cur());
 	assert(list_empty(&task->threads));
@@ -260,10 +260,10 @@ task_destroy(struct task *task)
  * Suspend a task.
  */
 int
-task_suspend(struct task *task)
+task_suspend(task *task)
 {
-	struct list *head, *n;
-	struct thread *th;
+	list *head, *n;
+	thread *th;
 
 	sch_lock();
 	if (!task_valid(task)) {
@@ -281,7 +281,7 @@ task_suspend(struct task *task)
 		 */
 		head = &task->threads;
 		for (n = list_first(head); n != head; n = list_next(n)) {
-			th = list_entry(n, struct thread, task_link);
+			th = list_entry(n, thread, task_link);
 			sch_suspend(th);
 		}
 	}
@@ -296,10 +296,10 @@ task_suspend(struct task *task)
  * thread suspend count and task suspend count become 0.
  */
 int
-task_resume(struct task *task)
+task_resume(task *task)
 {
-	struct list *head, *n;
-	struct thread *th;
+	list *head, *n;
+	thread *th;
 	int err = 0;
 
 	assert(task != task_cur());
@@ -320,7 +320,7 @@ task_resume(struct task *task)
 		 */
 		head = &task->threads;
 		for (n = list_first(head); n != head; n = list_next(n)) {
-			th = list_entry(n, struct thread, task_link);
+			th = list_entry(n, thread, task_link);
 			sch_resume(th);
 		}
 	}
@@ -336,7 +336,7 @@ task_resume(struct task *task)
  * the task name can be changed at anytime by exec().
  */
 int
-task_path(struct task *task, const char *path)
+task_path(task *t, const char *path)
 {
 	int err = 0;
 	char *copy = 0;
@@ -380,7 +380,7 @@ task_capable(unsigned cap)
  * Return true on success, or false on error.
  */
 bool
-task_access(struct task *task)
+task_access(task *task)
 {
 	/* Do not access the kernel task. */
 	if (task == &kern_task)
@@ -391,8 +391,8 @@ task_access(struct task *task)
 	    task_capable(CAP_TASK);
 }
 
-struct futexes *
-task_futexes(struct task *t)
+futexes *
+task_futexes(task *t)
 {
 	return &t->futexes;
 }
@@ -401,8 +401,8 @@ void
 task_dump()
 {
 	static const char state[][6] = { "INVAL", "  RUN", " ZOMB", " STOP" };
-	struct list *i, *j;
-	struct task *task;
+	list *i, *j;
+	task *task;
 	int nthreads;
 
 	info("task dump\n");
@@ -411,7 +411,7 @@ task_dump()
 	info(" ----------- ------ ---- -------- ----- ---------- --------- ------------\n");
 	i = &kern_task.link;
 	do {
-		task = list_entry(i, struct task, link);
+		task = list_entry(i, task, link);
 		nthreads = 0;
 		j = list_first(&task->threads);
 		while (j != &task->threads) {

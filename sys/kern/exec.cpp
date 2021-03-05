@@ -25,7 +25,7 @@
 // #define TRACE_EXEC
 
 thread *
-exec_into(struct task *t, const char *path, const char *const argv[],
+exec_into(task *t, const char *path, const char *const argv[],
     const char *const envp[])
 {
 	char buf[64];
@@ -81,13 +81,13 @@ exec_into(struct task *t, const char *path, const char *const argv[],
 		return (thread *)sp;
 
 	/* create new main thread */
-	struct thread *main;
+	thread *main;
 	if (auto r = thread_createfor(t, as.get(), &main, sp, MA_NORMAL, entry,
 	    0); r < 0)
 		return (thread *)r;
 
 	/* terminate all other threads in current task */
-	struct thread *th;
+	thread *th;
 	list_for_each_entry(th, &t->threads, task_link) {
 		if (th != main)
 			thread_terminate(th);
@@ -192,7 +192,7 @@ sc_execve(const char *path, const char *const argv[], const char *const envp[])
 		return r;
 	}
 
-	struct thread *main;
+	thread *main;
 	if ((main = exec_into(task_cur(), path, argv, envp)) > (void*)-4096UL) {
 		as_modify_end(task_cur()->as);
 		return (int)main;

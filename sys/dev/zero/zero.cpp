@@ -53,8 +53,7 @@ zero_read_iov(file *file, const iovec *iov, size_t count, off_t offset)
  * Writing data to this device is ignored.
  */
 static ssize_t
-zero_write_iov(struct file *file, const struct iovec *iov, size_t count,
-    off_t offset)
+zero_write_iov(file *file, const iovec *iov, size_t count, off_t offset)
 {
 	ssize_t res = 0;
 	while (count--) {
@@ -68,7 +67,7 @@ zero_write_iov(struct file *file, const struct iovec *iov, size_t count,
 /*
  * Device I/O table
  */
-static struct devio zero_io = {
+static devio zero_io = {
 	.read = zero_read_iov,
 	.write = zero_write_iov,
 };
@@ -80,6 +79,6 @@ void
 zero_init()
 {
 	/* Create device object */
-	struct device *d = device_create(&zero_io, "zero", DF_CHR, NULL);
+	device *d = device_create(&zero_io, "zero", DF_CHR, NULL);
 	assert(d);
 }

@@ -146,8 +146,8 @@ struct scb {
 	uint32_t AFSR;
 	uint8_t todo2[0x50];
 };
-static_assert(sizeof(struct scb) == 0x90, "Bad scb size!");
-static struct scb *const SCB = (struct scb*)0xe000ed00;
+static_assert(sizeof(scb) == 0x90, "Bad scb size!");
+static scb *const SCB = (scb*)0xe000ed00;
 
 /*
  * Cache and branch predictor maintenance operations
@@ -167,8 +167,8 @@ struct cbp {
 	uint32_t : 32;
 	uint32_t : 32;
 };
-static_assert(sizeof(struct cbp) == 0x34, "Bad cbp size");
-static struct cbp *const CBP = (struct cbp*)0xe000ef50;
+static_assert(sizeof(cbp) == 0x34, "Bad cbp size");
+static cbp *const CBP = (cbp*)0xe000ef50;
 
 /*
  * NVIC
@@ -187,8 +187,8 @@ struct nvic {
 	uint8_t IPR[496];
 	uint32_t reserved_5[452];
 };
-static_assert(sizeof(struct nvic) == 3072, "Bad NVIC size");
-static struct nvic *const NVIC = (struct nvic*)0xe000e100;
+static_assert(sizeof(nvic) == 3072, "Bad NVIC size");
+static nvic *const NVIC = (nvic*)0xe000e100;
 
 /*
  * FPU
@@ -217,8 +217,8 @@ struct fpu {
 	uint32_t MVFR1;
 	uint32_t MVFR2;
 };
-static_assert(sizeof(struct fpu) == 24, "Bad FPU size");
-static struct fpu *const FPU = (struct fpu*)0xe000ef34;
+static_assert(sizeof(fpu) == 24, "Bad FPU size");
+static fpu *const FPU = (fpu*)0xe000ef34;
 
 /*
  * DWT
@@ -275,8 +275,8 @@ struct dwt {
 	uint32_t LAR;
 	uint32_t LSR;
 };
-static_assert(sizeof(struct dwt) == 0xfb8, "Bad DWT size");
-static struct dwt *const DWT = (struct dwt*)0xe0001000;
+static_assert(sizeof(dwt) == 0xfb8, "Bad DWT size");
+static dwt *const DWT = (dwt*)0xe0001000;
 
 /*
  * MPU
@@ -366,8 +366,8 @@ struct mpu {
 	uint32_t : 32;
 	uint32_t : 32;
 };
-static_assert(sizeof(struct mpu) == 0x60, "Bad MPU size");
-static struct mpu *const MPU = (struct mpu*)0xe000ed90;
+static_assert(sizeof(mpu) == 0x60, "Bad MPU size");
+static mpu *const MPU = (mpu*)0xe000ed90;
 
 /*
  * values for 'flags' argument of mpu_init

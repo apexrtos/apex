@@ -35,8 +35,7 @@ bootdisk_read(void *buf, size_t len, off_t offset)
 }
 
 static ssize_t
-bootdisk_read_iov(struct file *f, const struct iovec *iov, size_t count,
-    off_t offset)
+bootdisk_read_iov(file *f, const iovec *iov, size_t count, off_t offset)
 {
 	return for_each_iov(iov, count, offset,
 	    [](std::span<std::byte> buf, off_t offset) {
@@ -47,7 +46,7 @@ bootdisk_read_iov(struct file *f, const struct iovec *iov, size_t count,
 /*
  * Device I/O table
  */
-static struct devio io = {
+static devio io = {
 	.read = bootdisk_read_iov,
 };
 
@@ -55,7 +54,7 @@ static struct devio io = {
  * Initialize
  */
 void
-bootdisk_init(struct bootargs *args)
+bootdisk_init(bootargs *args)
 {
 	if (!args->archive_size)
 		return;
@@ -65,6 +64,6 @@ bootdisk_init(struct bootargs *args)
 
 	dbg("Bootdisk at %p (%uK bytes)\n", archive_addr, archive_size / 1024);
 
-	struct device *d = device_create(&io, "bootdisk0", DF_BLK, NULL);
+	device *d = device_create(&io, "bootdisk0", DF_BLK, NULL);
 	assert(d);
 }

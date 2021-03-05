@@ -43,25 +43,25 @@ struct tty;
 typedef unsigned int tcflag_t;
 
 
-typedef int (*tty_tproc)(struct tty *, tcflag_t);
-typedef void (*tty_oproc)(struct tty *);
-typedef void (*tty_iproc)(struct tty *);
-typedef void (*tty_fproc)(struct tty *, int);
+typedef int (*tty_tproc)(tty *, tcflag_t);
+typedef void (*tty_oproc)(tty *);
+typedef void (*tty_iproc)(tty *);
+typedef void (*tty_fproc)(tty *, int);
 
-struct tty *tty_create(const char *, long attr, size_t bufsiz, size_t bufmin,
+tty *tty_create(const char *, long attr, size_t bufsiz, size_t bufmin,
 		       tty_tproc, tty_oproc, tty_iproc, tty_fproc, void *);
-void	    tty_destroy(struct tty *);
-void	   *tty_data(struct tty *);
+void	    tty_destroy(tty *);
+void	   *tty_data(tty *);
 long	    tty_speed(tcflag_t);
 
-char	   *tty_rx_getbuf(struct tty *);
-void	    tty_rx_putbuf(struct tty *, char *, size_t);
-void	    tty_rx_putc(struct tty *, char);
-void	    tty_rx_overflow(struct tty *);
+char	   *tty_rx_getbuf(tty *);
+void	    tty_rx_putbuf(tty *, char *, size_t);
+void	    tty_rx_putc(tty *, char);
+void	    tty_rx_overflow(tty *);
 
-int	    tty_tx_getc(struct tty *);
-size_t	    tty_tx_getbuf(struct tty *, size_t, const void **);
-bool	    tty_tx_empty(struct tty *);
-void	    tty_tx_advance(struct tty *, size_t);
-void	    tty_tx_complete(struct tty *);
+int	    tty_tx_getc(tty *);
+size_t	    tty_tx_getbuf(tty *, size_t, const void **);
+bool	    tty_tx_empty(tty *);
+void	    tty_tx_advance(tty *, size_t);
+void	    tty_tx_complete(tty *);
 

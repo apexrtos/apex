@@ -12,4 +12,4 @@ struct fsl_lpuart_desc {
 	int rx_tx_int;
 };
 
-void fsl_lpuart_init(const struct fsl_lpuart_desc *);
+void fsl_lpuart_init(const fsl_lpuart_desc *);

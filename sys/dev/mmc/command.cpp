@@ -19,7 +19,7 @@ command::command(unsigned index, uint32_t argument, response_type rt)
 
 void
 command::setup_data_transfer(enum data_direction d, size_t transfer_block_size,
-    const struct iovec *iov, size_t iov_off, size_t len, bool reliable_write)
+    const iovec *iov, size_t iov_off, size_t len, bool reliable_write)
 {
 	data_direction_ = d;
 	transfer_block_size_ = transfer_block_size;

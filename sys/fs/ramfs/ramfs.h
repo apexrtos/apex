@@ -47,5 +47,5 @@ struct ramfs_node {
 	size_t		     rn_bufsize;    /* allocated buffer size */
 };
 
-struct ramfs_node *ramfs_allocate_node(const char *, size_t, mode_t);
+ramfs_node *ramfs_allocate_node(const char *, size_t, mode_t);
 extern const struct vnops ramfs_vnops;

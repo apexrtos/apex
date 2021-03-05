@@ -35,7 +35,7 @@
  * Event for sleep/wakeup
  */
 struct event {
-	struct queue sleepq;		/* queue for waiting thread */
+	queue sleepq;			/* queue for waiting thread */
 	enum {
 		ev_IO,
 		ev_MSG,

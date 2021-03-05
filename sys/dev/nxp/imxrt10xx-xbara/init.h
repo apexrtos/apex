@@ -15,4 +15,4 @@ struct nxp_imxrt10xx_xbara_desc {
 	std::initializer_list<connection> config;   /* startup configuration */
 };
 
-void nxp_imxrt10xx_xbara_init(const struct nxp_imxrt10xx_xbara_desc *);
+void nxp_imxrt10xx_xbara_init(const nxp_imxrt10xx_xbara_desc *);

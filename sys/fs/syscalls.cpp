@@ -158,7 +158,7 @@ sc_fcntl(int fd, int cmd, void *arg)
 	case F_SETLKW:
 		if (auto r = l.lock(); r < 0)
 			return r;
-		if (!u_access_ok(arg, sizeof(struct flock), PROT_WRITE))
+		if (!u_access_ok(arg, sizeof(flock), PROT_WRITE))
 			return DERR(-EFAULT);
 	}
 	return fcntl(fd, cmd, arg);
@@ -220,7 +220,7 @@ sc_getcwd(char *buf, size_t len)
 }
 
 int
-sc_getdents(int dirfd, struct dirent *buf, size_t len)
+sc_getdents(int dirfd, dirent *buf, size_t len)
 {
 	interruptible_lock l(u_access_lock);
 	if (auto r = l.lock(); r < 0)
@@ -572,25 +572,25 @@ sc_readlinkat(int dirfd, const char *path, char *buf, size_t len)
 }
 
 static ssize_t
-do_readv(int fd, const struct iovec *iov, int count, off_t offset)
+do_readv(int fd, const iovec *iov, int count, off_t offset)
 {
 	return readv(fd, iov, count);
 }
 
 ssize_t
-sc_readv(int fd, const struct iovec *iov, int count)
+sc_readv(int fd, const iovec *iov, int count)
 {
 	return do_iov(fd, iov, count, 0, do_readv, PROT_WRITE);
 }
 
 #if UINTPTR_MAX == 0xffffffff
 ssize_t
-sc_preadv(int fd, const struct iovec *iov, int count, long off1, long off0)
+sc_preadv(int fd, const iovec *iov, int count, long off1, long off0)
 {
 	off_t offset = (off_t)off0 << 32 | off1;
 #else
 ssize_t
-sc_preadv(int fd, const struct iovec *iov, int count, off_t offset)
+sc_preadv(int fd, const iovec *iov, int count, off_t offset)
 {
 #endif
 	if (offset < 0)
@@ -600,12 +600,12 @@ sc_preadv(int fd, const struct iovec *iov, int count, off_t offset)
 
 #if UINTPTR_MAX == 0xffffffff
 ssize_t
-sc_pwritev(int fd, const struct iovec *iov, int count, long off1, long off0)
+sc_pwritev(int fd, const iovec *iov, int count, long off1, long off0)
 {
 	off_t offset = (off_t)off0 << 32 | off1;
 #else
 ssize_t
-sc_pwritev(int fd, const struct iovec *iov, int count, off_t offset)
+sc_pwritev(int fd, const iovec *iov, int count, off_t offset)
 {
 #endif
 	if (offset < 0)
@@ -625,13 +625,13 @@ sc_write(int fd, const void *buf, size_t len)
 }
 
 static ssize_t
-do_writev(int fd, const struct iovec *iov, int count, off_t offset)
+do_writev(int fd, const iovec *iov, int count, off_t offset)
 {
 	return writev(fd, iov, count);
 }
 
 ssize_t
-sc_writev(int fd, const struct iovec *iov, int count)
+sc_writev(int fd, const iovec *iov, int count)
 {
 	return do_iov(fd, iov, count, 0, do_writev, PROT_READ);
 }

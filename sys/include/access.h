@@ -11,7 +11,7 @@ ssize_t	u_strnlen(const char *, size_t);
 ssize_t	u_arraylen(const void *const *, size_t);
 bool	u_strcheck(const char *, size_t);
 bool	u_access_ok(const void *, size_t, int);
-bool	u_access_okfor(struct as *, const void *, size_t, int);
+bool	u_access_okfor(as *, const void *, size_t, int);
 bool	k_access_ok(const void *, size_t, int);
 
 /*
@@ -35,7 +35,7 @@ void	u_fault_clear();
  */
 bool	k_address(const void *);
 bool	u_address(const void *);
-bool	u_addressfor(const struct as *, const void *);
+bool	u_addressfor(const as *, const void *);
 
 namespace a {
 

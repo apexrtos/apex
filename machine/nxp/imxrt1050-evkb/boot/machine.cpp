@@ -51,7 +51,7 @@ machine_setup()
 		.HYS = HYS_Hysteresis_Disabled,
 	}.r);
 
-	struct lpuart_regs *const u = (struct lpuart_regs*)LPUART1;
+	lpuart_regs *const u = (lpuart_regs *)LPUART1;
 
 	/* configure for 115200 baud */
 	write32(&u->BAUD, (union lpuart_baud){
@@ -74,7 +74,7 @@ void
 machine_putc(int c)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
-	struct lpuart_regs *const u = (struct lpuart_regs*)LPUART1;
+	lpuart_regs *const u = (lpuart_regs *)LPUART1;
 
 	while (!read32(&u->STAT).TDRE);
 	write32(&u->DATA, c);

@@ -112,13 +112,13 @@
 #define DPC_FREE	0x4470463f	/* 'DpF?' */
 #define DPC_PENDING	0x4470503f	/* 'DpP?' */
 
-static struct queue	runq;		/* run queue */
-static struct queue	dpcq;		/* DPC queue */
-static struct event	dpc_event;	/* event for DPC */
+static queue runq;		/* run queue */
+static queue dpcq;		/* DPC queue */
+static event dpc_event;		/* event for DPC */
 
 /* currently active thread */
-extern struct thread idle_thread;
-__attribute__((used)) __fast_data struct thread *active_thread = &idle_thread;
+extern thread idle_thread;
+__attribute__((used)) __fast_data thread *active_thread = &idle_thread;
 __fast_bss static int resched;
 __fast_bss static int locks;
 
@@ -133,7 +133,7 @@ runq_top()
 	if (queue_empty(&runq))
 		return PRI_MIN + 1;
 
-	struct thread *th = queue_entry(queue_first(&runq), struct thread, link);
+	thread *th = queue_entry(queue_first(&runq), thread, link);
 	return th->prio;
 }
 
@@ -141,7 +141,7 @@ runq_top()
  * return true if thread is in runnable state
  */
 static bool
-thread_runnable(const struct thread *th)
+thread_runnable(const thread *th)
 {
 	assert(!interrupt_enabled());
 
@@ -152,14 +152,14 @@ thread_runnable(const struct thread *th)
  * Insert a thread into the run queue after all threads of higher or equal priority.
  */
 static void
-runq_enqueue(struct thread *th)
+runq_enqueue(thread *th)
 {
 	assert(!interrupt_enabled());
 	assert(thread_runnable(th));
 
-	struct queue *q = queue_first(&runq);
+	queue *q = queue_first(&runq);
 	while (!queue_end(&runq, q)) {
-		struct thread *qth = queue_entry(q, struct thread, link);
+		thread *qth = queue_entry(q, thread, link);
 		if (th->prio < qth->prio)
 			break;
 		q = queue_next(q);
@@ -177,13 +177,13 @@ runq_enqueue(struct thread *th)
  * threads of equal priority.
  */
 static void
-runq_insert(struct thread *th)
+runq_insert(thread *th)
 {
 	assert(!interrupt_enabled());
 
-	struct queue *q = queue_first(&runq);
+	queue *q = queue_first(&runq);
 	while (!queue_end(&runq, q)) {
-		struct thread *qth = queue_entry(q, struct thread, link);
+		thread *qth = queue_entry(q, thread, link);
 		if (th->prio <= qth->prio)
 			break;
 		q = queue_next(q);
@@ -196,14 +196,14 @@ runq_insert(struct thread *th)
  * Pick up and remove the highest-priority thread
  * from the run queue.
  */
-static struct thread *
+static thread *
 runq_dequeue()
 {
 	assert(!interrupt_enabled());
 
-	struct thread *th;
+	thread *th;
 
-	th = queue_entry(queue_first(&runq), struct thread, link);
+	th = queue_entry(queue_first(&runq), thread, link);
 	queue_remove(&th->link);
 	return th;
 }
@@ -212,7 +212,7 @@ runq_dequeue()
  * Remove the specified thread from the run queue.
  */
 static void
-runq_remove(struct thread *th)
+runq_remove(thread *th)
 {
 	assert(!interrupt_enabled());
 
@@ -257,7 +257,7 @@ sch_switch()
 {
 	assert(!interrupt_enabled());
 
-	struct thread *prev, *next;
+	thread *prev, *next;
 
 	/*
 	 * Ignore spurious sch_switch calls.
@@ -324,7 +324,7 @@ sch_switch()
 /*
  * sch_active - get currently active thread
  */
-struct thread *
+thread *
 sch_active()
 {
 	return active_thread;
@@ -339,11 +339,11 @@ sch_active()
  * Returns number of threads woken up.
  */
 unsigned
-sch_wakeup(struct event *evt, int result)
+sch_wakeup(event *evt, int result)
 {
 	int n = 0;
-	struct queue *q;
-	struct thread *th;
+	queue *q;
+	thread *th;
 
 	assert(evt);
 
@@ -353,7 +353,7 @@ sch_wakeup(struct event *evt, int result)
 		 * Move a sleeping thread to the run queue.
 		 */
 		q = dequeue(&evt->sleepq);
-		th = queue_entry(q, struct thread, link);
+		th = queue_entry(q, thread, link);
 		th->slpret = result;
 		th->slpevt = NULL;
 		th->state &= ~TH_SLEEP;
@@ -376,11 +376,11 @@ sch_wakeup(struct event *evt, int result)
  * threads. This routine returns the thread ID of the
  * woken thread, or NULL if no threads are sleeping.
  */
-struct thread *
-sch_wakeone(struct event *evt)
+thread *
+sch_wakeone(event *evt)
 {
-	struct queue *head, *q;
-	struct thread *top = NULL, *th;
+	queue *head, *q;
+	thread *top = NULL, *th;
 
 	const int s = irq_disable();
 	head = &evt->sleepq;
@@ -390,9 +390,9 @@ sch_wakeone(struct event *evt)
 		 * the sleep queue, and wakeup it.
 		 */
 		q = queue_first(head);
-		top = queue_entry(q, struct thread, link);
+		top = queue_entry(q, thread, link);
 		while (!queue_end(head, q)) {
-			th = queue_entry(q, struct thread, link);
+			th = queue_entry(q, thread, link);
 			if (th->prio < top->prio)
 				top = th;
 			q = queue_next(q);
@@ -414,16 +414,16 @@ sch_wakeone(struct event *evt)
 /*
  * sch_requeue - move one thread sleeping on event l to sleeping on event r
  */
-struct thread *
-sch_requeue(struct event *l, struct event *r)
+thread *
+sch_requeue(event *l, event *r)
 {
-	struct queue *q;
-	struct thread *th = 0;
+	queue *q;
+	thread *th = 0;
 
 	const int s = irq_disable();
 	if (!queue_empty(&l->sleepq)) {
 		q = dequeue(&l->sleepq);
-		th = queue_entry(q, struct thread, link);
+		th = queue_entry(q, thread, link);
 		enqueue(&r->sleepq, q);
 		timer_redirect(&th->timeout, &sleep_expire, th);
 	}
@@ -440,7 +440,7 @@ sch_requeue(struct event *l, struct event *r)
  * On success, must be followed by sch_continue_sleep or sch_cancel_sleep.
  */
 int
-sch_prepare_sleep(struct event *evt, uint_fast64_t nsec)
+sch_prepare_sleep(event *evt, uint_fast64_t nsec)
 {
 	assert(!(active_thread->state & TH_SLEEP));
 	assert(!interrupt_running());
@@ -524,7 +524,7 @@ sch_cancel_sleep()
  * Callable from interrupt.
  */
 void
-sch_unsleep(struct thread *th, int result)
+sch_unsleep(thread *th, int result)
 {
 	const int s = irq_disable();
 	if (th->state & TH_SLEEP) {
@@ -547,7 +547,7 @@ sch_unsleep(struct thread *th, int result)
  * Callable from interrupt.
  */
 void
-sch_signal(struct thread *th)
+sch_signal(thread *th)
 {
 	if (th == active_thread) {
 		/* signal will be delivered on return to userspace */
@@ -584,7 +584,7 @@ sch_yield()
  * Suspend the specified thread.
  */
 void
-sch_suspend(struct thread *th)
+sch_suspend(thread *th)
 {
 	sch_suspend_resume(th, NULL);
 }
@@ -593,7 +593,7 @@ sch_suspend(struct thread *th)
  * Resume the specified thread.
  */
 void
-sch_resume(struct thread *th)
+sch_resume(thread *th)
 {
 	sch_suspend_resume(NULL, th);
 }
@@ -602,7 +602,7 @@ sch_resume(struct thread *th)
  * Atomically suspend one thread and resume another.
  */
 void
-sch_suspend_resume(struct thread *suspend, struct thread *resume)
+sch_suspend_resume(thread *suspend, thread *resume)
 {
 	bool reschedule = false;
 
@@ -673,7 +673,7 @@ sch_elapse(uint_fast32_t nsec)
  * Set up stuff for thread scheduling.
  */
 void
-sch_start(struct thread *th)
+sch_start(thread *th)
 {
 	th->state = TH_SUSPEND;
 	th->policy = SCHED_RR;
@@ -686,7 +686,7 @@ sch_start(struct thread *th)
  * Tell thread to exit
  */
 void
-sch_stop(struct thread *th)
+sch_stop(thread *th)
 {
 	const int s = irq_disable();
 
@@ -772,7 +772,7 @@ sch_locks()
  * sch_getprio - get priority of thread
  */
 int
-sch_getprio(struct thread *th)
+sch_getprio(thread *th)
 {
 	return th->prio;
 }
@@ -784,7 +784,7 @@ sch_getprio(struct thread *th)
  * higher (less than) than the currently running thread.
  */
 void
-sch_setprio(struct thread *th, int baseprio, int prio)
+sch_setprio(thread *th, int baseprio, int prio)
 {
 	int s = irq_disable();
 	th->baseprio = baseprio;
@@ -814,13 +814,13 @@ sch_setprio(struct thread *th, int baseprio, int prio)
 }
 
 int
-sch_getpolicy(struct thread *th)
+sch_getpolicy(thread *th)
 {
 	return th->policy;
 }
 
 int
-sch_setpolicy(struct thread *th, int policy)
+sch_setpolicy(thread *th, int policy)
 {
 	int err = 0;
 
@@ -848,7 +848,7 @@ sch_setpolicy(struct thread *th, int policy)
  * This routine can be called from ISR.
  */
 void
-sch_dpc(struct dpc *dpc, void (*func)(void *), void *arg)
+sch_dpc(dpc *dpc, void (*func)(void *), void *arg)
 {
 	assert(dpc);
 	assert(func);
@@ -881,14 +881,14 @@ sch_dpc(struct dpc *dpc, void (*func)(void *), void *arg)
 static void
 dpc_thread(void *unused_arg)
 {
-	struct queue *q;
-	struct dpc *dpc;
+	queue *q;
+	dpc *dpc;
 
 	for (;;) {
 		interrupt_disable();
 		while (!queue_empty(&dpcq)) {
 			q = dequeue(&dpcq);
-			dpc = queue_entry(q, struct dpc, link);
+			dpc = queue_entry(q, dpc, link);
 			dpc->state = DPC_FREE;
 			/* cache data before interrupt_enable()  */
 			void (*func)(void *) = dpc->func;
@@ -920,9 +920,9 @@ sch_dump()
 	info("==============\n");
 	info(" thread      th         pri\n");
 	info(" ----------- ---------- ---\n");
-	struct queue *q = queue_first(&runq);
+	queue *q = queue_first(&runq);
 	while (!queue_end(&runq, q)) {
-		struct thread *th = queue_entry(q, struct thread, link);
+		thread *th = queue_entry(q, thread, link);
 		info(" %11s %p %3d\n", th->name, th, th->prio);
 		q = queue_next(q);
 	}
@@ -934,7 +934,7 @@ sch_dump()
 void
 sch_init()
 {
-	struct thread *th;
+	thread *th;
 
 	queue_init(&runq);
 	queue_init(&dpcq);

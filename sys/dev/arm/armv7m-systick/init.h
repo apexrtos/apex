@@ -9,4 +9,4 @@ struct arm_armv7m_systick_desc {
 	int clksource;
 };
 
-void arm_armv7m_systick_init(const struct arm_armv7m_systick_desc *);
+void arm_armv7m_systick_init(const arm_armv7m_systick_desc *);

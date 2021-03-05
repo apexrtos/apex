@@ -37,7 +37,7 @@
  * Insert element at tail of queue
  */
 void
-enqueue(struct queue *head, struct queue *item)
+enqueue(queue *head, queue *item)
 {
 	item->next = head;
 	item->prev = head->prev;
@@ -48,10 +48,10 @@ enqueue(struct queue *head, struct queue *item)
 /*
  * Remove and return element of head of queue
  */
-struct queue *
-dequeue(struct queue *head)
+queue *
+dequeue(queue *head)
 {
-	struct queue *item;
+	queue *item;
 
 	if (head->next == head)
 		return NULL;
@@ -65,7 +65,7 @@ dequeue(struct queue *head)
  * Insert element after specified element
  */
 void
-queue_insert(struct queue *prev, struct queue *item)
+queue_insert(queue *prev, queue *item)
 {
 	item->prev = prev;
 	item->next = prev->next;
@@ -77,7 +77,7 @@ queue_insert(struct queue *prev, struct queue *item)
  * Remove specified element from queue
  */
 void
-queue_remove(struct queue *item)
+queue_remove(queue *item)
 {
 	item->prev->next = item->next;
 	item->next->prev = item->prev;

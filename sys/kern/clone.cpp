@@ -35,7 +35,7 @@ clone_thread(unsigned long flags, void *sp, int *ptid, void *tls,
 	if ((flags & CLONE_SETTLS) && !u_address(tls))
 		return DERR(-EFAULT);
 
-	struct thread *th;
+	thread *th;
 	if (auto r = thread_createfor(task_cur(), task_cur()->as, &th, sp,
 	    MA_NORMAL, 0, 0); r < 0)
 		return r;
@@ -61,12 +61,12 @@ clone_process(unsigned long flags, void *sp)
 	if ((flags & (CLONE_VM | CLONE_VFORK | CSIGNAL)) != flags)
 		return DERR(-EINVAL);
 
-	struct task *child;
+	task *child;
 	if (auto r = task_create(task_cur(),
 	    flags & CLONE_VM ? VM_SHARE : VM_COPY, &child); r < 0)
 		return r;
 
-	struct thread *th;
+	thread *th;
 	if (auto r = thread_createfor(child, child->as, &th, sp, MA_NORMAL, 0,
 	    0); r < 0) {
 		task_destroy(child);

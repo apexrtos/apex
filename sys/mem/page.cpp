@@ -47,7 +47,7 @@ enum PG_STATE {
 struct page {
 	PG_STATE state;
 	void *owner;
-	struct list link;
+	list link;
 };
 
 struct region {

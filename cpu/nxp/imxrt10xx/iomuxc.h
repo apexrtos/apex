@@ -653,7 +653,7 @@ struct iomuxc {
 	uint32_t SEMC_I_IPP_IND_DQS4_SELECT_INPUT;
 	uint32_t CANFD_IPP_IND_CANRX_SELECT_INPUT;
 };
-static_assert(sizeof(struct iomuxc) == 0x790, "");
+static_assert(sizeof(iomuxc) == 0x790, "");
 
 union iomuxc_gpr_gpr16 {
 	struct {
@@ -706,7 +706,7 @@ struct iomuxc_gpr {
 		};
 	};
 };
-static_assert(sizeof(struct iomuxc_gpr) == 0x68, "");
+static_assert(sizeof(iomuxc_gpr) == 0x68, "");
 
 struct iomuxc_snvs {
 	uint32_t SW_MUX_CTL_PAD_WAKEUP;
@@ -719,18 +719,18 @@ struct iomuxc_snvs {
 	uint32_t SW_PAD_CTL_PAD_PMIC_ON_REQ;
 	uint32_t SW_PAD_CTL_PAD_PMIC_STBY_REQ;
 };
-static_assert(sizeof(struct iomuxc_snvs) == 0x24, "");
+static_assert(sizeof(iomuxc_snvs) == 0x24, "");
 
 struct iomuxc_snvs_gpr {
 	uint32_t GPR[4];
 };
-static_assert(sizeof(struct iomuxc_snvs_gpr) == 0x10, "");
+static_assert(sizeof(iomuxc_snvs_gpr) == 0x10, "");
 
 #define IOMUXC_ADDR 0x401f8000
 #define IOMUXC_GPR_ADDR 0x400ac000
 #define IOMUXC_SNVS_ADDR 0x400a8000
 #define IOMUXC_SNVS_GPR_ADDR 0x400a4000
-static struct iomuxc *const IOMUXC = (struct iomuxc*)IOMUXC_ADDR;
-static struct iomuxc_gpr *const IOMUXC_GPR = (struct iomuxc_gpr*)IOMUXC_GPR_ADDR;
-static struct iomuxc_snvs *const IOMUXC_SNVS = (struct iomuxc_snvs*)IOMUXC_SNVS_ADDR;
-static struct iomuxc_snvs_gpr *const IOMUXC_SNVS_GPR = (struct iomuxc_snvs_gpr*)IOMUXC_SNVS_GPR_ADDR;
+static iomuxc *const IOMUXC = (iomuxc*)IOMUXC_ADDR;
+static iomuxc_gpr *const IOMUXC_GPR = (iomuxc_gpr*)IOMUXC_GPR_ADDR;
+static iomuxc_snvs *const IOMUXC_SNVS = (iomuxc_snvs*)IOMUXC_SNVS_ADDR;
+static iomuxc_snvs_gpr *const IOMUXC_SNVS_GPR = (iomuxc_snvs_gpr*)IOMUXC_SNVS_GPR_ADDR;

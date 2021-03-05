@@ -12,4 +12,4 @@ struct fsl_imx_usbphy_desc {
 	unsigned txcal45dn;
 };
 
-void fsl_imx_usbphy_init(const struct fsl_imx_usbphy_desc *);
+void fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *);

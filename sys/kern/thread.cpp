@@ -65,18 +65,18 @@
 #define KSTACK_CHECK(th) 1
 #endif	/* !CONFIG_KSTACK_CHECK */
 
-__fast_bss struct thread idle_thread;
-__fast_data static struct list zombie_list = LIST_INIT(zombie_list);
-static struct spinlock zombie_lock;
+__fast_bss thread idle_thread;
+__fast_data static list zombie_list = LIST_INIT(zombie_list);
+static spinlock zombie_lock;
 
 /*
  * Allocate a new thread and attach a kernel stack to it.
  * Returns thread pointer on success, or NULL on failure.
  */
-static struct thread *
+static thread *
 thread_alloc(long mem_attr)
 {
-	struct thread *th;
+	thread *th;
 	phys *stack;
 
 	if ((th = kmem_alloc(sizeof(*th), MA_FAST)) == NULL)
@@ -100,7 +100,7 @@ thread_alloc(long mem_attr)
  * Free thread memory
  */
 static void
-thread_free(struct thread *th)
+thread_free(thread *th)
 {
 	assert(th->magic == THREAD_MAGIC);
 
@@ -118,8 +118,8 @@ thread_reap_zombies()
 {
 	int s = spinlock_lock_irq_disable(&zombie_lock);
 	while (!list_empty(&zombie_list)) {
-		struct thread *th = list_entry(list_first(&zombie_list),
-			struct thread, task_link);
+		thread *th = list_entry(list_first(&zombie_list),
+			thread, task_link);
 		list_remove(&th->task_link);
 		spinlock_unlock_irq_restore(&zombie_lock, s);
 		assert(th->state & TH_ZOMBIE);
@@ -132,7 +132,7 @@ thread_reap_zombies()
 /*
  * Get current thread
  */
-struct thread *
+thread *
 thread_cur()
 {
 	return sch_active();
@@ -142,7 +142,7 @@ thread_cur()
  * thread_valid - check thread validity.
  */
 bool
-thread_valid(struct thread *th)
+thread_valid(thread *th)
 {
 	return k_address(th) && th->magic == THREAD_MAGIC;
 }
@@ -154,11 +154,11 @@ thread_valid(struct thread *th)
  * must be called to start it.
  */
 int
-thread_createfor(struct task *task, struct as *as, struct thread **thp,
+thread_createfor(task *task, as *as, thread **thp,
     void *sp, long mem_attr, void (*entry)(), long arg)
 {
 	int r;
-	struct thread *th;
+	thread *th;
 
 	thread_reap_zombies();
 
@@ -201,7 +201,7 @@ thread_createfor(struct task *task, struct as *as, struct thread **thp,
  * Can be called under interrupt.
  */
 void
-thread_terminate(struct thread *th)
+thread_terminate(thread *th)
 {
 	sch_stop(th);
 	sig_thread(th, 0);		/* signal 0 is special */
@@ -214,7 +214,7 @@ thread_terminate(struct thread *th)
  * Can be called under interrupt.
  */
 void
-thread_zombie(struct thread *th)
+thread_zombie(thread *th)
 {
 	const int s = spinlock_lock_irq_disable(&zombie_lock);
 	list_insert(&zombie_list, &th->task_link);
@@ -228,7 +228,7 @@ thread_zombie(struct thread *th)
  * the thread name can be changed at any time.
  */
 int
-thread_name(struct thread *th, const char *name)
+thread_name(thread *th, const char *name)
 {
 	sch_lock();
 	strlcpy(th->name, name, ARRAY_SIZE(th->name));
@@ -241,20 +241,20 @@ thread_name(struct thread *th, const char *name)
  * Convert thread pointer to thread id
  */
 int
-thread_id(struct thread *t)
+thread_id(thread *t)
 {
-	const unsigned shift = floor_log2(alignof(struct thread));
+	const unsigned shift = floor_log2(alignof(thread));
 	return (unsigned long)virt_to_phys(t) >> shift;
 }
 
 /*
  * Convert thread id to thread pointer
  */
-struct thread *
+thread *
 thread_find(int id)
 {
-	const unsigned shift = floor_log2(alignof(struct thread));
-	struct thread *th = phys_to_virt((phys*)(id << shift));
+	const unsigned shift = floor_log2(alignof(thread));
+	thread *th = phys_to_virt((phys*)(id << shift));
 	if (!k_access_ok(th, sizeof *th, PROT_WRITE))
 		return 0;
 	if (!thread_valid(th))
@@ -289,11 +289,11 @@ thread_idle()
  *
  * This routine assumes the scheduler is already locked.
  */
-struct thread *
+thread *
 kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
     long mem_attr)
 {
-	struct thread *th;
+	thread *th;
 	void *sp;
 
 	assert(name);
@@ -330,14 +330,14 @@ void
 thread_check()
 {
 #ifdef CONFIG_THREAD_CHECK
-	struct list *task_link;
-	struct thread *th;
-	struct task *task;
+	list *task_link;
+	thread *th;
+	task *task;
 
 	if (likely(idle_thread.magic == THREAD_MAGIC)) { /* not early in boot */
 		task_link = &kern_task.link;
 		do {
-			task = list_entry(task_link, struct task, link);
+			task = list_entry(task_link, task, link);
 			assert(task_valid(task));
 			list_for_each_entry(th, &task->threads, task_link) {
 				assert(th->magic == THREAD_MAGIC);
@@ -354,9 +354,9 @@ thread_dump()
 {
 	static const char pol[][5] =
 		{ "OTHR", "FIFO", "  RR", "BTCH", "IDLE", "DDLN" };
-	struct list *i;
-	struct thread *th;
-	struct task *task;
+	list *i;
+	thread *th;
+	task *task;
 
 
 	info("thread dump\n");
@@ -369,7 +369,7 @@ thread_dump()
 	sch_lock();
 	i = &kern_task.link;
 	do {
-		task = list_entry(i, struct task, link);
+		task = list_entry(i, task, link);
 
 		list_for_each_entry(th, &task->threads, task_link) {
 			info(" %p%c %8s %p %c%c%c%c %s %4d %4d %8llu %11s %s\n",

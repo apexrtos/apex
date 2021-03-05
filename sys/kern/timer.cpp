@@ -59,10 +59,10 @@
 static volatile uint_fast64_t monotonic __fast_bss; /* nanoseconds elapsed since bootup */
 static volatile uint_fast64_t realtime_offset;	    /* monotonic + realtime_offset = realtime */
 
-static struct event	timer_event;	/* event to wakeup a timer thread */
-static struct event	delay_event;	/* event for the thread delay */
-static struct list	timer_list;	/* list of active timers */
-static struct list	expire_list;	/* list of expired timers */
+static event	timer_event;	/* event to wakeup a timer thread */
+static event	delay_event;	/* event for the thread delay */
+static list	timer_list;	/* list of active timers */
+static list	expire_list;	/* list of expired timers */
 
 /*
  * Get remaining nanoseconds to the expiration time.
@@ -82,10 +82,10 @@ time_remain(uint_fast64_t expire)
  * Requires interrupts to be disabled by the caller.
  */
 static void
-timer_insert(struct timer *tmr)
+timer_insert(timer *tmr)
 {
-	struct list *head, *n;
-	struct timer *t;
+	list *head, *n;
+	timer *t;
 
 	/*
 	 * We sort the timer list by time. So, we can
@@ -94,7 +94,7 @@ timer_insert(struct timer *tmr)
 	 */
 	head = &timer_list;
 	for (n = list_first(head); n != head; n = list_next(n)) {
-		t = list_entry(n, struct timer, link);
+		t = list_entry(n, timer, link);
 		if (tmr->expire < t->expire)
 			break;
 	}
@@ -105,13 +105,13 @@ timer_insert(struct timer *tmr)
  * Convert from timespec to nanoseconds
  */
 uint_fast64_t
-ts_to_ns(const struct timespec *ts)
+ts_to_ns(const timespec *ts)
 {
 	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
 }
 
 uint_fast64_t
-ts32_to_ns(const struct timespec32 *ts)
+ts32_to_ns(const timespec32 *ts)
 {
 	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
 }
@@ -120,7 +120,7 @@ ts32_to_ns(const struct timespec32 *ts)
  * Convert from nanoseconds to timespec
  */
 void
-ns_to_ts(uint_fast64_t ns, struct timespec *ts)
+ns_to_ts(uint_fast64_t ns, timespec *ts)
 {
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
@@ -135,7 +135,7 @@ ns_to_ts(uint_fast64_t ns, struct timespec *ts)
 }
 
 void
-ns_to_ts32(uint_fast64_t ns, struct timespec32 *ts)
+ns_to_ts32(uint_fast64_t ns, timespec32 *ts)
 {
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
@@ -153,7 +153,7 @@ ns_to_ts32(uint_fast64_t ns, struct timespec32 *ts)
  * Convert from timeval to nanoseconds
  */
 uint_fast64_t
-tv_to_ns(const struct timeval *tv)
+tv_to_ns(const timeval *tv)
 {
 	return tv->tv_sec * 1000000000ULL + tv->tv_usec * 1000ULL;
 }
@@ -162,7 +162,7 @@ tv_to_ns(const struct timeval *tv)
  * Convert from nanoseconds to timeval
  */
 void
-ns_to_tv(uint_fast64_t ns, struct timeval *tv)
+ns_to_tv(uint_fast64_t ns, timeval *tv)
 {
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
@@ -184,7 +184,7 @@ ns_to_tv(uint_fast64_t ns, struct timeval *tv)
  * If nsec == 1 we call out after the next tick.
  */
 void
-timer_callout(struct timer *tmr, uint_fast64_t nsec, uint_fast64_t interval,
+timer_callout(timer *tmr, uint_fast64_t nsec, uint_fast64_t interval,
 	      void (*func)(void *), void *arg)
 {
 	assert(tmr);
@@ -210,7 +210,7 @@ timer_callout(struct timer *tmr, uint_fast64_t nsec, uint_fast64_t interval,
  * if timer is active adjust callback function
  */
 void
-timer_redirect(struct timer *tmr, void (func)(void *), void *arg)
+timer_redirect(timer *tmr, void (func)(void *), void *arg)
 {
 	const int s = irq_disable();
 	if (tmr->active) {
@@ -224,7 +224,7 @@ timer_redirect(struct timer *tmr, void (func)(void *), void *arg)
  * stop timer
  */
 void
-timer_stop(struct timer *tmr)
+timer_stop(timer *tmr)
 {
 	assert(tmr);
 
@@ -264,7 +264,7 @@ timer_delay(uint_fast64_t nsec)
 static void
 timer_thread(void *arg)
 {
-	struct timer *tmr;
+	timer *tmr;
 
 	for (;;) {
 		/* Wait until next timer expiration. */
@@ -279,7 +279,7 @@ timer_thread(void *arg)
 			 * Callout
 			 */
 			tmr = list_entry(list_first(&expire_list),
-					 struct timer, link);
+					 timer, link);
 			list_remove(&tmr->link);
 
 			if (tmr->interval != 0) {
@@ -308,7 +308,7 @@ timer_thread(void *arg)
  * reload if configured to do so.
  */
 __fast_text static void
-run_itimer(struct itimer *it, uint_fast32_t ns, int sig)
+run_itimer(itimer *it, uint_fast32_t ns, int sig)
 {
 	/* disabled */
 	if (!it->remain)
@@ -335,9 +335,9 @@ run_itimer(struct itimer *it, uint_fast32_t ns, int sig)
 __fast_text void
 timer_tick(int ticks)
 {
-	struct timer *tmr;
+	timer *tmr;
 	int wakeup = 0;
-	struct task *t = task_cur();
+	task *t = task_cur();
 
 	/*
 	 * Convert elapsed time to nanoseconds
@@ -356,7 +356,7 @@ timer_tick(int ticks)
 		/*
 		 * Check timer expiration.
 		 */
-		tmr = list_entry(list_first(&timer_list), struct timer, link);
+		tmr = list_entry(list_first(&timer_list), timer, link);
 		if (monotonic < tmr->expire)
 			break;
 		/*
@@ -437,7 +437,7 @@ timer_realtime_coarse()
 void
 timer_init()
 {
-	struct thread *th;
+	thread *th;
 
 	list_init(&timer_list);
 	list_init(&expire_list);
@@ -454,7 +454,7 @@ timer_init()
  * sc_getitimer - get the value of an interval timer
  */
 int
-sc_getitimer(int timer, struct k_itimerval *o)
+sc_getitimer(int timer, k_itimerval *o)
 {
 	int err;
 
@@ -468,8 +468,8 @@ sc_getitimer(int timer, struct k_itimerval *o)
 		return DERR(-EFAULT);
 	}
 
-	struct timeval tmp;
-	struct task *t = task_cur();
+	timeval tmp;
+	task *t = task_cur();
 	const int s = irq_disable();
 
 	switch (timer) {
@@ -511,11 +511,11 @@ sc_getitimer(int timer, struct k_itimerval *o)
 static void
 itimer_alarm(void *tv)
 {
-	sig_task((struct task *)tv, SIGALRM);
+	sig_task((task *)tv, SIGALRM);
 }
 
 int
-sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
+sc_setitimer(int timer, const k_itimerval *n, k_itimerval *o)
 {
 	int err;
 
@@ -530,8 +530,8 @@ sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 		return DERR(-EFAULT);
 	}
 
-	struct timeval tmp;
-	struct task *t = task_cur();
+	timeval tmp;
+	task *t = task_cur();
 	const int s = irq_disable();
 
 	switch (timer) {
@@ -544,9 +544,9 @@ sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 			o->it_interval.tv_sec = tmp.tv_sec;
 			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		t->itimer_prof.remain = tv_to_ns(&(struct timeval)
+		t->itimer_prof.remain = tv_to_ns(&(timeval)
 				{n->it_value.tv_sec, n->it_value.tv_usec});
-		t->itimer_prof.interval = tv_to_ns(&(struct timeval)
+		t->itimer_prof.interval = tv_to_ns(&(timeval)
 				{n->it_interval.tv_sec, n->it_interval.tv_usec});
 		break;
 	case ITIMER_VIRTUAL:
@@ -558,9 +558,9 @@ sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 			o->it_interval.tv_sec = tmp.tv_sec;
 			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		t->itimer_virtual.remain = tv_to_ns(&(struct timeval)
+		t->itimer_virtual.remain = tv_to_ns(&(timeval)
 				{n->it_value.tv_sec, n->it_value.tv_usec});
-		t->itimer_virtual.interval = tv_to_ns(&(struct timeval)
+		t->itimer_virtual.interval = tv_to_ns(&(timeval)
 				{n->it_interval.tv_sec, n->it_interval.tv_usec});
 		break;
 	case ITIMER_REAL:
@@ -572,13 +572,13 @@ sc_setitimer(int timer, const struct k_itimerval *n, struct k_itimerval *o)
 			o->it_interval.tv_sec = tmp.tv_sec;
 			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		const uint_fast64_t ns = tv_to_ns(&(struct timeval)
+		const uint_fast64_t ns = tv_to_ns(&(timeval)
 				{n->it_value.tv_sec, n->it_value.tv_usec});
 		if (!ns)
 			timer_stop(&t->itimer_real);
 		else
 			timer_callout(&t->itimer_real, ns,
-			    tv_to_ns(&(struct timeval){n->it_interval.tv_sec,
+			    tv_to_ns(&(timeval){n->it_interval.tv_sec,
 						       n->it_interval.tv_usec}),
 				     itimer_alarm, t);
 		break;

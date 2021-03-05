@@ -17,4 +17,4 @@ struct arm_mps2_uart_desc {
 	int overflow_int;
 };
 
-void arm_mps2_uart_init(const struct arm_mps2_uart_desc *);
+void arm_mps2_uart_init(const arm_mps2_uart_desc *);

@@ -10,4 +10,4 @@ struct nxp_imxrt10xx_ocotp_desc {
 	unsigned long clock;		/* module clock frequency */
 };
 
-void nxp_imxrt10xx_ocotp_init(const struct nxp_imxrt10xx_ocotp_desc *);
+void nxp_imxrt10xx_ocotp_init(const nxp_imxrt10xx_ocotp_desc *);

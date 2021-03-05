@@ -29,9 +29,9 @@ struct mmc_desc {
 	unsigned data_lines;		    /* number of connected data lines */
 	unsigned power_stable_delay_ms;	    /* power supply stabilisation time */
 	unsigned power_off_delay_ms;	    /* power supply decay time */
-	struct volt_reg_desc vcc_supply;    /* power supply for VDD(card)/VCC(bga) */
-	struct volt_reg_desc vio_supply;    /* power supply for host I/O lines */
-	struct volt_reg_desc vccq_supply;   /* power supply for device I/O lines (VCCQ) */
+	volt_reg_desc vcc_supply;	    /* power supply for VDD(card)/VCC(bga) */
+	volt_reg_desc vio_supply;	    /* power supply for host I/O lines */
+	volt_reg_desc vccq_supply;	    /* power supply for device I/O lines (VCCQ) */
 	unsigned load_capacitance_pf;	    /* bulk capacitive load on data lines */
 	unsigned long max_rate;		    /* maximum clock/data rate (Hz) */
 };

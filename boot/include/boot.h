@@ -45,7 +45,7 @@
 #define info(...)
 #endif
 
-extern struct bootargs args;
+extern bootargs args;
 extern void (*kernel_entry)(phys *archive_addr, long archive_size,
     long machdep0, long machdep1);
 

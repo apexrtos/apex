@@ -82,7 +82,6 @@ struct dcdc {
 		uint32_t r;
 	} REG3;
 };
-static_assert(sizeof(struct dcdc) == 0x10, "");
+static_assert(sizeof(dcdc) == 0x10, "");
 
-static struct dcdc *const DCDC = (struct dcdc*)0x40080000;
-
+static dcdc *const DCDC = (dcdc*)0x40080000;

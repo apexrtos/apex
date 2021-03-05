@@ -606,7 +606,7 @@ vm_dump()
 	info(" Address space for kernel\n");
 	as_dump(kern_task.as);
 
-	struct task *task;
+	task *task;
 	list_for_each_entry(task, &kern_task.link, link) {
 		dbg(" Address space for %s\n", task->path);
 		as_dump(task->as);

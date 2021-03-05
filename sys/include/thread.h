@@ -43,22 +43,22 @@ struct thread {
 	int		magic;		/* magic number */
 	char		name[12];	/* thread name */
 	struct task    *task;		/* pointer to owner task */
-	struct list	task_link;	/* link for threads in same task */
-	struct queue	link;		/* linkage on scheduling queue */
+	list task_link;		/* link for threads in same task */
+	queue link;		/* linkage on scheduling queue */
 	int		state;		/* thread state */
 	int		policy;		/* scheduling policy */
 	int		prio;		/* current priority */
 	int		baseprio;	/* base priority */
 	int		timeleft;	/* remaining nanoseconds to run */
 	uint_fast64_t	time;		/* total running time (nanoseconds) */
-	struct event   *slpevt;		/* sleep event */
+	event *slpevt;		/* sleep event */
 	int		slpret;		/* sleep result code */
-	struct timer	timeout;	/* thread timer */
+	timer timeout;		/* thread timer */
 	k_sigset_t	sig_pending;	/* bitmap of pending signals */
 	k_sigset_t	sig_blocked;	/* bitmap of blocked signals */
 	void           *kstack;		/* base address of kernel stack */
 	int	       *clear_child_tid;/* clear & futex_wake this on exit */
-	struct context	ctx;		/* machine specific context */
+	context ctx;		/* machine specific context */
 	int		errno_storage;	/* error number */
 #if defined(CONFIG_DEBUG)
 	int		mutex_locks;	/* mutex lock counter */
@@ -96,15 +96,15 @@ struct thread {
 /*
  * Normal threads
  */
-struct thread  *thread_cur();
-bool		thread_valid(struct thread *);
-int	        thread_createfor(struct task *, struct as *, struct thread **,
+thread  *thread_cur();
+bool		thread_valid(thread *);
+int	        thread_createfor(task *, as *, thread **,
 				 void *, long mem_attr, void (*)(), long);
-int	        thread_name(struct thread *, const char *);
-int		thread_id(struct thread *);
-struct thread  *thread_find(int);
-void	        thread_terminate(struct thread *);
-void		thread_zombie(struct thread *);
+int	        thread_name(thread *, const char *);
+int		thread_id(thread *);
+thread  *thread_find(int);
+void	        thread_terminate(thread *);
+void		thread_zombie(thread *);
 [[noreturn]] void thread_idle();
 void	        thread_dump();
 void	        thread_check();
@@ -113,5 +113,5 @@ void	        thread_init();
 /*
  * Kernel threads
  */
-struct thread  *kthread_create(void (*)(void *), void *, int, const char *,
+thread  *kthread_create(void (*)(void *), void *, int, const char *,
 			       long mem_attr);

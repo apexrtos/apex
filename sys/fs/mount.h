@@ -12,13 +12,13 @@ struct vnops;
  * Mount data
  */
 struct mount {
-	struct list		 m_link;	/* link to next mount point */
-	const struct vfsops	*m_op;		/* pointer to vfs operations */
+	list m_link;		/* link to next mount point */
+	const vfsops *m_op;	/* pointer to vfs operations */
 	unsigned long		 m_flags;	/* mount flags */
 	unsigned		 m_count;	/* reference count */
 	int			 m_devfd;	/* mounted device handle */
-	struct vnode		*m_root;	/* root vnode */
-	struct vnode		*m_covered;	/* vnode covered on parent fs */
+	vnode *m_root;		/* root vnode */
+	vnode *m_covered;	/* vnode covered on parent fs */
 	void			*m_data;	/* private data for fs */
 };
 
@@ -27,7 +27,7 @@ struct mount {
  */
 struct vfssw {
 	const char		*vs_name;	/* name of file system */
-	const struct vfsops	*vs_op;		/* pointer to vfs operation */
+	const vfsops *vs_op;	/* pointer to vfs operation */
 };
 
 /*
@@ -37,8 +37,8 @@ typedef int (*vfsop_init_fn)();
 typedef int (*vfsop_mount_fn)(struct mount *, int, const void *);
 typedef int (*vfsop_umount_fn)(struct mount *);
 typedef int (*vfsop_sync_fn)(struct mount *);
-typedef int (*vfsop_vget_fn)(struct vnode *);
-typedef int (*vfsop_statfs_fn)(struct mount *, struct statfs *);
+typedef int (*vfsop_vget_fn)(vnode *);
+typedef int (*vfsop_statfs_fn)(struct mount *, statfs *);
 
 struct vfsops {
 	vfsop_init_fn	     vfs_init;
@@ -47,7 +47,7 @@ struct vfsops {
 	vfsop_sync_fn	     vfs_sync;
 	vfsop_vget_fn	     vfs_vget;
 	vfsop_statfs_fn	     vfs_statfs;
-	const struct vnops  *vfs_vnops;
+	const vnops *vfs_vnops;
 };
 
 /*
@@ -63,7 +63,7 @@ struct vfsops {
  * File system registration
  */
 #define REGISTER_FILESYSTEM(name) \
-	static const struct vfssw __filesystem_##name \
+	static const vfssw __filesystem_##name \
 	    __attribute__((section(".filesystems"), used)) = { \
 		.vs_name = #name, \
 		.vs_op = &name##_vfsops, \

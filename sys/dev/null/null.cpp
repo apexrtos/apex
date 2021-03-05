@@ -40,8 +40,7 @@
  * Always returns 0 bytes as the read size.
  */
 static ssize_t
-null_read(struct file *file, const struct iovec *iov, size_t count,
-    off_t offset)
+null_read(file *file, const iovec *iov, size_t count, off_t offset)
 {
 	return 0;
 }
@@ -50,8 +49,7 @@ null_read(struct file *file, const struct iovec *iov, size_t count,
  * Data written to this device is discarded.
  */
 static ssize_t
-null_write(struct file *file, const struct iovec *iov, size_t count,
-    off_t offset)
+null_write(file *file, const iovec *iov, size_t count, off_t offset)
 {
 	ssize_t res = 0;
 	while (count--) {
@@ -65,7 +63,7 @@ null_write(struct file *file, const struct iovec *iov, size_t count,
 /*
  * Device I/O table
  */
-static struct devio null_io = {
+static devio null_io = {
 	.read = null_read,
 	.write = null_write,
 };
@@ -77,6 +75,6 @@ void
 null_init()
 {
 	/* Create device object */
-	struct device *d = device_create(&null_io, "null", DF_CHR, NULL);
+	device *d = device_create(&null_io, "null", DF_CHR, NULL);
 	assert(d);
 }

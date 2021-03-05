@@ -38,7 +38,7 @@ struct timespec;
 struct timeval;
 
 struct timer {
-	struct list	link;		/* linkage on timer chain */
+	list link;		/* linkage on timer chain */
 	int		active;		/* true if active */
 	uint_fast64_t	expire;		/* expire time (nsec) */
 	uint_fast64_t	interval;	/* time interval (nsec) */
@@ -52,17 +52,17 @@ struct itimer {
 };
 
 
-uint_fast64_t ts_to_ns(const struct timespec *);
-uint_fast64_t ts32_to_ns(const struct timespec32 *);
-void	      ns_to_ts(uint_fast64_t, struct timespec *);
-void	      ns_to_ts32(uint_fast64_t, struct timespec32 *);
-uint_fast64_t tv_to_ns(const struct timeval *);
-void	      ns_to_tv(uint_fast64_t, struct timeval *);
+uint_fast64_t ts_to_ns(const timespec *);
+uint_fast64_t ts32_to_ns(const timespec32 *);
+void	      ns_to_ts(uint_fast64_t, timespec *);
+void	      ns_to_ts32(uint_fast64_t, timespec32 *);
+uint_fast64_t tv_to_ns(const timeval *);
+void	      ns_to_tv(uint_fast64_t, timeval *);
 
-void	      timer_callout(struct timer *, uint_fast64_t, uint_fast64_t,
+void	      timer_callout(timer *, uint_fast64_t, uint_fast64_t,
 			  void (*)(void *), void *);
-void	      timer_redirect(struct timer *, void (*)(void *), void *);
-void	      timer_stop(struct timer *);
+void	      timer_redirect(timer *, void (*)(void *), void *);
+void	      timer_stop(timer *);
 uint_fast64_t timer_delay(uint_fast64_t);
 void	      timer_tick(int);
 uint_fast64_t timer_monotonic();

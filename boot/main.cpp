@@ -42,7 +42,7 @@
 /*
  * Boot information
  */
-struct bootargs args;
+bootargs args;
 void (*kernel_entry)(phys *, long, long, long);
 
 /*

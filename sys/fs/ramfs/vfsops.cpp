@@ -66,7 +66,7 @@ ramfs_umount(struct mount *mp)
 /*
  * File system operations
  */
-static const struct vfsops ramfs_vfsops = {
+static const vfsops ramfs_vfsops = {
 	.vfs_init = ((vfsop_init_fn)vfs_nullop),
 	.vfs_mount = ramfs_mount,
 	.vfs_umount = ramfs_umount,

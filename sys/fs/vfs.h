@@ -36,11 +36,11 @@ struct task;
 struct vnode;
 
 
-int	 lookup_t(struct task *, int, const char *, struct vnode **,
+int	 lookup_t(task *, int, const char *, vnode **,
 		  const char **, size_t *, int);
-int	 lookup_t_dir(struct task *, int, const char *, struct vnode **,
+int	 lookup_t_dir(task *, int, const char *, vnode **,
 		      const char **, size_t *, int);
-int	 lookup_t_noexist(struct task *, int, const char *, struct vnode **,
+int	 lookup_t_noexist(task *, int, const char *, vnode **,
 			  const char **, size_t *, int);
 
 void	 vnode_init();

@@ -67,7 +67,7 @@ read_extended_filename(int fd, const size_t off, char *buf, size_t len)
 	char *p;
 	ssize_t rd;
 	size_t size;
-	struct ar_hdr h;
+	ar_hdr h;
 	if (kpread(fd, &h, sizeof h, SARMAG) != sizeof h)
 		return false;
 	if (strncmp(h.ar_fmag, ARFMAG, sizeof ARFMAG  - 1))
@@ -118,10 +118,10 @@ arfs_mount(struct mount *mp, int flags, const void *data)
  * The vnode is filled properly.
  */
 static int
-arfs_lookup(struct vnode *dvp, const char *name, const size_t name_len,
-    struct vnode *vp)
+arfs_lookup(vnode *dvp, const char *name, const size_t name_len,
+    vnode *vp)
 {
-	struct ar_hdr h;
+	ar_hdr h;
 	const struct mount *mp = vp->v_mount;
 	size_t off = SARMAG;
 	size_t size;
@@ -175,15 +175,15 @@ next:
 	/* No write access */
 	vp->v_mode = S_IFREG | S_IRUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 	vp->v_size = size;
-	vp->v_data = (void *)(off + sizeof(struct ar_hdr));
+	vp->v_data = (void *)(off + sizeof(ar_hdr));
 
 	return 0;
 }
 
 static ssize_t
-arfs_read(struct file *fp, void *buf, size_t size, off_t offset)
+arfs_read(file *fp, void *buf, size_t size, off_t offset)
 {
-	const struct vnode *vp = fp->f_vnode;
+	const vnode *vp = fp->f_vnode;
 	const struct mount *mp = vp->v_mount;
 	size_t off = (size_t)vp->v_data;
 	ssize_t res;
@@ -206,7 +206,7 @@ arfs_read(struct file *fp, void *buf, size_t size, off_t offset)
 }
 
 static ssize_t
-arfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
+arfs_read_iov(file *fp, const iovec *iov, size_t count,
     off_t offset)
 {
 	return for_each_iov(iov, count, offset,
@@ -216,7 +216,7 @@ arfs_read_iov(struct file *fp, const struct iovec *iov, size_t count,
 }
 
 static int
-arfs_readdir(struct file *fp, struct dirent *buf, size_t len)
+arfs_readdir(file *fp, dirent *buf, size_t len)
 {
 	const struct mount *mp = fp->f_vnode->v_mount;
 	size_t remain = len;
@@ -238,7 +238,7 @@ arfs_readdir(struct file *fp, struct dirent *buf, size_t len)
 	size_t i = 2;
 	off_t off = SARMAG;	/* offset in archive image */
 	for (;;) {
-		struct ar_hdr h;
+		ar_hdr h;
 
 		/* read file header */
 		if ((err = kpread(mp->m_devfd, &h, sizeof(h), off)) <= 0)
@@ -293,7 +293,7 @@ out:
 /*
  * vnode operations
  */
-const struct vnops arfs_vnops = {
+const vnops arfs_vnops = {
 	.vop_open = (vnop_open_fn)vop_nullop,
 	.vop_close = (vnop_close_fn)vop_nullop,
 	.vop_read = arfs_read_iov,
@@ -315,7 +315,7 @@ const struct vnops arfs_vnops = {
 /*
  * File system operations
  */
-static const struct vfsops arfs_vfsops = {
+static const vfsops arfs_vfsops = {
 	.vfs_init = (vfsop_init_fn)vfs_nullop,
 	.vfs_mount = arfs_mount,
 	.vfs_umount = (vfsop_umount_fn)vfs_nullop,

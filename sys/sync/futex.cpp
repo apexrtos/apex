@@ -27,37 +27,37 @@
  */
 struct futex {
 	phys *addr;		/* futex address */
-	struct spinlock lock;	/* to synchronise operations on this futex */
+	spinlock lock;	/* to synchronise operations on this futex */
 	struct event event;	/* event */
-	struct list link;	/* linkage on futexes list */
+	list link;		/* linkage on futexes list */
 };
 
 /*
  * futexes_impl - internal details of struct futexes
  */
 struct futexes_impl {
-	struct spinlock lock;
+	spinlock lock;
 	struct list list;
 };
-static_assert(sizeof(struct futexes_impl) == sizeof(struct futexes), "");
-static_assert(alignof(struct futexes_impl) == alignof(struct futexes), "");
+static_assert(sizeof(futexes_impl) == sizeof(futexes), "");
+static_assert(alignof(futexes_impl) == alignof(futexes), "");
 
 /*
  * futexes - retrieve futexes_impl from task
  */
-static struct futexes_impl *
-futexes(struct task *t)
+static futexes_impl *
+futexes(task *t)
 {
-	return (struct futexes_impl *)task_futexes(t);
+	return (futexes_impl *)task_futexes(t);
 }
 
 /*
  * futex_find - search for futex associated with uaddr
  */
-static struct futex *
-futex_find_unlocked(struct futexes_impl *fi, int *uaddr)
+static k_futex *
+futex_find_unlocked(futexes_impl *fi, int *uaddr)
 {
-	struct futex *f;
+	futex *f;
 	list_for_each_entry(f, &fi->list, link) {
 		if (f->addr == virt_to_phys(uaddr))
 			return f;
@@ -65,11 +65,11 @@ futex_find_unlocked(struct futexes_impl *fi, int *uaddr)
 	return 0;
 }
 
-static struct futex *
-futex_find(struct futexes_impl *fi, int *uaddr)
+static futex *
+futex_find(futexes_impl *fi, int *uaddr)
 {
 	spinlock_lock(&fi->lock);
-	struct futex *f = futex_find_unlocked(fi, uaddr);
+	futex *f = futex_find_unlocked(fi, uaddr);
 	spinlock_unlock(&fi->lock);
 
 	return f;
@@ -78,17 +78,17 @@ futex_find(struct futexes_impl *fi, int *uaddr)
 /*
  * futex_get - find or create futex for uaddr
  */
-static struct futex *
-futex_get(struct futexes_impl *fi, int *uaddr)
+static futex *
+futex_get(futexes_impl *fi, int *uaddr)
 {
-	struct futex *f;
+	futex *f;
 
 	spinlock_lock(&fi->lock);
 
 	if ((f = futex_find_unlocked(fi, uaddr)))
 		goto out;
 
-	if (!(f = malloc(sizeof(struct futex))))
+	if (!(f = malloc(sizeof(futex))))
 		goto out;
 
 	f->addr = virt_to_phys(uaddr);
@@ -105,14 +105,14 @@ out:
  * futex_wait - perform FUTEX_WAIT operation
  */
 static int
-futex_wait(struct task *t, int *uaddr, int val, const struct timespec32 *ts)
+futex_wait(task *t, int *uaddr, int val, const timespec32 *ts)
 {
 	int err, uval;
 
 	if (ts && (ts->tv_sec < 0 || ts->tv_nsec > 1000000000))
 		return -EINVAL;
 
-	struct futex *f;
+	futex *f;
 	if (!(f = futex_get(futexes(t), uaddr)))
 		return DERR(-ENOMEM);
 
@@ -148,7 +148,7 @@ futex_wait(struct task *t, int *uaddr, int val, const struct timespec32 *ts)
  * futex_wake - perform FUTEX_WAKE operation
  */
 static int
-futex_wake(struct task *t, int *uaddr, int val)
+futex_wake(task *t, int *uaddr, int val)
 {
 	trace("futex_wake th:%p uaddr:%p val:%d\n", thread_cur(), uaddr, val);
 
@@ -158,7 +158,7 @@ futex_wake(struct task *t, int *uaddr, int val)
 		return 0;
 
 	int n;
-	struct futex *f;
+	futex *f;
 	if (!(f = futex_find(futexes(t), uaddr)))
 		return 0;
 
@@ -184,7 +184,7 @@ futex_wake(struct task *t, int *uaddr, int val)
  * futex_requeue - perform FUTEX_REQUEUE operation
  */
 static int
-futex_requeue(struct task *t, int *uaddr, int val, int val2, int *uaddr2)
+futex_requeue(task *t, int *uaddr, int val, int val2, int *uaddr2)
 {
 	trace("futex_requeue th:%p uaddr:%p val:%d val2:%d uaddr2:%p\n",
 	    thread_cur(), uaddr, val, val2, uaddr2);
@@ -192,7 +192,7 @@ futex_requeue(struct task *t, int *uaddr, int val, int val2, int *uaddr2)
 	if (val < 0 || val2 < 0)
 		return DERR(-EINVAL);
 
-	struct futex *l;
+	futex *l;
 	if (!(l = futex_find(futexes(t), uaddr)))
 		return 0;
 
@@ -204,7 +204,7 @@ futex_requeue(struct task *t, int *uaddr, int val, int val2, int *uaddr2)
 	spinlock_unlock(&l->lock);
 
 	if (val2) {
-		struct futex *r;
+		futex *r;
 		if (!(r = futex_get(futexes(t), uaddr2)))
 			return DERR(-ENOMEM);
 
@@ -218,7 +218,7 @@ futex_requeue(struct task *t, int *uaddr, int val, int val2, int *uaddr2)
  * futex - kernel implementation of futex
  */
 int
-futex(struct task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
+futex(task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
 	assert(!interrupt_running());
 
@@ -256,7 +256,7 @@ int
 sc_futex(int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
 	int ret;
-	struct timespec32 ts;
+	timespec32 ts;
 
 	/* copy in userspace timespec */
 	switch (op & FUTEX_OP_MASK) {
@@ -277,7 +277,7 @@ sc_futex(int *uaddr, int op, int val, void *val2, int *uaddr2)
 void
 futexes_init(struct futexes *fs)
 {
-	struct futexes_impl *fi = (struct futexes_impl *)fs;
+	futexes_impl *fi = (futexes_impl *)fs;
 
 	spinlock_init(&fi->lock);
 	list_init(&fi->list);
@@ -289,12 +289,12 @@ futexes_init(struct futexes *fs)
 void
 futexes_destroy(struct futexes *fs)
 {
-	struct futexes_impl *fi = (struct futexes_impl *)fs;
+	futexes_impl *fi = (futexes_impl *)fs;
 
 	spinlock_lock(&fi->lock);
-	struct list *n;
+	list *n;
 	for (n = list_first(&fi->list); n != &fi->list; n = list_next(n)) {
-		struct futex *fk = list_entry(n, struct futex, link);
+		futex *fk = list_entry(n, futex, link);
 		free(fk);
 	}
 	spinlock_unlock(&fi->lock);

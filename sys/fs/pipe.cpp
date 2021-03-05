@@ -57,9 +57,9 @@ struct pipe_data {
  * pipe_alloc
  */
 static int
-pipe_alloc(struct file *fp)
+pipe_alloc(file *fp)
 {
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	if (vp->v_pipe)
 		return 0;
@@ -68,7 +68,7 @@ pipe_alloc(struct file *fp)
 	if (!(b = page_alloc(PIPE_BUF, MA_NORMAL, &pipe_id)))
 		return -ENOMEM;
 
-	struct pipe_data *p;
+	pipe_data *p;
 	if (!(p = malloc(sizeof *p))) {
 		page_free(b, PIPE_BUF, &pipe_id);
 		return -ENOMEM;
@@ -88,10 +88,10 @@ pipe_alloc(struct file *fp)
  * pipe_free
  */
 static void
-pipe_free(struct file *fp)
+pipe_free(file *fp)
 {
-	struct vnode *vp = fp->f_vnode;
-	struct pipe_data *p = vp->v_pipe;
+	vnode *vp = fp->f_vnode;
+	pipe_data *p = vp->v_pipe;
 
 	page_free(virt_to_phys(p->buf), PIPE_BUF, &pipe_id);
 	free(p);
@@ -101,10 +101,10 @@ pipe_free(struct file *fp)
  * pipe_open
  */
 int
-pipe_open(struct file *fp, int flags, mode_t mode)
+pipe_open(file *fp, int flags, mode_t mode)
 {
 	int ret;
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	if (!S_ISFIFO(vp->v_mode))
 		return DERR(-EINVAL);
@@ -112,7 +112,7 @@ pipe_open(struct file *fp, int flags, mode_t mode)
 	if ((ret = pipe_alloc(fp)) < 0)
 		return ret;
 
-	struct pipe_data *p = vp->v_pipe;
+	pipe_data *p = vp->v_pipe;
 
 	if ((flags & (O_NONBLOCK | O_ACCMODE)) == (O_NONBLOCK | O_WRONLY)
 	    && p->read_fds == 0)
@@ -136,14 +136,14 @@ pipe_open(struct file *fp, int flags, mode_t mode)
  * pipe_close
  */
 int
-pipe_close(struct file *fp)
+pipe_close(file *fp)
 {
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	if (!S_ISFIFO(vp->v_mode))
 		return DERR(-EINVAL);
 
-	struct pipe_data *p = vp->v_pipe;
+	pipe_data *p = vp->v_pipe;
 
 	switch (fp->f_flags & O_ACCMODE) {
 	case O_RDONLY:
@@ -166,16 +166,16 @@ pipe_close(struct file *fp)
  * pipe_read
  */
 ssize_t
-pipe_read(struct file *fp, void *buf, size_t size, off_t offset)
+pipe_read(file *fp, void *buf, size_t size, off_t offset)
 {
 	int err = 0;
 	size_t read = 0;	/* bytes read so far */
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	if (!S_ISFIFO(vp->v_mode))
 		return DERR(-EINVAL);
 
-	struct pipe_data *p = vp->v_pipe;
+	pipe_data *p = vp->v_pipe;
 
 	while (size != 0) {
 		size_t avail = p->wr - p->rd;
@@ -225,16 +225,16 @@ pipe_read(struct file *fp, void *buf, size_t size, off_t offset)
  * pipe_write
  */
 ssize_t
-pipe_write(struct file *fp, void *buf, size_t size, off_t offset)
+pipe_write(file *fp, void *buf, size_t size, off_t offset)
 {
 	int err = 0;
 	size_t written = 0;	/* bytes written so far */
-	struct vnode *vp = fp->f_vnode;
+	vnode *vp = fp->f_vnode;
 
 	if (!S_ISFIFO(vp->v_mode))
 		return DERR(-EINVAL);
 
-	struct pipe_data *p = vp->v_pipe;
+	pipe_data *p = vp->v_pipe;
 
 	while (size != 0) {
 		if (p->read_fds == 0) {

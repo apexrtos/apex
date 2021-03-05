@@ -11,4 +11,4 @@ struct fsl_usb2_udc_desc {
 	int ipl;
 };
 
-void fsl_usb2_udc_init(const struct fsl_usb2_udc_desc *);
+void fsl_usb2_udc_init(const fsl_usb2_udc_desc *);
