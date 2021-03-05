@@ -1,7 +1,5 @@
 #pragma once
 
-#include <sys/include/types.h>
-
 /*
  * Arguments passed from bootloader to kernel
  */

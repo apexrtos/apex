@@ -1,7 +1,7 @@
 #include "init.h"
 
-#include <arch.h>
-#include <assert.h>
+#include <arch/mmio.h>
+#include <cassert>
 #include <debug.h>
 #include <irq.h>
 #include <sections.h>

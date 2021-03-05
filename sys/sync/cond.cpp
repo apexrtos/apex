@@ -33,12 +33,11 @@
 
 #include <sync.h>
 
-#include <arch.h>
-#include <assert.h>
+#include <arch/interrupt.h>
+#include <cassert>
 #include <event.h>
 #include <sch.h>
 #include <sig.h>
-#include <stdalign.h>
 
 struct cond_private {
 	struct event event;

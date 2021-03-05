@@ -26,12 +26,12 @@
 #include <algorithm>
 #include <bootargs.h>
 #include <cassert>
+#include <cinttypes>
 #include <cstdio>
 #include <cstring>
 #include <debug.h>
 #include <elf.h>
 #include <errno.h>
-#include <inttypes.h>
 #include <kernel.h>
 #include <list.h>
 #include <sync.h>

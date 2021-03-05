@@ -12,8 +12,9 @@
 #include <proc.h>
 
 #include <access.h>
-#include <arch.h>
-#include <assert.h>
+#include <as.h>
+#include <cassert>
+#include <cstdlib>
 #include <debug.h>
 #include <errno.h>
 #include <fs.h>
@@ -21,9 +22,9 @@
 #include <kernel.h>
 #include <sch.h>
 #include <sig.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/wait.h>
+#include <syscalls.h>
 #include <task.h>
 #include <thread.h>
 #include <unistd.h>

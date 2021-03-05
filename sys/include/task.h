@@ -29,10 +29,9 @@
 
 #pragma once
 
+#include <csignal>
 #include <futex.h>
 #include <ksigaction.h>
-#include <signal.h>
-#include <stdbool.h>
 #include <sync.h>
 #include <timer.h>
 

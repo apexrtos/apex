@@ -1,10 +1,10 @@
 #include "init.h"
 
-#include <arch.h>
-#include <assert.h>
+#include <arch/mmio.h>
+#include <cassert>
 #include <conf/config.h>
+#include <cstdint>
 #include <debug.h>
-#include <stdint.h>
 
 /*
  * USBPHY registers

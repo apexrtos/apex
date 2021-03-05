@@ -1,8 +1,8 @@
 #pragma once
 
-#include <assert.h>
+#include <cassert>
+#include <cstdint>
 #include <endian.h>
-#include <stdint.h>
 
 /*
  * Hardware register description for Freescale LPUART

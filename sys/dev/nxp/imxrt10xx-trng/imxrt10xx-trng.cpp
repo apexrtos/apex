@@ -2,7 +2,7 @@
 
 #include "init.h"
 #include <algorithm>
-#include <arch.h>
+#include <arch/mmio.h>
 #include <debug.h>
 #include <errno.h>
 #include <fs/util.h>

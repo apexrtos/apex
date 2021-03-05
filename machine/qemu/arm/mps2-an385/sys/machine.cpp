@@ -1,11 +1,13 @@
-#include <arch.h>
+#include <arch/early_console.h>
+#include <arch/machine.h>
 
+#include <compiler.h>
 #include <conf/config.h>
 #include <conf/drivers.h>
 #include <dev/arm/mps2-uart/mps2-uart.h>
 #include <interrupt.h>
-#include <kernel.h>
 #include <page.h>
+#include <types.h>
 
 constexpr auto UART0 = 0x40004000;
 

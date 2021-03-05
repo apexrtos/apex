@@ -1,6 +1,7 @@
 #include "init.h"
 
-#include <arch.h>
+#include <arch/barrier.h>
+#include <arch/mmio.h>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -11,6 +12,7 @@
 #include <endian.h>
 #include <event.h>
 #include <irq.h>
+#include <kernel.h>
 #include <page.h>
 #include <wait.h>
 

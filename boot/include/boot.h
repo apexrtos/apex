@@ -30,9 +30,7 @@
 #pragma once
 
 #include <conf/config.h>
-#include <machine.h>
-#include <stdint.h>
-#include <stdio.h>
+#include <cstddef>
 #include <sys/include/bootargs.h>
 
 #if defined(CONFIG_DEBUG)

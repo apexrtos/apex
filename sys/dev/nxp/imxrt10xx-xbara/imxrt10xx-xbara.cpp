@@ -1,8 +1,9 @@
 #include "imxrt10xx-xbara.h"
 
 #include "init.h"
-#include <arch.h>
+#include <arch/mmio.h>
 #include <debug.h>
+#include <endian.h>
 #include <new>
 
 #define trace(...)

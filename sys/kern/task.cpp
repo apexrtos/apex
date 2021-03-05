@@ -34,8 +34,11 @@
 #include <task.h>
 
 #include <access.h>
-#include <arch.h>
-#include <assert.h>
+#include <address.h>
+#include <as.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <debug.h>
 #include <errno.h>
 #include <fs.h>
@@ -43,12 +46,8 @@
 #include <kernel.h>
 #include <proc.h>
 #include <sch.h>
-#include <stdalign.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <thread.h>
-#include <vm.h>
 
 #define TASK_MAGIC     0x54736b3f      /* 'Tsk?' */
 

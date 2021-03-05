@@ -29,7 +29,8 @@
 
 #ifndef __ASSEMBLY__
 
-#include <assert.h>
+#include <cassert>
+#include <cstdint>
 
 /*
  * System Control Block

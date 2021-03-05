@@ -1,13 +1,12 @@
 #include <sync.h>
 
-#include <arch.h>
-#include <assert.h>
+#include <arch/interrupt.h>
+#include <atomic>
+#include <cassert>
+#include <climits>
 #include <errno.h>
 #include <event.h>
-#include <limits.h>
 #include <sch.h>
-#include <stdalign.h>
-#include <stdatomic.h>
 #include <wait.h>
 
 struct private {

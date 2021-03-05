@@ -1,8 +1,10 @@
-#include "mmap.h"
-#include "vm.h"
+#include <as.h>
+#include <mmap.h>
+#include <seg.h>
+#include <vm.h>
 
 #include <algorithm>
-#include <arch.h>
+#include <arch/mmu.h>
 #include <cerrno>
 #include <debug.h>
 #include <fcntl.h>
@@ -13,6 +15,7 @@
 #include <sections.h>
 #include <sys/mman.h>
 #include <sys/uio.h>
+#include <syscalls.h>
 #include <task.h>
 #include <types.h>
 

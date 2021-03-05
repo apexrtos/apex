@@ -29,11 +29,11 @@
 
 #include "zero.h"
 
-#include <assert.h>
+#include <cassert>
+#include <cstring>
 #include <device.h>
 #include <fs.h>
 #include <fs/util.h>
-#include <string.h>
 #include <sys/uio.h>
 
 /*

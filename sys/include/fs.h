@@ -1,16 +1,15 @@
 #pragma once
 
+#include <cstdint>
+#include <fcntl.h>
+#include <memory>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <stdint.h>
+#include <unistd.h>
 
-struct dirent;
-struct file;
 struct iovec;
-struct stat;
-struct statfs;
-struct statx;
 struct task;
+struct vnode;
 
 /*
  * File system management

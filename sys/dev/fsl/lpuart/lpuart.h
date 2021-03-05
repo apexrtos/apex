@@ -6,7 +6,7 @@
  * Kernel entry points
  */
 
-#include <stddef.h>
+#include <cstddef>
 #include <termios.h>
 
 void fsl_lpuart_early_init(unsigned long base, unsigned long clock, tcflag_t);

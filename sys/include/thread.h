@@ -32,10 +32,8 @@
 #include <conf/config.h>
 #include <context.h>
 #include <timer.h>
-#include <types.h>
 
 struct as;
-struct mutex;
 struct task;
 
 /*

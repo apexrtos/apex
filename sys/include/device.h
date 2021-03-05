@@ -30,11 +30,11 @@
 #pragma once
 
 #include <list.h>
-#include <stdbool.h>
 #include <sys/types.h>
 
 struct file;
 struct iovec;
+struct vnode;
 
 /*
  * Device flags

@@ -3,14 +3,14 @@
 #include "init.h"
 #include "regs.h"
 #include <algorithm>
-#include <arch.h>
+#include <arch/mmio.h>
+#include <climits>
 #include <cstdlib>
 #include <debug.h>
 #include <dev/tty/tty.h>
 #include <errno.h>
 #include <irq.h>
 #include <kernel.h>
-#include <limits.h>
 #include <sync.h>
 
 namespace {

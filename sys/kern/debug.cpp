@@ -4,7 +4,10 @@
 
 #include <debug.h>
 
-#include <arch.h>
+#include <arch/backtrace.h>
+#include <arch/interrupt.h>
+#include <arch/machine.h>
+#include <cassert>
 #include <thread.h>
 
 /*

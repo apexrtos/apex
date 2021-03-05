@@ -31,8 +31,6 @@
 
 #include <types.h>
 
-struct task;
-
 void   *kmem_alloc(size_t, long mem_attr);
 void	kmem_free(void *);
 void	kmem_init();

@@ -1,7 +1,7 @@
 #include "command.h"
 
 #include "extract.h"
-#include <assert.h>
+#include <cassert>
 
 namespace mmc {
 

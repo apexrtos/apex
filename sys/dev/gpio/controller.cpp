@@ -1,6 +1,6 @@
 #include "controller.h"
 
-#include <assert.h>
+#include <cassert>
 #include <debug.h>
 #include <errno.h>
 #include <kmem.h>

@@ -1,17 +1,18 @@
 #include "mpu.h"
-#include <arch.h>
+#include <arch/mmu.h>
 
+#include <arch/mmio.h>
 #include <cpu.h>
 #include <debug.h>
 #include <irq.h>
 #include <kernel.h>
 #include <sections.h>
+#include <seg.h>
 #include <sig.h>
 #include <sys/mman.h>
 #include <sys/param.h>
 #include <task.h>
 #include <thread.h>
-#include <vm.h>
 
 __fast_bss size_t fixed;			/* number of fixed regions */
 __fast_bss size_t stack;			/* number of stack regions */

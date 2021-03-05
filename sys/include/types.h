@@ -1,9 +1,8 @@
 #pragma once
 
 #include <conf/config.h>
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 #include <sys/types.h>
 
 #define _NSIG 65

@@ -1,9 +1,8 @@
 #include <fs/util.h>
 
+#include <cstddef>
+#include <cstring>
 #include <dirent.h>
-#include <stdalign.h>
-#include <stddef.h>
-#include <string.h>
 
 int
 dirbuf_add(struct dirent **buf, size_t *remain, ino_t ino, off_t off,

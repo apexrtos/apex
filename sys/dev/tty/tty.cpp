@@ -2,7 +2,6 @@
 
 #include "buffer_queue.h"
 #include <access.h>
-#include <arch.h>
 #include <conf/config.h>
 #include <debug.h>
 #include <device.h>

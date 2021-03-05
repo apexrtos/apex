@@ -1,6 +1,7 @@
 #pragma once
 
-#include <types.h>
+#include <address.h>
+#include <memory>
 
 struct bootargs;
 

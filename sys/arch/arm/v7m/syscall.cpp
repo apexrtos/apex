@@ -1,10 +1,8 @@
-#include "syscall.h"
-
 #include <access.h>
-#include <arch.h>
+#include <arch/context.h>
 #include <debug.h>
 #include <errno.h>
-#include <kernel.h>
+#include <syscall.h>
 #include <syscall.h>
 #include <task.h>
 #include <thread.h>

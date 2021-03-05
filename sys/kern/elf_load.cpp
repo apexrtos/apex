@@ -3,7 +3,8 @@
  */
 #include <elf_load.h>
 
-#include <arch.h>
+#include <arch/elf.h>
+#include <arch/stack.h>
 #include <debug.h>
 #include <elf.h>
 #include <errno.h>

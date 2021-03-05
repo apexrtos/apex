@@ -1,14 +1,12 @@
 #include "imxrt10xx-rtwdog.h"
 
 #include "init.h"
-#include <arch.h>
+#include <arch/mmio.h>
 #include <debug.h>
 #include <device.h>
-#include <errno.h>
 #include <fs/util.h>
 #include <kernel.h>
 #include <linux/watchdog.h>
-#include <new>
 
 #define trace(...)
 

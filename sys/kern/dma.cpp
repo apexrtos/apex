@@ -1,6 +1,6 @@
 #include "dma.h"
 
-#include <arch.h>
+#include <arch/cache.h>
 #include <conf/config.h>
 #include <debug.h>
 #include <errno.h>

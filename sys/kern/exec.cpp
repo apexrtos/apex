@@ -5,21 +5,22 @@
 #include <exec.h>
 
 #include <access.h>
+#include <as.h>
 #include <cerrno>
+#include <climits>
+#include <cstring>
 #include <debug.h>
 #include <elf_load.h>
 #include <fcntl.h>
 #include <fs.h>
-#include <limits.h>
 #include <mmap.h>
 #include <sch.h>
 #include <sig.h>
-#include <string.h>
 #include <sys/mman.h>
+#include <syscalls.h>
 #include <task.h>
 #include <thread.h>
 #include <unistd.h>
-#include <vm.h>
 
 // #define TRACE_EXEC
 

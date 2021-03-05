@@ -17,9 +17,8 @@
 
 #include <sync.h>
 
-#include <arch.h>
-#include <assert.h>
-#include <stdalign.h>
+#include <arch/interrupt.h>
+#include <cassert>
 #include <wait.h>
 
 struct rwlock_private {

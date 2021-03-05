@@ -1,7 +1,7 @@
 #pragma once
 
-#include <assert.h>
-#include <stdint.h>
+#include <cassert>
+#include <cstdint>
 
 /*
  * IOMUX Controller

@@ -1,4 +1,5 @@
 #include <access.h>
+#include <u_string.h>
 
 bool
 u_strcheck(const char *u_str, const size_t maxlen)

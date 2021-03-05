@@ -29,9 +29,8 @@
 
 #pragma once
 
+#include <cstdint>
 #include <queue.h>
-#include <stdbool.h>
-#include <stdint.h>
 
 struct event;
 struct thread;

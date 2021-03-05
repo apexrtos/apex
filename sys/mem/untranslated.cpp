@@ -1,7 +1,11 @@
-#include <arch.h>
+#include <as.h>
+#include <seg.h>
+#include <vm.h>
 
 #include <access.h>
 #include <algorithm>
+#include <arch/cache.h>
+#include <arch/mmu.h>
 #include <cerrno>
 #include <cstring>
 #include <debug.h>
@@ -13,7 +17,6 @@
 #include <sys/uio.h>
 #include <task.h>
 #include <thread.h>
-#include <vm.h>
 
 /*
  * vm_read - read data from address space

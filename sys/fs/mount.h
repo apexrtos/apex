@@ -4,6 +4,9 @@
 #include <sys/mount.h>
 
 struct statfs;
+struct vfsops;
+struct vnode;
+struct vnops;
 
 /*
  * Mount data

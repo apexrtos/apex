@@ -1,5 +1,11 @@
-#include <arch.h>
+#include <arch/early_console.h>
+#include <arch/machine.h>
 
+#include <arch/barrier.h>
+#include <arch/interrupt.h>
+#include <arch/mmio.h>
+#include <arch/mmu.h>
+#include <compiler.h>
 #include <conf/config.h>
 #include <conf/drivers.h>
 #include <cpu.h>
@@ -11,7 +17,6 @@
 #include <debug.h>
 #include <dev/fsl/lpuart/lpuart.h>
 #include <interrupt.h>
-#include <kernel.h>
 #include <page.h>
 #include <timer.h>
 

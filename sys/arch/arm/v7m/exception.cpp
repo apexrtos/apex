@@ -1,6 +1,8 @@
-#include <arch.h>
-
 #include "exception_frame.h"
+#include <arch/interrupt.h>
+#include <arch/mmio.h>
+#include <arch/mmu.h>
+#include <compiler.h>
 #include <cpu.h>
 #include <debug.h>
 #include <irq.h>

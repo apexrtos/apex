@@ -1,13 +1,12 @@
 #pragma once
 
-#include <cstddef>
+#include <address.h>
+#include <functional>
 #include <types.h>
 
 struct iovec;
 
 void *dma_alloc(size_t);
-
-#include <functional>
 
 ssize_t dma_prepare(bool from_iov, const iovec *, size_t iov_offset,
 		    size_t len, size_t transfer_min, size_t transfer_max,

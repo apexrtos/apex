@@ -27,8 +27,12 @@
  * SUCH DAMAGE.
  */
 
-#include <arch.h>
+#include <arch/early_console.h>
+#include <arch/machine.h>
+#include <as.h>
 #include <bootargs.h>
+#include <compiler.h>
+#include <cstring>
 #include <debug.h>
 #include <dev/null/null.h>
 #include <dev/zero/zero.h>
@@ -37,9 +41,9 @@
 #include <fcntl.h>
 #include <fs.h>
 #include <irq.h>
+#include <kernel.h>
 #include <kmem.h>
 #include <sch.h>
-#include <string.h>
 #include <sys/mount.h>
 #include <task.h>
 #include <thread.h>

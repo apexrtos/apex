@@ -31,10 +31,9 @@
 
 #include <conf/config.h>
 #include <errno.h>
-#include <types.h>
 #include <mutex>
+#include <types.h>
 
-struct list;
 struct thread;
 
 #define MUTEX_WAITERS	0x00000001

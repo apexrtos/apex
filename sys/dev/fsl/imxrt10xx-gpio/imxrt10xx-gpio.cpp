@@ -1,6 +1,6 @@
 #include "init.h"
 
-#include <arch.h>
+#include <arch/mmio.h>
 #include <debug.h>
 #include <dev/gpio/controller.h>
 #include <errno.h>

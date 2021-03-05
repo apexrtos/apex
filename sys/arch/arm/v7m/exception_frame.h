@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 /*
  * Register Synonym Special Role in the procedure call standard

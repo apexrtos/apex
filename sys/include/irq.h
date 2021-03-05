@@ -29,9 +29,6 @@
 
 #pragma once
 
-#include <kernel.h>
-#include <types.h>
-
 struct irq;
 
 /*

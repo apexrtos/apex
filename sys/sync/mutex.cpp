@@ -42,15 +42,14 @@
 
 #include <sync.h>
 
-#include <arch.h>
-#include <assert.h>
+#include <arch/interrupt.h>
+#include <atomic>
+#include <cassert>
 #include <debug.h>
 #include <errno.h>
 #include <event.h>
 #include <sch.h>
 #include <sig.h>
-#include <stdalign.h>
-#include <stdatomic.h>
 #include <thread.h>
 
 struct mutex_private {

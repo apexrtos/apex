@@ -33,7 +33,6 @@
 #include <list.h>
 #include <types.h>
 
-struct k_itimerval;
 struct timespec32;
 struct timespec;
 struct timeval;

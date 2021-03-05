@@ -1,6 +1,6 @@
 #include <sync.h>
 
-#include <arch.h>
+#include <arch/interrupt.h>
 #include <irq.h>
 #include <sch.h>
 #include <thread.h>

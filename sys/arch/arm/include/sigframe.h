@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 /*
  * Structures stored in the uc_regspace area of the signal frame

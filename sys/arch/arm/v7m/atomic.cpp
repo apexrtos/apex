@@ -1,7 +1,7 @@
-#include <stddef.h>
-
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <irq.h>
-#include <string.h>
 
 /*
  * The atomic implementations below are valid on uniprocessor systems only:

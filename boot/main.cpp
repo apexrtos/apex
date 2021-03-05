@@ -32,10 +32,11 @@
  */
 #include <boot.h>
 
+#include <cassert>
+#include <cstdarg>
+#include <cstdio>
+#include <cstring>
 #include <machine.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/param.h>
 
 /*

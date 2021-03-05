@@ -36,14 +36,15 @@
 #include "debug.h"
 #include "vfs.h"
 #include "vnode.h"
+#include <cstdlib>
+#include <cstring>
 #include <debug.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fs.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sync.h>
 #include <sys/stat.h>
+#include <syscalls.h>
 #include <task.h>
 
 /*

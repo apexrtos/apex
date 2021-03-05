@@ -1,11 +1,11 @@
-#include <clone.h>
+#include <syscalls.h>
 
 #include <access.h>
-#include <arch.h>
+#include <arch/context.h>
+#include <arch/stack.h>
 #include <debug.h>
 #include <errno.h>
 #include <fs.h>
-#include <kernel.h>
 #include <sch.h>
 #include <sched.h>
 #include <task.h>

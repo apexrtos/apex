@@ -1,20 +1,22 @@
 #include <syscalls.h>
 
 #include <access.h>
-#include <arch.h>
+#include <algorithm>
+#include <arch/machine.h>
+#include <compiler.h>
+#include <cstring>
+#include <ctime>
 #include <debug.h>
 #include <errno.h>
 #include <kernel.h>
 #include <proc.h>
 #include <sch.h>
 #include <sched.h>
-#include <string.h>
 #include <sys/mman.h>
 #include <sys/reboot.h>
 #include <sys/utsname.h>
 #include <task.h>
 #include <thread.h>
-#include <time.h>
 #include <time32.h>
 #include <version.h>
 #include <vm.h>

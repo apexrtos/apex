@@ -1,16 +1,15 @@
 #include <futex.h>
 
 #include <access.h>
-#include <arch.h>
+#include <arch/interrupt.h>
+#include <atomic>
+#include <climits>
+#include <cstdlib>
 #include <debug.h>
 #include <errno.h>
-#include <kernel.h>
-#include <limits.h>
 #include <sch.h>
-#include <stdalign.h>
-#include <stdatomic.h>
-#include <stdlib.h>
 #include <sys/mman.h>
+#include <syscalls.h>
 #include <task.h>
 #include <thread.h>
 #include <time32.h>

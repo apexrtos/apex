@@ -1,9 +1,9 @@
 #include <sys/prctl.h>
 
 #include <access.h>
+#include <cstdarg>
 #include <debug.h>
 #include <errno.h>
-#include <stdarg.h>
 #include <sync.h>
 #include <thread.h>
 

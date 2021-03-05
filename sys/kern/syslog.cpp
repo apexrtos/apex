@@ -5,23 +5,22 @@
 #include <debug.h>
 
 #include <access.h>
-#include <arch.h>
+#include <arch/early_console.h>
 #include <compiler.h>
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <device.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fs/file.h>
 #include <fs/util.h>
 #include <kernel.h>
-#include <stdalign.h>
-#include <stdarg.h>
-#include <stdatomic.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <sync.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <sync.h>
+#include <syscalls.h>
 #include <unistd.h>
 #include <wait.h>
 

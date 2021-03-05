@@ -1,9 +1,9 @@
 #include <boot.h>
 
+#include <cstring>
 #include <elf.h>
-#include <string.h>
-#include <sys/include/arch.h>
-#include <sys/include/kernel.h>
+#include <sys/include/address.h>
+#include <sys/include/arch/cache.h>
 
 #define edbg(...)
 

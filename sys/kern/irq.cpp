@@ -57,15 +57,15 @@
 
 #include <irq.h>
 
-#include <arch.h>
-#include <assert.h>
+#include <arch/interrupt.h>
+#include <cassert>
+#include <compiler.h>
+#include <cstring>
 #include <debug.h>
 #include <event.h>
 #include <kmem.h>
 #include <sch.h>
 #include <sections.h>
-#include <stddef.h>
-#include <string.h>
 #include <sync.h>
 #include <thread.h>
 

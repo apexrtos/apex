@@ -1,7 +1,8 @@
 /*
  * NOTE: this file is also used by boot loader
  */
-#include <sys/include/arch.h>
+#include <sys/include/arch/barrier.h>
+#include <sys/include/arch/mmio.h>
 
 /*
  * Complete all memory accesses before starting next memory access

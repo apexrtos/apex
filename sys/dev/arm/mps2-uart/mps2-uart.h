@@ -6,7 +6,7 @@
  * Kernel entry points
  */
 
-#include <stddef.h>
+#include <cstddef>
 #include <termios.h>
 
 void arm_mps2_uart_early_init(unsigned long base, tcflag_t);

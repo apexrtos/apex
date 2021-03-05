@@ -9,7 +9,7 @@
 #include <machine.h>
 
 #include <boot.h>
-#include <sys/include/arch.h>
+#include <sys/include/arch/mmio.h>
 
 struct cmsdk_uart {
 	uint32_t DATA;

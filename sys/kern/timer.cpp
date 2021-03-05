@@ -39,18 +39,19 @@
 #include <timer.h>
 
 #include <access.h>
-#include <arch.h>
-#include <assert.h>
+#include <arch/interrupt.h>
+#include <cassert>
 #include <clock.h>
+#include <cstdlib>	    /* remove when lldiv is no longer required */
 #include <debug.h>
 #include <errno.h>
 #include <irq.h>
 #include <sch.h>
 #include <sections.h>
 #include <sig.h>
-#include <stdlib.h>	    /* remove when lldiv is no longer required */
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <syscalls.h>
 #include <task.h>
 #include <thread.h>
 #include <time32.h>

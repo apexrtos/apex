@@ -1,4 +1,6 @@
-#include <arch.h>
+#include <arch/backtrace.h>
+#include <arch/elf.h>
+#include <arch/stack.h>
 
 #include <debug.h>
 #include <sys/auxv.h>

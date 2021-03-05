@@ -4,7 +4,6 @@
 #include <array>
 #include <cassert>
 #include <compare>
-#include <cstddef>
 #include <cstring>
 #include <iterator>
 #include <limits>

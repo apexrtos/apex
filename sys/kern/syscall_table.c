@@ -1,21 +1,12 @@
 #include <syscall_table.h>
 
-#include <clone.h>
-#include <debug.h>
-#include <exec.h>
-#include <fs.h>
-#include <futex.h>
-#include <mmap.h>
-#include <proc.h>
-#include <sch.h>
 #include <sched.h>
 #include <sections.h>
-#include <sig.h>
 #include <signal.h>
 #include <sys/prctl.h>
+#include <sys/stat.h>
 #include <syscall.h>
 #include <syscalls.h>
-#include <timer.h>
 #include <unistd.h>
 
 /* fixup legacy 16-bit junk */

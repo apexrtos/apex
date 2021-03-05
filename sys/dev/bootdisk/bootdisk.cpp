@@ -1,16 +1,16 @@
 #include "init.h"
 
-#include <assert.h>
+#include <address.h>
 #include <bootargs.h>
+#include <cassert>
+#include <cstring>
 #include <debug.h>
 #include <device.h>
 #include <errno.h>
 #include <fs.h>
 #include <fs/file.h>
 #include <fs/util.h>
-#include <kernel.h>
 #include <kmem.h>
-#include <string.h>
 
 #define rdbg(...)
 

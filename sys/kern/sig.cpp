@@ -1,16 +1,19 @@
 #include <sig.h>
 
 #include <access.h>
-#include <arch.h>
-#include <assert.h>
+#include <arch/context.h>
+#include <cassert>
+#include <cstring>
 #include <debug.h>
 #include <errno.h>
 #include <irq.h>
+#include <kernel.h>
 #include <proc.h>
 #include <sch.h>
 #include <sections.h>
-#include <string.h>
 #include <sys/mman.h>
+#include <syscalls.h>
+#include <syscalls.h>
 #include <task.h>
 #include <thread.h>
 

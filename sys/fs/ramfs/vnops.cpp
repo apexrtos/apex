@@ -33,6 +33,9 @@
 
 #include "ramfs.h"
 
+#include <climits>
+#include <cstdlib>
+#include <cstring>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -40,10 +43,7 @@
 #include <fs/util.h>
 #include <fs/vnode.h>
 #include <kernel.h>
-#include <limits.h>
 #include <page.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
 
 /*

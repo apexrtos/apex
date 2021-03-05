@@ -43,6 +43,8 @@
 
 #include <ar.h>
 #include <compiler.h>
+#include <cstdlib>
+#include <cstring>
 #include <debug.h>
 #include <dirent.h>
 #include <errno.h>
@@ -51,8 +53,6 @@
 #include <fs/mount.h>
 #include <fs/util.h>
 #include <fs/vnode.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/param.h>
 #include <sys/uio.h>
 

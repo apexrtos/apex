@@ -4,10 +4,8 @@
  * sig - signal handling, generation and delivery
  */
 
-#include <stdbool.h>
 #include <types.h>
 
-struct k_sigaction;
 struct task;
 struct thread;
 

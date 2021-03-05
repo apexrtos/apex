@@ -37,13 +37,13 @@
 #include "mount.h"
 #include "pipe.h"
 #include "vfs.h"
-#include <assert.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
 #include <debug.h>
 #include <dirent.h>
 #include <errno.h>
 #include <jhash3.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <thread.h>

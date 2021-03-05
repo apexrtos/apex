@@ -4,13 +4,13 @@
 #include <fs.h>
 
 #include <access.h>
-#include <arch.h>
 #include <array>
+#include <climits>
+#include <compiler.h>
 #include <debug.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <linux/fs.h>
 #include <linux/ioctl.h>
 #include <stdio.h>
@@ -19,6 +19,7 @@
 #include <sys/param.h>
 #include <sys/statfs.h>
 #include <sys/uio.h>
+#include <syscalls.h>
 #include <task.h>
 #include <termios.h>
 #include <unistd.h>

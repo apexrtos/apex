@@ -1,3 +1,5 @@
+#include <signal.h>
+
 #include <debug.h>
 
 int

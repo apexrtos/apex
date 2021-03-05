@@ -36,10 +36,9 @@
 
 #pragma once
 
-#include <stddef.h>
+#include <cstddef>
 #include <types.h>
 
-struct termios;
 struct tty;
 typedef unsigned int tcflag_t;
 

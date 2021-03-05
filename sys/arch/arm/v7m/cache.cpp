@@ -1,11 +1,12 @@
 /*
  * NOTE: this file is also used by boot loader
  */
-#include <sys/include/arch.h>
+#include <sys/include/arch/cache.h>
 
 #include <conf/config.h>
 #include <cpu.h>
-#include <stddef.h>
+#include <cstddef>
+#include <sys/include/arch/mmio.h>
 #include <sys/include/kernel.h>
 #include <sys/param.h>
 

@@ -1,6 +1,7 @@
-#include <arch.h>
+#include <arch/interrupt.h>
 
-#include <assert.h>
+#include <arch/mmio.h>
+#include <cassert>
 #include <cpu.h>
 #include <thread.h>
 

@@ -56,13 +56,13 @@
 #include <kmem.h>
 
 #include <access.h>
-#include <assert.h>
+#include <cassert>
 #include <conf/config.h>
+#include <cstdlib>
+#include <cstring>
 #include <debug.h>
 #include <kernel.h>
 #include <page.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sync.h>
 #include <task.h>
 

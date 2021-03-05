@@ -1,11 +1,9 @@
 #include "imxrt10xx-ocotp.h"
 
 #include "init.h"
-#include <algorithm>
-#include <arch.h>
+#include <arch/mmio.h>
 #include <chrono>
 #include <debug.h>
-#include <errno.h>
 #include <fs/util.h>
 #include <kernel.h>
 #include <timer.h>

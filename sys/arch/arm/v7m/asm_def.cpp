@@ -1,5 +1,5 @@
 #include "exception_frame.h"
-#include <stddef.h>
+#include <cstddef>
 #include <thread.h>
 
 #define text(t) __asm__("\n@__OUT__" t)

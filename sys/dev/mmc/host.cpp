@@ -7,15 +7,10 @@
 #include "sd.h"
 #include "sd_card.h"
 #include "sdio.h"
-#include <arch.h>
 #include <cerrno>
 #include <debug.h>
 #include <dev/regulator/voltage/regulator.h>
-#include <sch.h>
 #include <thread.h>
-
-#include <kernel.h>
-#include <page.h>
 
 namespace mmc {
 

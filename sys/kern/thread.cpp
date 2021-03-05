@@ -34,8 +34,12 @@
 #include <thread.h>
 
 #include <access.h>
-#include <arch.h>
-#include <assert.h>
+#include <arch/context.h>
+#include <arch/machine.h>
+#include <arch/stack.h>
+#include <cassert>
+#include <compiler.h>
+#include <cstring>
 #include <debug.h>
 #include <errno.h>
 #include <futex.h>
@@ -46,9 +50,6 @@
 #include <sched.h>
 #include <sections.h>
 #include <sig.h>
-#include <stdalign.h>
-#include <stddef.h>
-#include <string.h>
 #include <sync.h>
 #include <sys/mman.h>
 #include <task.h>

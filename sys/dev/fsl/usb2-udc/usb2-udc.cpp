@@ -1,6 +1,8 @@
 #include "init.h"
 
-#include <arch.h>
+#include <arch/barrier.h>
+#include <arch/cache.h>
+#include <arch/mmio.h>
 #include <cassert>
 #include <cerrno>
 #include <cstdint>
@@ -10,6 +12,7 @@
 #include <dma.h>
 #include <endian.h>
 #include <irq.h>
+#include <kernel.h>
 #include <mutex>
 #include <page.h>
 

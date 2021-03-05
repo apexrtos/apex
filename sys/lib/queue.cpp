@@ -33,8 +33,6 @@
 
 #include <queue.h>
 
-#include <stddef.h>
-
 /*
  * Insert element at tail of queue
  */

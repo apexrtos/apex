@@ -29,10 +29,10 @@
 
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 #include <conf/config.h>
-#include <stdalign.h>
 #include <sys/include/types.h>
+#include <type_traits>
 
 /*
  * Global variables in the kernel

@@ -1,11 +1,11 @@
 #include "imxrt10xx-pit.h"
 
 #include "init.h"
-#include <arch.h>
+#include <arch/mmio.h>
 #include <debug.h>
-#include <errno.h>
-#include <kernel.h>
 #include <irq.h>
+#include <kernel.h>
+#include <new>
 
 #define trace(...)
 

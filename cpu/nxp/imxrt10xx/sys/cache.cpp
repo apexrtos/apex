@@ -1,9 +1,10 @@
 /*
  * NOTE: this file is also used by boot loader
  */
-#include <sys/include/arch.h>
+#include <sys/include/arch/cache.h>
 
 #include <conf/config.h>
+#include <cstdint>
 
 /*
  * cache_coherent_range - test if address range is in a cache coherent region

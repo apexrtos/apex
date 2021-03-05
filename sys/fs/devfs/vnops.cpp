@@ -39,9 +39,12 @@
  * especially when dealing with the vnode lock.
  */
 
-#include <assert.h>
+#include <cassert>
 #include <compiler.h>
 #include <conf/config.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <debug.h>
 #include <device.h>
 #include <dirent.h>
@@ -50,9 +53,6 @@
 #include <fs/mount.h>
 #include <fs/util.h>
 #include <fs/vnode.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
 
 #define dfsdbg(...)

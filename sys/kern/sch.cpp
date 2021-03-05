@@ -87,16 +87,16 @@
 
 #include <sch.h>
 
-#include <arch.h>
-#include <assert.h>
+#include <arch/context.h>
+#include <arch/interrupt.h>
+#include <cassert>
+#include <compiler.h>
 #include <debug.h>
 #include <errno.h>
 #include <irq.h>
-#include <kernel.h>
 #include <sched.h>
 #include <sections.h>
 #include <sig.h>
-#include <stddef.h>
 #include <task.h>
 #include <thread.h>
 #include <types.h>

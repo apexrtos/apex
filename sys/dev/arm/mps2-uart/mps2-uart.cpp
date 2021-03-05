@@ -1,7 +1,7 @@
 #include "mps2-uart.h"
 
 #include "init.h"
-#include <arch.h>
+#include <arch/mmio.h>
 #include <debug.h>
 #include <dev/tty/tty.h>
 #include <irq.h>

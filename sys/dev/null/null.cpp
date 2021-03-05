@@ -29,11 +29,11 @@
 
 #include "null.h"
 
-#include <assert.h>
+#include <cassert>
+#include <cstddef>
 #include <debug.h>
 #include <device.h>
 #include <fs/file.h>
-#include <stddef.h>
 #include <sys/uio.h>
 
 /*

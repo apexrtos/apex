@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
-
+#include <cstdint>
+#include <cstring>
 #include <type_traits>
 
 /*

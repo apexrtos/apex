@@ -1,6 +1,6 @@
 #include "init.h"
 
-#include <arch.h>
+#include <arch/mmio.h>
 #include <clock.h>
 #include <cpu.h>
 #include <debug.h>
