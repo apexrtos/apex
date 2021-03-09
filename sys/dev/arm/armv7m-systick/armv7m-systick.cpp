@@ -11,7 +11,7 @@
  * SysTick registers
  */
 struct syst {
-	union syst_csr {
+	union csr {
 		struct {
 			uint32_t ENABLE : 1;
 			uint32_t TICKINT : 1;
@@ -23,7 +23,7 @@ struct syst {
 	} CSR;
 	uint32_t RVR;
 	uint32_t CVR;
-	union syst_calib {
+	union calib {
 		struct {
 			uint32_t TENMS : 24;
 			uint32_t : 6;
@@ -52,7 +52,7 @@ arm_armv7m_systick_init(const arm_armv7m_systick_desc *d)
 	write32(&SYST->CVR, 0);
 
 	/* enable timer & interrupts */
-	write32(&SYST->CSR, (syst_csr){{
+	write32(&SYST->CSR, (syst::csr){{
 		.ENABLE = 1,
 		.TICKINT = 1,
 		.CLKSOURCE = d->clksource,
