@@ -9,12 +9,12 @@
 #include <sch.h>
 #include <wait.h>
 
-struct private {
+struct semaphore_private {
 	std::atomic_int count;
 	struct event event;
 };
-static_assert(sizeof(private) == sizeof(semaphore), "");
-static_assert(alignof(private) == alignof(semaphore), "");
+static_assert(sizeof(semaphore_private) == sizeof(semaphore), "");
+static_assert(alignof(semaphore_private) == alignof(semaphore), "");
 
 /*
  * semaphore_init - initialise semaphore.
@@ -22,7 +22,7 @@ static_assert(alignof(private) == alignof(semaphore), "");
 void
 semaphore_init(semaphore *s)
 {
-	private *p = (private *)s->storage;
+	semaphore_private *p = (semaphore_private *)s->storage;
 
 	event_init(&p->event, "semaphore", ev_LOCK);
 	p->count = 0;
@@ -36,7 +36,7 @@ semaphore_init(semaphore *s)
 int
 semaphore_post(semaphore *s)
 {
-	private *p = (private *)s->storage;
+	semaphore_private *p = (semaphore_private *)s->storage;
 
 	if (p->count == INT_MAX)
 		return -EOVERFLOW;
@@ -56,7 +56,7 @@ semaphore_post(semaphore *s)
 int
 semaphore_post_once(semaphore *s)
 {
-	private *p = (private *)s->storage;
+	semaphore_private *p = (semaphore_private *)s->storage;
 
 	if (p->count)
 		return 0;
@@ -76,7 +76,7 @@ semaphore_wait_interruptible(semaphore *s)
 	assert(!interrupt_running());
 
 	int r;
-	private *p = (private *)s->storage;
+	semaphore_private *p = (semaphore_private *)s->storage;
 
 	if ((r = wait_event_interruptible(p->event, [p] { return p->count > 0; })) < 0)
 		return r;
