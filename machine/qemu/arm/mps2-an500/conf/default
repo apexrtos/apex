@@ -38,6 +38,7 @@ driver sys/dev/arm/mps2-uart{.name = "ttyS2", .base = 0x40006000, .ipl = IPL_MIN
  * CPU
  */
 cpu arm/cortex-m7-hf
+option MPU
 
 /*
  * QEMU command line
