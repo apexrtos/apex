@@ -225,8 +225,8 @@ vget(struct mount *mount, vnode *parent, const char *name, size_t len)
 	strlcpy(v_name, name, len + 1);
 
 	*vp = (vnode) {
-		.v_parent = parent,
 		.v_mount = mount,
+		.v_parent = parent,
 		.v_refcnt = 1,
 		.v_name = v_name,
 	};
@@ -269,8 +269,8 @@ vget_pipe()
 		return NULL;
 
 	*vp = (vnode) {
-		.v_mode = S_IFIFO,
 		.v_refcnt = 1,
+		.v_mode = S_IFIFO,
 	};
 
 	mutex_init(&vp->v_lock);

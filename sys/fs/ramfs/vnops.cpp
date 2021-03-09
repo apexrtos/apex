@@ -105,9 +105,9 @@ ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 	memcpy(rn_name, name, name_len);
 	rn_name[name_len] = 0;
 	*np = (ramfs_node) {
-		.rn_namelen = name_len,
-		.rn_name = rn_name,
 		.rn_mode = mode,
+		.rn_name = rn_name,
+		.rn_namelen = name_len,
 	};
 
 	return np;

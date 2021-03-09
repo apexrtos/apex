@@ -41,15 +41,15 @@ static_region(const mmumap *map, size_t i)
 		panic("region must be power-of-2 sized");
 	if ((uintptr_t)map->paddr & (map->size - 1))
 		panic("region must be aligned on size boundary");
-	write32(&MPU->RBAR, (mpu_rbar){
+	write32(&MPU->RBAR, (mpu_rbar){{
 		.REGION = i,
 		.VALID = 1,
 		.ADDR = (uintptr_t)map->paddr >> 5,
-	}.r);
-	write32(&MPU->RASR, map->flags | (mpu_rasr){
-		.SIZE = floor_log2(map->size) - 1,
+	}}.r);
+	write32(&MPU->RASR, map->flags | (mpu_rasr){{
 		.ENABLE = 1,
-	}.r);
+		.SIZE = floor_log2(map->size) - 1,
+	}}.r);
 }
 
 __fast_text static uint32_t
@@ -90,10 +90,10 @@ mpu_init(const mmumap *map, size_t count, int flags)
 	fixed = victim = count;
 	clear_dynamic();
 
-	write32(&MPU->CTRL, (mpu_ctrl){
-		.PRIVDEFENA = !!(flags & MPU_ENABLE_DEFAULT_MAP),
+	write32(&MPU->CTRL, (mpu_ctrl){{
 		.ENABLE = 1,
-	}.r);
+		.PRIVDEFENA = !!(flags & MPU_ENABLE_DEFAULT_MAP),
+	}}.r);
 
 	dbg("PMSAv7 MPU initialised, %d dynamic regions\n", regions - fixed);
 }
@@ -143,13 +143,13 @@ mpu_user_thread_switch()
 		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
 		write32(&MPU->RNR, fixed + stack);
 		write32(&MPU->RASR, 0);
-		write32(&MPU->RBAR, (mpu_rbar){
+		write32(&MPU->RBAR, (mpu_rbar){{
 			.ADDR = (uintptr_t)a >> 5,
-		}.r);
-		write32(&MPU->RASR, rasr_prot | (mpu_rasr){
-			.SIZE = o - 1,
+		}}.r);
+		write32(&MPU->RASR, rasr_prot | (mpu_rasr){{
 			.ENABLE = 1,
-		}.r);
+			.SIZE = o - 1,
+		}}.r);
 		a += 1 << o;
 		++stack;
 
@@ -238,13 +238,13 @@ again:;
 	const uintptr_t region_base = (uintptr_t)addr & -(1UL << order);
 	write32(&MPU->RNR, victim);
 	write32(&MPU->RASR, 0);
-	write32(&MPU->RBAR, (union mpu_rbar){
+	write32(&MPU->RBAR, (mpu::rbar){{
 		.ADDR = region_base >> 5,
-	}.r);
-	write32(&MPU->RASR, prot_to_rasr(seg_prot(seg)) | (mpu_rasr){
-		.SIZE = order - 1,
+	}}.r);
+	write32(&MPU->RASR, prot_to_rasr(seg_prot(seg)) | (mpu_rasr){{
 		.ENABLE = 1,
-	}.r);
+		.SIZE = order - 1,
+	}}.r);
 
 	if (++victim == read32(&MPU->TYPE).DREGION)
 		victim = fixed + stack;

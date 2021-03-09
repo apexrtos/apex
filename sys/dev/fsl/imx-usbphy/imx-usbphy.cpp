@@ -150,11 +150,11 @@ fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 	usb_analog *const USB_ANALOG = (usb_analog *)d->analog_base;
 
 	/* disable charger & data pin contact detection */
-	write32(&USB_ANALOG->CHRG_DETECT, (usb_analog_chrg_detect) {
-		.EN_B = 1,
-		.CHK_CHRG_B = 1,
+	write32(&USB_ANALOG->CHRG_DETECT, (usb_analog_chrg_detect) {{
 		.CHK_CONTACT = 0,
-	}.r);
+		.CHK_CHRG_B = 1,
+		.EN_B = 1,
+	}}.r);
 
 	/* release from reset & ungate clock */
 	write32(&USBPHY->CTRL, 0);
@@ -170,10 +170,10 @@ fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 	write32(&USBPHY->PWD, 0);
 
 	/* enable UTMI+ Level 2 & 3 */
-	write32(&USBPHY->CTRL, (usbphy_ctrl) {
-		.ENUTMILEVEL3 = 1,
+	write32(&USBPHY->CTRL, (usbphy_ctrl) {{
 		.ENUTMILEVEL2 = 1,
-	}.r);
+		.ENUTMILEVEL3 = 1,
+	}}.r);
 
 #if defined(CONFIG_DEBUG)
 	const usbphy_version v = read32(&USBPHY->VERSION);

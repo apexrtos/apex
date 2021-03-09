@@ -54,16 +54,16 @@ machine_setup()
 	lpuart_regs *const u = (lpuart_regs *)LPUART1;
 
 	/* configure for 115200 baud */
-	write32(&u->BAUD, (lpuart_baud){
+	write32(&u->BAUD, (lpuart_baud){{
 		.SBR = 8,
 		.SBNS = 0, /* one stop bit */
 		.OSR = 25, /* baud = 24M / (SBR * (OSR + 1) = 115384, 0.16% error */
-	}.r);
-	write32(&u->CTRL, (lpuart_ctrl){
+	}}.r);
+	write32(&u->CTRL, (lpuart_ctrl){{
 		.PE = 0, /* parity disabled */
 		.M = 0, /* 8 bit */
 		.TE = 1, /* transmitter enabled */
-	}.r);
+	}}.r);
 #endif
 }
 
@@ -216,33 +216,33 @@ machine_clock_init()
 	}
 
 	/* bypass PLL1 (ARM PLL) and configure for 1200MHz */
-	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){
+	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){{
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
 		.BYPASS_CLK_SRC = BYPASS_CLK_SRC_REF_CLK_24M,
 		.BYPASS = 1,
-	}.r);
+	}}.r);
 	/* wait for PLL1 to stabilise */
 	while (!read32(&CCM_ANALOG->PLL_ARM).LOCK);
 
 	/* unbypass PLL1 */
-	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){
+	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){{
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
 		.BYPASS_CLK_SRC = BYPASS_CLK_SRC_REF_CLK_24M,
 		.BYPASS = 0,
-	}.r);
+	}}.r);
 
 	/* configure UART_CLK_ROOT */
-	write32(&CCM->CSCDR1, (ccm_cscdr1){
+	write32(&CCM->CSCDR1, (ccm_cscdr1){{
 		.UART_CLK_PODF = 0,
 		.UART_CLK_SEL = UART_CLK_SEL_osc_clk,
 		.USDHC1_PODF = 1,
 		.USDHC2_PODF = 1,
 		.TRACE_PODF = 3,
-	}.r);
+	}}.r);
 
 	/* TODO: gate all unnecessary clocks */
 	write32(&CCM->CCGR0, 0xffffffff);

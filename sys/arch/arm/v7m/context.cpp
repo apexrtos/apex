@@ -458,10 +458,8 @@ context_set_signal(context *ctx, const k_sigset_t *ss,
 		.arm_pc = uef->ra,
 		.arm_cpsr = uef->xpsr,
 	};
-	ssf->uc.uc_sigmask = (sigset_t){
-		.__bits[0] = ss->__bits[0],
-		.__bits[1] = ss->__bits[1],
-	};
+	ssf->uc.uc_sigmask.__bits[0] = ss->__bits[0];
+	ssf->uc.uc_sigmask.__bits[1] = ss->__bits[1];
 	if (uef_extended)
 		fpu_save((vfp_sigframe *)ssf->uc.uc_regspace, uef);
 	if (si)
@@ -564,10 +562,8 @@ context_restore(context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 	uef->lr = sf.uc.uc_mcontext.arm_lr;
 	uef->xpsr = sf.uc.uc_mcontext.arm_cpsr;
 	uef->ra = sf.uc.uc_mcontext.arm_pc & -2;
-	*ss = (k_sigset_t){
-		.__bits[0] = sf.uc.uc_sigmask.__bits[0],
-		.__bits[1] = sf.uc.uc_sigmask.__bits[1],
-	};
+	ss->__bits[0] = sf.uc.uc_sigmask.__bits[0];
+	ss->__bits[1] = sf.uc.uc_sigmask.__bits[1];
 	if (uef_extended)
 		fpu_load((vfp_sigframe *)sf.uc.uc_regspace, uef);
 
