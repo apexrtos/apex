@@ -353,7 +353,7 @@ timer_tick(int ticks)
 	/*
 	 * Bump time.
 	 */
-	monotonic += ns;
+	monotonic = monotonic + ns;
 
 	/*
 	 * Handle all of the timer elements that have expired.

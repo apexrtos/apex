@@ -138,7 +138,9 @@ __atomic_add_fetch_8(volatile void *p, uint64_t v, int m)
 	volatile uint64_t *p64 = p;
 	uint64_t ret;
 	const int s = irq_disable();
-	ret = *p64 += v;
+	ret = *p64;
+	ret += v;
+	*p64 = ret;
 	irq_restore(s);
 	return ret;
 }
@@ -152,7 +154,9 @@ __atomic_sub_fetch_8(volatile void *p, uint64_t v, int m)
 	volatile uint64_t *p64 = p;
 	uint64_t ret;
 	const int s = irq_disable();
-	ret = *p64 -= v;
+	ret = *p64;
+	ret -= v;
+	*p64 = ret;
 	irq_restore(s);
 	return ret;
 }
@@ -166,7 +170,9 @@ __atomic_and_fetch_8(volatile void *p, uint64_t v, int m)
 	volatile uint64_t *p64 = p;
 	uint64_t ret;
 	const int s = irq_disable();
-	ret = *p64 &= v;
+	ret = *p64;
+	ret &= v;
+	*p64 = ret;
 	irq_restore(s);
 	return ret;
 }
@@ -180,7 +186,9 @@ __atomic_xor_fetch_8(volatile void *p, uint64_t v, int m)
 	volatile uint64_t *p64 = p;
 	uint64_t ret;
 	const int s = irq_disable();
-	ret = *p64 ^= v;
+	ret = *p64;
+	ret ^= v;
+	*p64 = ret;
 	irq_restore(s);
 	return ret;
 }
@@ -194,7 +202,9 @@ __atomic_or_fetch_8(volatile void *p, uint64_t v, int m)
 	volatile uint64_t *p64 = p;
 	uint64_t ret;
 	const int s = irq_disable();
-	ret = *p64 |= v;
+	ret = *p64;
+	ret |= v;
+	*p64 = ret;
 	irq_restore(s);
 	return ret;
 }
@@ -208,7 +218,9 @@ __atomic_nand_fetch_8(volatile void *p, uint64_t v, int m)
 	volatile uint64_t *p64 = p;
 	uint64_t ret;
 	const int s = irq_disable();
-	ret = *p64 = ~(*p64 & v);
+	ret = *p64;
+	ret = ~(ret & v);
+	*p64 = ret;
 	irq_restore(s);
 	return ret;
 }
