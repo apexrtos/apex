@@ -53,7 +53,7 @@ void machine_setup()
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	write32(&UART->BAUDDIV, 16);	    /* QEMU doesn't care as long as >= 16 */
-	write32(&UART->CTRL, (union cmsdk_uart_ctrl) {
+	write32(&UART->CTRL, (cmsdk_uart_ctrl) {
 		.TX_ENABLE = 1,
 	}.r);
 #endif

@@ -43,7 +43,7 @@ derived_exception(int sig)
 	 * due to stack overflow) we need to clear the pending SVCall exception
 	 * otherwise it will still run before we enter PendSV to switch away
 	 * from this thread. */
-	union scb_shcsr shcsr = read32(&SCB->SHCSR);
+	scb_shcsr shcsr = read32(&SCB->SHCSR);
 	shcsr.SVCALLPENDED = 0;
 	write32(&SCB->SHCSR, shcsr.r);
 
@@ -101,7 +101,7 @@ exc_MemManage(exception_frame_basic *e, bool handler_mode, int exc)
 	}
 
 	/* try to handle fault */
-	const union scb_cfsr_mmfsr mmfsr = read8(&SCB->CFSR.MMFSR);
+	const scb_cfsr_mmfsr mmfsr = read8(&SCB->CFSR.MMFSR);
 	if (mmfsr.MSTKERR)
 		derived_exception(SIGSEGV);
 	else if (mmfsr.MMARVALID)
@@ -126,7 +126,7 @@ exc_BusFault(exception_frame_basic *e, bool handler_mode, int exc)
 {
 	dump_exception(e, handler_mode, exc);
 
-	const union scb_cfsr_bfsr bfsr = read8(&SCB->CFSR.BFSR);
+	const scb_cfsr_bfsr bfsr = read8(&SCB->CFSR.BFSR);
 	emergency("BusFault BFSR %x BFAR %x\n", bfsr.r, read32(&SCB->BFAR));
 
 	/* kernel faults are always fatal */
@@ -148,7 +148,7 @@ exc_BusFault(exception_frame_basic *e, bool handler_mode, int exc)
 extern "C" void
 exc_UsageFault(exception_frame_basic *e, bool handler_mode, int exc)
 {
-	const union scb_cfsr_ufsr ufsr = read16(&SCB->CFSR.UFSR);
+	const scb_cfsr_ufsr ufsr = read16(&SCB->CFSR.UFSR);
 	const char *what = "Usage Fault\n";
 	int sig = SIGILL;
 

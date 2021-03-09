@@ -20,11 +20,11 @@ machine_setup()
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_mux_ctl){
 		.MUX_MODE = 2,
 		.SION = SION_Software_Input_On_Disabled,
 	}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_pad_ctl){
 		.SRE = SRE_Slow,
 		.DSE = DSE_R0_6,
 		.SPEED = SPEED_100MHz,
@@ -36,11 +36,11 @@ machine_setup()
 	}.r);
 
 	/* set GPIO_AD_B0_13 as LPUART1_RX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13, (union iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13, (iomuxc_sw_mux_ctl){
 		.MUX_MODE = 2,
 		.SION = SION_Software_Input_On_Disabled,
 	}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (union iomuxc_sw_pad_ctl){
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_pad_ctl){
 		.SRE = SRE_Slow,
 		.DSE = DSE_R0_6,
 		.SPEED = SPEED_100MHz,
@@ -54,12 +54,12 @@ machine_setup()
 	lpuart_regs *const u = (lpuart_regs *)LPUART1;
 
 	/* configure for 115200 baud */
-	write32(&u->BAUD, (union lpuart_baud){
+	write32(&u->BAUD, (lpuart_baud){
 		.SBR = 8,
 		.SBNS = 0, /* one stop bit */
 		.OSR = 25, /* baud = 24M / (SBR * (OSR + 1) = 115384, 0.16% error */
 	}.r);
-	write32(&u->CTRL, (union lpuart_ctrl){
+	write32(&u->CTRL, (lpuart_ctrl){
 		.PE = 0, /* parity disabled */
 		.M = 0, /* 8 bit */
 		.TE = 1, /* transmitter enabled */
@@ -207,7 +207,7 @@ extern "C" void
 machine_clock_init()
 {
 	/* set core voltage to 1.25V for 600MHz operation */
-	for (union dcdc_reg3 v = DCDC->REG3; v.TRG < (1250 - 800) / 25;) {
+	for (dcdc_reg3 v = DCDC->REG3; v.TRG < (1250 - 800) / 25;) {
 		/* step by 25mV */
 		v.TRG += 1;
 		write32(&DCDC->REG3, v.r);
@@ -216,7 +216,7 @@ machine_clock_init()
 	}
 
 	/* bypass PLL1 (ARM PLL) and configure for 1200MHz */
-	write32(&CCM_ANALOG->PLL_ARM, (union ccm_analog_pll_arm){
+	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
@@ -227,7 +227,7 @@ machine_clock_init()
 	while (!read32(&CCM_ANALOG->PLL_ARM).LOCK);
 
 	/* unbypass PLL1 */
-	write32(&CCM_ANALOG->PLL_ARM, (union ccm_analog_pll_arm){
+	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
@@ -236,7 +236,7 @@ machine_clock_init()
 	}.r);
 
 	/* configure UART_CLK_ROOT */
-	write32(&CCM->CSCDR1, (union ccm_cscdr1){
+	write32(&CCM->CSCDR1, (ccm_cscdr1){
 		.UART_CLK_PODF = 0,
 		.UART_CLK_SEL = UART_CLK_SEL_osc_clk,
 		.USDHC1_PODF = 1,

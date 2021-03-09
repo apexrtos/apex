@@ -52,7 +52,7 @@ arm_armv7m_systick_init(const arm_armv7m_systick_desc *d)
 	write32(&SYST->CVR, 0);
 
 	/* enable timer & interrupts */
-	write32(&SYST->CSR, (union syst_csr){
+	write32(&SYST->CSR, (syst_csr){
 		.ENABLE = 1,
 		.TICKINT = 1,
 		.CLKSOURCE = d->clksource,

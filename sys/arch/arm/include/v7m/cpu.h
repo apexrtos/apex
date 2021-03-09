@@ -377,7 +377,7 @@ static mpu *const MPU = (mpu*)0xe000ed90;
 /*
  * values for RASR register
  */
-#define RASR_KERNEL_RWX_WBWA ((union mpu_rasr){{ \
+#define RASR_KERNEL_RWX_WBWA ((mpu_rasr){{ \
 	.B = 1, \
 	.C = 1, \
 	.S = 0, \
@@ -385,7 +385,7 @@ static mpu *const MPU = (mpu*)0xe000ed90;
 	.AP = MPU_RASR_AP_Kern_RW, \
 	.XN = MPU_RASR_XN_Execute, \
 }}.r)
-#define RASR_KERNEL_RW ((union mpu_rasr){{ \
+#define RASR_KERNEL_RW ((mpu_rasr){{ \
 	.B = 0, \
 	.C = 0, \
 	.S = 0, \
@@ -393,7 +393,7 @@ static mpu *const MPU = (mpu*)0xe000ed90;
 	.AP = MPU_RASR_AP_Kern_RW, \
 	.XN = MPU_RASR_XN_No_Execute, \
 }}.r)
-#define RASR_USER_R_WBWA ((union mpu_rasr){{ \
+#define RASR_USER_R_WBWA ((mpu_rasr){{ \
 	.B = 1, \
 	.C = 1, \
 	.S = 0, \
@@ -401,7 +401,7 @@ static mpu *const MPU = (mpu*)0xe000ed90;
 	.AP = MPU_RASR_AP_Kern_RW_User_RO, \
 	.XN = MPU_RASR_XN_No_Execute, \
 }}.r)
-#define RASR_USER_RX_WBWA ((union mpu_rasr){{ \
+#define RASR_USER_RX_WBWA ((mpu_rasr){{ \
 	.B = 1, \
 	.C = 1, \
 	.S = 0, \
@@ -409,7 +409,7 @@ static mpu *const MPU = (mpu*)0xe000ed90;
 	.AP = MPU_RASR_AP_Kern_RW_User_RO, \
 	.XN = MPU_RASR_XN_Execute, \
 }}.r)
-#define RASR_USER_RW_WBWA ((union mpu_rasr){{ \
+#define RASR_USER_RW_WBWA ((mpu_rasr){{ \
 	.B = 1, \
 	.C = 1, \
 	.S = 0, \
@@ -417,7 +417,7 @@ static mpu *const MPU = (mpu*)0xe000ed90;
 	.AP = MPU_RASR_AP_Kern_RW_User_RW, \
 	.XN = MPU_RASR_XN_No_Execute, \
 }}.r)
-#define RASR_USER_RWX_WBWA ((union mpu_rasr){{ \
+#define RASR_USER_RWX_WBWA ((mpu_rasr){{ \
 	.B = 1, \
 	.C = 1, \
 	.S = 0, \

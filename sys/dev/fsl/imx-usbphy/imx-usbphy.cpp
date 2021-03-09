@@ -63,18 +63,18 @@ struct usbphy {
 	uint32_t PWD_SET;
 	uint32_t PWD_CLR;
 	uint32_t PWD_TOG;
-	union usbphy_tx TX;
-	union usbphy_tx TX_SET;
-	union usbphy_tx TX_CLR;
-	union usbphy_tx TX_TOG;
+	usbphy_tx TX;
+	usbphy_tx TX_SET;
+	usbphy_tx TX_CLR;
+	usbphy_tx TX_TOG;
 	uint32_t RX;
 	uint32_t RX_SET;
 	uint32_t RX_CLR;
 	uint32_t RX_TOG;
-	union usbphy_ctrl CTRL;
-	union usbphy_ctrl CTRL_SET;
-	union usbphy_ctrl CTRL_CLR;
-	union usbphy_ctrl CTRL_TOG;
+	usbphy_ctrl CTRL;
+	usbphy_ctrl CTRL_SET;
+	usbphy_ctrl CTRL_CLR;
+	usbphy_ctrl CTRL_TOG;
 	uint32_t STATUS;
 	uint32_t : 32;
 	uint32_t : 32;
@@ -120,10 +120,10 @@ struct usb_analog {
 	uint32_t VBUS_DETECT_SET;
 	uint32_t VBUS_DETECT_CLR;
 	uint32_t VBUS_DETECT_TOG;
-	union usb_analog_chrg_detect CHRG_DETECT;
-	union usb_analog_chrg_detect CHRG_DETECT_SET;
-	union usb_analog_chrg_detect CHRG_DETECT_CLR;
-	union usb_analog_chrg_detect CHRG_DETECT_TOG;
+	usb_analog_chrg_detect CHRG_DETECT;
+	usb_analog_chrg_detect CHRG_DETECT_SET;
+	usb_analog_chrg_detect CHRG_DETECT_CLR;
+	usb_analog_chrg_detect CHRG_DETECT_TOG;
 	uint32_t VBUS_DETECT_STAT;
 	uint32_t : 32;
 	uint32_t : 32;
@@ -150,7 +150,7 @@ fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 	usb_analog *const USB_ANALOG = (usb_analog *)d->analog_base;
 
 	/* disable charger & data pin contact detection */
-	write32(&USB_ANALOG->CHRG_DETECT, (union usb_analog_chrg_detect) {
+	write32(&USB_ANALOG->CHRG_DETECT, (usb_analog_chrg_detect) {
 		.EN_B = 1,
 		.CHK_CHRG_B = 1,
 		.CHK_CONTACT = 0,
@@ -160,7 +160,7 @@ fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 	write32(&USBPHY->CTRL, 0);
 
 	/* configure trimming resistors */
-	union usbphy_tx tx = USBPHY->TX;
+	usbphy_tx tx = USBPHY->TX;
 	tx.D_CAL = d->d_cal;
 	tx.TXCAL45DP = d->txcal45dp;
 	tx.TXCAL45DN = d->txcal45dn;
@@ -170,13 +170,13 @@ fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 	write32(&USBPHY->PWD, 0);
 
 	/* enable UTMI+ Level 2 & 3 */
-	write32(&USBPHY->CTRL, (union usbphy_ctrl) {
+	write32(&USBPHY->CTRL, (usbphy_ctrl) {
 		.ENUTMILEVEL3 = 1,
 		.ENUTMILEVEL2 = 1,
 	}.r);
 
 #if defined(CONFIG_DEBUG)
-	const union usbphy_version v = read32(&USBPHY->VERSION);
+	const usbphy_version v = read32(&USBPHY->VERSION);
 	dbg("IMX-USBPHY RTL %d.%d.%d initialised\n", v.MAJOR, v.MINOR, v.STEP);
 #endif
 }
