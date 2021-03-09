@@ -23,9 +23,9 @@
  */
 
 /*
- * futex - kernel data for a userspace futex
+ * k_futex - kernel data for a userspace futex
  */
-struct futex {
+struct k_futex {
 	phys *addr;		/* futex address */
 	spinlock lock;	/* to synchronise operations on this futex */
 	struct event event;	/* event */
@@ -57,7 +57,7 @@ futexes(task *t)
 static k_futex *
 futex_find_unlocked(futexes_impl *fi, int *uaddr)
 {
-	futex *f;
+	k_futex *f;
 	list_for_each_entry(f, &fi->list, link) {
 		if (f->addr == virt_to_phys(uaddr))
 			return f;
@@ -65,11 +65,11 @@ futex_find_unlocked(futexes_impl *fi, int *uaddr)
 	return 0;
 }
 
-static futex *
+static k_futex *
 futex_find(futexes_impl *fi, int *uaddr)
 {
 	spinlock_lock(&fi->lock);
-	futex *f = futex_find_unlocked(fi, uaddr);
+	k_futex *f = futex_find_unlocked(fi, uaddr);
 	spinlock_unlock(&fi->lock);
 
 	return f;
@@ -78,17 +78,17 @@ futex_find(futexes_impl *fi, int *uaddr)
 /*
  * futex_get - find or create futex for uaddr
  */
-static futex *
+static k_futex *
 futex_get(futexes_impl *fi, int *uaddr)
 {
-	futex *f;
+	k_futex *f;
 
 	spinlock_lock(&fi->lock);
 
 	if ((f = futex_find_unlocked(fi, uaddr)))
 		goto out;
 
-	if (!(f = malloc(sizeof(futex))))
+	if (!(f = malloc(sizeof(k_futex))))
 		goto out;
 
 	f->addr = virt_to_phys(uaddr);
@@ -112,7 +112,7 @@ futex_wait(task *t, int *uaddr, int val, const timespec32 *ts)
 	if (ts && (ts->tv_sec < 0 || ts->tv_nsec > 1000000000))
 		return -EINVAL;
 
-	futex *f;
+	k_futex *f;
 	if (!(f = futex_get(futexes(t), uaddr)))
 		return DERR(-ENOMEM);
 
@@ -158,7 +158,7 @@ futex_wake(task *t, int *uaddr, int val)
 		return 0;
 
 	int n;
-	futex *f;
+	k_futex *f;
 	if (!(f = futex_find(futexes(t), uaddr)))
 		return 0;
 
@@ -192,7 +192,7 @@ futex_requeue(task *t, int *uaddr, int val, int val2, int *uaddr2)
 	if (val < 0 || val2 < 0)
 		return DERR(-EINVAL);
 
-	futex *l;
+	k_futex *l;
 	if (!(l = futex_find(futexes(t), uaddr)))
 		return 0;
 
@@ -204,7 +204,7 @@ futex_requeue(task *t, int *uaddr, int val, int val2, int *uaddr2)
 	spinlock_unlock(&l->lock);
 
 	if (val2) {
-		futex *r;
+		k_futex *r;
 		if (!(r = futex_get(futexes(t), uaddr2)))
 			return DERR(-ENOMEM);
 
@@ -294,7 +294,7 @@ futexes_destroy(struct futexes *fs)
 	spinlock_lock(&fi->lock);
 	list *n;
 	for (n = list_first(&fi->list); n != &fi->list; n = list_next(n)) {
-		futex *fk = list_entry(n, futex, link);
+		k_futex *fk = list_entry(n, k_futex, link);
 		free(fk);
 	}
 	spinlock_unlock(&fi->lock);
