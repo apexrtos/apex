@@ -13,7 +13,7 @@
 
 struct cmsdk_uart {
 	uint32_t DATA;
-	union cmsdk_uart_state {
+	union state {
 		uint32_t r;
 		struct {
 			uint32_t TX_FULL : 1;
@@ -23,7 +23,7 @@ struct cmsdk_uart {
 			uint32_t : 28;
 		};
 	} STATE;
-	union cmsdk_uart_ctrl {
+	union ctrl {
 		uint32_t r;
 		struct {
 			uint32_t TX_ENABLE : 1;
@@ -53,7 +53,7 @@ void machine_setup()
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	write32(&UART->BAUDDIV, 16);	    /* QEMU doesn't care as long as >= 16 */
-	write32(&UART->CTRL, (cmsdk_uart_ctrl) {
+	write32(&UART->CTRL, (cmsdk_uart::ctrl) {
 		.TX_ENABLE = 1,
 	}.r);
 #endif
