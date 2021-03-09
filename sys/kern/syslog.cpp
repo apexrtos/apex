@@ -309,8 +309,7 @@ syslog_format(char *buf, const size_t len)
 				break; /* still being written... */
 		}
 		if (LOG_PRI(entry.priority) < conlev) {
-			timeval tv;
-			ns_to_tv(entry.nsec, &tv);
+			timeval tv = ns_to_tv(entry.nsec);
 			int n = snprintf(buf, rem, "[%5lld.%06lld] ", tv.tv_sec, tv.tv_usec);
 			size_t l = entry.len_term - 1;
 			bool trunc = false;

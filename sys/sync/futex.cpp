@@ -133,9 +133,9 @@ futex_wait(task *t, int *uaddr, int val, const timespec32 *ts)
 	}
 
 	trace("futex_wait th:%p uaddr:%p val:%x ns:%llu\n",
-	      thread_cur(), uaddr, val, ts ? ts32_to_ns(ts) : 0);
+	      thread_cur(), uaddr, val, ts ? ts32_to_ns(*ts) : 0);
 
-	err = sch_prepare_sleep(&f->event, ts ? ts32_to_ns(ts) : 0);
+	err = sch_prepare_sleep(&f->event, ts ? ts32_to_ns(*ts) : 0);
 	spinlock_unlock(&f->lock);
 	if (err)
 		return err;

@@ -110,7 +110,7 @@ sc_nanosleep(const timespec32 *req, timespec32 *rem)
 		return r;
 	if (!u_access_ok(req, sizeof *req, PROT_READ))
 		return DERR(-EFAULT);
-	const uint_fast64_t ns = ts32_to_ns(req);
+	const uint_fast64_t ns = ts32_to_ns(*req);
 	if (!ns)
 		return 0;
 	l.unlock();
@@ -122,7 +122,7 @@ sc_nanosleep(const timespec32 *req, timespec32 *rem)
 			return r;
 		if (!u_access_ok(rem, sizeof *rem, PROT_WRITE))
 			return DERR(-EFAULT);
-		ns_to_ts32(r, rem);
+		*rem = ns_to_ts32(r);
 	}
 	return -EINTR_NORESTART;
 }
@@ -137,22 +137,22 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 		return DERR(-EFAULT);
 	switch (id) {
 	case CLOCK_REALTIME:
-		ns_to_ts(timer_realtime(), ts);
+		*ts = ns_to_ts(timer_realtime());
 		return 0;
 	case CLOCK_REALTIME_COARSE:
-		ns_to_ts(timer_realtime_coarse(), ts);
+		*ts = ns_to_ts(timer_realtime_coarse());
 		return 0;
 	case CLOCK_MONOTONIC:
 		/* TODO(time): monotonic with adjustments */
-		ns_to_ts(timer_monotonic(), ts);
+		*ts = ns_to_ts(timer_monotonic());
 		return 0;
 	case CLOCK_MONOTONIC_COARSE:
 		/* TODO(time): coarse (fast) monotonic with adjustments */
-		ns_to_ts(timer_monotonic_coarse(), ts);
+		*ts = ns_to_ts(timer_monotonic_coarse());
 		return 0;
 	case CLOCK_MONOTONIC_RAW:
 		/* TODO(time): monotonic without adjustments */
-		ns_to_ts(timer_monotonic(), ts);
+		*ts = ns_to_ts(timer_monotonic());
 		return 0;
 	case CLOCK_BOOTTIME:
 	case CLOCK_BOOTTIME_ALARM:
@@ -175,7 +175,7 @@ int sc_clock_settime(clockid_t id, const timespec *ts)
 		return DERR(-EFAULT);
 	switch (id) {
 	case CLOCK_REALTIME:
-		return timer_realtime_set(ts_to_ns(ts));
+		return timer_realtime_set(ts_to_ns(*ts));
 	default:
 		return DERR(-EINVAL);
 	}
@@ -190,7 +190,7 @@ int sc_clock_settime32(clockid_t id, const timespec32 *ts)
 		return DERR(-EFAULT);
 	switch (id) {
 	case CLOCK_REALTIME:
-		return timer_realtime_set(ts32_to_ns(ts));
+		return timer_realtime_set(ts32_to_ns(*ts));
 	default:
 		return DERR(-EINVAL);
 	}

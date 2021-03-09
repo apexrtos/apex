@@ -105,75 +105,81 @@ timer_insert(timer *tmr)
  * Convert from timespec to nanoseconds
  */
 uint_fast64_t
-ts_to_ns(const timespec *ts)
+ts_to_ns(const timespec &ts)
 {
-	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
+	return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
 }
 
 uint_fast64_t
-ts32_to_ns(const timespec32 *ts)
+ts32_to_ns(const timespec32 &ts)
 {
-	return ts->tv_sec * 1000000000ULL + ts->tv_nsec;
+	return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
 }
 
 /*
  * Convert from nanoseconds to timespec
  */
-void
-ns_to_ts(uint_fast64_t ns, timespec *ts)
+timespec
+ns_to_ts(uint_fast64_t ns)
 {
+	timespec ts;
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
 #if UINTPTR_MAX == 0xffffffff
 	const lldiv_t res = lldiv(ns, 1000000000);
-	ts->tv_sec = res.quot;
-	ts->tv_nsec = res.rem;
+	ts.tv_sec = res.quot;
+	ts.tv_nsec = res.rem;
 #else
-	ts->tv_sec = ns / 1000000000ULL;
-	ts->tv_nsec = ns % 1000000000ULL;
+	ts.tv_sec = ns / 1000000000ULL;
+	ts.tv_nsec = ns % 1000000000ULL;
 #endif
+	return ts;
 }
 
-void
-ns_to_ts32(uint_fast64_t ns, timespec32 *ts)
+timespec32
+ns_to_ts32(uint_fast64_t ns)
 {
+	timespec32 ts;
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
 #if UINTPTR_MAX == 0xffffffff
 	const lldiv_t res = lldiv(ns, 1000000000);
-	ts->tv_sec = res.quot;
-	ts->tv_nsec = res.rem;
+	ts.tv_sec = res.quot;
+	ts.tv_nsec = res.rem;
 #else
-	ts->tv_sec = ns / 1000000000ULL;
-	ts->tv_nsec = ns % 1000000000ULL;
+	ts.tv_sec = ns / 1000000000ULL;
+	ts.tv_nsec = ns % 1000000000ULL;
 #endif
+	return ts;
 }
 
 /*
  * Convert from timeval to nanoseconds
  */
 uint_fast64_t
-tv_to_ns(const timeval *tv)
+tv_to_ns(const timeval &tv)
 {
-	return tv->tv_sec * 1000000000ULL + tv->tv_usec * 1000ULL;
+	return tv.tv_sec * 1000000000ULL + tv.tv_usec * 1000ULL;
 }
 
 /*
  * Convert from nanoseconds to timeval
  */
-void
-ns_to_tv(uint_fast64_t ns, timeval *tv)
+timeval
+ns_to_tv(uint_fast64_t ns)
 {
+	timeval tv;
 	/* REVISIT: this crap shouldn't be required, but:
 	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
 #if UINTPTR_MAX == 0xffffffff
 	const lldiv_t res = lldiv(ns, 1000000000);
-	tv->tv_sec = res.quot;
-	tv->tv_usec = (uint32_t)res.rem / 1000;
+	tv.tv_sec = res.quot;
+	tv.tv_usec = (uint32_t)res.rem / 1000;
 #else
-	tv->tv_sec = ns / 1000000000;
-	tv->tv_usec = (uint32_t)(ns % 1000000000) / 1000;
+	tv.tv_sec = ns / 1000000000;
+	tv.tv_usec = (uint32_t)(ns % 1000000000) / 1000;
 #endif
+	return tv;
 }
 
 /*
@@ -474,26 +480,26 @@ sc_getitimer(int timer, k_itimerval *o)
 
 	switch (timer) {
 	case ITIMER_PROF:
-		ns_to_tv(t->itimer_prof.remain, &tmp);
+		tmp = ns_to_tv(t->itimer_prof.remain);
 		o->it_value.tv_sec = tmp.tv_sec;
 		o->it_value.tv_usec = tmp.tv_usec;
-		ns_to_tv(t->itimer_prof.interval, &tmp);
+		tmp = ns_to_tv(t->itimer_prof.interval);
 		o->it_interval.tv_sec = tmp.tv_sec;
 		o->it_interval.tv_usec = tmp.tv_usec;
 		break;
 	case ITIMER_VIRTUAL:
-		ns_to_tv(t->itimer_virtual.remain, &tmp);
+		tmp = ns_to_tv(t->itimer_virtual.remain);
 		o->it_value.tv_sec = tmp.tv_sec;
 		o->it_value.tv_usec = tmp.tv_usec;
-		ns_to_tv(t->itimer_virtual.interval, &tmp);
+		tmp = ns_to_tv(t->itimer_virtual.interval);
 		o->it_interval.tv_sec = tmp.tv_sec;
 		o->it_interval.tv_usec = tmp.tv_usec;
 		break;
 	case ITIMER_REAL:
-		ns_to_tv(time_remain(t->itimer_real.expire), &tmp);
+		tmp = ns_to_tv(time_remain(t->itimer_real.expire));
 		o->it_value.tv_sec = tmp.tv_sec;
 		o->it_value.tv_usec = tmp.tv_usec;
-		ns_to_tv(t->itimer_real.interval, &tmp);
+		tmp = ns_to_tv(t->itimer_real.interval);
 		o->it_interval.tv_sec = tmp.tv_sec;
 		o->it_interval.tv_usec = tmp.tv_usec;
 		break;
@@ -537,50 +543,54 @@ sc_setitimer(int timer, const k_itimerval *n, k_itimerval *o)
 	switch (timer) {
 	case ITIMER_PROF:
 		if (o) {
-			ns_to_tv(t->itimer_prof.remain, &tmp);
+			tmp = ns_to_tv(t->itimer_prof.remain);
 			o->it_value.tv_sec = tmp.tv_sec;
 			o->it_value.tv_usec = tmp.tv_usec;
-			ns_to_tv(t->itimer_prof.interval, &tmp);
+			tmp = ns_to_tv(t->itimer_prof.interval);
 			o->it_interval.tv_sec = tmp.tv_sec;
 			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		t->itimer_prof.remain = tv_to_ns(&(timeval)
+		t->itimer_prof.remain = tv_to_ns(
 				{n->it_value.tv_sec, n->it_value.tv_usec});
-		t->itimer_prof.interval = tv_to_ns(&(timeval)
+		t->itimer_prof.interval = tv_to_ns(
 				{n->it_interval.tv_sec, n->it_interval.tv_usec});
 		break;
 	case ITIMER_VIRTUAL:
 		if (o) {
-			ns_to_tv(t->itimer_virtual.remain, &tmp);
+			tmp = ns_to_tv(t->itimer_virtual.remain);
 			o->it_value.tv_sec = tmp.tv_sec;
 			o->it_value.tv_usec = tmp.tv_usec;
-			ns_to_tv(t->itimer_virtual.interval, &tmp);
+			tmp = ns_to_tv(t->itimer_virtual.interval);
 			o->it_interval.tv_sec = tmp.tv_sec;
 			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		t->itimer_virtual.remain = tv_to_ns(&(timeval)
-				{n->it_value.tv_sec, n->it_value.tv_usec});
-		t->itimer_virtual.interval = tv_to_ns(&(timeval)
-				{n->it_interval.tv_sec, n->it_interval.tv_usec});
+		tmp.tv_sec = n->it_value.tv_sec;
+		tmp.tv_usec = n->it_value.tv_usec;
+		t->itimer_virtual.remain = tv_to_ns(tmp);
+		tmp.tv_sec = n->it_interval.tv_sec;
+		tmp.tv_usec = n->it_interval.tv_usec;
+		t->itimer_virtual.interval = tv_to_ns(tmp);
 		break;
 	case ITIMER_REAL:
 		if (o) {
-			ns_to_tv(time_remain(t->itimer_real.expire), &tmp);
+			tmp = ns_to_tv(time_remain(t->itimer_real.expire));
 			o->it_value.tv_sec = tmp.tv_sec;
 			o->it_value.tv_usec = tmp.tv_usec;
-			ns_to_tv(t->itimer_real.interval, &tmp);
+			tmp = ns_to_tv(t->itimer_real.interval);
 			o->it_interval.tv_sec = tmp.tv_sec;
 			o->it_interval.tv_usec = tmp.tv_usec;
 		}
-		const uint_fast64_t ns = tv_to_ns(&(timeval)
-				{n->it_value.tv_sec, n->it_value.tv_usec});
+		tmp.tv_sec = n->it_value.tv_sec;
+		tmp.tv_usec = n->it_value.tv_usec;
+		const uint_fast64_t ns = tv_to_ns(tmp);
 		if (!ns)
 			timer_stop(&t->itimer_real);
-		else
-			timer_callout(&t->itimer_real, ns,
-			    tv_to_ns(&(timeval){n->it_interval.tv_sec,
-						       n->it_interval.tv_usec}),
+		else {
+			tmp.tv_sec = n->it_interval.tv_sec;
+			tmp.tv_usec = n->it_interval.tv_usec;
+			timer_callout(&t->itimer_real, ns, tv_to_ns(tmp),
 				     itimer_alarm, t);
+		}
 		break;
 	}
 

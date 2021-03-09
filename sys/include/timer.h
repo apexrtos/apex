@@ -52,12 +52,12 @@ struct itimer {
 };
 
 
-uint_fast64_t ts_to_ns(const timespec *);
-uint_fast64_t ts32_to_ns(const timespec32 *);
-void	      ns_to_ts(uint_fast64_t, timespec *);
-void	      ns_to_ts32(uint_fast64_t, timespec32 *);
-uint_fast64_t tv_to_ns(const timeval *);
-void	      ns_to_tv(uint_fast64_t, timeval *);
+uint_fast64_t ts_to_ns(const timespec &);
+uint_fast64_t ts32_to_ns(const timespec32 &);
+timespec ns_to_ts(uint_fast64_t);
+timespec32 ns_to_ts32(uint_fast64_t);
+uint_fast64_t tv_to_ns(const timeval &);
+timeval ns_to_tv(uint_fast64_t);
 
 void	      timer_callout(timer *, uint_fast64_t, uint_fast64_t,
 			  void (*)(void *), void *);
