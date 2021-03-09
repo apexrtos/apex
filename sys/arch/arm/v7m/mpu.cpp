@@ -41,12 +41,12 @@ static_region(const mmumap *map, size_t i)
 		panic("region must be power-of-2 sized");
 	if ((uintptr_t)map->paddr & (map->size - 1))
 		panic("region must be aligned on size boundary");
-	write32(&MPU->RBAR, (mpu_rbar){{
+	write32(&MPU->RBAR, (mpu::rbar){{
 		.REGION = i,
 		.VALID = 1,
 		.ADDR = (uintptr_t)map->paddr >> 5,
 	}}.r);
-	write32(&MPU->RASR, map->flags | (mpu_rasr){{
+	write32(&MPU->RASR, map->flags | (mpu::rasr){{
 		.ENABLE = 1,
 		.SIZE = floor_log2(map->size) - 1,
 	}}.r);
@@ -90,7 +90,7 @@ mpu_init(const mmumap *map, size_t count, int flags)
 	fixed = victim = count;
 	clear_dynamic();
 
-	write32(&MPU->CTRL, (mpu_ctrl){{
+	write32(&MPU->CTRL, (mpu::ctrl){{
 		.ENABLE = 1,
 		.PRIVDEFENA = !!(flags & MPU_ENABLE_DEFAULT_MAP),
 	}}.r);
@@ -143,10 +143,10 @@ mpu_user_thread_switch()
 		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
 		write32(&MPU->RNR, fixed + stack);
 		write32(&MPU->RASR, 0);
-		write32(&MPU->RBAR, (mpu_rbar){{
+		write32(&MPU->RBAR, (mpu::rbar){{
 			.ADDR = (uintptr_t)a >> 5,
 		}}.r);
-		write32(&MPU->RASR, rasr_prot | (mpu_rasr){{
+		write32(&MPU->RASR, rasr_prot | (mpu::rasr){{
 			.ENABLE = 1,
 			.SIZE = o - 1,
 		}}.r);
@@ -241,7 +241,7 @@ again:;
 	write32(&MPU->RBAR, (mpu::rbar){{
 		.ADDR = region_base >> 5,
 	}}.r);
-	write32(&MPU->RASR, prot_to_rasr(seg_prot(seg)) | (mpu_rasr){{
+	write32(&MPU->RASR, prot_to_rasr(seg_prot(seg)) | (mpu::rasr){{
 		.ENABLE = 1,
 		.SIZE = order - 1,
 	}}.r);
@@ -271,19 +271,19 @@ mpu_dump()
 	dbg("fixed:%x stack:%x victim:%x fault_addr:%8p\n",
 	    fixed, stack, victim, fault_addr);
 
-	const mpu_type type = read32(&MPU->TYPE);
+	const mpu::type type = read32(&MPU->TYPE);
 	dbg("MPU_TYPE %08x: SEPARATE:%d IREGION:%d DREGION:%d\n",
 	    type.r, type.SEPARATE, type.IREGION, type.DREGION);
 
-	const mpu_ctrl ctrl = read32(&MPU->CTRL);
+	const mpu::ctrl ctrl = read32(&MPU->CTRL);
 	dbg("MPU_CTRL %08x: ENABLE:%d HFNMIENA:%d PRIVDEFENA:%d\n",
 	    ctrl.r, ctrl.ENABLE, ctrl.HFNMIENA, ctrl.PRIVDEFENA);
 
 	for (size_t i = 0; i < read32(&MPU->TYPE).DREGION; ++i) {
 		write32(&MPU->RNR, i);
 
-		const mpu_rbar rbar = read32(&MPU->RBAR);
-		const mpu_rasr rasr = read32(&MPU->RASR);
+		const mpu::rbar rbar = read32(&MPU->RBAR);
+		const mpu::rasr rasr = read32(&MPU->RASR);
 
 		assert(rbar.REGION == i);
 

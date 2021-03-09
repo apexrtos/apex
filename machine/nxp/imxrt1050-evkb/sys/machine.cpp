@@ -133,7 +133,7 @@ machine_reset()
 	memory_barrier();
 
 	/* assert reset */
-	write32(&SCB->AIRCR, (scb::scb_aircr){{
+	write32(&SCB->AIRCR, (scb::aircr){{
 		.SYSRESETREQ = 1,
 		.VECTKEY = 0x05fa,
 	}}.r);

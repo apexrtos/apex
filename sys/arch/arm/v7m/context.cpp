@@ -112,7 +112,7 @@ is_exception_frame_extended(uint32_t lr)
 void
 arch_schedule()
 {
-	write32(&SCB->ICSR, (scb_icsr){.PENDSVSET = 1}.r);
+	write32(&SCB->ICSR, (scb::icsr){.PENDSVSET = 1}.r);
 
 	/* make sure the write to ICSR happens before the next instruction */
 	asm volatile("dsb");
@@ -367,7 +367,7 @@ static void
 fpu_lazy_drop()
 {
 #if defined(CONFIG_FPU)
-	fpu_fpccr r = read32(&FPU->FPCCR);
+	fpu::fpccr r = read32(&FPU->FPCCR);
 	r.LSPACT = 0;
 	write32(&FPU->FPCCR, r.r);
 #endif
