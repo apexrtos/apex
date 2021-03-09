@@ -103,7 +103,7 @@ atomic_exchange(size_t len, void *p, const void *v, void *r, int m)
  * atomic_compare_exchange
  */
 extern "C" bool
-__atomic_compare_exchange_8(volatile void *p, const void *e, uint64_t d,
+__atomic_compare_exchange_8(volatile void *p, void *e, uint64_t d,
     bool weak, int sm, int fm)
 {
 	volatile uint64_t *p64 = p;
