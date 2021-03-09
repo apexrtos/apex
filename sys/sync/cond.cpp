@@ -57,7 +57,7 @@ cond_init(cond *c)
 {
 	cond_private *cp = (cond_private*)c->storage;
 
-	event_init(&cp->event, "condition", ev_COND);
+	event_init(&cp->event, "condition", event::ev_COND);
 }
 
 /*

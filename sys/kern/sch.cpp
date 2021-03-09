@@ -938,7 +938,7 @@ sch_init()
 
 	queue_init(&runq);
 	queue_init(&dpcq);
-	event_init(&dpc_event, "dpc", ev_SLEEP);
+	event_init(&dpc_event, "dpc", event::ev_SLEEP);
 
 	/* Create a DPC thread. */
 	th = kthread_create(dpc_thread, NULL, PRI_DPC, "dpc", MA_FAST);

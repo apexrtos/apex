@@ -73,7 +73,7 @@ mutex_init(mutex *m)
 	atomic_store_explicit(&mp->owner, 0, std::memory_order_relaxed);
 	spinlock_init(&mp->lock);
 	mp->count = 0;
-	event_init(&mp->event, "mutex", ev_LOCK);
+	event_init(&mp->event, "mutex", event::ev_LOCK);
 }
 
 /*

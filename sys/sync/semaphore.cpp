@@ -24,7 +24,7 @@ semaphore_init(semaphore *s)
 {
 	semaphore_private *p = (semaphore_private *)s->storage;
 
-	event_init(&p->event, "semaphore", ev_LOCK);
+	event_init(&p->event, "semaphore", event::ev_LOCK);
 	p->count = 0;
 }
 

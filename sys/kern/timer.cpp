@@ -441,8 +441,8 @@ timer_init()
 
 	list_init(&timer_list);
 	list_init(&expire_list);
-	event_init(&timer_event, "timer", ev_SLEEP);
-	event_init(&delay_event, "delay", ev_SLEEP);
+	event_init(&timer_event, "timer", event::ev_SLEEP);
+	event_init(&delay_event, "delay", event::ev_SLEEP);
 
 	/* Start timer thread */
 	th = kthread_create(&timer_thread, NULL, PRI_TIMER, "timer", MA_FAST);

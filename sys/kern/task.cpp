@@ -206,8 +206,8 @@ task_create(task *parent, int vm_option, task **child)
 	task->sid = parent->sid;
 	task->state = PS_RUN;
 	rwlock_init(&task->fs_lock);
-	event_init(&task->child_event, "child", ev_SLEEP);
-	event_init(&task->thread_event, "thread", ev_SLEEP);
+	event_init(&task->child_event, "child", event::ev_SLEEP);
+	event_init(&task->thread_event, "thread", event::ev_SLEEP);
 	list_insert(&kern_task.link, &task->link);
 
 	if (err < 0) {
@@ -446,6 +446,6 @@ task_init()
 	kern_task.state = PS_RUN;
 	kern_task.as = as_create(0);
 	rwlock_init(&kern_task.fs_lock);
-	event_init(&kern_task.child_event, "child", ev_SLEEP);
-	event_init(&kern_task.thread_event, "thread", ev_SLEEP);
+	event_init(&kern_task.child_event, "child", event::ev_SLEEP);
+	event_init(&kern_task.thread_event, "thread", event::ev_SLEEP);
 }

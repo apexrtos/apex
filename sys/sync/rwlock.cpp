@@ -41,7 +41,7 @@ void
 rwlock_init(rwlock *o)
 {
 	rwlock_private *p = (rwlock_private *)o->storage;
-	event_init(&p->event, "rwlock", ev_LOCK);
+	event_init(&p->event, "rwlock", event::ev_LOCK);
 	p->state = 0;
 }
 

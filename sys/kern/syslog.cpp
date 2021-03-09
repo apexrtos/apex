@@ -644,7 +644,7 @@ static devio kmsg_io = {
 void
 kmsg_init()
 {
-	event_init(&log_wait, "kmsg_wait", ev_IO);
+	event_init(&log_wait, "kmsg_wait", event::ev_IO);
 
 	/* Create device object */
 	device *d = device_create(&kmsg_io, "kmsg", DF_CHR, NULL);

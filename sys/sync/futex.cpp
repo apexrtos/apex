@@ -93,7 +93,7 @@ futex_get(futexes_impl *fi, int *uaddr)
 
 	f->addr = virt_to_phys(uaddr);
 	spinlock_init(&f->lock);
-	event_init(&f->event, "futex", ev_LOCK);
+	event_init(&f->event, "futex", event::ev_LOCK);
 	list_insert(&fi->list, &f->link);
 
 out:

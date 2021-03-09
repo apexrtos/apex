@@ -121,7 +121,7 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 			kmem_free(irq);
 			return NULL;
 		}
-		event_init(&irq->istevt, "interrupt", ev_SLEEP);
+		event_init(&i->istevt, "interrupt", event::ev_SLEEP);
 	}
 
 	const int s = spinlock_lock_irq_disable(&lock);
