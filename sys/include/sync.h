@@ -90,8 +90,7 @@ bool	       cond_valid(const cond *);
 void	       cond_init(cond *);
 int	       cond_wait_interruptible(cond *, mutex *);
 int	       cond_wait(cond *, mutex *);
-int	       cond_timedwait_interruptible(cond *, mutex *,
-					    uint_fast64_t);
+int cond_timedwait_interruptible(cond *, mutex *, uint_fast64_t);
 int	       cond_timedwait(cond *, mutex *, uint_fast64_t);
 int	       cond_signal(cond *);
 int	       cond_broadcast(cond *);

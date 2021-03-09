@@ -37,12 +37,12 @@ void *
 arch_ustack_align(void *sp)
 {
 	/* userspace expects 16-byte aligned stack */
-	return (void*)((intptr_t)sp & -16);
+	return (void *)((uintptr_t)sp & -16);
 }
 
 void *
 arch_kstack_align(void *sp)
 {
 	/* arm requires 8-byte aligned stack */
-	return (void*)((intptr_t)sp & -8);
+	return (void *)((uintptr_t)sp & -8);
 }

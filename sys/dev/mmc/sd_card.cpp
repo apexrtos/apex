@@ -466,7 +466,6 @@ card::for_each_au(off_t off, uint64_t len,
 	return 0;
 }
 
-
 /*
  * card::size
  */

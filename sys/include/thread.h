@@ -98,8 +98,7 @@ struct thread {
  */
 thread  *thread_cur();
 bool		thread_valid(thread *);
-int	        thread_createfor(task *, as *, thread **,
-				 void *, long mem_attr, void (*)(), long);
+int thread_createfor(task *, as *, thread **, void *, long, void (*)(), long);
 int	        thread_name(thread *, const char *);
 int		thread_id(thread *);
 thread  *thread_find(int);
@@ -113,5 +112,4 @@ void	        thread_init();
 /*
  * Kernel threads
  */
-thread  *kthread_create(void (*)(void *), void *, int, const char *,
-			       long mem_attr);
+thread *kthread_create(void (*)(void *), void *, int, const char *, long);

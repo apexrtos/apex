@@ -64,4 +64,3 @@ size_t	    tty_tx_getbuf(tty *, size_t, const void **);
 bool	    tty_tx_empty(tty *);
 void	    tty_tx_advance(tty *, size_t);
 void	    tty_tx_complete(tty *);
-

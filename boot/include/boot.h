@@ -56,6 +56,5 @@ extern kernel_entry_fn kernel_entry;
 int load_elf(const phys *img);
 int load_bootimg();
 void debug_puts(const char *);
-void debug_printf(const char *, ...)
-	__attribute__((format (printf, 1, 2)));
+void debug_printf(const char *, ...) __attribute__((format (printf, 1, 2)));
 [[noreturn]] void panic(const char *);

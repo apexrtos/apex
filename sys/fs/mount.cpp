@@ -84,8 +84,7 @@ fs_lookup(const char *name)
 /*
  * do_root_mount - mount root file system
  */
-static int do_root_mount(struct mount *mp, unsigned long flags,
-    const void *data)
+static int do_root_mount(struct mount *mp, unsigned long flags, const void *data)
 {
 	int err;
 	vnode *vp_root;

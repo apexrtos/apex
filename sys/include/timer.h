@@ -51,7 +51,6 @@ struct itimer {
 	uint_fast64_t interval;		/* reload interval, 0 if disabled */
 };
 
-
 uint_fast64_t ts_to_ns(const timespec &);
 uint_fast64_t ts32_to_ns(const timespec32 &);
 timespec ns_to_ts(uint_fast64_t);
@@ -59,8 +58,7 @@ timespec32 ns_to_ts32(uint_fast64_t);
 uint_fast64_t tv_to_ns(const timeval &);
 timeval ns_to_tv(uint_fast64_t);
 
-void	      timer_callout(timer *, uint_fast64_t, uint_fast64_t,
-			  void (*)(void *), void *);
+void timer_callout(timer *, uint_fast64_t, uint_fast64_t, void (*)(void *), void *);
 void	      timer_redirect(timer *, void (*)(void *), void *);
 void	      timer_stop(timer *);
 uint_fast64_t timer_delay(uint_fast64_t);

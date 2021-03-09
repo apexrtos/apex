@@ -358,7 +358,6 @@ thread_dump()
 	thread *th;
 	task *task;
 
-
 	info("thread dump\n");
 	info("===========\n");
 	info(" thread      name     task       stat pol  prio base time(ms) "

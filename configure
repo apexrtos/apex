@@ -393,7 +393,6 @@ main()
 	esac
 	$print $compiler
 
-
 	# Set general configuration options
 	{
 		echo "CONFIG_SRCDIR := $srcdir"

@@ -638,7 +638,6 @@ device::for_each_eg(off_t off, uint64_t len,
 	return 0;
 }
 
-
 /*
  * device::switch_partition
  */

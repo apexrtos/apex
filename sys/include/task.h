@@ -98,7 +98,6 @@ struct task {
 #define CAP_DEBUG	0x00000800  /* debugging requests */
 #define CAP_ADMIN	0x00010000  /* mount,umount,sethostname,setdomainname,etc */
 
-
 task    *task_cur();
 task    *task_find(pid_t);
 pid_t		task_pid(task *);

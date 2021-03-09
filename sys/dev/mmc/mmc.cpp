@@ -700,7 +700,6 @@ ext_csd::write(host *h, unsigned rca, ext_csd::offset off, uint8_t value)
 	return 0;
 }
 
-
 /*
  * go_idle_state
  */
