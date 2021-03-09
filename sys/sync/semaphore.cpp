@@ -10,7 +10,7 @@
 #include <wait.h>
 
 struct private {
-	atomic_int count;
+	std::atomic_int count;
 	struct event event;
 };
 static_assert(sizeof(private) == sizeof(semaphore), "");

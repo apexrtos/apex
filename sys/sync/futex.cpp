@@ -124,7 +124,7 @@ futex_wait(task *t, int *uaddr, int val, const timespec32 *ts)
 	}
 
 	spinlock_lock(&f->lock);
-	uval = atomic_load((_Atomic uint32_t *)uaddr);
+	uval = std::atomic_load((std::atomic_uint32_t *)uaddr);
 	u_access_end();
 
 	if (uval != val) {

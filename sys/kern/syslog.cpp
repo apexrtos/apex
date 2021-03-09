@@ -46,7 +46,7 @@ struct ent {
 };
 
 static alignas(ent) char log[CONFIG_SYSLOG_SIZE];
-static atomic_long log_first_seq = 1, log_last_seq;
+static std::atomic_long log_first_seq = 1, log_last_seq;
 static long clear_seq = 1;
 static ent *head = (ent *)log;
 static ent *tail = (ent *)log;

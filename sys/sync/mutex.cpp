@@ -53,7 +53,7 @@
 #include <thread.h>
 
 struct mutex_private {
-	atomic_intptr_t owner;	/* owner thread locking this mutex */
+	std::atomic_intptr_t owner; /* owner thread locking this mutex */
 	spinlock lock;		    /* lock to protect struct mutex contents */
 	unsigned count;		/* counter for recursive lock */
 	struct event event;	/* event */
@@ -70,7 +70,7 @@ mutex_init(mutex *m)
 {
 	mutex_private *mp = (mutex_private*)m->storage;
 
-	atomic_store_explicit(&mp->owner, 0, memory_order_relaxed);
+	atomic_store_explicit(&mp->owner, 0, std::memory_order_relaxed);
 	spinlock_init(&mp->lock);
 	mp->count = 0;
 	event_init(&mp->event, "mutex", ev_LOCK);
@@ -96,7 +96,7 @@ mutex_lock_slowpath(mutex *m)
 		atomic_fetch_or_explicit(
 		    &mp->owner,
 		    MUTEX_RECURSIVE,
-		    memory_order_relaxed
+		    std::memory_order_relaxed
 		);
 		++mp->count;
 		spinlock_unlock(&mp->lock);
@@ -109,8 +109,8 @@ mutex_lock_slowpath(mutex *m)
 	    &mp->owner,
 	    &expected,
 	    (intptr_t)thread_cur(),
-	    memory_order_acquire,
-	    memory_order_relaxed)) {
+	    std::memory_order_acquire,
+	    std::memory_order_relaxed)) {
 		mp->count = 1;
 		spinlock_unlock(&mp->lock);
 		return 0;
@@ -119,7 +119,7 @@ mutex_lock_slowpath(mutex *m)
 	atomic_fetch_or_explicit(
 	    &mp->owner,
 	    MUTEX_WAITERS,
-	    memory_order_relaxed
+	    std::memory_order_relaxed
 	);
 
 	/* wait for unlock */
@@ -154,8 +154,8 @@ mutex_lock_s(mutex *m, bool block_signals)
 	    &mp->owner,
 	    &expected,
 	    (intptr_t)thread_cur(),
-	    memory_order_acquire,
-	    memory_order_relaxed)) {
+	    std::memory_order_acquire,
+	    std::memory_order_relaxed)) {
 		mp->count = 1;
 		return 0;
 	}
@@ -204,8 +204,8 @@ mutex_unlock_slowpath(mutex *m)
 
 	if (!(atomic_load_explicit(
 	    &mp->owner,
-	    memory_order_relaxed) & MUTEX_WAITERS)) {
-		atomic_store_explicit(&mp->owner, 0, memory_order_release);
+	    std::memory_order_relaxed) & MUTEX_WAITERS)) {
+		atomic_store_explicit(&mp->owner, 0, std::memory_order_release);
 		spinlock_unlock(&mp->lock);
 		return 0;
 	}
@@ -215,7 +215,7 @@ mutex_unlock_slowpath(mutex *m)
 	atomic_store_explicit(
 	    &mp->owner,
 	    (intptr_t)waiter | (event_waiting(&mp->event) ? MUTEX_WAITERS : 0),
-	    memory_order_relaxed
+	    std::memory_order_relaxed
 	);
 
 	/* waiter can be interrupted */
@@ -244,8 +244,8 @@ mutex_unlock(mutex *m)
 	    &mp->owner,
 	    &expected,
 	    zero,
-	    memory_order_release,
-	    memory_order_relaxed))
+	    std::memory_order_release,
+	    std::memory_order_relaxed))
 		return 0;
 
 	return mutex_unlock_slowpath(m);
@@ -260,7 +260,7 @@ mutex_owner(const mutex *m)
 	const mutex_private *mp = (const mutex_private*)m->storage;
 	return (thread *)(atomic_load_explicit(
 	    &mp->owner,
-	    memory_order_relaxed) & MUTEX_TID_MASK);
+	    std::memory_order_relaxed) & MUTEX_TID_MASK);
 }
 
 /*
