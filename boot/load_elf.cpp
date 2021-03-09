@@ -66,7 +66,7 @@ load_executable(const phys *img)
 
 	edbg("\n");
 
-	kernel_entry = (void*)virt_to_phys((void*)ehdr->e_entry);
+	kernel_entry = (kernel_entry_fn)virt_to_phys((void*)ehdr->e_entry);
 	return 0;
 }
 

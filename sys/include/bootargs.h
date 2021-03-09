@@ -4,8 +4,8 @@
  * Arguments passed from bootloader to kernel
  */
 struct bootargs {
-	phys *archive_addr;	/* boot archive address */
-	long archive_size;	/* boot archive size */
-	long machdep0;		/* machine dependent argument 0 */
-	long machdep1;		/* machine dependent argument 1 */
+	unsigned long archive_addr;	/* boot archive address */
+	unsigned long archive_size;	/* boot archive size */
+	unsigned long machdep0;		/* machine dependent argument 0 */
+	unsigned long machdep1;		/* machine dependent argument 1 */
 };

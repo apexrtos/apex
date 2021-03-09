@@ -43,7 +43,7 @@
  * Boot information
  */
 bootargs args;
-void (*kernel_entry)(phys *, long, long, long);
+kernel_entry_fn kernel_entry;
 
 /*
  * Debugging

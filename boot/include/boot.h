@@ -45,9 +45,13 @@
 #define info(...)
 #endif
 
+using kernel_entry_fn = void (*)(unsigned long archive_addr,
+				 unsigned long archive_size,
+				 unsigned long machdep0,
+				 unsigned long machdep1);
+
 extern bootargs args;
-extern void (*kernel_entry)(phys *archive_addr, long archive_size,
-    long machdep0, long machdep1);
+extern kernel_entry_fn kernel_entry;
 
 int load_elf(const phys *img);
 int load_bootimg();

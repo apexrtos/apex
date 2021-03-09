@@ -65,7 +65,8 @@ boot_thread(void *arg);
  *	- minimum page table is set (MMU systems only)
  */
 extern "C" void
-kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
+kernel_main(unsigned long archive_addr, unsigned long archive_size,
+	    unsigned long machdep0, unsigned long machdep1)
 {
 #if defined(CONFIG_EARLY_CONSOLE)
 	early_console_init();
@@ -73,7 +74,7 @@ kernel_main(phys *archive_addr, long archive_size, long machdep0, long machdep1)
 	info("Apex " VERSION_STRING " for " CONFIG_MACHINE_NAME "\n");
 
 	dbg("Kernel arguments: 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
-	    (long)archive_addr, archive_size, machdep0, machdep1);
+	    archive_addr, archive_size, machdep0, machdep1);
 
 	bootargs args = {archive_addr, archive_size, machdep0, machdep1};
 
