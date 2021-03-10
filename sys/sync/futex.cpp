@@ -26,7 +26,7 @@
  * k_futex - kernel data for a userspace futex
  */
 struct k_futex {
-	phys *addr;		/* futex address */
+	void *addr;		/* futex address */
 	spinlock lock;	/* to synchronise operations on this futex */
 	struct event event;	/* event */
 	list link;		/* linkage on futexes list */
@@ -59,7 +59,7 @@ futex_find_unlocked(futexes_impl *fi, int *uaddr)
 {
 	k_futex *f;
 	list_for_each_entry(f, &fi->list, link) {
-		if (f->addr == virt_to_phys(uaddr))
+		if (f->addr == uaddr)
 			return f;
 	}
 	return 0;
@@ -91,7 +91,7 @@ futex_get(futexes_impl *fi, int *uaddr)
 	if (!(f = (k_futex *)malloc(sizeof(k_futex))))
 		goto out;
 
-	f->addr = virt_to_phys(uaddr);
+	f->addr = uaddr;
 	spinlock_init(&f->lock);
 	event_init(&f->event, "futex", event::ev_LOCK);
 	list_insert(&fi->list, &f->link);
