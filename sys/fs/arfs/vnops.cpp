@@ -222,6 +222,8 @@ arfs_readdir(file *fp, dirent *buf, size_t len)
 	size_t remain = len;
 	int err = 0;
 	char name_buf[128];
+	size_t i = 2;
+	off_t off = SARMAG;	/* offset in archive image */
 
 	if (fp->f_offset == 0) {
 		if (dirbuf_add(&buf, &remain, 0, fp->f_offset, DT_DIR, "."))
@@ -235,8 +237,6 @@ arfs_readdir(file *fp, dirent *buf, size_t len)
 		++fp->f_offset;
 	}
 
-	size_t i = 2;
-	off_t off = SARMAG;	/* offset in archive image */
 	for (;;) {
 		ar_hdr h;
 

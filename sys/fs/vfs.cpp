@@ -2225,6 +2225,7 @@ pipe2(int fd[2], int flags)
 	vnode *vp;
 	int r, rfd, wfd;
 	int err;
+	const uintptr_t cloexec = flags & O_CLOEXEC ? FF_CLOEXEC : 0;
 
 	if ((err = task_write_lock_interruptible(t)))
 		return err;
@@ -2281,7 +2282,6 @@ pipe2(int fd[2], int flags)
 	vref(vp);
 	vn_unlock(vp);
 
-	const uintptr_t cloexec = flags & O_CLOEXEC ? FF_CLOEXEC : 0;
 	fd[0] = rfd;
 	fd[1] = wfd;
 	r = 0;
@@ -2334,6 +2334,11 @@ symlinkat(const char *target, int dirfd, const char *path)
 	if ((err = lookup_t_noexist(task_cur(), dirfd, path, &dvp, &node, &node_len, 0)))
 		return err;
 
+	const iovec iov = {
+		.iov_base = (void*)target,
+		.iov_len = target_len,
+	};
+
 	if (mount_readonly(dvp)) {
 		err = -EROFS;
 		goto out;
@@ -2358,10 +2363,6 @@ symlinkat(const char *target, int dirfd, const char *path)
 		goto out1;
 
 	/* write link target */
-	struct iovec iov = {
-		.iov_base = (void*)target,
-		.iov_len = target_len,
-	};
 	if ((size_t)(err = VOP_WRITE(&f, &iov, 1, 0)) != target_len) {
 		if (err >= 0)
 			err = DERR(-EIO);

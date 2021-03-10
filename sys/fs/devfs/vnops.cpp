@@ -301,6 +301,8 @@ devfs_ioctl(file *fp, u_long cmd, void *arg)
 static int
 devfs_readdir(file *fp, dirent *buf, size_t len)
 {
+	device *d;
+	size_t i = 1;
 	size_t remain = len;
 
 	if (fp->f_offset == 0) {
@@ -314,9 +316,6 @@ devfs_readdir(file *fp, dirent *buf, size_t len)
 			goto out;
 		++fp->f_offset;
 	}
-
-	struct device *d;
-	size_t i = 1;
 
 	/* REVISIT: this can return inconsistent results if a device_create or
 	 * device_destroy happens between calls to devfs_readdir. */

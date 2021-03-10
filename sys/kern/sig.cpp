@@ -271,7 +271,7 @@ sig_task(task *task, int sig)
 	if (sig == 0)
 		return 0;
 
-	int ret;
+	int ret, s;
 
 	sch_lock();
 
@@ -289,7 +289,7 @@ sig_task(task *task, int sig)
 	/*
 	 * Mark signal as pending on task
 	 */
-	const int s = irq_disable();
+	s = irq_disable();
 	ksigaddset(&task->sig_pending, sig);
 	irq_restore(s);
 
@@ -317,7 +317,7 @@ sig_thread(thread *th, int sig)
 
 	assert(sig >= 0 && sig <= NSIG);
 
-	int ret;
+	int ret, s;
 
 	sch_lock();
 
@@ -337,16 +337,14 @@ sig_thread(thread *th, int sig)
 	/*
 	 * Mark signal as pending on thread
 	 */
-	const int s = irq_disable();
+	s = irq_disable();
 	ksigaddset(&th->sig_pending, sig ?: SIGKILL);
 	irq_restore(s);
-
-	const bool unblocked_pending = sig_unblocked_pending(th);
 
 	/*
 	 * Interrupt thread to handle unblocked pending signal
 	 */
-	if (unblocked_pending)
+	if (sig_unblocked_pending(th))
 		sch_signal(th);
 
 out:
@@ -446,6 +444,8 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 
 	thread *th = thread_cur();
 	task *task = task_cur();
+	int sig, s1;
+	sig_handler_fn handler;
 
 	sch_lock();
 
@@ -457,13 +457,13 @@ sig_deliver_slowpath(k_sigset_t pending, int rval)
 	if (ksigisemptyset(&unblocked))
 		goto out;
 
-	const int sig = ksigfirst(&unblocked);
-	const sig_handler_fn handler = sig_handler(task, sig);
+	sig = ksigfirst(&unblocked);
+	handler = sig_handler(task, sig);
 
 	/*
 	 * Clear unblocked signal
 	 */
-	const int s1 = irq_disable();
+	s1 = irq_disable();
 	ksigdelset(&th->sig_pending, sig);
 	irq_restore(s1);
 
@@ -683,6 +683,7 @@ sc_rt_sigaction(const int sig, const k_sigaction *uact,
 		return DERR(-EINVAL);
 
 	int ret;
+	k_sigaction kact;
 
 	if ((ret = u_access_begin()) < 0)
 		return ret;
@@ -715,7 +716,7 @@ sc_rt_sigaction(const int sig, const k_sigaction *uact,
 		goto out;
 	}
 
-	k_sigaction kact = *uact;
+	kact = *uact;
 
 	if (sizeof(kact.mask) != size) {
 		ret = DERR(-EINVAL);
