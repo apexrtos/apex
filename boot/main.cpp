@@ -49,18 +49,6 @@ kernel_entry_fn kernel_entry;
  * Debugging
  */
 void
-debug_puts(const char *s)
-{
-#if defined(CONFIG_BOOT_CONSOLE)
-	while (*s) {
-		if (*s == '\n')
-			machine_putc('\r');
-		machine_putc(*s++);
-	}
-#endif
-}
-
-void
 debug_printf(const char *fmt, ...)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
@@ -72,16 +60,18 @@ debug_printf(const char *fmt, ...)
 	va_end(ap);
 
 	if (n < 0) {
-		debug_puts("*** Error, debug vsnprintf\n");
+		const char *msg = "*** Error, debug vsnprintf\n";
+		machine_print(msg, strlen(msg));
 		return;
 	}
 
 	if (static_cast<size_t>(n) >= sizeof buf) {
-		debug_puts("*** Error, debug string too long\n");
+		const char *msg = "*** Error, debug string too long\n";
+		machine_print(msg, strlen(msg));
 		return;
 	}
 
-	debug_puts(buf);
+	machine_print(buf, n);
 #endif
 }
 
@@ -89,8 +79,9 @@ debug_printf(const char *fmt, ...)
 panic(const char *msg)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
-	debug_puts("Panic: ");
-	debug_puts(msg);
+	const char *panic = "Panic: ";
+	machine_print(panic, strlen(panic));
+	machine_print(msg, strlen(msg));
 #endif
 	machine_panic();
 }

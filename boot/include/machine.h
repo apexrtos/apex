@@ -29,7 +29,9 @@
 
 #pragma once
 
+#include <cstddef>
+
 void machine_setup();
-void machine_putc(int);
+void machine_print(const char *, size_t);
 int machine_load_image();
 [[noreturn]] void machine_panic();
