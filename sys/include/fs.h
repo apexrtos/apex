@@ -14,41 +14,41 @@ struct vnode;
 /*
  * File system management
  */
-void	fs_init();
-void	fs_kinit();
-void	fs_shutdown();
+void fs_init();
+void fs_kinit();
+void fs_shutdown();
 
 /*
  * These functions perform file system operations on behalf of another task.
  */
-void	fs_exit(task *);
-void	fs_fork(task *);
-void	fs_exec(task *);
-int	openfor(task *, int, const char *, int, ...);
-int	closefor(task *, int);
-int	dup2for(task *, int, int);
+void fs_exit(task *);
+void fs_fork(task *);
+void fs_exec(task *);
+int openfor(task *, int, const char *, int, ...);
+int closefor(task *, int);
+int dup2for(task *, int, int);
 
 /*
  * These functions deal with kernel file handles.
  */
-int	kopen(const char *, int, ...);
-int	kclose(int);
-int	kfstat(int, struct stat *);
-ssize_t	kpread(int, void *, size_t, off_t);
-ssize_t	kpreadv(int, const iovec *, int, off_t);
-ssize_t	kpwrite(int, const void *, size_t, off_t);
-ssize_t	kpwritev(int, const iovec *, int, off_t);
-int	kioctl(int, int, ...);
+int kopen(const char *, int, ...);
+int kclose(int);
+int kfstat(int, struct stat *);
+ssize_t kpread(int, void *, size_t, off_t);
+ssize_t kpreadv(int, const iovec *, int, off_t);
+ssize_t kpwrite(int, const void *, size_t, off_t);
+ssize_t kpwritev(int, const iovec *, int, off_t);
+int kioctl(int, int, ...);
 
 /*
  * These functions deal directly with vnodes.
  */
 vnode *vn_open(int, int);
-void	      vn_reference(vnode *);
-void	      vn_close(vnode *);
-ssize_t	      vn_pread(vnode *, void *, size_t, off_t);
-ssize_t	      vn_preadv(vnode *, const iovec *, int, off_t);
-char	     *vn_name(vnode *);
+void vn_reference(vnode *);
+void vn_close(vnode *);
+ssize_t vn_pread(vnode *, void *, size_t, off_t);
+ssize_t vn_preadv(vnode *, const iovec *, int, off_t);
+char *vn_name(vnode *);
 
 namespace std {
 

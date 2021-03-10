@@ -7,8 +7,8 @@
 struct as;
 struct iovec;
 
-void		    vm_init();
-void		    vm_dump();
+void vm_init();
+void vm_dump();
 void vm_init_brk(as *, void *);
 ssize_t vm_readv(as *, const iovec *, size_t, const iovec *, size_t);
 ssize_t vm_writev(as *, const iovec *, size_t, const iovec *, size_t);

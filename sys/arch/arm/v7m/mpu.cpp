@@ -14,10 +14,10 @@
 #include <task.h>
 #include <thread.h>
 
-__fast_bss size_t fixed;			/* number of fixed regions */
-__fast_bss size_t stack;			/* number of stack regions */
-__fast_bss size_t victim;			/* next victim to evict */
-__fast_bss const void *fault_addr;		/* last fault address */
+__fast_bss size_t fixed;		    /* number of fixed regions */
+__fast_bss size_t stack;		    /* number of stack regions */
+__fast_bss size_t victim;		    /* next victim to evict */
+__fast_bss const void *fault_addr;	    /* last fault address */
 __fast_bss const thread *mapped_thread;	    /* currently mapped thread */
 
 static void

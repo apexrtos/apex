@@ -78,45 +78,45 @@ struct semaphore {
 	};
 };
 
-bool	       mutex_valid(const mutex *);
-void	       mutex_init(mutex *);
-int	       mutex_lock_interruptible(mutex *);
-int	       mutex_lock(mutex *);
-int	       mutex_unlock(mutex *);
+bool mutex_valid(const mutex *);
+void mutex_init(mutex *);
+int mutex_lock_interruptible(mutex *);
+int mutex_lock(mutex *);
+int mutex_unlock(mutex *);
 thread *mutex_owner(const mutex *);
-void	       mutex_assert_locked(const mutex *);
+void mutex_assert_locked(const mutex *);
 
-bool	       cond_valid(const cond *);
-void	       cond_init(cond *);
-int	       cond_wait_interruptible(cond *, mutex *);
-int	       cond_wait(cond *, mutex *);
+bool cond_valid(const cond *);
+void cond_init(cond *);
+int cond_wait_interruptible(cond *, mutex *);
+int cond_wait(cond *, mutex *);
 int cond_timedwait_interruptible(cond *, mutex *, uint_fast64_t);
-int	       cond_timedwait(cond *, mutex *, uint_fast64_t);
-int	       cond_signal(cond *);
-int	       cond_broadcast(cond *);
+int cond_timedwait(cond *, mutex *, uint_fast64_t);
+int cond_signal(cond *);
+int cond_broadcast(cond *);
 
-void	       rwlock_init(rwlock *);
-int	       rwlock_read_lock_interruptible(rwlock *);
-int	       rwlock_read_lock(rwlock *);
-void	       rwlock_read_unlock(rwlock *);
-bool	       rwlock_read_locked(rwlock *);
-int	       rwlock_write_lock_interruptible(rwlock *);
-int	       rwlock_write_lock(rwlock *);
-void	       rwlock_write_unlock(rwlock *);
-bool	       rwlock_write_locked(rwlock *);
-bool	       rwlock_locked(rwlock *);
+void rwlock_init(rwlock *);
+int rwlock_read_lock_interruptible(rwlock *);
+int rwlock_read_lock(rwlock *);
+void rwlock_read_unlock(rwlock *);
+bool rwlock_read_locked(rwlock *);
+int rwlock_write_lock_interruptible(rwlock *);
+int rwlock_write_lock(rwlock *);
+void rwlock_write_unlock(rwlock *);
+bool rwlock_write_locked(rwlock *);
+bool rwlock_locked(rwlock *);
 
-void	       spinlock_init(spinlock *);
-void	       spinlock_lock(spinlock *);
-void	       spinlock_unlock(spinlock *);
-int	       spinlock_lock_irq_disable(spinlock *);
-void	       spinlock_unlock_irq_restore(spinlock *, int);
-void	       spinlock_assert_locked(const spinlock *);
+void spinlock_init(spinlock *);
+void spinlock_lock(spinlock *);
+void spinlock_unlock(spinlock *);
+int spinlock_lock_irq_disable(spinlock *);
+void spinlock_unlock_irq_restore(spinlock *, int);
+void spinlock_assert_locked(const spinlock *);
 
-void	       semaphore_init(semaphore *);
-int	       semaphore_post(semaphore *);
-int	       semaphore_post_once(semaphore *);
-int	       semaphore_wait_interruptible(semaphore *);
+void semaphore_init(semaphore *);
+int semaphore_post(semaphore *);
+int semaphore_post_once(semaphore *);
+int semaphore_wait_interruptible(semaphore *);
 
 namespace a {
 

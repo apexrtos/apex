@@ -39,49 +39,49 @@
  * Task struct
  */
 struct task {
-	int		magic;		    /* magic number */
-	char	       *path;		    /* path to executable */
+	int magic;			/* magic number */
+	char *path;			/* path to executable */
 	list link;			/* link for all tasks in system */
 	list threads;			/* threads in this task */
-	struct as      *as;		    /* address space description */
-	int		suscnt;		    /* suspend counter */
-	unsigned	capability;	    /* security permission flag */
+	struct as *as;			/* address space description */
+	int suscnt;			/* suspend counter */
+	unsigned capability;		/* security permission flag */
 	task *parent;			/* parent task */
-	struct futexes	futexes;	    /* futex state for task */
+	struct futexes	futexes;	/* futex state for task */
 	itimer itimer_prof;		/* interval timer ITIMER_PROF */
 	itimer itimer_virtual;		/* interval timer ITIMER_VIRTUAL */
 	timer itimer_real;		/* interval timer ITIMER_REAL */
 
 	/* Signal Management */
-	k_sigset_t	    sig_pending;	/* pending signals */
+	k_sigset_t sig_pending;		/* pending signals */
 	k_sigaction sig_action[NSIG];   /* signal handlers */
 
 	/* Process Management */
-	pid_t		pgid;		    /* process group id */
-	pid_t		sid;		    /* session id */
-	int	        state;		    /* process state */
-	int	        exitcode;	    /* process exit code */
+	pid_t pgid;			/* process group id */
+	pid_t sid;			/* session id */
+	int state;			/* process state */
+	int exitcode;			/* process exit code */
 	event child_event;		/* child exited event */
-	int		termsig;	    /* signal to parent on terminate */
+	int termsig;			/* signal to parent on terminate */
 	thread *vfork;			/* vfork thread to wake */
 	event thread_event;		/* thread exited event */
 
 	/* File System State */
 	rwlock fs_lock;			/* lock for file system data */
-	uintptr_t	file[64];	    /* array of file pointers */
-	struct file    *cwdfp;		    /* directory for cwd */
-	mode_t		umask;		    /* current file creation mask */
+	uintptr_t file[64];		/* array of file pointers */
+	struct file *cwdfp;		/* directory for cwd */
+	mode_t umask;			/* current file creation mask */
 };
 
 /* process status */
-#define PS_RUN		1		    /* running */
-#define PS_ZOMB		2		    /* terminated but not waited for */
-#define PS_STOP		3		    /* stopped */
+#define PS_RUN		1		/* running */
+#define PS_ZOMB		2		/* terminated but not waited for */
+#define PS_STOP		3		/* stopped */
 
 /* vm option for task_create(). */
-#define VM_NEW		0		    /* create new memory map */
-#define VM_SHARE	1		    /* share parent's memory map */
-#define VM_COPY		2		    /* duplicate parent's memory map */
+#define VM_NEW		0		/* create new memory map */
+#define VM_SHARE	1		/* share parent's memory map */
+#define VM_COPY		2		/* duplicate parent's memory map */
 
 /* capabilities */
 #define CAP_SETPCAP	0x00000001  /* setting capability */
@@ -98,17 +98,17 @@ struct task {
 #define CAP_DEBUG	0x00000800  /* debugging requests */
 #define CAP_ADMIN	0x00010000  /* mount,umount,sethostname,setdomainname,etc */
 
-task    *task_cur();
-task    *task_find(pid_t);
-pid_t		task_pid(task *);
-bool		task_valid(task *);
-int		task_create(task *, int, task **);
-int		task_destroy(task *);
-int	        task_suspend(task *);
-int	        task_resume(task *);
-int	        task_path(task *, const char *);
-bool	        task_capable(unsigned);
-bool	        task_access(task *);
+task *task_cur();
+task *task_find(pid_t);
+pid_t task_pid(task *);
+bool task_valid(task *);
+int task_create(task *, int, task **);
+int task_destroy(task *);
+int task_suspend(task *);
+int task_resume(task *);
+int task_path(task *, const char *);
+bool task_capable(unsigned);
+bool task_access(task *);
 futexes *task_futexes(task *);
-void		task_dump();
-void		task_init();
+void task_dump();
+void task_init();

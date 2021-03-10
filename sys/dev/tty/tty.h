@@ -47,17 +47,17 @@ typedef void (*tty_iproc)(tty *);
 typedef void (*tty_fproc)(tty *, int);
 
 tty *tty_create(const char *, long attr, size_t bufsiz, size_t bufmin,
-		       tty_tproc, tty_oproc, tty_iproc, tty_fproc, void *);
-void	    tty_destroy(tty *);
-void	   *tty_data(tty *);
+		tty_tproc, tty_oproc, tty_iproc, tty_fproc, void *);
+void tty_destroy(tty *);
+void *tty_data(tty *);
 
-char	   *tty_rx_getbuf(tty *);
-void	    tty_rx_putbuf(tty *, char *, size_t);
-void	    tty_rx_putc(tty *, char);
-void	    tty_rx_overflow(tty *);
+char *tty_rx_getbuf(tty *);
+void tty_rx_putbuf(tty *, char *, size_t);
+void tty_rx_putc(tty *, char);
+void tty_rx_overflow(tty *);
 
-int	    tty_tx_getc(tty *);
-size_t	    tty_tx_getbuf(tty *, size_t, const void **);
-bool	    tty_tx_empty(tty *);
-void	    tty_tx_advance(tty *, size_t);
-void	    tty_tx_complete(tty *);
+int tty_tx_getc(tty *);
+size_t tty_tx_getbuf(tty *, size_t, const void **);
+bool tty_tx_empty(tty *);
+void tty_tx_advance(tty *, size_t);
+void tty_tx_complete(tty *);

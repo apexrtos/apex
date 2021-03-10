@@ -39,12 +39,12 @@ int lookup_t(task *, int, const char *, vnode **, const char **, size_t *, int);
 int lookup_t_dir(task *, int, const char *, vnode **, const char **, size_t *, int);
 int lookup_t_noexist(task *, int, const char *, vnode **, const char **, size_t *, int);
 
-void	 vnode_init();
-void	 mount_init();
+void vnode_init();
+void mount_init();
 
-void	 vfs_busy(struct mount *);
-void	 vfs_unbusy(struct mount *);
+void vfs_busy(struct mount *);
+void vfs_unbusy(struct mount *);
 
-void	 mount_dump();
-void	 vnode_dump();
-void	 file_dump();
+void mount_dump();
+void vnode_dump();
+void file_dump();

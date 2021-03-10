@@ -70,14 +70,14 @@
 #include <thread.h>
 
 struct irq {
-	int		vector;		    /* vector number */
-	int	      (*isr)(int, void *);  /* pointer to isr */
-	void	      (*ist)(int, void *);  /* pointer to ist */
-	int		isrreq;		    /* number of isr request */
-	int		istreq;		    /* number of ist request */
-	void	       *data;		    /* handler data */
-	struct thread  *thread;		    /* thread id of ist */
-	event istevt;		    /* event for ist */
+	int vector;			/* vector number */
+	int (*isr)(int, void *);	/* pointer to isr */
+	void (*ist)(int, void *);	/* pointer to ist */
+	int isrreq;			/* number of isr request */
+	int istreq;			/* number of ist request */
+	void *data;			/* handler data */
+	struct thread *thread;		/* thread id of ist */
+	event istevt;			/* event for ist */
 };
 
 static void irq_thread(void *);

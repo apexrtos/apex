@@ -34,19 +34,19 @@ struct queue {
 	struct queue *prev;
 };
 
-#define queue_init(head)	((head)->next = (head)->prev = (head))
-#define queue_empty(head)	((head)->next == (head))
-#define queue_next(q)		((q)->next)
-#define queue_prev(q)		((q)->prev)
-#define queue_first(head)	((head)->next)
-#define queue_last(head)	((head)->prev)
-#define queue_end(head,q)	((q) == (head))
+#define queue_init(head) ((head)->next = (head)->prev = (head))
+#define queue_empty(head) ((head)->next == (head))
+#define queue_next(q) ((q)->next)
+#define queue_prev(q) ((q)->prev)
+#define queue_first(head) ((head)->next)
+#define queue_last(head) ((head)->prev)
+#define queue_end(head,q) ((q) == (head))
 
 /* Get the struct for this entry */
 #define queue_entry(q, type, member) \
     ((type *)((char *)(q) - (unsigned long)(&((type *)0)->member)))
 
-void		enqueue(queue *, queue *);
-queue   *dequeue(queue *);
-void		queue_insert(queue *, queue *);
-void		queue_remove(queue *);
+void enqueue(queue *, queue *);
+queue *dequeue(queue *);
+void queue_insert(queue *, queue *);
+void queue_remove(queue *);

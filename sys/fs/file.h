@@ -37,9 +37,9 @@ struct vnode;
  * File structure
  */
 struct file {
-	int		f_flags;	/* open flag */
-	int		f_count;	/* reference count */
-	off_t		f_offset;	/* current position in file */
-	void		*f_data;	/* per-handle data for drivers */
+	int f_flags;	/* open flag */
+	int f_count;	/* reference count */
+	off_t f_offset;	/* current position in file */
+	void *f_data;	/* per-handle data for drivers */
 	vnode *f_vnode;	/* vnode */
 };

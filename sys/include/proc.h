@@ -4,4 +4,4 @@
 
 struct task;
 
-void	     proc_exit(task *, int status, int signal);
+void proc_exit(task *, int status, int signal);

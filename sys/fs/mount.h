@@ -14,12 +14,12 @@ struct vnops;
 struct mount {
 	list m_link;		/* link to next mount point */
 	const vfsops *m_op;	/* pointer to vfs operations */
-	unsigned long		 m_flags;	/* mount flags */
-	unsigned		 m_count;	/* reference count */
-	int			 m_devfd;	/* mounted device handle */
+	unsigned long m_flags;	/* mount flags */
+	unsigned m_count;	/* reference count */
+	int m_devfd;		/* mounted device handle */
 	vnode *m_root;		/* root vnode */
 	vnode *m_covered;	/* vnode covered on parent fs */
-	void			*m_data;	/* private data for fs */
+	void *m_data;		/* private data for fs */
 };
 
 /*
@@ -41,12 +41,12 @@ typedef int (*vfsop_vget_fn)(vnode *);
 typedef int (*vfsop_statfs_fn)(struct mount *, statfs *);
 
 struct vfsops {
-	vfsop_init_fn	     vfs_init;
-	vfsop_mount_fn	     vfs_mount;
-	vfsop_umount_fn	     vfs_umount;
-	vfsop_sync_fn	     vfs_sync;
-	vfsop_vget_fn	     vfs_vget;
-	vfsop_statfs_fn	     vfs_statfs;
+	vfsop_init_fn vfs_init;
+	vfsop_mount_fn vfs_mount;
+	vfsop_umount_fn vfs_umount;
+	vfsop_sync_fn vfs_sync;
+	vfsop_vget_fn vfs_vget;
+	vfsop_statfs_fn vfs_statfs;
 	const vnops *vfs_vnops;
 };
 

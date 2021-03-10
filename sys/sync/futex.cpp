@@ -27,7 +27,7 @@
  */
 struct k_futex {
 	void *addr;		/* futex address */
-	spinlock lock;	/* to synchronise operations on this futex */
+	spinlock lock;		/* to synchronise operations on this futex */
 	struct event event;	/* event */
 	list link;		/* linkage on futexes list */
 };

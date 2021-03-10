@@ -40,30 +40,30 @@ struct task;
  * Description of a thread.
  */
 struct thread {
-	int		magic;		/* magic number */
-	char		name[12];	/* thread name */
-	struct task    *task;		/* pointer to owner task */
+	int magic;		/* magic number */
+	char name[12];		/* thread name */
+	struct task *task;	/* pointer to owner task */
 	list task_link;		/* link for threads in same task */
 	queue link;		/* linkage on scheduling queue */
-	int		state;		/* thread state */
-	int		policy;		/* scheduling policy */
-	int		prio;		/* current priority */
-	int		baseprio;	/* base priority */
-	int		timeleft;	/* remaining nanoseconds to run */
-	uint_fast64_t	time;		/* total running time (nanoseconds) */
+	int state;		/* thread state */
+	int policy;		/* scheduling policy */
+	int prio;		/* current priority */
+	int baseprio;		/* base priority */
+	int timeleft;		/* remaining nanoseconds to run */
+	uint_fast64_t time;	/* total running time (nanoseconds) */
 	event *slpevt;		/* sleep event */
-	int		slpret;		/* sleep result code */
+	int slpret;		/* sleep result code */
 	timer timeout;		/* thread timer */
-	k_sigset_t	sig_pending;	/* bitmap of pending signals */
-	k_sigset_t	sig_blocked;	/* bitmap of blocked signals */
-	void           *kstack;		/* base address of kernel stack */
-	int	       *clear_child_tid;/* clear & futex_wake this on exit */
+	k_sigset_t sig_pending;	/* bitmap of pending signals */
+	k_sigset_t sig_blocked;	/* bitmap of blocked signals */
+	void *kstack;		/* base address of kernel stack */
+	int *clear_child_tid;	/* clear & futex_wake this on exit */
 	context ctx;		/* machine specific context */
-	int		errno_storage;	/* error number */
+	int errno_storage;	/* error number */
 #if defined(CONFIG_DEBUG)
-	int		mutex_locks;	/* mutex lock counter */
-	int		spinlock_locks;	/* spinlock lock counter */
-	int		rwlock_locks;	/* rwlock lock counter */
+	int mutex_locks;	/* mutex lock counter */
+	int spinlock_locks;	/* spinlock lock counter */
+	int rwlock_locks;	/* rwlock lock counter */
 #endif
 };
 
@@ -96,18 +96,18 @@ struct thread {
 /*
  * Normal threads
  */
-thread  *thread_cur();
-bool		thread_valid(thread *);
+thread *thread_cur();
+bool thread_valid(thread *);
 int thread_createfor(task *, as *, thread **, void *, long, void (*)(), long);
-int	        thread_name(thread *, const char *);
-int		thread_id(thread *);
-thread  *thread_find(int);
-void	        thread_terminate(thread *);
-void		thread_zombie(thread *);
+int thread_name(thread *, const char *);
+int thread_id(thread *);
+thread *thread_find(int);
+void thread_terminate(thread *);
+void thread_zombie(thread *);
 [[noreturn]] void thread_idle();
-void	        thread_dump();
-void	        thread_check();
-void	        thread_init();
+void thread_dump();
+void thread_check();
+void thread_init();
 
 /*
  * Kernel threads

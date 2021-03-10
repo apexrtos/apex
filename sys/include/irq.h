@@ -39,10 +39,10 @@ struct irq;
 #define INT_CONTINUE	2	/* continue processing (Request IST) */
 
 irq *irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
-		       void (*ist)(int, void *), void *data);
-void	    irq_detach(irq *);
-int	    irq_disable();
-void	    irq_restore(int);
-void	    irq_dump();
-void	    irq_handler(int);
-void	    irq_init();
+		void (*ist)(int, void *), void *data);
+void irq_detach(irq *);
+int irq_disable();
+void irq_restore(int);
+void irq_dump();
+void irq_handler(int);
+void irq_init();

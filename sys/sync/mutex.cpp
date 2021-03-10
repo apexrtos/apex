@@ -55,8 +55,8 @@
 struct mutex_private {
 	std::atomic_intptr_t owner; /* owner thread locking this mutex */
 	spinlock lock;		    /* lock to protect struct mutex contents */
-	unsigned count;		/* counter for recursive lock */
-	struct event event;	/* event */
+	unsigned count;		    /* counter for recursive lock */
+	struct event event;	    /* event */
 };
 
 static_assert(sizeof(mutex_private) == sizeof(mutex));

@@ -40,38 +40,38 @@ struct thread;
  */
 struct dpc {
 	queue link;		/* Linkage on DPC queue */
-	int		state;		/* DPC_* */
-	void	      (*func)(void *);	/* Callback routine */
-	void	       *arg;		/* Argument to pass */
+	int state;		/* DPC_* */
+	void (*func)(void *);	/* Callback routine */
+	void *arg;		/* Argument to pass */
 };
 
 /*
  * Scheduler interface
  */
 extern "C" void sch_switch();
-thread  *sch_active();
-unsigned	sch_wakeup(event *, int);
-thread  *sch_wakeone(event *);
-thread  *sch_requeue(event *, event *);
-int		sch_prepare_sleep(event *, uint_fast64_t);
-int		sch_continue_sleep();
-void		sch_cancel_sleep();
-void	        sch_unsleep(thread *, int);
-void	        sch_signal(thread *);
-void	        sch_suspend(thread *);
-void	        sch_resume(thread *);
-void	        sch_suspend_resume(thread *, thread *);
-void	        sch_elapse(uint_fast32_t);
-void	        sch_start(thread *);
-void	        sch_stop(thread *);
-bool		sch_testexit();
-void	        sch_lock();
-void	        sch_unlock();
-int		sch_locks();
-int		sch_getprio(thread *);
-void		sch_setprio(thread *, int, int);
-int		sch_getpolicy(thread *);
-int		sch_setpolicy(thread *, int);
-void	        sch_dpc(dpc *, void (*)(void *), void *);
-void	        sch_dump();
-void	        sch_init();
+thread *sch_active();
+unsigned sch_wakeup(event *, int);
+thread *sch_wakeone(event *);
+thread *sch_requeue(event *, event *);
+int sch_prepare_sleep(event *, uint_fast64_t);
+int sch_continue_sleep();
+void sch_cancel_sleep();
+void sch_unsleep(thread *, int);
+void sch_signal(thread *);
+void sch_suspend(thread *);
+void sch_resume(thread *);
+void sch_suspend_resume(thread *, thread *);
+void sch_elapse(uint_fast32_t);
+void sch_start(thread *);
+void sch_stop(thread *);
+bool sch_testexit();
+void sch_lock();
+void sch_unlock();
+int sch_locks();
+int sch_getprio(thread *);
+void sch_setprio(thread *, int, int);
+int sch_getpolicy(thread *);
+int sch_setpolicy(thread *, int);
+void sch_dpc(dpc *, void (*)(void *), void *);
+void sch_dump();
+void sch_init();

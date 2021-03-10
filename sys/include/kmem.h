@@ -31,8 +31,8 @@
 
 #include <types.h>
 
-void   *kmem_alloc(size_t, long mem_attr);
-void	kmem_free(void *);
-void	kmem_init();
-void	kmem_check();
-void	kmem_dump();
+void *kmem_alloc(size_t, long mem_attr);
+void kmem_free(void *);
+void kmem_init();
+void kmem_check();
+void kmem_dump();

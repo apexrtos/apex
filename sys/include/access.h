@@ -7,35 +7,35 @@ struct as;
 /*
  * Memory access checking
  */
-ssize_t	u_strnlen(const char *, size_t);
-ssize_t	u_arraylen(const void *const *, size_t);
-bool	u_strcheck(const char *, size_t);
-bool	u_access_ok(const void *, size_t, int);
-bool	u_access_okfor(as *, const void *, size_t, int);
-bool	k_access_ok(const void *, size_t, int);
+ssize_t u_strnlen(const char *, size_t);
+ssize_t u_arraylen(const void *const *, size_t);
+bool u_strcheck(const char *, size_t);
+bool u_access_ok(const void *, size_t, int);
+bool u_access_okfor(as *, const void *, size_t, int);
+bool k_access_ok(const void *, size_t, int);
 
 /*
  * User access locking
  */
-int	u_access_begin();
-int	u_access_begin_interruptible();
-void	u_access_end();
-void	u_access_suspend();
-int	u_access_resume(const void *, size_t, int);
-bool	u_access_continue(const void *, size_t, int);
+int u_access_begin();
+int u_access_begin_interruptible();
+void u_access_end();
+void u_access_suspend();
+int u_access_resume(const void *, size_t, int);
+bool u_access_continue(const void *, size_t, int);
 
 /*
  * User access fault detection
  */
-bool	u_fault();
-void	u_fault_clear();
+bool u_fault();
+void u_fault_clear();
 
 /*
  * Address validation
  */
-bool	k_address(const void *);
-bool	u_address(const void *);
-bool	u_addressfor(const as *, const void *);
+bool k_address(const void *);
+bool u_address(const void *);
+bool u_addressfor(const as *, const void *);
 
 namespace a {
 

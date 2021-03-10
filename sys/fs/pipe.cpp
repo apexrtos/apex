@@ -45,12 +45,12 @@ static char pipe_id;
  * pipe_data
  */
 struct pipe_data {
-	struct cond  cond;	    /* condition variable for this pipe */
-	size_t	     read_fds;	    /* number of fd open for reading */
-	size_t	     write_fds;	    /* number of fd open for writing */
-	size_t	     wr;	    /* write bytes */
-	size_t	     rd;	    /* read bytes */
-	std::byte *buf;	    /* pipe data buffer */
+	struct cond cond;	    /* condition variable for this pipe */
+	size_t read_fds;	    /* number of fd open for reading */
+	size_t write_fds;	    /* number of fd open for writing */
+	size_t wr;		    /* write bytes */
+	size_t rd;		    /* read bytes */
+	std::byte *buf;		    /* pipe data buffer */
 };
 
 /*

@@ -589,7 +589,7 @@ sc_setitimer(int timer, const k_itimerval *n, k_itimerval *o)
 			tmp.tv_sec = n->it_interval.tv_sec;
 			tmp.tv_usec = n->it_interval.tv_usec;
 			timer_callout(&t->itimer_real, ns, tv_to_ns(tmp),
-				     itimer_alarm, t);
+				      itimer_alarm, t);
 		}
 		break;
 	}

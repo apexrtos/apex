@@ -48,30 +48,30 @@ struct vnode;
  * Device I/O table
  */
 struct devio {
-	int	(*open)(file *);
-	int	(*close)(file *);
-	ssize_t	(*read)(file *, const iovec *, size_t, off_t);
-	ssize_t	(*write)(file *, const iovec *, size_t, off_t);
-	int	(*seek)(file *, off_t, int);
-	int	(*ioctl)(file *, u_long, void *);
+	int (*open)(file *);
+	int (*close)(file *);
+	ssize_t (*read)(file *, const iovec *, size_t, off_t);
+	ssize_t (*write)(file *, const iovec *, size_t, off_t);
+	int (*seek)(file *, off_t, int);
+	int (*ioctl)(file *, u_long, void *);
 };
 
 /*
  * Device structure
  */
 struct device {
-	unsigned long	    busy;	/* device busy count */
+	unsigned long busy;		/* device busy count */
 	const struct devio *devio;	/* device i/o table */
-	void		   *info;	/* device specific info */
-	struct vnode	   *vnode;	/* vnode associated with device */
-	int		    flags;	/* device characteristics */
-	char		    name[16];	/* name of device */
-	list link;		    /* linkage on device list */
+	void *info;			/* device specific info */
+	struct vnode *vnode;		/* vnode associated with device */
+	int flags;			/* device characteristics */
+	char name[16];			/* name of device */
+	list link;			/* linkage on device list */
 };
 
-device  *device_create(const devio *, const char *, int, void *);
-device  *device_reserve(const char *, bool indexed);
-void		device_attach(device *, const devio *, int, void *);
-void		device_hide(device *);
-bool		device_busy(device *);
-void		device_destroy(device *);
+device *device_create(const devio *, const char *, int, void *);
+device *device_reserve(const char *, bool indexed);
+void device_attach(device *, const devio *, int, void *);
+void device_hide(device *);
+bool device_busy(device *);
+void device_destroy(device *);
