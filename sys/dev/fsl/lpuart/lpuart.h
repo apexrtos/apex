@@ -1,13 +1,78 @@
 #pragma once
 
 /*
- * Device driver for freescale LPUART generally found on imx processors
- *
- * Kernel entry points
+ * Hardware abstraction for Freescale LPUART
  */
 
 #include <cstddef>
-#include <termios.h>
+#include <optional>
 
-void fsl_lpuart_early_init(unsigned long base, unsigned long clock, tcflag_t);
-void fsl_lpuart_early_print(unsigned long base, const char *, size_t);
+namespace fsl {
+
+class lpuart {
+public:
+	lpuart(unsigned long base);
+
+	enum class DataBits {
+		Eight,
+		Nine,
+	};
+
+	enum class StopBits {
+		One,
+		Two,
+	};
+
+	enum class Parity {
+		Disabled,
+		Even,
+		Odd,
+	};
+
+	enum class Direction {
+		Tx,
+		RxTx,
+	};
+
+	enum class Interrupts {
+		Disabled,
+		Enabled,
+	};
+
+	struct dividers {
+		unsigned sbr;
+		unsigned osr;
+	};
+
+	void reset();
+	void configure(const dividers &, DataBits db, Parity p, StopBits sb,
+		       Direction dir, Interrupts ints);
+	void txint_disable();
+	void tcint_disable();
+	void txints_enable();
+	void flush(int io);
+	bool tx_complete();
+	bool overrun();
+	void clear_overrun();
+	void putch_polled(const char c);
+	char getch() const;
+	void putch(const char c);
+	std::size_t txcount() const;
+	std::size_t rxcount() const;
+	std::size_t txfifo_size() const;
+	std::size_t rxfifo_size() const;
+
+	static std::optional<dividers>
+	calculate_dividers(long clock, long speed);
+
+private:
+	struct regs;
+	lpuart(lpuart &&) = delete;
+	lpuart(const lpuart &) = delete;
+	lpuart &operator=(lpuart &&) = delete;
+	lpuart &operator=(const lpuart&) = delete;
+
+	regs *const r_;
+};
+
+}

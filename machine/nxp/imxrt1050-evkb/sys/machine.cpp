@@ -15,7 +15,7 @@
 #include <cpu/nxp/imxrt10xx/pmu.h>
 #include <cpu/nxp/imxrt10xx/src.h>
 #include <debug.h>
-#include <dev/fsl/lpuart/lpuart.h>
+#include <dev/fsl/lpuart/early.h>
 #include <interrupt.h>
 #include <page.h>
 #include <timer.h>
@@ -183,11 +183,11 @@ early_console_init()
 		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
 	}}.r);
 
-	fsl_lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
+	fsl::lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
 }
 
 void
 early_console_print(const char *s, size_t len)
 {
-	fsl_lpuart_early_print(LPUART1, s, len);
+	fsl::lpuart_early_print(LPUART1, s, len);
 }

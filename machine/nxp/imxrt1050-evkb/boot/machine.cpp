@@ -5,7 +5,7 @@
 #include <cpu/nxp/imxrt10xx/dcdc.h>
 #include <cpu/nxp/imxrt10xx/iomuxc.h>
 #include <cpu/nxp/imxrt10xx/semc.h>
-#include <sys/dev/fsl/lpuart/regs.h>
+#include <sys/dev/fsl/lpuart/early.h>
 #include <sys/include/arch/mmio.h>
 
 #if defined(CONFIG_BOOT_CONSOLE)
@@ -51,33 +51,18 @@ machine_setup()
 		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
 	}}.r);
 
-	lpuart_regs *const u = (lpuart_regs *)LPUART1;
-
-	/* configure for 115200 baud */
-	write32(&u->BAUD, (lpuart_baud){{
-		.SBR = 8,
-		.SBNS = 0, /* one stop bit */
-		.OSR = 25, /* baud = 24M / (SBR * (OSR + 1) = 115384, 0.16% error */
-	}}.r);
-	write32(&u->CTRL, (lpuart_ctrl){{
-		.PE = 0, /* parity disabled */
-		.M = 0, /* 8 bit */
-		.TE = 1, /* transmitter enabled */
-	}}.r);
+	fsl::lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
 #endif
 }
 
 /*
- * Print one chracter
+ * Print a string
  */
 void
-machine_putc(int c)
+machine_print(const char *s, size_t len)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
-	lpuart_regs *const u = (lpuart_regs *)LPUART1;
-
-	while (!read32(&u->STAT).TDRE);
-	write32(&u->DATA, c);
+	fsl::lpuart_early_print(LPUART1, s, len);
 #endif
 }
 
