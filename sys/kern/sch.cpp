@@ -884,17 +884,17 @@ static void
 dpc_thread(void *unused_arg)
 {
 	queue *q;
-	dpc *dpc;
+	dpc *d;
 
 	for (;;) {
 		interrupt_disable();
 		while (!queue_empty(&dpcq)) {
 			q = dequeue(&dpcq);
-			dpc = queue_entry(q, dpc, link);
-			dpc->state = DPC_FREE;
+			d = queue_entry(q, dpc, link);
+			d->state = DPC_FREE;
 			/* cache data before interrupt_enable()  */
-			void (*func)(void *) = dpc->func;
-			void *arg = dpc->arg;
+			void (*func)(void *) = d->func;
+			void *arg = d->arg;
 
 			/*
 			 * Call DPC routine.
