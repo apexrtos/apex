@@ -108,20 +108,20 @@ task_write_lock(task *t)
  * fp_ptr - get file pointer from stored file
  */
 static file *
-fp_ptr(uintptr_t file)
+fp_ptr(uintptr_t f)
 {
-	if (file == FP_RESERVED)
+	if (f == FP_RESERVED)
 		return NULL;
-	return (file *)(file & -4);
+	return (file *)(f & -4);
 }
 
 /*
  * fp_flags - get fd flags from stored file
  */
 static int
-fp_flags(uintptr_t file)
+fp_flags(uintptr_t f)
 {
-	return file & 3;
+	return f & 3;
 }
 
 /*
