@@ -394,7 +394,7 @@ device_create(const devio *io, const char *name, int flags, void *info)
 	size_t len;
 
 	len = strlen(name);
-	if (len == 0 || len >= ARRAY_SIZE(dev->name))	/* Invalid name? */
+	if (len == 0 || len >= ARRAY_SIZE(((device *)0)->name))	/* Invalid name? */
 		return 0;
 
 	spinlock_lock(&device_list_lock);
@@ -429,7 +429,7 @@ device *
 device_reserve(const char *name, bool indexed)
 {
 	device *dev;
-	char namei[ARRAY_SIZE(dev->name)];
+	char namei[ARRAY_SIZE(((device *)0)->name)];
 
 	if (!indexed)
 		return device_create(NULL, name, 0, NULL);
