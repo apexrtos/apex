@@ -54,7 +54,7 @@ dequeue(queue *head)
 	queue *item;
 
 	if (head->next == head)
-		return NULL;
+		return nullptr;
 	item = head->next;
 	item->next->prev = head;
 	head->next = item->next;

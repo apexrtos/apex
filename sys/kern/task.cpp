@@ -162,7 +162,7 @@ task_create(task *parent, int vm_option, task **child)
 	/*
 	 * Allocate task
 	 */
-	if ((task = (task *)malloc(sizeof(*task))) == NULL) {
+	if (!(task = (task *)malloc(sizeof(*t)))) {
 		err = DERR(-ENOMEM);
 		goto out;
 	}
@@ -353,7 +353,7 @@ task_path(task *t, const char *path)
 		goto out;
 	}
 	if (!task->path || strcmp(path, task->path)) {
-		if ((copy = strdup(path)) == NULL) {
+		if (!(copy = strdup(path))) {
 			err = DERR(-ENOMEM);
 			goto out;
 		}

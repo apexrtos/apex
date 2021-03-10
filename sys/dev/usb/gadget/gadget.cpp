@@ -125,5 +125,5 @@ usb_gadget_init()
 	static constinit devio io{
 		.ioctl = gadget_ioctl,
 	};
-	device_create(&io, "usbgadget", DF_CHR, NULL);
+	device_create(&io, "usbgadget", DF_CHR, nullptr);
 }

@@ -111,7 +111,7 @@ static file *
 fp_ptr(uintptr_t f)
 {
 	if (f == FP_RESERVED)
-		return NULL;
+		return nullptr;
 	return (file *)(f & -4);
 }
 
@@ -140,9 +140,9 @@ task_getfp_unlocked(task *t, int fd)
 	if (fd == AT_FDCWD)
 		fp = t->cwdfp;
 	else if ((size_t)fd >= ARRAY_SIZE(t->file))
-		return NULL;
+		return nullptr;
 	else if (!(fp = fp_ptr(t->file[fd])))
-		return NULL;
+		return nullptr;
 
 	++fp->f_count;
 
@@ -295,7 +295,7 @@ lookup_v(vnode *vp, const char *path, vnode **vpp,
 	if (*path == '/' && vp->v_parent) {
 		/* absolute path */
 		vput(vp);
-		if (!(vp = vn_lookup(NULL, "", 0)))
+		if (!(vp = vn_lookup(nullptr, "", 0)))
 			return DERR(-EIO);
 		++path;
 	}
@@ -594,8 +594,8 @@ fs_openfp(task *t, const int dirfd, const char *path, int flags,
 	const char *node;
 	int err;
 	size_t node_len;
-	file *fp = NULL;
-	vnode *vp = NULL;
+	file *fp = nullptr;
+	vnode *vp = nullptr;
 
 	vdbgsys("fs_openfp: path=%s flags=%x mode=%x\n", path, flags, mode);
 
@@ -625,7 +625,7 @@ fs_openfp(task *t, const int dirfd, const char *path, int flags,
 			if ((err = VOP_MKNOD(vp, node, node_len, flags, mode)))
 				goto out;
 			/* lookup newly created file */
-			if ((err = lookup_v(vp, node, &nvp, NULL, NULL, flags, 0))) {
+			if ((err = lookup_v(vp, node, &nvp, nullptr, nullptr, flags, 0))) {
 				vput(vp);
 				goto out;
 			}
@@ -809,7 +809,7 @@ fs_init()
 	vnode_init();
 	semaphore_init(&exit_sem);
 
-	kthread_create(&fs_thread, NULL, PRI_KERN_HIGH, "fs", MA_NORMAL);
+	kthread_create(&fs_thread, nullptr, PRI_KERN_HIGH, "fs", MA_NORMAL);
 
 	/*
 	 * Initialize each file system.
@@ -830,7 +830,7 @@ fs_kinit()
 	task *t = &kern_task;
 	vnode *vp;
 
-	if (!(vp = vn_lookup(NULL, "", 0)))
+	if (!(vp = vn_lookup(nullptr, "", 0)))
 		panic("vn_lookup");
 
 	/* create file structure */
@@ -1080,7 +1080,7 @@ vn_open(int fd, int flags)
 	file *fp;
 
 	if (!(fp = task_file(t, fd)))
-		return NULL;
+		return nullptr;
 
 	vnode *vp = fp->f_vnode;
 
@@ -1088,7 +1088,7 @@ vn_open(int fd, int flags)
 	 * fd was not opened with compatible flags */
 	if (fp->f_data || (fp->f_flags & flags) != flags) {
 		putfp(fp);
-		return NULL;
+		return nullptr;
 	}
 
 	vref(vp);
@@ -1109,7 +1109,7 @@ utimensat(int dirfd, const char *path, const timespec *times,
 	vdbgsys("utimensat: dirfd=%d path=%s flags=%x\n",
 	    dirfd, path, flags);
 
-	if ((err = lookup_t(task_cur(), dirfd, path, &vp, NULL, NULL,
+	if ((err = lookup_t(task_cur(), dirfd, path, &vp, nullptr, nullptr,
 	    flags & AT_SYMLINK_NOFOLLOW ? O_NOFOLLOW : 0)))
 		return err;
 
@@ -1436,7 +1436,7 @@ vn_preadv(vnode *vp, const iovec *iov, int count, off_t offset)
 		.f_flags = O_RDONLY,
 		.f_count = 99,
 		.f_offset = 0,
-		.f_data = NULL,
+		.f_data = nullptr,
 		.f_vnode = vp,
 	};
 
@@ -1670,7 +1670,7 @@ fstatat(int dirfd, const char *path, struct stat *st, int flags)
 	vdbgsys("fstatat: dirfd=%d path=%s st=%p flags=%x\n",
 	    dirfd, path, st, flags);
 
-	if ((err = lookup_t(task_cur(), dirfd, path, &vp, NULL, NULL,
+	if ((err = lookup_t(task_cur(), dirfd, path, &vp, nullptr, nullptr,
 	    flags & AT_SYMLINK_NOFOLLOW ? O_NOFOLLOW : 0)))
 		return err;
 
@@ -1799,7 +1799,7 @@ faccessat(int dirfd, const char *path, int mode, int flags)
 
 	vdbgsys("fs_access: path=%s\n", path);
 
-	if ((err = lookup_t(task_cur(), dirfd, path, &vp, NULL, NULL, 0)))
+	if ((err = lookup_t(task_cur(), dirfd, path, &vp, nullptr, nullptr, 0)))
 		return err;
 
 	if (((mode & X_OK) && (vp->v_mode & 0111) == 0) ||
@@ -2033,7 +2033,7 @@ unlinkat(int dirfd, const char *path, int flags)
 
 	vdbgsys("unlinkat dirfd=%d path=%s flags=%x\n", dirfd, path, flags);
 
-	if ((err = lookup_t(task_cur(), dirfd, path, &vp, NULL, NULL, O_NOFOLLOW)))
+	if ((err = lookup_t(task_cur(), dirfd, path, &vp, nullptr, nullptr, O_NOFOLLOW)))
 		return err;
 
 	if (mount_readonly(vp)) {
@@ -2199,7 +2199,7 @@ statfs(const char *path, struct statfs *stf)
 
 	vdbgsys("statfs path=%s stf=%p\n", path, stf);
 
-	if ((err = lookup_t(task_cur(), AT_FDCWD, path, &vp, NULL, NULL, 0)))
+	if ((err = lookup_t(task_cur(), AT_FDCWD, path, &vp, nullptr, nullptr, 0)))
 		return err;
 
 	err = VFS_STATFS(vp->v_mount, stf);
@@ -2442,7 +2442,7 @@ renameat(int fromdirfd, const char *from, int todirfd, const char *to)
 	vdbgsys("renameat fromdirfd=%d from=%s todirfd=%d to=%s\n",
 	    fromdirfd, from, todirfd, to);
 
-	if ((err = lookup_t(task_cur(), fromdirfd, from, &fvp, NULL, NULL, O_NOFOLLOW)))
+	if ((err = lookup_t(task_cur(), fromdirfd, from, &fvp, nullptr, nullptr, O_NOFOLLOW)))
 		return err;
 
 	if (fvp->v_mount->m_flags & MS_RDONLY) {
@@ -2560,7 +2560,7 @@ fchmodat(int dirfd, const char *path, mode_t mode, int flags)
 	vdbgsys("fchmodat dirfd=%d path=%s mode=0%03o flags=%x\n",
 	    dirfd, path, mode, flags);
 
-	if ((err = lookup_t(task_cur(), dirfd, path, &vp, NULL, NULL,
+	if ((err = lookup_t(task_cur(), dirfd, path, &vp, nullptr, nullptr,
 	    flags & AT_SYMLINK_NOFOLLOW ? O_NOFOLLOW : 0)))
 		return err;
 
@@ -2612,7 +2612,7 @@ fchownat(int dirfd, const char *path, uid_t uid, gid_t gid, int flags)
 	vdbgsys("fchownat dirfd=%d path=%s uid=%d gid=%d flags=%x\n",
 	    dirfd, path, uid, gid, flags);
 
-	if ((err = lookup_t(task_cur(), dirfd, path, &vp, NULL, NULL,
+	if ((err = lookup_t(task_cur(), dirfd, path, &vp, nullptr, nullptr,
 	    flags & AT_SYMLINK_NOFOLLOW ? O_NOFOLLOW : 0)))
 		return err;
 

@@ -142,5 +142,5 @@ fsl_lpuart_init(const fsl_lpuart_desc *d)
 	    nullptr, fproc, new lpuart_inst{d});
 	if (tp > (void *)-4096UL)
 		panic("tty_create");
-	irq_attach(d->rx_tx_int, d->ipl, 0, isr, NULL, tp);
+	irq_attach(d->rx_tx_int, d->ipl, 0, isr, nullptr, tp);
 }

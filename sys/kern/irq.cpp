@@ -98,12 +98,12 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 {
 	irq *i;
 
-	assert(isr != NULL);
+	assert(isr);
 	assert(vector < CONFIG_IRQS);
 	assert(!interrupt_running());
 
-	if ((i = (irq *)kmem_alloc(sizeof(*i), MA_FAST)) == NULL)
-		return NULL;
+	if (!(i = (irq *)kmem_alloc(sizeof(*i), MA_FAST)))
+		return nullptr;
 
 	memset(i, 0, sizeof(*i));
 	i->vector = vector;
@@ -111,26 +111,26 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 	i->ist = ist;
 	i->data = data;
 
-	if (ist != NULL) {
+	if (ist) {
 		/*
 		 * Create a new thread for IST.
 		 */
 		i->thread = kthread_create(&irq_thread, i,
 		    interrupt_to_ist_priority(prio), "ist", MA_FAST);
-		if (i->thread == NULL) {
+		if (!i->thread) {
 			kmem_free(i);
-			return NULL;
+			return nullptr;
 		}
 		event_init(&i->istevt, "interrupt", event::ev_SLEEP);
 	}
 
 	const int s = spinlock_lock_irq_disable(&lock);
-	if (irq_table[vector] != NULL) {
+	if (irq_table[vector]) {
 		spinlock_unlock_irq_restore(&lock, s);
 		thread_terminate(i->thread);
 		kmem_free(i);
 		dbg("IRQ%d BUSY\n", vector);
-		return NULL;
+		return nullptr;
 	}
 	irq_table[vector] = i;
 	interrupt_setup(vector, mode);
@@ -153,10 +153,10 @@ irq_detach(irq *i)
 
 	const int s = spinlock_lock_irq_disable(&lock);
 	interrupt_mask(i->vector);
-	irq_table[i->vector] = NULL;
+	irq_table[i->vector] = nullptr;
 	spinlock_unlock_irq_restore(&lock, s);
 
-	if (i->thread != NULL)
+	if (i->thread)
 		thread_terminate(i->thread);
 	kmem_free(i);
 }
@@ -261,7 +261,7 @@ irq_handler(int vector)
 	i = irq_table[vector];
 	spinlock_unlock_irq_restore(&lock, s);
 
-	if (i == NULL)
+	if (!i)
 		return;		/* Ignore stray interrupt */
 	assert(i->isr);
 

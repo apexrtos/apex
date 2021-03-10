@@ -95,10 +95,10 @@ console_init(const char *dev, tcflag_t cflag)
 	syslog_output(console_start);
 	console_start();
 
-	if (!kthread_create(&console_thread, NULL, PRI_KERN_LOW, "console",
+	if (!kthread_create(&console_thread, nullptr, PRI_KERN_LOW, "console",
 	    MA_NORMAL))
 		panic("console_init");
 
-	if (!device_create(&io, "console", DF_CHR, NULL))
+	if (!device_create(&io, "console", DF_CHR, nullptr))
 		panic("console_init");
 }

@@ -96,6 +96,6 @@ arm_mps2_uart_init(const arm_mps2_uart_desc *d)
 	    nullptr, nullptr, reinterpret_cast<void *>(d->base));
 	if (tp > (void *)-4096UL)
 		panic("tty_create");
-	irq_attach(d->rx_int, d->ipl, 0, rx_isr, NULL, tp);
-	irq_attach(d->tx_int, d->ipl, 0, tx_isr, NULL, tp);
+	irq_attach(d->rx_int, d->ipl, 0, rx_isr, nullptr, tp);
+	irq_attach(d->tx_int, d->ipl, 0, tx_isr, nullptr, tp);
 }

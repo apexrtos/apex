@@ -355,7 +355,7 @@ sch_wakeup(event *evt, int result)
 		q = dequeue(&evt->sleepq);
 		th = queue_entry(q, thread, link);
 		th->slpret = result;
-		th->slpevt = NULL;
+		th->slpevt = nullptr;
 		th->state &= ~TH_SLEEP;
 		timer_stop(&th->timeout);
 		if (th != active_thread)
@@ -380,7 +380,7 @@ thread *
 sch_wakeone(event *evt)
 {
 	queue *head, *q;
-	thread *top = NULL, *th;
+	thread *top = nullptr, *th;
 
 	const int s = irq_disable();
 	head = &evt->sleepq;
@@ -399,7 +399,7 @@ sch_wakeone(event *evt)
 		}
 		queue_remove(&top->link);
 		top->slpret = 0;
-		top->slpevt = NULL;
+		top->slpevt = nullptr;
 		top->state &= ~TH_SLEEP;
 		timer_stop(&top->timeout);
 		if (th != active_thread)
@@ -530,7 +530,7 @@ sch_unsleep(thread *th, int result)
 	if (th->state & TH_SLEEP) {
 		queue_remove(&th->link);
 		th->slpret = result;
-		th->slpevt = NULL;
+		th->slpevt = nullptr;
 		th->state &= ~TH_SLEEP;
 		timer_stop(&th->timeout);
 		if (th != active_thread) {
@@ -588,7 +588,7 @@ sched_yield()
 void
 sch_suspend(thread *th)
 {
-	sch_suspend_resume(th, NULL);
+	sch_suspend_resume(th, nullptr);
 }
 
 /*
@@ -597,7 +597,7 @@ sch_suspend(thread *th)
 void
 sch_resume(thread *th)
 {
-	sch_suspend_resume(NULL, th);
+	sch_suspend_resume(nullptr, th);
 }
 
 /*
@@ -943,8 +943,8 @@ sch_init()
 	event_init(&dpc_event, "dpc", event::ev_SLEEP);
 
 	/* Create a DPC thread. */
-	th = kthread_create(dpc_thread, NULL, PRI_DPC, "dpc", MA_FAST);
-	if (th == NULL)
+	th = kthread_create(dpc_thread, nullptr, PRI_DPC, "dpc", MA_FAST);
+	if (!th)
 		panic("sch_init");
 
 	dbg("Time slice is %d msec\n", CONFIG_TIME_SLICE_MS);

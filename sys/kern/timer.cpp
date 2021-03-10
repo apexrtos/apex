@@ -451,8 +451,8 @@ timer_init()
 	event_init(&delay_event, "delay", event::ev_SLEEP);
 
 	/* Start timer thread */
-	th = kthread_create(&timer_thread, NULL, PRI_TIMER, "timer", MA_FAST);
-	if (th == NULL)
+	th = kthread_create(&timer_thread, nullptr, PRI_TIMER, "timer", MA_FAST);
+	if (!th)
 		panic("timer_init");
 }
 

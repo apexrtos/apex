@@ -79,12 +79,12 @@ thread_alloc(long mem_attr)
 	thread *th;
 	page_ptr stack;
 
-	if ((th = (thread *)kmem_alloc(sizeof(*th), MA_FAST)) == NULL)
-		return NULL;
+	if (!(th = (thread *)kmem_alloc(sizeof(*th), MA_FAST)))
+		return nullptr;
 
-	if ((stack = page_alloc(CONFIG_KSTACK_SIZE, mem_attr, th)) == NULL) {
+	if (!(stack = page_alloc(CONFIG_KSTACK_SIZE, mem_attr, th))) {
 		kmem_free(th);
-		return NULL;
+		return nullptr;
 	}
 	memset(th, 0, sizeof(*th));
 	th->kstack = static_cast<std::byte *>(phys_to_virt(stack.release()));
@@ -162,7 +162,7 @@ thread_createfor(task *task, as *as, thread **thp,
 
 	thread_reap_zombies();
 
-	if ((th = thread_alloc(mem_attr)) == NULL)
+	if (!(th = thread_alloc(mem_attr)))
 		return DERR(-ENOMEM);
 
 	*thp = th;
@@ -304,8 +304,8 @@ kthread_create(void (*entry)(void *), void *arg, int prio, const char *name,
 	 * If there is not enough core for the new thread,
 	 * just drop to panic().
 	 */
-	if ((th = thread_alloc(mem_attr)) == NULL)
-		return NULL;
+	if (!(th = thread_alloc(mem_attr)))
+		return nullptr;
 
 	strlcpy(th->name, name, ARRAY_SIZE(th->name));
 	th->task = &kern_task;
@@ -380,7 +380,7 @@ thread_dump()
 			    th->state & TH_ZOMBIE ? 'Z' : ' ',
 			    pol[th->policy], th->prio, th->baseprio,
 			    th->time / 1000000,
-			    th->slpevt != NULL ? th->slpevt->name : "-",
+			    th->slpevt ? th->slpevt->name : "-",
 			    task->path ?: "kernel");
 		}
 		i = list_next(i);

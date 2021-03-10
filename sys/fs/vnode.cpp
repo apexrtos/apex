@@ -151,7 +151,7 @@ vn_lookup(vnode *parent, const char *name, size_t len)
 		}
 	}
 	mutex_unlock(&vnode_mutex);
-	return NULL;		/* not found */
+	return nullptr;		/* not found */
 }
 
 /*
@@ -216,10 +216,10 @@ vget(struct mount *m, vnode *parent, const char *name, size_t len)
 	vdbgvn("vget: parent=%p name=%s len=%zu\n", parent, name, len);
 
 	if (!(vp = (vnode *)malloc(sizeof(vnode))))
-		return NULL;
+		return nullptr;
 	if (!(v_name = (char *)malloc(len + 1))) {
 		free(vp);
-		return NULL;
+		return nullptr;
 	}
 
 	strlcpy(v_name, name, len + 1);
@@ -237,7 +237,7 @@ vget(struct mount *m, vnode *parent, const char *name, size_t len)
 	if ((err = VFS_VGET(vp)) != 0) {
 		free(vp->v_name);
 		free(vp);
-		return NULL;
+		return nullptr;
 	}
 	vfs_busy(vp->v_mount);
 	vn_lock(vp);
@@ -266,7 +266,7 @@ vget_pipe()
 	vnode *vp;
 
 	if (!(vp = (vnode *)malloc(sizeof(vnode))))
-		return NULL;
+		return nullptr;
 
 	*vp = (vnode) {
 		.v_refcnt = 1,
@@ -315,7 +315,7 @@ vput(vnode *vp)
 		vfs_unbusy(vp->v_mount);
 	}
 	mutex_unlock(&vp->v_lock);
-	assert(mutex_owner(&vp->v_lock) == NULL);
+	assert(!mutex_owner(&vp->v_lock));
 	free(vp->v_name);
 	free(vp);
 
@@ -367,7 +367,7 @@ vgone(vnode *vp)
 
 	vfs_unbusy(vp->v_mount);
 	mutex_unlock(&vp->v_lock);
-	assert(mutex_owner(&vp->v_lock) == NULL);
+	assert(!mutex_owner(&vp->v_lock));
 	free(vp->v_name);
 	free(vp);
 }

@@ -170,12 +170,12 @@ boot_thread(void *arg)
 	 * Initialise filesystem.
 	 */
 	fs_init();
-	if (mount(NULL, "/", "ramfs", 0, NULL) < 0)
+	if (mount(nullptr, "/", "ramfs", 0, nullptr) < 0)
 		panic("failed to create root file system");
 	fs_kinit();
 	if (mkdir("/dev", 0) < 0)
 		panic("failed to create /dev directory");
-	if (mount(NULL, "/dev", "devfs", 0, NULL) < 0)
+	if (mount(nullptr, "/dev", "devfs", 0, nullptr) < 0)
 		panic("failed to mount /dev");
 
 	/*
@@ -195,7 +195,7 @@ boot_thread(void *arg)
 	/*
 	 * Mount /boot file system according to config options.
 	 */
-	if (mount(CONFIG_BOOTDEV, "/boot", CONFIG_BOOTFS, 0, NULL) < 0)
+	if (mount(CONFIG_BOOTDEV, "/boot", CONFIG_BOOTFS, 0, nullptr) < 0)
 		panic("failed to mount /boot");
 
 	/*

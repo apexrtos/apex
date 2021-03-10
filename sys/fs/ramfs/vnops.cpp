@@ -96,10 +96,10 @@ ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 	ramfs_node *np;
 
 	if (!(np = (ramfs_node *)malloc(sizeof(ramfs_node))))
-		return NULL;
+		return nullptr;
 	if (!(rn_name = (char *)malloc(name_len + 1))) {
 		free(np);
-		return NULL;
+		return nullptr;
 	}
 
 	memcpy(rn_name, name, name_len);
@@ -126,14 +126,14 @@ ramfs_add_node(ramfs_node *dnp, const char *name, size_t name_len, mode_t mode)
 	ramfs_node *np, *prev;
 
 	if (!(np = ramfs_allocate_node(name, name_len, mode)))
-		return NULL;
+		return nullptr;
 
 	/* Link to the directory list */
-	if (dnp->rn_child == NULL) {
+	if (!dnp->rn_child) {
 		dnp->rn_child = np;
 	} else {
 		prev = dnp->rn_child;
-		while (prev->rn_next != NULL)
+		while (prev->rn_next)
 			prev = prev->rn_next;
 		prev->rn_next = np;
 	}
@@ -145,7 +145,7 @@ ramfs_remove_node(ramfs_node *dnp, ramfs_node *np)
 {
 	ramfs_node *prev;
 
-	if (dnp->rn_child == NULL)
+	if (!dnp->rn_child)
 		return -ENOENT;
 
 	/* Unlink from the directory list */
@@ -154,7 +154,7 @@ ramfs_remove_node(ramfs_node *dnp, ramfs_node *np)
 	} else {
 		for (prev = dnp->rn_child; prev->rn_next != np;
 		     prev = prev->rn_next) {
-			if (prev->rn_next == NULL)
+			if (!prev->rn_next)
 				return -ENOENT;
 		}
 		prev->rn_next = np->rn_next;
@@ -194,7 +194,7 @@ ramfs_lookup(vnode *dvp, const char *name, size_t name_len, vnode *vp)
 		return -ENOENT;
 
 	found = 0;
-	for (np = dnp->rn_child; np != NULL; np = np->rn_next) {
+	for (np = dnp->rn_child; np; np = np->rn_next) {
 		if (np->rn_namelen == name_len &&
 		    memcmp(name, np->rn_name, name_len) == 0) {
 			found = 1;
@@ -223,13 +223,13 @@ ramfs_unlink(vnode *dvp, vnode *vp)
 	if (np->rn_child)
 		return -ENOTEMPTY;
 
-	if (np->rn_buf != NULL) {
+	if (np->rn_buf) {
 		if (np->rn_bufsize > PAGE_SIZE / 2)
 			page_free(virt_to_phys(np->rn_buf), np->rn_bufsize,
 				  &ramfs_id);
 		else
 			free(np->rn_buf);
-		np->rn_buf = NULL; /* incase remove_node fails */
+		np->rn_buf = nullptr; /* incase remove_node fails */
 		np->rn_bufsize = 0;
 		np->rn_size = 0;
 	}
@@ -244,13 +244,13 @@ ramfs_truncate(vnode *vp)
 	ramfs_node *np = (ramfs_node *)vp->v_data;
 
 	rfsdbg("truncate %s\n", vp->v_path);
-	if (np->rn_buf != NULL) {
+	if (np->rn_buf) {
 		if (np->rn_bufsize > PAGE_SIZE / 2)
 			page_free(virt_to_phys(np->rn_buf), np->rn_bufsize,
 				  &ramfs_id);
 		else
 			free(np->rn_buf);
-		np->rn_buf = NULL;
+		np->rn_buf = nullptr;
 		np->rn_bufsize = 0;
 		np->rn_size = 0;
 	}
@@ -308,7 +308,7 @@ ramfs_read_iov(file *fp, const iovec *iov, size_t count,
 static int
 ramfs_grow(ramfs_node *np, off_t new_size)
 {
-	void *new_buf = NULL;
+	void *new_buf = nullptr;
 
 	if (new_size <= np->rn_bufsize)
 		return 0;
@@ -451,16 +451,16 @@ ramfs_readdir(file *fp, dirent *buf, size_t len)
 	}
 
 	np = dnp->rn_child;
-	if (np == NULL)
+	if (!np)
 		goto out;
 
 	for (off_t i = 0; i != (fp->f_offset - 2); i++) {
 		np = np->rn_next;
-		if (np == NULL)
+		if (!np)
 			goto out;
 	}
 
-	while (np != NULL) {
+	while (np) {
 		if (dirbuf_add(&buf, &remain, 0, fp->f_offset,
 		    IFTODT(np->rn_mode), np->rn_name))
 			goto out;

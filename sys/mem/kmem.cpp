@@ -197,7 +197,7 @@ block_find(size_t size, unsigned type)
 			break;
 	}
 	if (i >= NR_BLOCK_LIST)
-		return NULL;
+		return nullptr;
 
 	n = list_first(&free_blocks[type][i]);
 	return list_entry(n, block_hdr, link);
@@ -249,7 +249,7 @@ kmem_alloc_internal(size_t size, unsigned type)
 		blk = &(pg->first_blk);
 		blk->magic = FREE_MAGIC;
 		blk->size = MAX_BLOCK_SIZE;
-		blk->pg_next = NULL;
+		blk->pg_next = nullptr;
 	}
 	/* Sanity check */
 	if (!PAGE_MAGIC_OK(pg) || !FREE_MAGIC_OK(blk))
@@ -302,7 +302,7 @@ kmem_alloc(size_t size, long mem_attr)
 
 	dbg("kmem_alloc: out of memory allocating %d\n", size);
 
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -321,7 +321,7 @@ void *
 calloc(size_t m, size_t n)
 {
 	if (n && m > SIZE_MAX/n)
-		return NULL;
+		return nullptr;
 	n *= m;
 	void *p = malloc(n);
 	if (p)
@@ -337,7 +337,7 @@ realloc(void *p, size_t size)
 {
 	if (!size) {
 		free(p);
-		return NULL;
+		return nullptr;
 	}
 
 	if (!p)
@@ -352,7 +352,7 @@ realloc(void *p, size_t size)
 
 	void *np = malloc(size);
 	if (!np)
-		return NULL;
+		return nullptr;
 
 	memcpy(np, p, MIN(size, blk->size));
 	free(p);
@@ -404,7 +404,7 @@ kmem_free(void *ptr)
 		 * No allocated block in this page.
 		 * Remove all blocks and deallocate this page.
 		 */
-		for (blk = &(pg->first_blk); blk != NULL; blk = blk->pg_next) {
+		for (blk = &(pg->first_blk); blk; blk = blk->pg_next) {
 			list_remove(&blk->link); /* Remove from free list */
 			blk->magic = 0;
 		}
@@ -444,7 +444,7 @@ kmem_check()
 			assert(k_address(pg));
 			assert(PAGE_MAGIC_OK(pg));
 
-			for (blk = &(pg->first_blk); blk != NULL; blk = blk->pg_next) {
+			for (blk = &(pg->first_blk); blk; blk = blk->pg_next) {
 				assert((void *)blk > (void *)pg);
 				assert((void *)blk < ((void *)pg + MAX_BLOCK_SIZE));
 				assert(ALLOC_MAGIC_OK(blk) || FREE_MAGIC_OK(blk));
@@ -495,7 +495,7 @@ kmem_dump()
 
 			info(" blocks:\n");
 
-			for (block_hdr *blk = &(pg->first_blk); blk != NULL;
+			for (block_hdr *blk = &(pg->first_blk); blk;
 			    blk = blk->pg_next) {
 				if ((void *)blk <= (void *)pg) {
 					info(" *** block starts before page %p\n", blk);

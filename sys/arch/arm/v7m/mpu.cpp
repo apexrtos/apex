@@ -24,7 +24,7 @@ static void
 clear_dynamic()
 {
 	stack = 0;
-	mapped_thread = NULL;
+	mapped_thread = nullptr;
 	fault_addr = 0;
 
 	const size_t regions = read32(&MPU->TYPE).DREGION;

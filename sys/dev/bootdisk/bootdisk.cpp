@@ -64,6 +64,6 @@ bootdisk_init(bootargs *args)
 
 	dbg("Bootdisk at %p (%uK bytes)\n", archive_addr, archive_size / 1024);
 
-	device *d = device_create(&io, "bootdisk0", DF_BLK, NULL);
+	device *d = device_create(&io, "bootdisk0", DF_BLK, nullptr);
 	assert(d);
 }

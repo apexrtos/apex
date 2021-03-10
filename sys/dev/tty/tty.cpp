@@ -457,7 +457,7 @@ tty::ioctl(file *f, u_long cmd, void *arg)
 		break;
 	}
 	case TCSBRK: {
-		if (arg == nullptr)
+		if (!arg)
 			return DERR(-ENOTSUP);
 		return tx_wait();
 	}

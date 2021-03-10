@@ -75,6 +75,6 @@ void
 null_init()
 {
 	/* Create device object */
-	device *d = device_create(&null_io, "null", DF_CHR, NULL);
+	device *d = device_create(&null_io, "null", DF_CHR, nullptr);
 	assert(d);
 }

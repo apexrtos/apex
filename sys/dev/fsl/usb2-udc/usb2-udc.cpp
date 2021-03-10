@@ -1317,5 +1317,5 @@ fsl_usb2_udc_init(const fsl_usb2_udc_desc *d)
 {
 	auto u = new fsl_usb2_udc{d->name, reinterpret_cast<regs *>(d->base)};
 	usb::gadget::udc::add(u);
-	irq_attach(d->irq, d->ipl, 0, isr, NULL, u);
+	irq_attach(d->irq, d->ipl, 0, isr, nullptr, u);
 }

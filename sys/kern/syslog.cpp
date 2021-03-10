@@ -251,7 +251,7 @@ syslog_printf(int level, const char *fmt, ...)
 int
 syslog_vprintf(int level, const char *fmt, va_list ap)
 {
-	int len = vsnprintf(NULL, 0, fmt, ap); /* get length */
+	int len = vsnprintf(nullptr, 0, fmt, ap); /* get length */
 	if (len < 0)
 		return len;
 
@@ -484,7 +484,7 @@ static int kmsg_close(file *file)
 	if (!kmsg)
 		return -EBADF;
 
-	file->f_data = NULL;
+	file->f_data = nullptr;
 	free(kmsg);
 	return 0;
 }
@@ -553,7 +553,7 @@ kmsg_write_iov(file *file, const iovec *iov, size_t count,
 	size_t iov_len = iov->iov_len;
 	/* REVISIT: assumes complete log level in first iov */
 	if (src[0] == '<') {
-		char *p = NULL;
+		char *p = nullptr;
 		unsigned int u;
 
 		u = strtoul(src + 1, &p, 10);
@@ -646,6 +646,6 @@ kmsg_init()
 	event_init(&log_wait, "kmsg_wait", event::ev_IO);
 
 	/* Create device object */
-	device *d = device_create(&kmsg_io, "kmsg", DF_CHR, NULL);
+	device *d = device_create(&kmsg_io, "kmsg", DF_CHR, nullptr);
 	assert(d);
 }

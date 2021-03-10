@@ -406,13 +406,13 @@ device_create(const devio *io, const char *name, int flags, void *info)
 			return 0;
 		}
 	}
-	if ((dev = (device *)malloc(sizeof(*dev))) == NULL) {
+	if (!(dev = (device *)malloc(sizeof(*dev)))) {
 		spinlock_unlock(&device_list_lock);
 		return 0;
 	}
 	strcpy(dev->name, name);
 	dev->flags = flags;
-	dev->vnode = NULL;
+	dev->vnode = nullptr;
 	dev->busy = 0;
 	dev->devio = io;
 	dev->info = info;
@@ -432,15 +432,15 @@ device_reserve(const char *name, bool indexed)
 	char namei[ARRAY_SIZE(((device *)0)->name)];
 
 	if (!indexed)
-		return device_create(NULL, name, 0, NULL);
+		return device_create(nullptr, name, 0, nullptr);
 
 	for (size_t i = 0; i < 100; ++i) {
 		snprintf(namei, ARRAY_SIZE(namei), "%s%d", name, i);
-		if ((dev = device_create(NULL, namei, 0, NULL)))
+		if ((dev = device_create(nullptr, namei, 0, nullptr)))
 			return dev;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -517,7 +517,7 @@ device_destroy(device *dev)
 
 	if (vp) {
 		vn_lock(vp);
-		vp->v_data = NULL;
+		vp->v_data = nullptr;
 		vn_unlock(vp);
 	}
 

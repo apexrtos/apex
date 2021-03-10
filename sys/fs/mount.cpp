@@ -78,7 +78,7 @@ fs_lookup(const char *name)
 			return fs;
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 /*
@@ -90,13 +90,13 @@ static int do_root_mount(struct mount *mp, unsigned long flags, const void *data
 	vnode *vp_root;
 
 	/* get root node */
-	if (!(vp_root = vget(mp, NULL, "", 0)))
+	if (!(vp_root = vget(mp, nullptr, "", 0)))
 		return DERR(-ENOMEM);
 	vp_root->v_flags = VROOT;
 	vp_root->v_mode = S_IFDIR;
 
 	/* configure mount point */
-	mp->m_covered = NULL;
+	mp->m_covered = nullptr;
 	mp->m_root = vp_root;
 
 	/* mount the file system */
@@ -121,7 +121,7 @@ static int do_mount(struct mount *mp, const char *dir, unsigned long flags,
 	int err;
 	vnode *vp_covered, *vp_root;
 
-	if ((err = lookup_t(task_cur(), AT_FDCWD, dir, &vp_covered, NULL, NULL, 0)))
+	if ((err = lookup_t(task_cur(), AT_FDCWD, dir, &vp_covered, nullptr, nullptr, 0)))
 		return err;
 
 	/* fail if not a directory */
@@ -283,7 +283,7 @@ umount2(const char *path, int flags)
 
 	vdbgsys("umount: path=%s\n", path);
 
-	if ((err = lookup_t(task_cur(), AT_FDCWD, path, &vp, NULL, NULL, 0)))
+	if ((err = lookup_t(task_cur(), AT_FDCWD, path, &vp, nullptr, nullptr, 0)))
 		return err;
 
 	/* can't unmount if nothing mounted */
