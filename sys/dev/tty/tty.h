@@ -52,7 +52,6 @@ tty *tty_create(const char *, long attr, size_t bufsiz, size_t bufmin,
 		       tty_tproc, tty_oproc, tty_iproc, tty_fproc, void *);
 void	    tty_destroy(tty *);
 void	   *tty_data(tty *);
-long	    tty_speed(tcflag_t);
 
 char	   *tty_rx_getbuf(tty *);
 void	    tty_rx_putbuf(tty *, char *, size_t);
