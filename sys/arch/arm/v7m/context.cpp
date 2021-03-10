@@ -183,7 +183,7 @@ context_init_kthread(context *ctx, void *v_kstack_top, void (*entry)(void *),
  */
 int
 context_init_uthread(context *child, as *as, void *v_kstack_top,
-		     void *v_ustack_top, void (*entry)(), long retval)
+		     void *v_ustack_top, void (*entry)(), long rval)
 {
 	context *parent = &thread_cur()->ctx;
 	bool shared_ustack = false;
@@ -268,7 +268,7 @@ context_init_uthread(context *child, as *as, void *v_kstack_top,
 	}
 
 	/* set syscall return value */
-	s->ef.r0 = retval;
+	s->ef.r0 = rval;
 
 	/* Loading an unaligned value from the stack into the PC on an
 	   exception return is UNPREDICTABLE. */
