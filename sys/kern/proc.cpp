@@ -36,12 +36,12 @@
  * Can be called under interrupt.
  */
 void
-proc_exit(task *task, int status, int signal)
+proc_exit(task *t, int status, int signal)
 {
 	list *head, *n;
 	thread *th;
 
-	if (task->state == PS_ZOMB)
+	if (t->state == PS_ZOMB)
 		return;
 
 	sch_lock();
@@ -49,7 +49,7 @@ proc_exit(task *task, int status, int signal)
 	/*
 	 * init is not allowed to die
 	 */
-	if (task == task_find(1))
+	if (t == task_find(1))
 		panic("init died");
 
 	/*
@@ -58,7 +58,7 @@ proc_exit(task *task, int status, int signal)
 	 */
 	task *child;
 	list_for_each_entry(child, &kern_task.link, link) {
-		if (child->parent == task) {
+		if (child->parent == t) {
 			child->parent = task_find(1);
 			child->vfork = 0;
 		}
@@ -67,34 +67,34 @@ proc_exit(task *task, int status, int signal)
 	/*
 	 * Stop task events
 	 */
-	timer_stop(&task->itimer_real);
+	timer_stop(&t->itimer_real);
 
 	/*
 	 * Set task as a zombie
 	 * FIXME: only if parent has not set the disposition of SIGCHLD
 	 * to SIG_IGN or the SA_NOCLDWAIT flag is set
 	 */
-	task->state = PS_ZOMB;
-	task->exitcode = (status & 0xff) << 8 | (signal & 0x7f);
+	t->state = PS_ZOMB;
+	t->exitcode = (status & 0xff) << 8 | (signal & 0x7f);
 
 	/*
 	 * Resume vfork thread if this process was vforked and didn't exec or
 	 * child process failed to run
 	 */
-	if (task->vfork)
-		sch_resume(task->vfork);
+	if (t->vfork)
+		sch_resume(t->vfork);
 
 	/*
 	 * Signal parent process
 	 */
-	sch_wakeone(&task->parent->child_event);
-	if (task->termsig)
-		sig_task(task->parent, task->termsig);
+	sch_wakeone(&t->parent->child_event);
+	if (t->termsig)
+		sig_task(t->parent, t->termsig);
 
 	/*
 	 * Terminate all threads in task
 	 */
-	head = &task->threads;
+	head = &t->threads;
 	for (n = list_first(head); n != head; n = list_next(n)) {
 		th = list_entry(n, thread, task_link);
 		thread_terminate(th);
@@ -105,7 +105,7 @@ proc_exit(task *task, int status, int signal)
 	/*
 	 * Notify filesystem of exit
 	 */
-	fs_exit(task);
+	fs_exit(t);
 }
 
 /*
@@ -131,7 +131,7 @@ pid_t
 sc_wait4(pid_t pid, int *ustatus, int options, rusage *rusage)
 {
 	int err, status;
-	task *task, *cur = task_cur();
+	task *t, *cur = task_cur();
 	pid_t cpid = 0;
 	int have_children;
 
@@ -141,8 +141,8 @@ sc_wait4(pid_t pid, int *ustatus, int options, rusage *rusage)
 again:
 	sch_lock();
 	have_children = 0;
-	list_for_each_entry(task, &kern_task.link, link) {
-		if (task->parent != cur)
+	list_for_each_entry(t, &kern_task.link, link) {
+		if (t->parent != cur)
 			continue;
 
 		have_children = 1;
@@ -155,19 +155,19 @@ again:
 			 * REVISIT(optimisation): we could optimise this case
 			 *                        by hoisting it from the search
 			 */
-			if (task_pid(task) == pid)
+			if (task_pid(t) == pid)
 				match = 1;
 		} else if (pid == 0) {
 			/*
 			 * Wait for a process who has same pgid.
 			 */
-			if (task->pgid == cur->pgid)
+			if (t->pgid == cur->pgid)
 				match = 1;
 		} else if (pid != -1) {
 			/*
 			 * Wait for a specific pgid.
 			 */
-			if (task->pgid == -pid)
+			if (t->pgid == -pid)
 				match = 1;
 		} else {
 			/*
@@ -180,20 +180,20 @@ again:
 			/*
 			 * Get the exit code.
 			 */
-			if (task->state == PS_STOP) {
-				cpid = task_pid(task);
-				status = task->exitcode;
+			if (t->state == PS_STOP) {
+				cpid = task_pid(t);
+				status = t->exitcode;
 				break;
-			} else if (task->state == PS_ZOMB) {
-				cpid = task_pid(task);
-				status = task->exitcode;
+			} else if (t->state == PS_ZOMB) {
+				cpid = task_pid(t);
+				status = t->exitcode;
 
 				/*
 				 * Wait for child threads to finish
 				 */
 				const k_sigset_t sig_mask = sig_block_all();
-				while (!list_empty(&task->threads)) {
-					sch_prepare_sleep(&task->thread_event, 0);
+				while (!list_empty(&t->threads)) {
+					sch_prepare_sleep(&t->thread_event, 0);
 					sch_unlock();
 					sch_continue_sleep();
 					sch_lock();
@@ -203,15 +203,15 @@ again:
 				/*
 				 * Free child resources
 				 */
-				list_remove(&task->link);
+				list_remove(&t->link);
 				sch_unlock();
-				fs_exit(task);
-				futexes_destroy(task_futexes(task));
-				as_modify_begin(task->as);
-				as_destroy(task->as);
-				task->magic = 0;
-				free(task->path);
-				free(task);
+				fs_exit(t);
+				futexes_destroy(task_futexes(t));
+				as_modify_begin(t->as);
+				as_destroy(t->as);
+				t->magic = 0;
+				free(t->path);
+				free(t);
 				sch_lock();
 				break;
 			}
@@ -297,18 +297,18 @@ sc_tgkill(pid_t pid, int tid, int sig)
 int
 setpgid(pid_t pid, pid_t pgid)
 {
-	task *task;
+	task *t;
 
 	if ((pid < 0) || (pgid < 0))
 		return DERR(-EINVAL);
 
 	sch_lock();
-	if (!(task = task_find(pid))) {
+	if (!(t = task_find(pid))) {
 		sch_unlock();
 		return DERR(-ESRCH);
 	}
 
-	pid = task_pid(task);
+	pid = task_pid(t);
 
 	if (pgid == 0)
 		pgid = pid;
@@ -319,7 +319,7 @@ setpgid(pid_t pid, pid_t pgid)
 		}
 	}
 
-	task->pgid = pgid;
+	t->pgid = pgid;
 
 	sch_unlock();
 	return 0;
@@ -334,19 +334,19 @@ setpgid(pid_t pid, pid_t pgid)
 pid_t
 getpgid(pid_t pid)
 {
-	task *task;
+	task *t;
 	pid_t pgid;
 
 	if (pid < 0)
 		return DERR(-EINVAL);
 
 	sch_lock();
-	if (!(task = task_find(pid))) {
+	if (!(t = task_find(pid))) {
 		sch_unlock();
 		return DERR(-ESRCH);
 	}
 
-	pgid = task->pgid;
+	pgid = t->pgid;
 	sch_unlock();
 
 	return pgid;
@@ -395,17 +395,17 @@ geteuid()
  */
 pid_t setsid()
 {
-	task *cur = task_cur();
-	pid_t pid = task_pid(cur);
+	task *t = task_cur();
+	pid_t pid = task_pid(t);
 
 	/*
 	 * setsid fails if pid is already a process group leader
 	 */
-	if (cur->pgid == pid)
+	if (t->pgid == pid)
 		return DERR(-EPERM);
 
-	cur->pgid = pid;
-	cur->sid = pid;
+	t->pgid = pid;
+	t->sid = pid;
 	return pid;
 }
 
@@ -415,19 +415,19 @@ pid_t setsid()
 pid_t
 getsid(pid_t pid)
 {
-	task *task;
+	task *t;
 	pid_t sid;
 
 	if (pid < 0)
 		return DERR(-EINVAL);
 
 	sch_lock();
-	if (!(task = task_find(pid))) {
+	if (!(t = task_find(pid))) {
 		sch_unlock();
 		return DERR(-ESRCH);
 	}
 
-	sid = task->sid;
+	sid = t->sid;
 	sch_unlock();
 
 	return sid;
@@ -467,41 +467,41 @@ kill(pid_t pid, int sig)
 	}
 
 	int err = 0;
-	task *task, *cur = task_cur();
+	task *t, *cur = task_cur();
 
 	sch_lock();
 	if (pid > 0) {
 		if ((pid != task_pid(cur)) && !task_capable(CAP_KILL))
 			err = DERR(-EPERM);
 		else {
-			if (!(task = task_find(pid)))
+			if (!(t = task_find(pid)))
 				err = DERR(-ESRCH);
 			else
-				err = sig_task(task, sig);
+				err = sig_task(t, sig);
 		}
 	} else if (pid == -1) {
 		if (!task_capable(CAP_KILL))
 			err = DERR(-EPERM);
 		else {
-			list_for_each_entry(task, &kern_task.link, link) {
-				if ((task_pid(task) > 1) &&
-				    ((err = sig_task(task, sig)) != 0))
+			list_for_each_entry(t, &kern_task.link, link) {
+				if ((task_pid(t) > 1) &&
+				    ((err = sig_task(t, sig)) != 0))
 					break;
 			}
 		}
 	} else if (pid == 0) {
-		list_for_each_entry(task, &kern_task.link, link) {
-			if ((task->pgid == cur->pgid) &&
-			    ((err = sig_task(task, sig)) != 0))
+		list_for_each_entry(t, &kern_task.link, link) {
+			if ((t->pgid == cur->pgid) &&
+			    ((err = sig_task(t, sig)) != 0))
 				break;
 		}
 	} else {
 		if ((cur->pgid != -pid) && !task_capable(CAP_KILL))
 			err = DERR(-EPERM);
 		else {
-			list_for_each_entry(task, &kern_task.link, link) {
-				if ((task->pgid == -pid) &&
-				    ((err = sig_task(task, sig)) != 0))
+			list_for_each_entry(t, &kern_task.link, link) {
+				if ((t->pgid == -pid) &&
+				    ((err = sig_task(t, sig)) != 0))
 					break;
 			}
 		}
