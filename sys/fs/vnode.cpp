@@ -204,7 +204,7 @@ vn_stat(vnode *vp, struct stat *st)
  * Returns locked vnode with reference count 1.
  */
 vnode *
-vget(struct mount *mount, vnode *parent, const char *name, size_t len)
+vget(struct mount *m, vnode *parent, const char *name, size_t len)
 {
 	char *v_name;
 	int err;
@@ -225,7 +225,7 @@ vget(struct mount *mount, vnode *parent, const char *name, size_t len)
 	strlcpy(v_name, name, len + 1);
 
 	*vp = (vnode) {
-		.v_mount = mount,
+		.v_mount = m,
 		.v_parent = parent,
 		.v_refcnt = 1,
 		.v_name = v_name,
