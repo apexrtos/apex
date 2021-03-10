@@ -17,9 +17,9 @@
 int
 load_bootimg()
 {
-	extern phys __loader_end[1];
+	extern uint32_t __loader_end;
 	phys *p, *file_data;
-	uint32_t *file_sizes = (uint32_t *)__loader_end;
+	uint32_t *file_sizes = &__loader_end;
 	size_t files = 0;
 
 	for (uint32_t *it = file_sizes; *it && files < 10; ++it)
@@ -34,7 +34,7 @@ load_bootimg()
 		return -1;
 	}
 
-	file_data = ALIGNn(reinterpret_cast<std::byte *>(__loader_end) +
+	file_data = ALIGNn(reinterpret_cast<std::byte *>(&__loader_end) +
 			   (files + 1) * sizeof(uint32_t), 8);
 
 	dbg("Found %zu boot files:\n", files);
