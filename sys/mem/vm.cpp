@@ -113,14 +113,14 @@ oflags(int prot, int flags)
  * seg_insert - insert new segment
  */
 static int
-seg_insert(seg *prev, std::unique_ptr<phys> pages, size_t len, int prot,
+seg_insert(seg *prev, page_ptr pages, size_t len, int prot,
     std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	seg *ns;
 	if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
 		return DERR(-ENOMEM);
 	ns->prot = prot;
-	ns->base = pages.release();
+	ns->base = phys_to_virt(pages.release());
 	ns->len = PAGE_ALIGN(PAGE_OFF(off) + len);
 	ns->attr = attr;
 	ns->off = off;
@@ -823,7 +823,7 @@ seg_vnode(seg *s)
  * as_insert - insert memory into address space (nommu)
  */
 int
-as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
+as_insert(as *a, page_ptr pages, size_t len, int prot,
     int flags, std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	int err;
@@ -833,14 +833,14 @@ as_insert(as *a, std::unique_ptr<phys> pages, size_t len, int prot,
 
 	/* remove any existing mappings */
 	if (fixed &&
-	    (err = do_munmapfor(a, pages.get(),
+	    (err = do_munmapfor(a, phys_to_virt(pages),
 				PAGE_ALIGN(PAGE_OFF(off) + len), true)) < 0)
 		return err;
 
 	/* find insertion point */
 	seg *s;
 	list_for_each_entry(s, &a->segs, link) {
-		if (s->base > pages.get())
+		if (s->base > phys_to_virt(pages))
 			break;
 	}
 	s = list_entry(list_prev(&s->link), seg, link);

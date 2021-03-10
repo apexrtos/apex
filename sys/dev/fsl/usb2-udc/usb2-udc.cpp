@@ -450,7 +450,7 @@ fsl_usb2_udc::fsl_usb2_udc(const char *name, regs *r)
 , r_{r}
 , dqh_{static_cast<dqh *>(phys_to_virt(page_alloc(
     mem_size, MA_FAST | MA_DMA | MA_CACHE_COHERENT,
-    static_cast<void *>(this))))}
+    static_cast<void *>(this)).release()))}
 {
 	/* dqh must be 2k aligned */
 	assert(dqh_);

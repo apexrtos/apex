@@ -64,21 +64,19 @@ pipe_alloc(file *fp)
 	if (vp->v_pipe)
 		return 0;
 
-	phys *b;
+	page_ptr b;
 	if (!(b = page_alloc(PIPE_BUF, MA_NORMAL, &pipe_id)))
 		return -ENOMEM;
 
 	pipe_data *p;
-	if (!(p = (pipe_data *)malloc(sizeof *p))) {
-		page_free(b, PIPE_BUF, &pipe_id);
+	if (!(p = (pipe_data *)malloc(sizeof *p)))
 		return -ENOMEM;
-	}
 	cond_init(&p->cond);
 	p->read_fds = 0;
 	p->write_fds = 0;
 	p->wr = 0;
 	p->rd = 0;
-	p->buf = (std::byte *)phys_to_virt(b);
+	p->buf = (std::byte *)phys_to_virt(b.release());
 
 	vp->v_pipe = p;
 	return 0;

@@ -266,7 +266,7 @@ block_free(region &r, const size_t page, size_t o)
 /*
  * do_alloc
  */
-static phys
+static page_ptr
 do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
     void *owner)
 {
@@ -291,7 +291,7 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
 	/* update buddy allocator */
 	block_alloc(r, page, o);
 
-	return page_addr(r, page);
+	return {page_addr(r, page), len, owner};
 }
 
 /*
@@ -299,9 +299,8 @@ do_alloc(region &r, const size_t page, const size_t o, const PG_STATE st,
  *		      attributes 'attr'
  *
  * tries to allocate using requested attributes but falls back if memory is low.
- * returns invalid on failure, physical address otherwise.
  */
-phys
+page_ptr
 page_alloc_order(const size_t o, unsigned long attr, void *owner)
 {
 	/* extract page allocation flags */
@@ -343,10 +342,10 @@ page_alloc_order(const size_t o, unsigned long attr, void *owner)
 		}
 
 		/* can't find suitable pages */
-		return phys{};
+		return page_ptr{};
 	}
 
-	return phys{};
+	return page_ptr{};
 }
 
 /*
@@ -355,21 +354,20 @@ page_alloc_order(const size_t o, unsigned long attr, void *owner)
  *
  * tries to allocate using requested type but falls back if memory is low.
  * 'len' is rounded up to next page sized boundary.
- * returns invalid address on failure, physical address otherwise.
  */
-phys
+page_ptr
 page_alloc(size_t len, unsigned long attr, void *owner)
 {
 	if (len == 0)
-		return phys{};
+		return page_ptr{};
 	len = PAGE_ALIGN(len);
 	const auto order = ceil_log2(len) - floor_log2(PAGE_SIZE);
-	const auto addr = page_alloc_order(order, attr, owner);
-	if (!addr)
-		return phys{};
+	auto pages = page_alloc_order(order, attr, owner);
+	if (!pages)
+		return pages;
 	const auto excess = (PAGE_SIZE << order) - len;
-	page_free(addr, excess, owner);
-	return phys{addr.phys() + excess};
+	page_free(pages.get(), excess, owner);
+	return {phys{pages.release().phys() + excess}, len, owner};
 }
 
 /*
@@ -406,7 +404,7 @@ page_reserve(region &r, const paddr_t addr, const size_t len,
 	for (auto i = begin; i != end; ++i) {
 		if (r.pages[i].state != PG_FREE)
 			continue;
-		do_alloc(r, i, 0, st, owner);
+		do_alloc(r, i, 0, st, owner).release();
 	}
 
 	return page_addr(r, begin);
@@ -434,18 +432,17 @@ page_reserve(paddr_t addr, size_t len, const PG_STATE st, unsigned long attr,
  *                'len'
  *
  * 'addr' and 'len' are rounded to the nearest page boundaries.
- * returns invalid address on failure, physical address otherwise.
  */
-phys
+page_ptr
 page_reserve(phys addr, size_t len, unsigned long attr, void *owner)
 {
 	const auto st = attr & PAF_MAPPED ? PG_MAPPED : PG_FIXED;
 
 	auto *r = find_region(addr.phys(), len);
 	if (!r)
-		return phys{};
+		return page_ptr{};
 	std::lock_guard l(r->lock);
-	return page_reserve(*r, addr, len, st, attr, owner);
+	return {page_reserve(*r, addr.phys(), len, st, attr, owner), len, owner};
 }
 
 /*
@@ -812,3 +809,64 @@ void page_dump()
 	}
 }
 
+/*
+ * page_ptr
+ */
+page_ptr::page_ptr(phys p, size_t size, void *owner)
+: phys_{p}
+, size_{size}
+, owner_{owner}
+{}
+
+page_ptr::page_ptr(page_ptr &&o)
+: phys_{o.phys_}
+, size_{o.size_}
+, owner_{o.owner_}
+{
+	o.phys_ = phys{};
+}
+
+page_ptr::~page_ptr()
+{
+	if (!phys_)
+		return;
+	page_free(phys_, size_, owner_);
+}
+
+page_ptr &
+page_ptr::operator=(page_ptr &&o)
+{
+	phys_ = o.phys_;
+	size_ = o.size_;
+	owner_ = o.owner_;
+	o.phys_ = phys{};
+	return *this;
+}
+
+phys
+page_ptr::release()
+{
+	auto tmp{phys_};
+	phys_ = phys{};
+	return tmp;
+}
+
+void
+page_ptr::reset()
+{
+	if (!phys_)
+		return;
+	page_free(phys_, size_, owner_);
+	phys_ = phys{};
+}
+
+phys
+page_ptr::get()
+{
+	return phys_;
+}
+
+page_ptr::operator bool() const
+{
+	return !!phys_;
+}

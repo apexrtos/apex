@@ -451,7 +451,7 @@ fsl_usdhc::fsl_usdhc(const fsl_usdhc_desc &d, const regs::host_ctrl_cap cap)
 , clock_{d.clock}
 , dma_desc_{static_cast<adma2_descriptor *>(
     dma_alloc(sizeof(adma2_descriptor) * dma_desc_sz_))}
-, bounce_{phys_to_virt(page_alloc(bounce_sz_, MA_NORMAL | MA_DMA, this))}
+, bounce_{phys_to_virt(page_alloc(bounce_sz_, MA_NORMAL | MA_DMA, this).release())}
 , bus_test_{false}
 , retuning_required_{false}
 {

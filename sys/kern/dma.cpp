@@ -15,7 +15,7 @@ namespace {
 
 struct dma_page {
 	size_t alloc;
-	phys *page;
+	page_ptr page;
 };
 
 std::list<dma_page> pages;
@@ -38,7 +38,7 @@ dma_alloc(size_t len)
 		return nullptr;
 
 	/* find page with free space >= len */
-	for (auto p : pages) {
+	for (auto &p : pages) {
 		if (PAGE_SIZE - p.alloc < len)
 			continue;
 		auto r = static_cast<std::byte *>(phys_to_virt(p.page)) + p.alloc;
@@ -50,8 +50,8 @@ dma_alloc(size_t len)
 	auto p = page_alloc_order(0, MA_DMA | MA_CACHE_COHERENT, &dma_id);
 	if (!p)
 		return nullptr;
-	pages.push_back({len, p});
-	return phys_to_virt(p);
+	pages.push_back({len, std::move(p)});
+	return phys_to_virt(pages.back().page);
 }
 
 /*

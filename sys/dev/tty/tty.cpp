@@ -47,8 +47,8 @@ bool is_ctrl(char c)
  */
 class tty {
 public:
-	tty(size_t, size_t, std::unique_ptr<phys>, size_t,
-	    std::unique_ptr<phys>, tty_tproc, tty_oproc, tty_iproc, tty_fproc,
+	tty(size_t, size_t, page_ptr, size_t,
+	    page_ptr, tty_tproc, tty_oproc, tty_iproc, tty_fproc,
 	    void *);
 	~tty();
 
@@ -111,7 +111,7 @@ private:
 	circular_buffer_wrapper<char> txq_;
 	circular_buffer_wrapper<char>::iterator txq_pos_;
 	circular_buffer_wrapper<char>::iterator txq_end_;
-	std::unique_ptr<phys> txq_pages_;
+	page_ptr txq_pages_;
 
 	/* receive buffer queue
 	 *  rxq_.end() and rxq_.bufpool are protected by rxq_lock_
@@ -142,8 +142,8 @@ private:
 /*
  * tty::tty
  */
-tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
-    size_t tx_bufsiz, std::unique_ptr<phys> txp, tty_tproc tproc,
+tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, page_ptr rxp,
+    size_t tx_bufsiz, page_ptr txp, tty_tproc tproc,
     tty_oproc oproc, tty_iproc iproc, tty_fproc fproc, void *driver_data)
 : dev_{}
 , flags_{}
@@ -151,7 +151,7 @@ tty::tty(size_t rx_bufcnt, size_t rx_bufsiz, std::unique_ptr<phys> rxp,
 , pgid_{}
 , column_{}
 , canon_column_{}
-, txq_{tx_bufsiz, static_cast<char *>(phys_to_virt(txp.get()))}
+, txq_{tx_bufsiz, static_cast<char *>(phys_to_virt(txp))}
 , txq_pos_{txq_.begin()}
 , txq_end_{txq_.end()}
 , txq_pages_{std::move(txp)}
@@ -1270,10 +1270,8 @@ tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
 		return (tty *)DERR(-EINVAL);
 	const size_t rx_sz = ALIGNn(rx_bufsiz * rx_bufmin, PAGE_SIZE);
 
-	std::unique_ptr<phys> rxp{page_alloc(rx_sz, attr, &tty_id),
-	    {rx_sz, &tty_id}};
-	std::unique_ptr<phys> txp{page_alloc(PAGE_SIZE, attr, &tty_id),
-	    {PAGE_SIZE, &tty_id}};
+	page_ptr rxp = page_alloc(rx_sz, attr, &tty_id);
+	page_ptr txp = page_alloc(PAGE_SIZE, attr, &tty_id);
 	if (!rxp.get() || !txp.get())
 		return (tty *)DERR(-ENOMEM);
 	const size_t rx_bufcnt = rx_sz / rx_bufsiz;

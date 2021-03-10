@@ -236,11 +236,11 @@ kmem_alloc_internal(size_t size, unsigned type)
 		pg = PAGE_TOP(blk);	 /* Get the page address */
 	} else {
 		/* No block found. Allocate new page */
-		phys *const pp = page_alloc_order(0,
+		page_ptr pp = page_alloc_order(0,
 		    type_to_attr(type) | PAF_EXACT_SPEED, &kern_task);
 		if (!pp)
 			goto out;
-		pg = (page_hdr *)phys_to_virt(pp);
+		pg = (page_hdr *)phys_to_virt(pp.release());
 		pg->nallocs = 0;
 		pg->magic = PAGE_MAGIC + type;
 		list_insert(&kmem_pages[type], &pg->link);

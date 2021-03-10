@@ -161,7 +161,7 @@ public:
 	/*
 	 * buffer_queue
 	 */
-	buffer_queue(size_t bufcnt, size_t bufsiz, std::unique_ptr<phys> pages)
+	buffer_queue(size_t bufcnt, size_t bufsiz, page_ptr pages)
 	: q_{bufcnt}
 	, off_{}
 	, bufsiz_{bufsiz}
@@ -169,9 +169,9 @@ public:
 	{
 		/* initialise buffers */
 		pool_.reserve(bufcnt);
+		char *p = static_cast<char *>(phys_to_virt(pages_));
 		for (size_t i = 0; i != bufcnt; ++i)
-			pool_.push_back(static_cast<char *>(
-			    phys_to_virt(pages_.get() + bufsiz * i)));
+			pool_.push_back(p + bufsiz * i);
 	}
 
 	/*
@@ -372,5 +372,5 @@ private:
 	size_t off_;
 	std::vector<char *> pool_;
 	const size_t bufsiz_;
-	std::unique_ptr<phys> pages_;	/* pages for receive buffers */
+	page_ptr pages_;	/* pages for receive buffers */
 };

@@ -278,7 +278,7 @@ lookup_v(vnode *vp, const char *path, vnode **vpp,
 {
 	int err = 0;
 	size_t len;
-	phys *p;
+	page_ptr p;
 	char *link_buf = 0;
 	size_t link_buf_size = 0;
 
@@ -457,16 +457,10 @@ lookup_v(vnode *vp, const char *path, vnode **vpp,
 	if (node_len)
 		*node_len = len;
 
-	if (link_buf_size > 32)
-		page_free(p, PATH_MAX, &vfs_id);
-
 	*vpp = vp;
 	return err;
 
 out:
-	if (link_buf_size > 32)
-		page_free(p, PATH_MAX, &vfs_id);
-
 	if (vp)
 		vput(vp);
 	return err;

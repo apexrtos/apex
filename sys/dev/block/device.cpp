@@ -62,7 +62,6 @@ device::device(::device *dev, off_t size)
 : dev_{dev}
 , nopens_{0}
 , size_{size}
-, buf_{0, {0, nullptr}}
 {
 	device_attach(dev_, &block_io, DF_BLK, this);
 }
@@ -95,8 +94,7 @@ device::open()
 
 	if (nopens_++)
 		return 0;
-	std::unique_ptr<phys> buf{page_alloc(PAGE_SIZE, MA_NORMAL | MA_DMA, this),
-	    {PAGE_SIZE, this}};
+	page_ptr buf = page_alloc(PAGE_SIZE, MA_NORMAL | MA_DMA, this);
 	if (!buf)
 		return DERR(-ENOMEM);
 	if (auto r = v_open(); r < 0)
@@ -184,11 +182,10 @@ device::ioctl(unsigned long cmd, void *arg)
 			return r;
 
 		/* device doesn't support zeroing, allocate a page of zeros */
-		std::unique_ptr<phys> p{page_alloc(PAGE_SIZE, MA_NORMAL | MA_DMA, this),
-		    {PAGE_SIZE, this}};
+		page_ptr p = page_alloc(PAGE_SIZE, MA_NORMAL | MA_DMA, this);
 		if (!p)
 			return DERR(-ENOMEM);
-		std::byte *z = static_cast<std::byte *>(phys_to_virt(p.get()));
+		std::byte *z = static_cast<std::byte *>(phys_to_virt(p));
 		memset(z, 0, PAGE_SIZE);
 
 		/* 256 iovs: 2k of stack, 1MiB zeroed with 4k pages */
@@ -259,7 +256,7 @@ device::transfer(const iovec *iov, size_t count, off_t off, bool write)
 		return l;
 	}());
 
-	std::byte *buf = static_cast<std::byte *>(phys_to_virt(buf_.get()));
+	std::byte *buf = static_cast<std::byte *>(phys_to_virt(buf_));
 	size_t iov_off = 0;
 	size_t t = 0;
 
@@ -339,7 +336,7 @@ device::fill(off_t off)
 		return 0;
 	if (auto r = sync(); r < 0)
 		return r;
-	iovec iov{phys_to_virt(buf_.get()), PAGE_SIZE};
+	iovec iov{phys_to_virt(buf_), PAGE_SIZE};
 	if (auto r = v_read(&iov, 0, PAGE_SIZE, off); r != PAGE_SIZE) {
 		off_ = std::numeric_limits<off_t>::max();
 		return r < 0 ? r : DERR(-EIO);
@@ -358,7 +355,7 @@ device::sync()
 
 	if (!dirty_)
 		return 0;
-	iovec iov{phys_to_virt(buf_.get()), PAGE_SIZE};
+	iovec iov{phys_to_virt(buf_), PAGE_SIZE};
 	if (auto r = v_write(&iov, 0, PAGE_SIZE, off_); r != PAGE_SIZE)
 		return r < 0 ? r : DERR(-EIO);
 	dirty_ = false;

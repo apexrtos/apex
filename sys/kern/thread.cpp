@@ -77,7 +77,7 @@ static thread *
 thread_alloc(long mem_attr)
 {
 	thread *th;
-	phys *stack;
+	page_ptr stack;
 
 	if ((th = (thread *)kmem_alloc(sizeof(*th), MA_FAST)) == NULL)
 		return NULL;
@@ -87,7 +87,7 @@ thread_alloc(long mem_attr)
 		return NULL;
 	}
 	memset(th, 0, sizeof(*th));
-	th->kstack = static_cast<std::byte *>(phys_to_virt(stack));
+	th->kstack = static_cast<std::byte *>(phys_to_virt(stack.release()));
 	th->magic = THREAD_MAGIC;
 #if defined(CONFIG_KSTACK_CHECK)
 	memset(th->kstack, 0xaa, CONFIG_KSTACK_SIZE);

@@ -319,10 +319,10 @@ ramfs_grow(ramfs_node *np, off_t new_size)
 	 */
 	if (new_size > PAGE_SIZE / 2) {
 		new_size = PAGE_ALIGN(new_size);
-		phys *const p = page_alloc(new_size, MA_NORMAL, &ramfs_id);
+		page_ptr p = page_alloc(new_size, MA_NORMAL, &ramfs_id);
 		if (!p)
 			return -1;
-		new_buf = phys_to_virt(p);
+		new_buf = phys_to_virt(p.release());
 	} else {
 		/* try not to fragment malloc too much */
 		new_size = ALIGNn(new_size, 32);

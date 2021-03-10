@@ -42,7 +42,7 @@ private:
 	::device *dev_;
 	size_t nopens_;
 	off_t size_;
-	std::unique_ptr<phys> buf_;
+	page_ptr buf_;
 	off_t off_;
 	bool dirty_;
 };

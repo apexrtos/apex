@@ -94,15 +94,14 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
 	if (fixed && vn && pg_off != PAGE_OFF(off))
 		return (void*)DERR(-EINVAL);
 
-	std::unique_ptr<phys> pages(fixed
-	    ? page_reserve((phys*)req_addr, len, attr, a)
-	    : page_alloc(pg_off + len, attr, a),
-	    {pg_off + len, a});
+	page_ptr pages{fixed
+			? page_reserve(virt_to_phys(req_addr), len, attr, a)
+			: page_alloc(pg_off + len, attr, a)};
 
 	if (!pages)
 		return (void *)-ENOMEM;
 
-	std::byte *addr = (std::byte*)pages.get();
+	std::byte *addr = (std::byte*)phys_to_virt(pages);
 
 	/* read data & zero-fill (partial pages if not anonymous) */
 	ssize_t r = 0;
