@@ -154,7 +154,7 @@ thread_valid(thread *th)
  * must be called to start it.
  */
 int
-thread_createfor(task *task, as *as, thread **thp,
+thread_createfor(task *t, as *as, thread **thp,
     void *sp, long mem_attr, void (*entry)(), long arg)
 {
 	int r;
@@ -170,7 +170,7 @@ thread_createfor(task *task, as *as, thread **thp,
 	/*
 	 * Initialize thread state.
 	 */
-	th->task = task;
+	th->task = t;
 	void *const ksp = arch_kstack_align((char *)th->kstack + CONFIG_KSTACK_SIZE);
 	if ((r = context_init_uthread(&th->ctx, as, ksp, sp, entry, arg)) < 0) {
 		thread_free(th);
@@ -180,14 +180,14 @@ thread_createfor(task *task, as *as, thread **thp,
 	sch_lock();
 
 	/* can't add thread to zombie task */
-	if (task->state == PS_ZOMB) {
+	if (t->state == PS_ZOMB) {
 		sch_unlock();
 		thread_free(th);
 		return DERR(-EOWNERDEAD);
 	}
 
 	/* add new threads to end of list (master thread at head) */
-	list_insert(list_last(&task->threads), &th->task_link);
+	list_insert(list_last(&t->threads), &th->task_link);
 	sch_start(th);
 
 	sch_unlock();
@@ -332,14 +332,14 @@ thread_check()
 #ifdef CONFIG_THREAD_CHECK
 	list *task_link;
 	thread *th;
-	task *task;
+	task *t;
 
 	if (likely(idle_thread.magic == THREAD_MAGIC)) { /* not early in boot */
 		task_link = &kern_task.link;
 		do {
-			task = list_entry(task_link, task, link);
-			assert(task_valid(task));
-			list_for_each_entry(th, &task->threads, task_link) {
+			t = list_entry(task_link, task, link);
+			assert(task_valid(t));
+			list_for_each_entry(th, &t->threads, task_link) {
 				assert(th->magic == THREAD_MAGIC);
 				assert(KSTACK_CHECK(th));
 			}
@@ -356,7 +356,7 @@ thread_dump()
 		{ "OTHR", "FIFO", "  RR", "BTCH", "IDLE", "DDLN" };
 	list *i;
 	thread *th;
-	task *task;
+	task *t;
 
 	info("thread dump\n");
 	info("===========\n");
@@ -368,12 +368,12 @@ thread_dump()
 	sch_lock();
 	i = &kern_task.link;
 	do {
-		task = list_entry(i, task, link);
+		t = list_entry(i, task, link);
 
-		list_for_each_entry(th, &task->threads, task_link) {
+		list_for_each_entry(th, &t->threads, task_link) {
 			info(" %p%c %8s %p %c%c%c%c %s %4d %4d %8llu %11s %s\n",
 			    th, (th == thread_cur()) ? '*' : ' ',
-			    th->name, task,
+			    th->name, t,
 			    th->state & TH_SLEEP ? 'S' : ' ',
 			    th->state & TH_SUSPEND ? 'U' : ' ',
 			    th->state & TH_EXIT ? 'E' : ' ',
@@ -381,7 +381,7 @@ thread_dump()
 			    pol[th->policy], th->prio, th->baseprio,
 			    th->time / 1000000,
 			    th->slpevt ? th->slpevt->name : "-",
-			    task->path ?: "kernel");
+			    t->path ?: "kernel");
 		}
 		i = list_next(i);
 	} while (i != &kern_task.link);
