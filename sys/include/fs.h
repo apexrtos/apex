@@ -50,10 +50,6 @@ ssize_t	      vn_pread(vnode *, void *, size_t, off_t);
 ssize_t	      vn_preadv(vnode *, const iovec *, int, off_t);
 char	     *vn_name(vnode *);
 
-#include <memory>
-extern "C" int close(int fd);
-extern "C" int open(const char *pathname, int flags, ...);
-
 namespace std {
 
 template<>
