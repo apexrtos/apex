@@ -96,29 +96,29 @@ irq *
 irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
     void (*ist)(int, void *), void *data)
 {
-	irq *irq;
+	irq *i;
 
 	assert(isr != NULL);
 	assert(vector < CONFIG_IRQS);
 	assert(!interrupt_running());
 
-	if ((irq = (irq *)kmem_alloc(sizeof(*irq), MA_FAST)) == NULL)
+	if ((i = (irq *)kmem_alloc(sizeof(*i), MA_FAST)) == NULL)
 		return NULL;
 
-	memset(irq, 0, sizeof(*irq));
-	irq->vector = vector;
-	irq->isr = isr;
-	irq->ist = ist;
-	irq->data = data;
+	memset(i, 0, sizeof(*i));
+	i->vector = vector;
+	i->isr = isr;
+	i->ist = ist;
+	i->data = data;
 
 	if (ist != NULL) {
 		/*
 		 * Create a new thread for IST.
 		 */
-		irq->thread = kthread_create(&irq_thread, irq,
+		i->thread = kthread_create(&irq_thread, i,
 		    interrupt_to_ist_priority(prio), "ist", MA_FAST);
-		if (irq->thread == NULL) {
-			kmem_free(irq);
+		if (i->thread == NULL) {
+			kmem_free(i);
 			return NULL;
 		}
 		event_init(&i->istevt, "interrupt", event::ev_SLEEP);
@@ -127,38 +127,38 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 	const int s = spinlock_lock_irq_disable(&lock);
 	if (irq_table[vector] != NULL) {
 		spinlock_unlock_irq_restore(&lock, s);
-		thread_terminate(irq->thread);
-		kmem_free(irq);
+		thread_terminate(i->thread);
+		kmem_free(i);
 		dbg("IRQ%d BUSY\n", vector);
 		return NULL;
 	}
-	irq_table[vector] = irq;
+	irq_table[vector] = i;
 	interrupt_setup(vector, mode);
 	interrupt_unmask(vector, prio);
 	spinlock_unlock_irq_restore(&lock, s);
 
 	dbg("IRQ%d attached priority=%d\n", vector, prio);
-	return irq;
+	return i;
 }
 
 /*
  * irq_detach - detach ISR and IST from interrupt.
  */
 void
-irq_detach(irq *irq)
+irq_detach(irq *i)
 {
-	assert(irq);
-	assert(irq->vector < CONFIG_IRQS);
+	assert(i);
+	assert(i->vector < CONFIG_IRQS);
 	assert(!interrupt_running());
 
 	const int s = spinlock_lock_irq_disable(&lock);
-	interrupt_mask(irq->vector);
-	irq_table[irq->vector] = NULL;
+	interrupt_mask(i->vector);
+	irq_table[i->vector] = NULL;
 	spinlock_unlock_irq_restore(&lock, s);
 
-	if (irq->thread != NULL)
-		thread_terminate(irq->thread);
-	kmem_free(irq);
+	if (i->thread != NULL)
+		thread_terminate(i->thread);
+	kmem_free(i);
 }
 
 /*
@@ -196,26 +196,26 @@ irq_thread(void *arg)
 	int vec;
 	void (*func)(int, void *);
 	void *data;
-	irq *irq;
+	irq *i;
 
-	irq = (irq *)arg;
-	func = irq->ist;
-	vec = irq->vector;
-	data = irq->data;
+	i = (irq *)arg;
+	func = i->ist;
+	vec = i->vector;
+	data = i->data;
 
 	while (true) {
 		sch_testexit();
 
 		interrupt_disable();
-		if (irq->istreq <= 0) {
-			sch_prepare_sleep(&irq->istevt, 0);
+		if (i->istreq <= 0) {
+			sch_prepare_sleep(&i->istevt, 0);
 			interrupt_enable();
 			sch_continue_sleep();
 			sch_testexit();
 			interrupt_disable();
 		}
-		irq->istreq--;
-		assert(irq->istreq >= 0);
+		i->istreq--;
+		assert(i->istreq >= 0);
 		interrupt_enable();
 
 		/*
@@ -235,10 +235,10 @@ irq_dump()
 	info(" --- ----------\n");
 	const int s = spinlock_lock_irq_disable(&lock);
 	for (size_t vector = 0; vector < ARRAY_SIZE(irq_table); vector++) {
-		const irq *irq = irq_table[vector];
-		if (!irq || irq->isrreq == 0)
+		const irq *i = irq_table[vector];
+		if (!i || i->isrreq == 0)
 			continue;
-		info(" %3d %10d\n", vector, irq->isrreq);
+		info(" %3d %10d\n", vector, i->isrreq);
 	}
 	spinlock_unlock_irq_restore(&lock, s);
 }
@@ -254,31 +254,31 @@ irq_dump()
 __fast_text void
 irq_handler(int vector)
 {
-	irq *irq;
+	irq *i;
 	int rc;
 
 	const int s = spinlock_lock_irq_disable(&lock);
-	irq = irq_table[vector];
+	i = irq_table[vector];
 	spinlock_unlock_irq_restore(&lock, s);
 
-	if (irq == NULL)
+	if (i == NULL)
 		return;		/* Ignore stray interrupt */
-	assert(irq->isr);
+	assert(i->isr);
 
 	/*
 	 * Call ISR
 	 */
-	irq->isrreq++;
-	rc = (*irq->isr)(vector, irq->data);
+	i->isrreq++;
+	rc = (*i->isr)(vector, i->data);
 
 	if (rc == INT_CONTINUE) {
 		/*
 		 * Kick IST
 		 */
-		assert(irq->ist);
-		irq->istreq++;
-		sch_wakeup(&irq->istevt, 0);
-		assert(irq->istreq != 0);
+		assert(i->ist);
+		i->istreq++;
+		sch_wakeup(&i->istevt, 0);
+		assert(i->istreq != 0);
 	}
 }
 
