@@ -207,7 +207,7 @@ extern "C" void
 machine_clock_init()
 {
 	/* set core voltage to 1.25V for 600MHz operation */
-	for (dcdc_reg3 v = DCDC->REG3; v.TRG < (1250 - 800) / 25;) {
+	for (dcdc_reg3 v = read32(&DCDC->REG3); v.TRG < (1250 - 800) / 25;) {
 		/* step by 25mV */
 		v.TRG += 1;
 		write32(&DCDC->REG3, v.r);

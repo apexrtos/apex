@@ -125,7 +125,7 @@ machine_reset()
 	/* reset flexram configuration -- this is necessary as the IMXRT1050
 	 * boot ROM expects to use OCRAM as stack and is too stupid to make
 	 * sure that it will actually work */
-	iomuxc_gpr_gpr16 gpr16 = IOMUXC_GPR->GPR16;
+	iomuxc_gpr_gpr16 gpr16 = read32(&IOMUXC_GPR->GPR16);
 	gpr16.FLEXRAM_BANK_CFG_SEL = 0;
 	write32(&IOMUXC_GPR->GPR16, gpr16.r);
 
