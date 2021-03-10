@@ -45,7 +45,7 @@ struct ent {
 	char msg[];		/* message text */
 };
 
-static alignas(ent) char log[CONFIG_SYSLOG_SIZE];
+alignas(ent) static char log[CONFIG_SYSLOG_SIZE];
 static std::atomic_long log_first_seq = 1, log_last_seq;
 static long clear_seq = 1;
 static ent *head = (ent *)log;
