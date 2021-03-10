@@ -160,7 +160,7 @@ fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 	write32(&USBPHY->CTRL, 0);
 
 	/* configure trimming resistors */
-	usbphy_tx tx = USBPHY->TX;
+	usbphy_tx tx = read32(&USBPHY->TX);
 	tx.D_CAL = d->d_cal;
 	tx.TXCAL45DP = d->txcal45dp;
 	tx.TXCAL45DN = d->txcal45dn;
