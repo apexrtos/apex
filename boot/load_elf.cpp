@@ -33,13 +33,8 @@ load_executable(const phys *img)
 			continue;
 		}
 
-		if (phys_to_virt(img + phdr->p_offset) == (void*)phdr->p_vaddr) {
-			if (phdr->p_flags & PF_W) {
-				edbg("writable region in ROM\n");
-				return -1;
-			}
+		if (phys_to_virt(img + phdr->p_offset) == (void*)phdr->p_vaddr)
 			continue;
-		}
 
 		if (phdr->p_filesz > 0) {
 			edbg("load: addr=%p from=%p size=%zu\n",
