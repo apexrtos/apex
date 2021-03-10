@@ -2095,11 +2095,11 @@ fcntl(int fd, int cmd, ...)
 	task *t = task_cur();
 	file *fp;
 	va_list args;
-	long arg;
+	int arg;
 	int err;
 
 	va_start(args, cmd);
-	arg = va_arg(args, long);
+	arg = va_arg(args, int);
 	va_end(args);
 
 	vdbgsys("fcntl fd=%d cmd=%d arg=%ld\n", fd, cmd, arg);
