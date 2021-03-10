@@ -138,7 +138,7 @@ task_valid(task *t)
 int
 task_create(task *parent, int vm_option, task **child)
 {
-	task *task;
+	task *t;
 	int err = 0;
 
 	sch_lock();
@@ -162,33 +162,33 @@ task_create(task *parent, int vm_option, task **child)
 	/*
 	 * Allocate task
 	 */
-	if (!(task = (task *)malloc(sizeof(*t)))) {
+	if (!(t = (task *)malloc(sizeof(*t)))) {
 		err = DERR(-ENOMEM);
 		goto out;
 	}
-	memset(task, 0, sizeof(*task));
-	task->magic = TASK_MAGIC;
+	memset(t, 0, sizeof(*t));
+	t->magic = TASK_MAGIC;
 
 	/*
 	 * Setup VM mapping.
 	 */
 	switch (vm_option) {
 	case VM_NEW:
-		if (!(task->as = as_create(task_pid(task))))
+		if (!(t->as = as_create(task_pid(t))))
 			err = DERR(-ENOMEM);
 		break;
 	case VM_SHARE:
 		as_reference(parent->as);
-		task->as = parent->as;
-		err = task_path(task, parent->path);
+		t->as = parent->as;
+		err = task_path(t, parent->path);
 		break;
 	case VM_COPY:
-		if ((task->as = as_copy(parent->as, task_pid(task))) > (as*)-4096UL) {
-			err = (int)task->as;
-			task->as = 0;
+		if ((t->as = as_copy(parent->as, task_pid(t))) > (as*)-4096UL) {
+			err = (int)t->as;
+			t->as = 0;
 			break;
 		}
-		err = task_path(task, parent->path);
+		err = task_path(t, parent->path);
 		break;
 	default:
 		err = DERR(-EINVAL);
@@ -198,20 +198,20 @@ task_create(task *parent, int vm_option, task **child)
 	/*
 	 * Fill initial task data.
 	 */
-	task->capability = parent->capability;
-	task->parent = parent;
-	list_init(&task->threads);
-	futexes_init(&task->futexes);
-	task->pgid = parent->pgid;
-	task->sid = parent->sid;
-	task->state = PS_RUN;
-	rwlock_init(&task->fs_lock);
-	event_init(&task->child_event, "child", event::ev_SLEEP);
-	event_init(&task->thread_event, "thread", event::ev_SLEEP);
-	list_insert(&kern_task.link, &task->link);
+	t->capability = parent->capability;
+	t->parent = parent;
+	list_init(&t->threads);
+	futexes_init(&t->futexes);
+	t->pgid = parent->pgid;
+	t->sid = parent->sid;
+	t->state = PS_RUN;
+	rwlock_init(&t->fs_lock);
+	event_init(&t->child_event, "child", event::ev_SLEEP);
+	event_init(&t->thread_event, "thread", event::ev_SLEEP);
+	list_insert(&kern_task.link, &t->link);
 
 	if (err < 0) {
-		task_destroy(task);
+		task_destroy(t);
 		goto out;
 	}
 
@@ -219,9 +219,9 @@ task_create(task *parent, int vm_option, task **child)
 	 * Register init task
 	 */
 	if (parent == &kern_task)
-		init_task = task;
+		init_task = t;
 
-	*child = task;
+	*child = t;
  out:
 	sch_unlock();
 	return err;
@@ -236,22 +236,22 @@ task_create(task *parent, int vm_option, task **child)
  * This function only releases resources allocated by task_create.
  */
 int
-task_destroy(task *task)
+task_destroy(task *t)
 {
-	assert(task != task_cur());
-	assert(list_empty(&task->threads));
+	assert(t != task_cur());
+	assert(list_empty(&t->threads));
 
 	sch_lock();
-	list_remove(&task->link);
+	list_remove(&t->link);
 	sch_unlock();
 
-	if (task->as) {
-		as_modify_begin(task->as);
-		as_destroy(task->as);
+	if (t->as) {
+		as_modify_begin(t->as);
+		as_destroy(t->as);
 	}
-	task->magic = 0;
-	free(task->path);
-	free(task);
+	t->magic = 0;
+	free(t->path);
+	free(t);
 
 	return 0;
 }
@@ -260,26 +260,26 @@ task_destroy(task *task)
  * Suspend a task.
  */
 int
-task_suspend(task *task)
+task_suspend(task *t)
 {
 	list *head, *n;
 	thread *th;
 
 	sch_lock();
-	if (!task_valid(task)) {
+	if (!task_valid(t)) {
 		sch_unlock();
 		return DERR(-ESRCH);
 	}
-	if (!task_access(task)) {
+	if (!task_access(t)) {
 		sch_unlock();
 		return DERR(-EPERM);
 	}
 
-	if (++task->suscnt == 1) {
+	if (++t->suscnt == 1) {
 		/*
-		 * Suspend all threads within the task.
+		 * Suspend all threads within the t.
 		 */
-		head = &task->threads;
+		head = &t->threads;
 		for (n = list_first(head); n != head; n = list_next(n)) {
 			th = list_entry(n, thread, task_link);
 			sch_suspend(th);
@@ -296,29 +296,29 @@ task_suspend(task *task)
  * thread suspend count and task suspend count become 0.
  */
 int
-task_resume(task *task)
+task_resume(task *t)
 {
 	list *head, *n;
 	thread *th;
 	int err = 0;
 
-	assert(task != task_cur());
+	assert(t != task_cur());
 
 	sch_lock();
-	if (!task_valid(task)) {
+	if (!task_valid(t)) {
 		err = DERR(-ESRCH);
 		goto out;
 	}
-	if (!task_access(task)) {
+	if (!task_access(t)) {
 		err = DERR(-EPERM);
 		goto out;
 	}
-	assert(task->suscnt > 0);
-	if (--task->suscnt == 0) {
+	assert(t->suscnt > 0);
+	if (--t->suscnt == 0) {
 		/*
 		 * Resume all threads in the target task.
 		 */
-		head = &task->threads;
+		head = &t->threads;
 		for (n = list_first(head); n != head; n = list_next(n)) {
 			th = list_entry(n, thread, task_link);
 			sch_resume(th);
@@ -344,21 +344,21 @@ task_path(task *t, const char *path)
 	assert(path);
 
 	sch_lock();
-	if (!task_valid(task)) {
+	if (!task_valid(t)) {
 		err = DERR(-ESRCH);
 		goto out;
 	}
-	if (!task_access(task)) {
+	if (!task_access(t)) {
 		err = DERR(-EPERM);
 		goto out;
 	}
-	if (!task->path || strcmp(path, task->path)) {
+	if (!t->path || strcmp(path, t->path)) {
 		if (!(copy = strdup(path))) {
 			err = DERR(-ENOMEM);
 			goto out;
 		}
-		free(task->path);
-		task->path = copy;
+		free(t->path);
+		t->path = copy;
 	}
 
 out:
@@ -380,14 +380,14 @@ task_capable(unsigned cap)
  * Return true on success, or false on error.
  */
 bool
-task_access(task *task)
+task_access(task *t)
 {
 	/* Do not access the kernel task. */
-	if (task == &kern_task)
+	if (t == &kern_task)
 		return false;
 
-	return task == task_cur() ||
-	    task->parent == task_cur() ||
+	return t == task_cur() ||
+	    t->parent == task_cur() ||
 	    task_capable(CAP_TASK);
 }
 
@@ -402,7 +402,7 @@ task_dump()
 {
 	static const char state[][6] = { "INVAL", "  RUN", " ZOMB", " STOP" };
 	list *i, *j;
-	task *task;
+	task *t;
 	int nthreads;
 
 	info("task dump\n");
@@ -411,19 +411,19 @@ task_dump()
 	info(" ----------- ------ ---- -------- ----- ---------- --------- ------------\n");
 	i = &kern_task.link;
 	do {
-		task = list_entry(i, task, link);
+		t = list_entry(i, task, link);
 		nthreads = 0;
-		j = list_first(&task->threads);
-		while (j != &task->threads) {
+		j = list_first(&t->threads);
+		while (j != &t->threads) {
 			nthreads++;
 			j = list_next(j);
 		}
 
 		info(" %p%c    %3d %4d %08x %s %10p %9d %s\n",
-		       task, (task == task_cur()) ? '*' : ' ', nthreads,
-		       task->suscnt, task->capability,
-		       state[task->state], task->parent, task_pid(task),
-		       task->path ?: "kernel");
+		       t, (t == task_cur()) ? '*' : ' ', nthreads,
+		       t->suscnt, t->capability,
+		       state[t->state], t->parent, task_pid(t),
+		       t->path ?: "kernel");
 
 		i = list_next(i);
 	} while (i != &kern_task.link);
