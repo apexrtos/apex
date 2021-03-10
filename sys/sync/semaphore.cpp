@@ -13,8 +13,8 @@ struct semaphore_private {
 	std::atomic_int count;
 	struct event event;
 };
-static_assert(sizeof(semaphore_private) == sizeof(semaphore), "");
-static_assert(alignof(semaphore_private) == alignof(semaphore), "");
+static_assert(sizeof(semaphore_private) == sizeof(semaphore));
+static_assert(alignof(semaphore_private) == alignof(semaphore));
 
 /*
  * semaphore_init - initialise semaphore.

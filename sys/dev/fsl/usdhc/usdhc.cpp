@@ -315,8 +315,8 @@ struct regs {
 		uint32_t r;
 	} TUNING_CTRL;
 };
-static_assert(sizeof(regs) == 0xd0, "");
-static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
+static_assert(sizeof(regs) == 0xd0);
+static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 /*
  * adma2_descriptor

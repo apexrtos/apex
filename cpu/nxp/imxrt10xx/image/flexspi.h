@@ -109,7 +109,7 @@ struct flexspi_boot_config {
 	uint32_t : 32;
 	uint32_t : 32;
 };
-static_assert(sizeof(struct flexspi_boot_config) == 448, "");
+static_assert(sizeof(struct flexspi_boot_config) == 448);
 
 /*
  * Table 8-17. Serial NOR configuration block
@@ -141,4 +141,4 @@ struct flexspi_boot_nor {
 	uint32_t : 32;
 	uint32_t : 32;
 };
-static_assert(sizeof(struct flexspi_boot_nor) == 512, "");
+static_assert(sizeof(struct flexspi_boot_nor) == 512);

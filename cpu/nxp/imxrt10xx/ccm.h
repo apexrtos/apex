@@ -395,7 +395,7 @@ struct ccm {
 	} CCGR7; /* For IMXRT106x only. RSV for IMXRT105x */
 	uint32_t CMEOR;
 };
-static_assert(sizeof(ccm) == 0x8c, "");
+static_assert(sizeof(ccm) == 0x8c);
 
 struct ccm_analog {
 	enum class bypass_clk_src : unsigned {
@@ -565,7 +565,7 @@ struct ccm_analog {
 	uint32_t MISC2_CLR;
 	uint32_t MISC2_TOG;
 };
-static_assert(sizeof(ccm_analog) == 0x180, "");
+static_assert(sizeof(ccm_analog) == 0x180);
 
 #define CCM_ADDR 0x400fc000
 #define CCM_ANALOG_ADDR 0x400d8000

@@ -32,7 +32,7 @@
  * open for writing.
  */
 
-static_assert(PIPE_BUF == 4096, "");
+static_assert(PIPE_BUF == 4096);
 
 #define pdbg(...)
 

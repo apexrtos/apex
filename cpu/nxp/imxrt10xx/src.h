@@ -40,6 +40,6 @@ struct src {
 	uint32_t GPR9;
 	uint32_t GPR10;
 };
-static_assert(sizeof(src) == 0x48, "");
+static_assert(sizeof(src) == 0x48);
 
 static src *const SRC = (src*)0x400f8000;

@@ -102,7 +102,7 @@ struct usbphy {
 		uint32_t r;
 	} VERSION;
 };
-static_assert(sizeof(usbphy) == 0x84, "");
+static_assert(sizeof(usbphy) == 0x84);
 
 /*
  * USB_ANALOG registers
@@ -144,7 +144,7 @@ struct usb_analog {
 	uint32_t MISC_CLR;
 	uint32_t MISC_TOG;
 };
-static_assert(sizeof(usb_analog) == 0x60, "");
+static_assert(sizeof(usb_analog) == 0x60);
 
 void
 fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)

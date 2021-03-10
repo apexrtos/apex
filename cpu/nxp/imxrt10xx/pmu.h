@@ -53,6 +53,6 @@ struct pmu {
 	uint32_t REG_MISC2_CLR;
 	uint32_t REG_MISC2_TOG;
 };
-static_assert(sizeof(pmu) == 0x70, "");
+static_assert(sizeof(pmu) == 0x70);
 
 static pmu *const PMU = (pmu*)0x400d8110;

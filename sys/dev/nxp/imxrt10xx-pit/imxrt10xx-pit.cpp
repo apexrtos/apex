@@ -71,8 +71,8 @@ pit::pit(const nxp_imxrt10xx_pit_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
 , clock_{d->clock}
 {
-	static_assert(sizeof(regs) == 0x140, "");
-	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
+	static_assert(sizeof(regs) == 0x140);
+	static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 	write32(&r_->MCR, [&]{
 		decltype(r_->MCR) v{};

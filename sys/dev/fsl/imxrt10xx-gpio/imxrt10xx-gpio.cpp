@@ -55,7 +55,7 @@ struct regs {
 	uint32_t DR_CLEAR;
 	uint32_t DR_TOGGLE;
 };
-static_assert(sizeof(regs) == 0x90, "");
+static_assert(sizeof(regs) == 0x90);
 
 /*
  * imxrt10xx_gpio

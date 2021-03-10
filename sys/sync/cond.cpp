@@ -43,8 +43,8 @@ struct cond_private {
 	struct event event;
 };
 
-static_assert(sizeof(cond_private) == sizeof(cond), "");
-static_assert(alignof(cond_private) == alignof(cond), "");
+static_assert(sizeof(cond_private) == sizeof(cond));
+static_assert(alignof(cond_private) == alignof(cond));
 
 /*
  * cond_init - Create and initialize a condition variable.

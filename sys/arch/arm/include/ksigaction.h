@@ -11,4 +11,4 @@ struct k_sigaction {
 	k_sigset_t mask;
 };
 
-static_assert(sizeof(k_sigset_t) == sizeof(unsigned) * 2, "");
+static_assert(sizeof(k_sigset_t) == sizeof(unsigned) * 2);

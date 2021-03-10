@@ -287,8 +287,8 @@ struct regs {
 		uint32_t r;
 	} ENDPTCTRL[8];
 };
-static_assert(sizeof(regs) == 0x1e0, "");
-static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
+static_assert(sizeof(regs) == 0x1e0);
+static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 /*
  * dtd
@@ -319,7 +319,7 @@ struct dtd {
 	uint32_t buffer[5];
 	uint32_t : 32;			/* for 32-byte alignment */
 };
-static_assert(sizeof(dtd) == 32, "");
+static_assert(sizeof(dtd) == 32);
 inline constexpr size_t dtd_max_buffer_size = 0x1000;
 
 /*
@@ -348,19 +348,19 @@ struct dqh {
 	uint32_t : 32;			/* for 64-byte alignment */
 	uint32_t : 32;			/* for 64-byte alignment */
 };
-static_assert(sizeof(dqh) == 64, "");
+static_assert(sizeof(dqh) == 64);
 dtd *const dtd_terminate = reinterpret_cast<dtd *>(1);
 
 /*
  * sanity checks
  */
-static_assert(static_cast<int>(ch9::TransferType::Control) == 0, "");
-static_assert(static_cast<int>(ch9::TransferType::Isochronous) == 1, "");
-static_assert(static_cast<int>(ch9::TransferType::Bulk) == 2, "");
-static_assert(static_cast<int>(ch9::TransferType::Interrupt) == 3, "");
-static_assert(static_cast<int>(ch9::Direction::HostToDevice) == 0, "");
-static_assert(static_cast<int>(ch9::Direction::DeviceToHost) == 1, "");
-static_assert(sizeof(ch9::setup_data) == sizeof(((dqh *)0)->setup), "");
+static_assert(static_cast<int>(ch9::TransferType::Control) == 0);
+static_assert(static_cast<int>(ch9::TransferType::Isochronous) == 1);
+static_assert(static_cast<int>(ch9::TransferType::Bulk) == 2);
+static_assert(static_cast<int>(ch9::TransferType::Interrupt) == 3);
+static_assert(static_cast<int>(ch9::Direction::HostToDevice) == 0);
+static_assert(static_cast<int>(ch9::Direction::DeviceToHost) == 1);
+static_assert(sizeof(ch9::setup_data) == sizeof(((dqh *)0)->setup));
 
 /*
  * fsl_usb2_udc

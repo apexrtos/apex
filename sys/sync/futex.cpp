@@ -39,8 +39,8 @@ struct futexes_impl {
 	spinlock lock;
 	struct list list;
 };
-static_assert(sizeof(futexes_impl) == sizeof(futexes), "");
-static_assert(alignof(futexes_impl) == alignof(futexes), "");
+static_assert(sizeof(futexes_impl) == sizeof(futexes));
+static_assert(alignof(futexes_impl) == alignof(futexes));
 
 /*
  * futexes - retrieve futexes_impl from task

@@ -1284,7 +1284,7 @@ lseek(int fd, off_t off, int whence)
 	}
 
 	/* overflow */
-	_Static_assert(sizeof(off_t) == sizeof(int64_t), "bad off_t size");
+	static_assert(sizeof(off_t) == sizeof(int64_t), "bad off_t size");
 	if (off > (INT64_MAX - x)) {
 		err = DERR(-EOVERFLOW);
 		goto out;

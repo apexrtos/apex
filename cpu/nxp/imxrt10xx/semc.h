@@ -223,7 +223,7 @@ struct semc {
 	uint32_t STS14;
 	uint32_t STS15;
 };
-static_assert(sizeof(semc) == 0x100, "");
+static_assert(sizeof(semc) == 0x100);
 
 #define SEMC_ADDR 0x402f0000
 static semc *const SEMC = (semc*)SEMC_ADDR;

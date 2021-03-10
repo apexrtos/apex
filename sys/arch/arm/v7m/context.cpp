@@ -30,7 +30,7 @@ struct nvregs {
 	uint32_t r11;
 	uint32_t lr;
 };
-static_assert(!(sizeof(nvregs) & 7), "");
+static_assert(!(sizeof(nvregs) & 7));
 
 /*
  * Non-volatile FPU registers switched by context switch.
@@ -53,7 +53,7 @@ struct fpu_nvregs {
 	uint32_t s30;
 	uint32_t s31;
 };
-static_assert(!(sizeof(fpu_nvregs) & 7), "");
+static_assert(!(sizeof(fpu_nvregs) & 7));
 
 /*
  * System call arguments pushed by system call entry.
@@ -64,7 +64,7 @@ struct syscall_args {
 	uint32_t a6;			    /* syscall argument 6 */
 	uint32_t syscall;		    /* syscall number */
 };
-static_assert(!(sizeof(syscall_args) & 7), "");
+static_assert(!(sizeof(syscall_args) & 7));
 
 /*
  * Frame on userspace stack for signal delivery
@@ -74,7 +74,7 @@ struct sigframe {
 	int rval;
 	uint32_t pad;
 };
-static_assert(!(sizeof(sigframe) & 7), "");
+static_assert(!(sizeof(sigframe) & 7));
 
 /*
  * Frame on userspace stack for real time signal delivery
@@ -83,7 +83,7 @@ struct rt_sigframe {
 	sigframe sf;
 	siginfo_t si;
 };
-static_assert(!(sizeof(rt_sigframe) & 7), "");
+static_assert(!(sizeof(rt_sigframe) & 7));
 
 /*
  * System call return entry point

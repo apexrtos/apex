@@ -31,8 +31,8 @@ struct rwlock_private {
 	 */
 	int state;
 };
-static_assert(sizeof(rwlock_private) == sizeof(rwlock), "");
-static_assert(alignof(rwlock_private) == alignof(rwlock), "");
+static_assert(sizeof(rwlock_private) == sizeof(rwlock));
+static_assert(alignof(rwlock_private) == alignof(rwlock));
 
 /*
  * rwlock_init

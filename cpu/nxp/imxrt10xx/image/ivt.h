@@ -20,4 +20,4 @@ struct ivt {
 	const void *csf;
 	uint32_t reserved : 32;
 };
-static_assert(sizeof(struct ivt) == 32, "");
+static_assert(sizeof(struct ivt) == 32);

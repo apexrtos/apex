@@ -59,8 +59,8 @@ struct mutex_private {
 	struct event event;	/* event */
 };
 
-static_assert(sizeof(mutex_private) == sizeof(mutex), "");
-static_assert(alignof(mutex_private) == alignof(mutex), "");
+static_assert(sizeof(mutex_private) == sizeof(mutex));
+static_assert(alignof(mutex_private) == alignof(mutex));
 
 /*
  * mutex_init - Initialize a mutex.

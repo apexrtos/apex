@@ -12,4 +12,4 @@ const struct boot_data boot_data_ = {
 	.plugin = 0,
 };
 
-static_assert(IMAGE_SIZE <= CONFIG_LOAD_REGION_SIZE, "");
+static_assert(IMAGE_SIZE <= CONFIG_LOAD_REGION_SIZE);

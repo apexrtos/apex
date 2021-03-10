@@ -63,8 +63,8 @@ rtwdog::rtwdog(const nxp_imxrt10xx_rtwdog_desc *d)
 , open_{false}
 , expect_close_{false}
 {
-	static_assert(sizeof(regs) == 0x10, "");
-	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
+	static_assert(sizeof(regs) == 0x10);
+	static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 	configure(d->clock, d->prescale_256);
 	if (set_timeout(d->default_timeout) < 0)

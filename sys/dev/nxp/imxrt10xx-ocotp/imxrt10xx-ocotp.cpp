@@ -177,8 +177,8 @@ struct ocotp::regs {
 ocotp::ocotp(const nxp_imxrt10xx_ocotp_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
 {
-	static_assert(sizeof(regs) == 0x900, "");
-	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
+	static_assert(sizeof(regs) == 0x900);
+	static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 	uint32_t wait = clocks(d->clock, tSP_RD) - 1;
 	uint32_t relax = clocks(d->clock, tSP_PGM) - 1;

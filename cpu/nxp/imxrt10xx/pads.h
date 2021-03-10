@@ -162,4 +162,4 @@ enum {
 	PAD_XTALI,
 	PAD_XTALO,
 };
-static_assert(PAD_GPIO_SD_B1_11 == 123, "");
+static_assert(PAD_GPIO_SD_B1_11 == 123);

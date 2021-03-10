@@ -150,8 +150,8 @@ struct lpuart::regs {
 lpuart::lpuart(unsigned long base)
 : r_{reinterpret_cast<regs *>(base)}
 {
-	static_assert(sizeof(lpuart::regs) == 0x30, "");
-	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
+	static_assert(sizeof(lpuart::regs) == 0x30);
+	static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 }
 
 void

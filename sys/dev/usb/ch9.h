@@ -55,7 +55,7 @@ struct setup_data {
 	uint16_t wIndex;
 	uint16_t wLength;
 };
-static_assert(sizeof(setup_data) == setup_packet_len, "");
+static_assert(sizeof(setup_data) == setup_packet_len);
 
 /*
  * 9.4 Standard Device Requests
@@ -129,7 +129,7 @@ struct device_descriptor {
 	uint8_t iSerialNumber;
 	uint8_t bNumConfigurations;
 } __attribute__((packed));
-static_assert(sizeof(device_descriptor) == 18, "");
+static_assert(sizeof(device_descriptor) == 18);
 
 struct device_qualifier_descriptor {
 	uint8_t bLength;
@@ -142,7 +142,7 @@ struct device_qualifier_descriptor {
 	uint8_t bNumConfigurations;
 	uint8_t bReserved;
 } __attribute__((packed));
-static_assert(sizeof(device_qualifier_descriptor) == 10, "");
+static_assert(sizeof(device_qualifier_descriptor) == 10);
 
 struct configuration_descriptor {
 	uint8_t bLength;
@@ -154,7 +154,7 @@ struct configuration_descriptor {
 	uint8_t bmAttributes;
 	uint8_t bMaxPower;
 } __attribute__((packed));
-static_assert(sizeof(configuration_descriptor) == 9, "");
+static_assert(sizeof(configuration_descriptor) == 9);
 
 struct interface_descriptor {
 	uint8_t bLength;
@@ -167,7 +167,7 @@ struct interface_descriptor {
 	uint8_t bInterfaceProtocol;
 	uint8_t iInterface;
 } __attribute__((packed));
-static_assert(sizeof(interface_descriptor) == 9, "");
+static_assert(sizeof(interface_descriptor) == 9);
 
 enum class TransferType {
 	Control = 0,
@@ -197,14 +197,14 @@ struct endpoint_descriptor {
 	uint16_t wMaxPacketSize;
 	uint8_t bInterval;
 } __attribute__((packed));
-static_assert(sizeof(endpoint_descriptor) == 7, "");
+static_assert(sizeof(endpoint_descriptor) == 7);
 
 struct string_descriptor {
 	uint8_t bLength;
 	DescriptorType bDescriptorType;
 	char bString[];
 } __attribute__((packed));
-static_assert(sizeof(string_descriptor) == 2, "");
+static_assert(sizeof(string_descriptor) == 2);
 
 struct interface_association_descriptor {
 	uint8_t bLength;
@@ -216,6 +216,6 @@ struct interface_association_descriptor {
 	uint8_t bFunctionProtocol;
 	uint8_t iFunction;
 } __attribute__((packed));
-static_assert(sizeof(interface_association_descriptor) == 8, "");
+static_assert(sizeof(interface_association_descriptor) == 8);
 
 }

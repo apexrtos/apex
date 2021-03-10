@@ -46,8 +46,8 @@ struct xbara::regs {
 xbara::xbara(const nxp_imxrt10xx_xbara_desc *d)
 : r_{reinterpret_cast<regs*>(d->base)}
 {
-	static_assert(sizeof(regs) == 0x88, "");
-	static_assert(BYTE_ORDER == LITTLE_ENDIAN, "");
+	static_assert(sizeof(regs) == 0x88);
+	static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 }
 
 xbara *
