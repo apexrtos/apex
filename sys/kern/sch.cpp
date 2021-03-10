@@ -565,8 +565,8 @@ sch_signal(thread *th)
  * Note that the current thread may run immediately again,
  * if no other thread exists in the same priority queue.
  */
-void
-sch_yield()
+int
+sched_yield()
 {
 	assert(!locks);
 
@@ -578,6 +578,8 @@ sch_yield()
 	}
 
 	irq_restore(s);
+
+	return 0;
 }
 
 /*

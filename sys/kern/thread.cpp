@@ -276,7 +276,7 @@ thread_idle()
 {
 	for (;;) {
 		machine_idle();
-		sch_yield();
+		sched_yield();
 	}
 }
 

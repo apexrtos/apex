@@ -58,7 +58,6 @@ int		sch_continue_sleep();
 void		sch_cancel_sleep();
 void	        sch_unsleep(thread *, int);
 void	        sch_signal(thread *);
-void	        sch_yield();
 void	        sch_suspend(thread *);
 void	        sch_resume(thread *);
 void	        sch_suspend_resume(thread *, thread *);
