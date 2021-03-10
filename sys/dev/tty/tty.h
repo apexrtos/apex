@@ -37,11 +37,9 @@
 #pragma once
 
 #include <cstddef>
-#include <types.h>
+#include <termios.h>
 
 struct tty;
-typedef unsigned int tcflag_t;
-
 
 typedef int (*tty_tproc)(tty *, tcflag_t);
 typedef void (*tty_oproc)(tty *);
