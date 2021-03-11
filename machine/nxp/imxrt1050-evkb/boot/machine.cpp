@@ -20,36 +20,36 @@ machine_setup()
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_mux_ctl){{
 		.MUX_MODE = 2,
-		.SION = SION_Software_Input_On_Disabled,
-	}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_pad_ctl){
-		.SRE = SRE_Slow,
-		.DSE = DSE_R0_6,
-		.SPEED = SPEED_100MHz,
-		.ODE = ODE_Open_Drain_Disabled,
-		.PKE = PKE_Pull_Keeper_Enabled,
-		.PUE = PUE_Keeper,
-		.PUS = PUS_100K_Pull_Down,
-		.HYS = HYS_Hysteresis_Disabled,
-	}.r);
+		.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled,
+	}}.r);
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_pad_ctl){{
+		.SRE = iomuxc::sw_pad_ctl::sre::Slow,
+		.DSE = iomuxc::sw_pad_ctl::dse::R0_6,
+		.SPEED = iomuxc::sw_pad_ctl::speed::MHz_100,
+		.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
+		.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
+		.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
+		.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
+		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
+	}}.r);
 
 	/* set GPIO_AD_B0_13 as LPUART1_RX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13, (iomuxc_sw_mux_ctl){
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13, (iomuxc::sw_mux_ctl){{
 		.MUX_MODE = 2,
-		.SION = SION_Software_Input_On_Disabled,
-	}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_pad_ctl){
-		.SRE = SRE_Slow,
-		.DSE = DSE_R0_6,
-		.SPEED = SPEED_100MHz,
-		.ODE = ODE_Open_Drain_Disabled,
-		.PKE = PKE_Pull_Keeper_Enabled,
-		.PUE = PUE_Keeper,
-		.PUS = PUS_100K_Pull_Down,
-		.HYS = HYS_Hysteresis_Disabled,
-	}.r);
+		.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled,
+	}}.r);
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_pad_ctl){{
+		.SRE = iomuxc::sw_pad_ctl::sre::Slow,
+		.DSE = iomuxc::sw_pad_ctl::dse::R0_6,
+		.SPEED = iomuxc::sw_pad_ctl::speed::MHz_100,
+		.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
+		.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
+		.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
+		.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
+		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
+	}}.r);
 
 	lpuart_regs *const u = (lpuart_regs *)LPUART1;
 
@@ -207,7 +207,7 @@ extern "C" void
 machine_clock_init()
 {
 	/* set core voltage to 1.25V for 600MHz operation */
-	for (dcdc_reg3 v = read32(&DCDC->REG3); v.TRG < (1250 - 800) / 25;) {
+	for (dcdc::reg3 v = read32(&DCDC->REG3); v.TRG < (1250 - 800) / 25;) {
 		/* step by 25mV */
 		v.TRG += 1;
 		write32(&DCDC->REG3, v.r);
@@ -216,29 +216,29 @@ machine_clock_init()
 	}
 
 	/* bypass PLL1 (ARM PLL) and configure for 1200MHz */
-	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){{
+	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog::pll_arm){{
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
-		.BYPASS_CLK_SRC = BYPASS_CLK_SRC_REF_CLK_24M,
+		.BYPASS_CLK_SRC = ccm_analog::bypass_clk_src::REF_CLK_24M,
 		.BYPASS = 1,
 	}}.r);
 	/* wait for PLL1 to stabilise */
 	while (!read32(&CCM_ANALOG->PLL_ARM).LOCK);
 
 	/* unbypass PLL1 */
-	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog_pll_arm){{
+	write32(&CCM_ANALOG->PLL_ARM, (ccm_analog::pll_arm){{
 		.DIV_SELECT = 100, /* fout = 24MHz * DIV_SELECT / 2 */
 		.POWERDOWN = 0,
 		.ENABLE = 1,
-		.BYPASS_CLK_SRC = BYPASS_CLK_SRC_REF_CLK_24M,
+		.BYPASS_CLK_SRC = ccm_analog::bypass_clk_src::REF_CLK_24M,
 		.BYPASS = 0,
 	}}.r);
 
 	/* configure UART_CLK_ROOT */
-	write32(&CCM->CSCDR1, (ccm_cscdr1){{
+	write32(&CCM->CSCDR1, (ccm::cscdr1){{
 		.UART_CLK_PODF = 0,
-		.UART_CLK_SEL = UART_CLK_SEL_osc_clk,
+		.UART_CLK_SEL = ccm::cscdr1::uart_clk_sel::OSC_CLK,
 		.USDHC1_PODF = 1,
 		.USDHC2_PODF = 1,
 		.TRACE_PODF = 3,

@@ -13,7 +13,7 @@ constexpr uint32_t bswap(uint32_t v)
 	return __builtin_bswap32(v);
 }
 
-constexpr uint32_t bswap(ccm::ccm_cbcdr v)
+constexpr uint32_t bswap(ccm::cbcdr v)
 {
 	uint32_t tmp =
 	    v.SEMC_CLK_SEL << 6 |
@@ -26,7 +26,7 @@ constexpr uint32_t bswap(ccm::ccm_cbcdr v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(iomuxc_sw_mux_ctl v)
+constexpr uint32_t bswap(iomuxc::sw_mux_ctl v)
 {
 	uint32_t tmp =
 		v.MUX_MODE << 0 |
@@ -34,7 +34,7 @@ constexpr uint32_t bswap(iomuxc_sw_mux_ctl v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(iomuxc_sw_pad_ctl v)
+constexpr uint32_t bswap(iomuxc::sw_pad_ctl v)
 {
 	uint32_t tmp =
 	    v.SRE << 0 |
@@ -48,7 +48,7 @@ constexpr uint32_t bswap(iomuxc_sw_pad_ctl v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_mcr v)
+constexpr uint32_t bswap(semc::mcr v)
 {
 	uint32_t tmp =
 	    v.SWRST << 0 |
@@ -61,7 +61,7 @@ constexpr uint32_t bswap(semc::semc_mcr v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_bmcr0 v)
+constexpr uint32_t bswap(semc::bmcr0 v)
 {
 	uint32_t tmp =
 	    v.WQOS << 0 |
@@ -71,7 +71,7 @@ constexpr uint32_t bswap(semc::semc_bmcr0 v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_bmcr1 v)
+constexpr uint32_t bswap(semc::bmcr1 v)
 {
 	uint32_t tmp =
 	    v.WQOS << 0 |
@@ -82,7 +82,7 @@ constexpr uint32_t bswap(semc::semc_bmcr1 v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_iocr v)
+constexpr uint32_t bswap(semc::iocr v)
 {
 	uint32_t tmp =
 	    v.MUX_A8 << 0 |
@@ -94,7 +94,7 @@ constexpr uint32_t bswap(semc::semc_iocr v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc_br v)
+constexpr uint32_t bswap(semc::br v)
 {
 	uint32_t tmp =
 	    v.VLD << 0 |
@@ -103,7 +103,7 @@ constexpr uint32_t bswap(semc_br v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_sdramcr0 v)
+constexpr uint32_t bswap(semc::sdramcr0 v)
 {
 	uint32_t tmp =
 	    v.PS << 0 |
@@ -113,7 +113,7 @@ constexpr uint32_t bswap(semc::semc_sdramcr0 v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_sdramcr1 v)
+constexpr uint32_t bswap(semc::sdramcr1 v)
 {
 	uint32_t tmp =
 	    v.PRE2ACT << 0 |
@@ -125,7 +125,7 @@ constexpr uint32_t bswap(semc::semc_sdramcr1 v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_sdramcr2 v)
+constexpr uint32_t bswap(semc::sdramcr2 v)
 {
 	uint32_t tmp =
 	    v.SRRC << 0 |
@@ -135,7 +135,7 @@ constexpr uint32_t bswap(semc::semc_sdramcr2 v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_sdramcr3 v)
+constexpr uint32_t bswap(semc::sdramcr3 v)
 {
 	uint32_t tmp =
 	    v.REN << 0 |
@@ -146,17 +146,17 @@ constexpr uint32_t bswap(semc::semc_sdramcr3 v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_ipcr0 v)
+constexpr uint32_t bswap(semc::ipcr0 v)
 {
 	return bswap(v.SA);
 }
 
-constexpr uint32_t bswap(semc::semc_ipcr1 v)
+constexpr uint32_t bswap(semc::ipcr1 v)
 {
 	return bswap(v.DATSZ);
 }
 
-constexpr uint32_t bswap(semc::semc_ipcr2 v)
+constexpr uint32_t bswap(semc::ipcr2 v)
 {
 	uint32_t tmp =
 	    v.BM0 << 0 |
@@ -166,7 +166,7 @@ constexpr uint32_t bswap(semc::semc_ipcr2 v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_ipcmd v)
+constexpr uint32_t bswap(semc::ipcmd v)
 {
 	uint32_t tmp =
 	    v.CMD << 0 |
@@ -174,7 +174,7 @@ constexpr uint32_t bswap(semc::semc_ipcmd v)
 	return bswap(tmp);
 }
 
-constexpr uint32_t bswap(semc::semc_intr v)
+constexpr uint32_t bswap(semc::intr v)
 {
 	uint32_t tmp =
 	    v.IPCMDDONE << 0 |
@@ -187,15 +187,15 @@ constexpr uint32_t bswap(semc::semc_intr v)
 }
 
 /* Configuration for SEMC (SDRAM) pad */
-constexpr uint32_t semc_pad_control = bswap((iomuxc_sw_pad_ctl){{
-	.SRE = SRE_Fast,
-	.DSE = DSE_R0_7,
-	.SPEED = SPEED_200MHz,
-	.ODE = ODE_Open_Drain_Disabled,
-	.PKE = PKE_Pull_Keeper_Enabled,
-	.PUE = PUE_Keeper,
-	.PUS = PUS_100K_Pull_Down,
-	.HYS = HYS_Hysteresis_Enabled,
+constexpr uint32_t semc_pad_control = bswap((iomuxc::sw_pad_ctl){{
+	.SRE = iomuxc::sw_pad_ctl::sre::Fast,
+	.DSE = iomuxc::sw_pad_ctl::dse::R0_7,
+	.SPEED = iomuxc::sw_pad_ctl::speed::MHz_200,
+	.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
+	.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
+	.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
+	.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
+	.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Enabled,
 }});
 
 constexpr struct dcd {
@@ -214,13 +214,13 @@ constexpr struct dcd {
 		uint32_t args[196] = {
 			/* Set SEMC clock source to PLL2.PFD2/3 = 166MHz. */
 			bswap(CCM_ADDR + offsetof(ccm, CBCDR)),
-			bswap((ccm::ccm_cbcdr){{
-				.SEMC_CLK_SEL = SEMC_CLK_SEL_ALTERNATE,
-				.SEMC_ALT_CLK_SEL = SEMC_ALT_CLK_SEL_PLL2_PFD2,
+			bswap((ccm::cbcdr){{
+				.SEMC_CLK_SEL = ccm::cbcdr::semc_clk_sel::ALTERNATE,
+				.SEMC_ALT_CLK_SEL = ccm::cbcdr::semc_alt_clk_sel::PLL2_PFD2,
 				.IPG_PODF = 3, /* divide by 4 */
 				.AHB_PODF = 0, /* divide by 1 */
 				.SEMC_PODF = 2, /* divide by 3 */
-				.PERIPH_CLK_SEL = PERIPH_CLK_SEL_PRE_PERIPH,
+				.PERIPH_CLK_SEL = ccm::cbcdr::periph_clk_sel::PRE_PERIPH,
 				.PERIPH_CLK2_PODF = 0, /* divide by 1 */
 			}}),
 
@@ -269,9 +269,9 @@ constexpr struct dcd {
 			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_37)), 0,
 			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_38)), 0,
 			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_39)),
-			bswap((iomuxc_sw_mux_ctl){{
+			bswap((iomuxc::sw_mux_ctl){{
 				.MUX_MODE = 0,
-				.SION = SION_Software_Input_On_Enabled,
+				.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Enabled,
 			}}),
 			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_40)), 0,
 			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_41)), 0,
@@ -322,17 +322,17 @@ constexpr struct dcd {
 
 			/* Configure DRAM on SEMC module. */
 			bswap(SEMC_ADDR + offsetof(semc, MCR)),
-			bswap((semc::semc_mcr){{
+			bswap((semc::mcr){{
 				.SWRST = 0,
 				.MDIS = 0,
-				.DQSMD = DQSMD_from_pad,
+				.DQSMD = semc::mcr::dqsmd::FROM_PAD,
 				.WPOL0 = 0,
 				.WPOL1 = 0,
 				.CTO = 0,
 				.BTO = 16,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, IOCR)),
-			bswap((semc::semc_iocr){{
+			bswap((semc::iocr){{
 				.MUX_A8 = 0,	/* SDRAM Address bit (A8) */
 				.MUX_CSX0 = 5,	/* NOR CE# */
 				.MUX_CSX1 = 6,	/* PSRAM CE# */
@@ -341,14 +341,14 @@ constexpr struct dcd {
 				.MUX_RDY = 0,	/* NAND Ready/Wait# input */
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, BMCR0)),
-			bswap((semc::semc_bmcr0){{
+			bswap((semc::bmcr0){{
 				.WQOS = 1,
 				.WAGE = 8,
 				.WSH = 0,
 				.WRWS = 0,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, BMCR1)),
-			bswap((semc::semc_bmcr1){{
+			bswap((semc::bmcr1){{
 				.WQOS = 1,
 				.WAGE = 8,
 				.WPH = 0,
@@ -356,20 +356,20 @@ constexpr struct dcd {
 				.WBR = 0,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, BR0)),
-			bswap((semc_br){{
+			bswap((semc::br){{
 				.VLD = 1,
 				.MS = 13,	/* 32MiB */
 				.BA = 0x80000,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, SDRAMCR0)),
-			bswap((semc::semc_sdramcr0){{
+			bswap((semc::sdramcr0){{
 				.PS = 1,	/* 16 bit */
 				.BL = 3,	/* burst length 8 */
 				.COL = 3,	/* 9 bit columns */
 				.CL = 3,	/* CAS latency 3 */
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, SDRAMCR1)),
-			bswap((semc::semc_sdramcr1){{
+			bswap((semc::sdramcr1){{
 				.PRE2ACT = 2,
 				.ACT2RW = 2,
 				.RFRC = 9,
@@ -378,7 +378,7 @@ constexpr struct dcd {
 				.ACT2PRE = 6,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, SDRAMCR2)),
-			bswap((semc::semc_sdramcr2){{
+			bswap((semc::sdramcr2){{
 				.SRRC = 10,
 				.REF2REF = 9,
 				.ACT2ACT = 9,
@@ -387,15 +387,15 @@ constexpr struct dcd {
 
 			/* Prepare to send DRAM commands. */
 			bswap(SEMC_ADDR + offsetof(semc, IPCR0)),
-			bswap((semc::semc_ipcr0){{
+			bswap((semc::ipcr0){{
 				.SA = 0x80000000,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, IPCR1)),
-			bswap((semc::semc_ipcr1){{
+			bswap((semc::ipcr1){{
 				.DATSZ = 2,
 			}}),
 			bswap(SEMC_ADDR + offsetof(semc, IPCR2)),
-			bswap((semc::semc_ipcr2){{
+			bswap((semc::ipcr2){{
 				.BM0 = 0,
 				.BM1 = 0,
 				.BM2 = 0,
@@ -404,8 +404,8 @@ constexpr struct dcd {
 
 			/* Issue precharge all command. */
 			bswap(SEMC_ADDR + offsetof(semc, IPCMD)),
-			bswap((semc::semc_ipcmd){{
-				.CMD = CMD_SDRAM_PRECHARGE_ALL,
+			bswap((semc::ipcmd){{
+				.CMD = semc::ipcmd::cmd::PRECHARGE_ALL,
 				.KEY = 0xa55a,
 			}}),
 		};
@@ -420,7 +420,7 @@ constexpr struct dcd {
 		};
 		uint32_t args[2] = {
 			bswap(SEMC_ADDR + offsetof(semc, INTR)),
-			bswap((semc::semc_intr){{
+			bswap((semc::intr){{
 				.IPCMDDONE = 1,
 			}}),
 		};
@@ -435,8 +435,8 @@ constexpr struct dcd {
 		};
 		uint32_t args[2] = {
 			bswap(SEMC_ADDR + offsetof(semc, IPCMD)),
-			bswap((semc::semc_ipcmd){{
-				.CMD = CMD_SDRAM_AUTO_REFRESH,
+			bswap((semc::ipcmd){{
+				.CMD = semc::ipcmd::cmd::AUTO_REFRESH,
 				.KEY = 0xa55a,
 			}}),
 		};
@@ -451,7 +451,7 @@ constexpr struct dcd {
 		};
 		uint32_t args[2] = {
 			bswap(SEMC_ADDR + offsetof(semc, INTR)),
-			bswap((semc::semc_intr){{
+			bswap((semc::intr){{
 				.IPCMDDONE = 1,
 			}}),
 		};
@@ -466,8 +466,8 @@ constexpr struct dcd {
 		};
 		uint32_t args[2] = {
 			bswap(SEMC_ADDR + offsetof(semc, IPCMD)),
-			bswap((semc::semc_ipcmd){{
-				.CMD = CMD_SDRAM_AUTO_REFRESH,
+			bswap((semc::ipcmd){{
+				.CMD = semc::ipcmd::cmd::AUTO_REFRESH,
 				.KEY = 0xa55a,
 			}}),
 		};
@@ -482,7 +482,7 @@ constexpr struct dcd {
 		};
 		uint32_t args[2] = {
 			bswap(SEMC_ADDR + offsetof(semc, INTR)),
-			bswap((semc::semc_intr){{
+			bswap((semc::intr){{
 				.IPCMDDONE = 1,
 			}}),
 		};
@@ -499,8 +499,8 @@ constexpr struct dcd {
 			bswap(SEMC_ADDR + offsetof(semc, IPTXDAT)),
 			bswap(0x33),
 			bswap(SEMC_ADDR + offsetof(semc, IPCMD)),
-			bswap((semc::semc_ipcmd){{
-				.CMD = CMD_SDRAM_MODESET,
+			bswap((semc::ipcmd){{
+				.CMD = semc::ipcmd::cmd::MODESET,
 				.KEY = 0xa55a,
 			}}),
 		};
@@ -515,7 +515,7 @@ constexpr struct dcd {
 		};
 		uint32_t args[2] = {
 			bswap(SEMC_ADDR + offsetof(semc, INTR)),
-			bswap((semc::semc_intr){{
+			bswap((semc::intr){{
 				.IPCMDDONE = 1,
 			}}),
 		};
@@ -530,7 +530,7 @@ constexpr struct dcd {
 		};
 		uint32_t args[2] = {
 			bswap(SEMC_ADDR + offsetof(semc, SDRAMCR3)),
-			bswap((semc::semc_sdramcr3){{
+			bswap((semc::sdramcr3){{
 				.REN = 1,
 				.REBL = 4,
 				.PRESCALE = 11,

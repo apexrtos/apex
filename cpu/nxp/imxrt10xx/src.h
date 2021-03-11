@@ -7,7 +7,7 @@
  * System Reset Controller
  */
 struct src {
-	union src_scr {
+	union scr {
 		struct {
 			uint32_t : 7;
 			uint32_t MASK_WDOG_RST : 4;

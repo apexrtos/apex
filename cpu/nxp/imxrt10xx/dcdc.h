@@ -7,7 +7,7 @@
  * DCDC Converter
  */
 struct dcdc {
-	union dcdc_reg0 {
+	union reg0 {
 		struct {
 			uint32_t PWD_ZCD : 1;
 			uint32_t DISABLE_AUTO_CLK_SWITCH : 1;
@@ -34,7 +34,7 @@ struct dcdc {
 		};
 		uint32_t r;
 	} REG0;
-	union dcdc_reg1 {
+	union reg1 {
 		struct {
 			uint32_t POSLIMIT_BUCK_IN : 7;
 			uint32_t REG_FBK_SEL : 2;
@@ -50,7 +50,7 @@ struct dcdc {
 		};
 		uint32_t r;
 	} REG1;
-	union dcdc_reg2 {
+	union reg2 {
 		struct {
 			uint32_t LOOPCTRL_DC_C : 2;
 			uint32_t LOOPCTRL_DC_R : 4;
@@ -65,7 +65,7 @@ struct dcdc {
 		};
 		uint32_t r;
 	} REG2;
-	union dcdc_reg3 {
+	union reg3 {
 		struct {
 			uint32_t TRG : 5;
 			uint32_t : 3;

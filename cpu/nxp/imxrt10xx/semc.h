@@ -6,38 +6,27 @@
 /*
  * Smart External Memory Controller
  */
-union semc_br {
-	struct {
-		uint32_t VLD : 1;
-		uint32_t MS : 5;
-		uint32_t : 6;
-		uint32_t BA : 20;
-	};
-	uint32_t r;
-};
-
-enum semc_mcr_dqsmd {
-	DQSMD_internal,
-	DQSMD_from_pad,
-};
-
-enum semc_ipcmd_cmd {
-	CMD_SDRAM_READ = 0x8,
-	CMD_SDRAM_WRITE = 0x9,
-	CMD_SDRAM_MODESET = 0xa,
-	CMD_SDRAM_ACTIVE = 0xb,
-	CMD_SDRAM_AUTO_REFRESH = 0xc,
-	CMD_SDRAM_SELF_REFRESH = 0xd,
-	CMD_SDRAM_PRECHARGE = 0xe,
-	CMD_SDRAM_PRECHARGE_ALL = 0xf
-};
-
 struct semc {
-	union semc_mcr {
+	union br {
+		struct {
+			uint32_t VLD : 1;
+			uint32_t MS : 5;
+			uint32_t : 6;
+			uint32_t BA : 20;
+		};
+		uint32_t r;
+	};
+
+	union mcr {
+		enum class dqsmd : unsigned {
+			INTERNAL,
+			FROM_PAD,
+		};
+
 		struct {
 			uint32_t SWRST : 1;
 			uint32_t MDIS : 1;
-			enum semc_mcr_dqsmd DQSMD : 1;
+			dqsmd DQSMD : 1;
 			uint32_t : 3;
 			uint32_t WPOL0 : 1;
 			uint32_t WPOL1 : 1;
@@ -48,7 +37,7 @@ struct semc {
 		};
 		uint32_t r;
 	} MCR;
-	union semc_iocr {
+	union iocr {
 		struct {
 			uint32_t MUX_A8 : 3;
 			uint32_t MUX_CSX0 : 3;
@@ -60,7 +49,7 @@ struct semc {
 		};
 		uint32_t r;
 	} IOCR;
-	union semc_bmcr0 {
+	union bmcr0 {
 		struct {
 			uint32_t WQOS : 4;
 			uint32_t WAGE : 4;
@@ -70,7 +59,7 @@ struct semc {
 		};
 		uint32_t r;
 	} BMCR0;
-	union semc_bmcr1 {
+	union bmcr1 {
 		struct {
 			uint32_t WQOS : 4;
 			uint32_t WAGE : 4;
@@ -81,22 +70,22 @@ struct semc {
 		uint32_t r;
 	} BMCR1;
 	union {
-		union semc_br BR[9];
+		br BR[9];
 		struct {
-			union semc_br BR0;
-			union semc_br BR1;
-			union semc_br BR2;
-			union semc_br BR3;
-			union semc_br BR4;
-			union semc_br BR5;
-			union semc_br BR6;
-			union semc_br BR7;
-			union semc_br BR8;
+			br BR0;
+			br BR1;
+			br BR2;
+			br BR3;
+			br BR4;
+			br BR5;
+			br BR6;
+			br BR7;
+			br BR8;
 		};
 	};
 	uint32_t : 32;
 	uint32_t INTEN;
-	union semc_intr {
+	union intr {
 		struct {
 			uint32_t IPCMDDONE : 1;
 			uint32_t IPCMDERR : 1;
@@ -108,7 +97,7 @@ struct semc {
 		};
 		uint32_t r;
 	} INTR;
-	union semc_sdramcr0 {
+	union sdramcr0 {
 		struct {
 			uint32_t PS : 1;
 			uint32_t : 3;
@@ -120,7 +109,7 @@ struct semc {
 		};
 		uint32_t r;
 	} SDRAMCR0;
-	union semc_sdramcr1 {
+	union sdramcr1 {
 		struct {
 			uint32_t PRE2ACT : 4;
 			uint32_t ACT2RW : 4;
@@ -132,7 +121,7 @@ struct semc {
 		};
 		uint32_t r;
 	} SDRAMCR1;
-	union semc_sdramcr2 {
+	union sdramcr2 {
 		struct {
 			uint32_t SRRC : 8;
 			uint32_t REF2REF : 8;
@@ -141,7 +130,7 @@ struct semc {
 		};
 		uint32_t r;
 	} SDRAMCR2;
-	union semc_sdramcr3 {
+	union sdramcr3 {
 		struct {
 			uint32_t REN : 1;
 			uint32_t REBL : 3;
@@ -168,20 +157,20 @@ struct semc {
 	uint32_t DBICR1;
 	uint32_t : 32;
 	uint32_t : 32;
-	union semc_ipcr0 {
+	union ipcr0 {
 		struct {
 			uint32_t SA : 32;
 		};
 		uint32_t r;
 	} IPCR0;
-	union semc_ipcr1 {
+	union ipcr1 {
 		struct {
 			uint32_t DATSZ : 3;
 			uint32_t : 29;
 		};
 		uint32_t r;
 	} IPCR1;
-	union semc_ipcr2 {
+	union ipcr2 {
 		struct {
 			uint32_t BM0 : 1;
 			uint32_t BM1 : 1;
@@ -191,9 +180,20 @@ struct semc {
 		};
 		uint32_t r;
 	} IPCR2;
-	union semc_ipcmd {
+	union ipcmd {
+		enum class cmd : unsigned {
+			READ = 0x8,
+			WRITE = 0x9,
+			MODESET = 0xa,
+			ACTIVE = 0xb,
+			AUTO_REFRESH = 0xc,
+			SELF_REFRESH = 0xd,
+			PRECHARGE = 0xe,
+			PRECHARGE_ALL = 0xf
+		};
+
 		struct {
-			enum semc_ipcmd_cmd CMD : 16;
+			cmd CMD : 16;
 			uint32_t KEY : 16;
 		};
 		uint32_t r;

@@ -125,7 +125,7 @@ machine_reset()
 	/* reset flexram configuration -- this is necessary as the IMXRT1050
 	 * boot ROM expects to use OCRAM as stack and is too stupid to make
 	 * sure that it will actually work */
-	iomuxc_gpr_gpr16 gpr16 = read32(&IOMUXC_GPR->GPR16);
+	iomuxc_gpr::gpr16 gpr16 = read32(&IOMUXC_GPR->GPR16);
 	gpr16.FLEXRAM_BANK_CFG_SEL = 0;
 	write32(&IOMUXC_GPR->GPR16, gpr16.r);
 
@@ -168,19 +168,19 @@ void
 early_console_init()
 {
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_mux_ctl){{
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_mux_ctl){{
 		.MUX_MODE = 2,
-		.SION = SION_Software_Input_On_Disabled,
+		.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled,
 	}}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc_sw_pad_ctl){{
-		.SRE = SRE_Slow,
-		.DSE = DSE_R0_6,
-		.SPEED = SPEED_100MHz,
-		.ODE = ODE_Open_Drain_Disabled,
-		.PKE = PKE_Pull_Keeper_Enabled,
-		.PUE = PUE_Keeper,
-		.PUS = PUS_100K_Pull_Down,
-		.HYS = HYS_Hysteresis_Disabled,
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_pad_ctl){{
+		.SRE = iomuxc::sw_pad_ctl::sre::Slow,
+		.DSE = iomuxc::sw_pad_ctl::dse::R0_6,
+		.SPEED = iomuxc::sw_pad_ctl::speed::MHz_100,
+		.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
+		.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
+		.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
+		.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
+		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
 	}}.r);
 
 	fsl_lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
