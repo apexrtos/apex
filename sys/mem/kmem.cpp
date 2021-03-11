@@ -308,7 +308,7 @@ kmem_alloc(size_t size, long mem_attr)
 /*
  * malloc - allocate memory block
  */
-void *
+__attribute__((used)) void *
 malloc(size_t size)
 {
 	return kmem_alloc(size, MA_NORMAL);
