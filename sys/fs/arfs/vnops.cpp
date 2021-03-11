@@ -79,8 +79,8 @@ read_extended_filename(int fd, const size_t off, char *buf, size_t len)
 		return false;
 	if ((rd = kpread(fd, buf, MIN(size - off, len), SARMAG + sizeof h + off)) < 0)
 		return false;
-	buf[rd == len ? len - 1 : rd] = 0;
-	if (!(p = memchr(buf, '/', rd)))
+	buf[(size_t)rd == len ? len - 1 : rd] = 0;
+	if (!(p = (char *)memchr(buf, '/', rd)))
 		return false;
 	*p = 0;
 	return true;
@@ -256,7 +256,7 @@ arfs_readdir(file *fp, dirent *buf, size_t len)
 		if (i == fp->f_offset) {
 			/* Convert archive name */
 			char *p;
-			if (!(p = memchr(h.ar_name, '/', ARRAY_SIZE(h.ar_name)))) {
+			if (!(p = (char *)memchr(h.ar_name, '/', ARRAY_SIZE(h.ar_name)))) {
 				err = DERR(-EIO);
 				goto out;
 			}

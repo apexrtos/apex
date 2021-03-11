@@ -78,7 +78,7 @@ task_find(pid_t pid)
 	if (pid == 1)
 		return init_task;
 	const unsigned shift = floor_log2(alignof(task));
-	task *t = phys_to_virt((phys*)(pid << shift));
+	task *t = (task *)phys_to_virt((phys*)(pid << shift));
 	if (!k_access_ok(t, sizeof *t, PROT_WRITE))
 		return 0;
 	if (!task_valid(t))
@@ -162,7 +162,7 @@ task_create(task *parent, int vm_option, task **child)
 	/*
 	 * Allocate task
 	 */
-	if ((task = malloc(sizeof(*task))) == NULL) {
+	if ((task = (task *)malloc(sizeof(*task))) == NULL) {
 		err = DERR(-ENOMEM);
 		goto out;
 	}

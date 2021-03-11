@@ -102,7 +102,7 @@ irq_attach(int vector, int prio, int mode, int (*isr)(int, void *),
 	assert(vector < CONFIG_IRQS);
 	assert(!interrupt_running());
 
-	if ((irq = kmem_alloc(sizeof(*irq), MA_FAST)) == NULL)
+	if ((irq = (irq *)kmem_alloc(sizeof(*irq), MA_FAST)) == NULL)
 		return NULL;
 
 	memset(irq, 0, sizeof(*irq));

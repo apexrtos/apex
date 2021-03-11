@@ -114,7 +114,7 @@ exc_MemManage(exception_frame_basic *e, bool handler_mode, int exc)
 	}
 
 	/* clear fault */
-	write8(&SCB->CFSR.MMFSR, -1);
+	write8(&SCB->CFSR.MMFSR, uint8_t{0xff});
 #endif
 }
 
@@ -139,7 +139,7 @@ exc_BusFault(exception_frame_basic *e, bool handler_mode, int exc)
 		sig_thread(thread_cur(), SIGBUS);
 
 	/* clear fault */
-	write8(&SCB->CFSR.BFSR, -1);
+	write8(&SCB->CFSR.BFSR, uint8_t{0xff});
 }
 
 /*
@@ -174,7 +174,7 @@ exc_UsageFault(exception_frame_basic *e, bool handler_mode, int exc)
 	sig_thread(thread_cur(), sig);
 
 	/* clear fault */
-	write16(&SCB->CFSR.UFSR, -1);
+	write16(&SCB->CFSR.UFSR, uint16_t{0xffff});
 }
 
 /*

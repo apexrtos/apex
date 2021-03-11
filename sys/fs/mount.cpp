@@ -210,7 +210,7 @@ mount(const char *dev, const char *dir, const char *type, unsigned long flags,
 	}
 
 	/* create mount entry */
-	if (!(mp = malloc(sizeof(struct mount)))) {
+	if (!(mp = (struct mount *)malloc(sizeof(struct mount)))) {
 		err = DERR(-ENOMEM);
 		goto err1;
 	}

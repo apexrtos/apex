@@ -57,7 +57,7 @@ static semaphore exit_sem;
 /*
  * File pointer value for reserved fd slot
  */
-#define FP_RESERVED -1
+#define FP_RESERVED ((uintptr_t)-1)
 
 /*
  * unlock task file system lock
@@ -139,7 +139,7 @@ task_getfp_unlocked(task *t, int fd)
 
 	if (fd == AT_FDCWD)
 		fp = t->cwdfp;
-	else if (fd >= ARRAY_SIZE(t->file) || fd < 0)
+	else if ((size_t)fd >= ARRAY_SIZE(t->file))
 		return NULL;
 	else if (!(fp = fp_ptr(t->file[fd])))
 		return NULL;
@@ -222,7 +222,7 @@ task_newfd(task *t, size_t start)
 	assert(rwlock_write_locked(&t->fs_lock));
 	assert(start < ARRAY_SIZE(t->file));
 
-	int fd;
+	size_t fd;
 
 	for (fd = start; fd < ARRAY_SIZE(t->file); ++fd)
 		if (!t->file[fd])
@@ -335,10 +335,10 @@ lookup_v(vnode *vp, const char *path, vnode **vpp,
 						err = DERR(-ENOMEM);
 						goto out;
 					}
-					link_buf = phys_to_virt(p);
+					link_buf = (char *)phys_to_virt(p);
 					link_buf_size = PATH_MAX;
 				} else {
-					link_buf = alloca(32);
+					link_buf = (char *)alloca(32);
 					link_buf_size = 32;
 				}
 			}
@@ -358,7 +358,7 @@ lookup_v(vnode *vp, const char *path, vnode **vpp,
 			};
 			err = VOP_READ(&f, &iov, 1, 0);
 			VOP_CLOSE(&f);
-			if (err != tgt_len) {
+			if ((size_t)err != tgt_len) {
 				VOP_CLOSE(&f);
 				if (err >= 0)
 					err = DERR(-EIO);
@@ -683,7 +683,7 @@ fs_openfp(task *t, const int dirfd, const char *path, int flags,
 	/* create file structure */
 	if (*pfp)
 		fp = (file *)pfp;
-	else if (!(fp = malloc(sizeof(file))))
+	else if (!(fp = (file *)malloc(sizeof(file))))
 			return DERR(-ENOMEM);
 	*fp = (file) {
 		.f_flags = flags & ~O_CLOEXEC,
@@ -840,7 +840,7 @@ fs_kinit()
 		panic("vn_lookup");
 
 	/* create file structure */
-	if (!(t->cwdfp = malloc(sizeof(file))))
+	if (!(t->cwdfp = (file *)malloc(sizeof(file))))
 		panic("malloc");
 	*t->cwdfp = (file) {
 		.f_flags = O_RDONLY,
@@ -874,7 +874,7 @@ void
 fs_exit(task *t)
 {
 	file *fp;
-	int fd;
+	size_t fd;
 
 	/*
 	 * Defer to worker thread if called from an incompatible context
@@ -1837,7 +1837,7 @@ dup(int fildes)
 
 	vdbgsys("dup: fildes=%d\n", fildes);
 
-	if (fildes >= ARRAY_SIZE(t->file))
+	if ((size_t)fildes >= ARRAY_SIZE(t->file))
 		return DERR(-EBADF);
 
 	if ((err = task_write_lock_interruptible(t)))
@@ -1878,8 +1878,8 @@ dup2for(task *t, int fildes, int fildes2)
 
 	vdbgsys("dup2for t=%p fildes=%d fildes2=%d\n", t, fildes, fildes2);
 
-	if (fildes >= ARRAY_SIZE(t->file) || fildes2 >= ARRAY_SIZE(t->file) ||
-	    fildes < 0 || fildes2 < 0)
+	if ((size_t)fildes >= ARRAY_SIZE(t->file) ||
+	    (size_t)fildes2 >= ARRAY_SIZE(t->file))
 		return DERR(-EBADF);
 
 	if (fildes == fildes2)
@@ -2122,7 +2122,7 @@ fcntl(int fd, int cmd, ...)
 	switch (cmd) {
 	case F_DUPFD:
 	case F_DUPFD_CLOEXEC:
-		if (arg >= ARRAY_SIZE(t->file)) {
+		if ((size_t)arg >= ARRAY_SIZE(t->file)) {
 			ret = DERR(-EINVAL);
 			break;
 		}
@@ -2257,11 +2257,11 @@ pipe2(int fd[2], int flags)
 	}
 
 	/* create file structures */
-	if (!(rfp = malloc(sizeof(file)))) {
+	if (!(rfp = (file *)malloc(sizeof(file)))) {
 		r = DERR(-ENOMEM);
 		goto out1;
 	}
-	if (!(wfp = malloc(sizeof(file)))) {
+	if (!(wfp = (file *)malloc(sizeof(file)))) {
 		r = DERR(-ENOMEM);
 		goto out2;
 	}
@@ -2368,7 +2368,7 @@ symlinkat(const char *target, int dirfd, const char *path)
 		.iov_base = (void*)target,
 		.iov_len = target_len,
 	};
-	if ((err = VOP_WRITE(&f, &iov, 1, 0)) != target_len) {
+	if ((size_t)(err = VOP_WRITE(&f, &iov, 1, 0)) != target_len) {
 		if (err >= 0)
 			err = DERR(-EIO);
 		goto out2;

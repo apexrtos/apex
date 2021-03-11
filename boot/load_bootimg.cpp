@@ -34,7 +34,8 @@ load_bootimg()
 		return -1;
 	}
 
-	file_data = ALIGNn(__loader_end + (files + 1) * sizeof(uint32_t), 8);
+	file_data = ALIGNn(reinterpret_cast<std::byte *>(__loader_end) +
+			   (files + 1) * sizeof(uint32_t), 8);
 
 	dbg("Found %zu boot files:\n", files);
 	p = file_data;
@@ -50,7 +51,8 @@ load_bootimg()
 
 	if (files > 1) {
 		dbg("Passing file 1 to kernel as boot archive\n");
-		args.archive_addr = file_data + be32toh(file_sizes[0]);
+		args.archive_addr = reinterpret_cast<unsigned long>(file_data) +
+							be32toh(file_sizes[0]);
 		args.archive_size = be32toh(file_sizes[1]);
 	}
 

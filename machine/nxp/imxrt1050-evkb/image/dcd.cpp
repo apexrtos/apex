@@ -16,12 +16,12 @@ constexpr uint32_t bswap(uint32_t v)
 constexpr uint32_t bswap(ccm::cbcdr v)
 {
 	uint32_t tmp =
-	    v.SEMC_CLK_SEL << 6 |
-	    v.SEMC_ALT_CLK_SEL << 7 |
+	    (uint32_t)v.SEMC_CLK_SEL << 6 |
+	    (uint32_t)v.SEMC_ALT_CLK_SEL << 7 |
 	    v.IPG_PODF << 8 |
 	    v.AHB_PODF << 10 |
 	    v.SEMC_PODF << 16 |
-	    v.PERIPH_CLK_SEL << 25 |
+	    (uint32_t)v.PERIPH_CLK_SEL << 25 |
 	    v.PERIPH_CLK2_PODF << 27;
 	return bswap(tmp);
 }
@@ -30,21 +30,21 @@ constexpr uint32_t bswap(iomuxc::sw_mux_ctl v)
 {
 	uint32_t tmp =
 		v.MUX_MODE << 0 |
-		v.SION << 4;
+		(uint32_t)v.SION << 4;
 	return bswap(tmp);
 }
 
 constexpr uint32_t bswap(iomuxc::sw_pad_ctl v)
 {
 	uint32_t tmp =
-	    v.SRE << 0 |
-	    v.DSE << 3 |
-	    v.SPEED << 6 |
-	    v.ODE << 11 |
-	    v.PKE << 12 |
-	    v.PUE << 13 |
-	    v.PUS << 14 |
-	    v.HYS << 16;
+	    (uint32_t)v.SRE << 0 |
+	    (uint32_t)v.DSE << 3 |
+	    (uint32_t)v.SPEED << 6 |
+	    (uint32_t)v.ODE << 11 |
+	    (uint32_t)v.PKE << 12 |
+	    (uint32_t)v.PUE << 13 |
+	    (uint32_t)v.PUS << 14 |
+	    (uint32_t)v.HYS << 16;
 	return bswap(tmp);
 }
 
@@ -53,7 +53,7 @@ constexpr uint32_t bswap(semc::mcr v)
 	uint32_t tmp =
 	    v.SWRST << 0 |
 	    v.MDIS << 1 |
-	    v.DQSMD << 2 |
+	    (uint32_t)v.DQSMD << 2 |
 	    v.WPOL0 << 6 |
 	    v.WPOL1 << 7 |
 	    v.CTO << 16 |
@@ -169,7 +169,7 @@ constexpr uint32_t bswap(semc::ipcr2 v)
 constexpr uint32_t bswap(semc::ipcmd v)
 {
 	uint32_t tmp =
-	    v.CMD << 0 |
+	    (uint32_t)v.CMD << 0 |
 	    v.KEY << 16;
 	return bswap(tmp);
 }

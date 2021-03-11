@@ -170,7 +170,7 @@ devfs_close(file *fp)
 	if (fp->f_vnode->v_flags & VROOT)
 		return 0;
 
-	device *dev = fp->f_vnode->v_data;
+	device *dev = (device *)fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -199,7 +199,7 @@ static ssize_t
 devfs_read(file *fp, const iovec *iov, size_t count,
     off_t offset)
 {
-	device *dev = fp->f_vnode->v_data;
+	device *dev = (device *)fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -225,7 +225,7 @@ static ssize_t
 devfs_write(file *fp, const iovec *iov, size_t count,
     off_t offset)
 {
-	device *dev = fp->f_vnode->v_data;
+	device *dev = (device *)fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -250,7 +250,7 @@ devfs_write(file *fp, const iovec *iov, size_t count,
 static int
 devfs_seek(file *fp, off_t off, int whence)
 {
-	device *dev = fp->f_vnode->v_data;
+	device *dev = (device *)fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -276,7 +276,7 @@ devfs_seek(file *fp, off_t off, int whence)
 static int
 devfs_ioctl(file *fp, u_long cmd, void *arg)
 {
-	device *dev = fp->f_vnode->v_data;
+	device *dev = (device *)fp->f_vnode->v_data;
 
 	/*
 	 * Device may have been destroyed.
@@ -375,7 +375,7 @@ devfs_lookup(vnode *dvp, const char *name, size_t name_len, vnode *vp)
 static int
 devfs_inactive(vnode *vp)
 {
-	device *dev = vp->v_data;
+	device *dev = (device *)vp->v_data;
 
 	if (dev) {
 		assert(!dev->busy);
@@ -407,7 +407,7 @@ device_create(const devio *io, const char *name, int flags, void *info)
 			return 0;
 		}
 	}
-	if ((dev = malloc(sizeof(*dev))) == NULL) {
+	if ((dev = (device *)malloc(sizeof(*dev))) == NULL) {
 		spinlock_unlock(&device_list_lock);
 		return 0;
 	}

@@ -79,7 +79,7 @@ thread_alloc(long mem_attr)
 	thread *th;
 	phys *stack;
 
-	if ((th = kmem_alloc(sizeof(*th), MA_FAST)) == NULL)
+	if ((th = (thread *)kmem_alloc(sizeof(*th), MA_FAST)) == NULL)
 		return NULL;
 
 	if ((stack = page_alloc(CONFIG_KSTACK_SIZE, mem_attr, th)) == NULL) {
@@ -87,7 +87,7 @@ thread_alloc(long mem_attr)
 		return NULL;
 	}
 	memset(th, 0, sizeof(*th));
-	th->kstack = phys_to_virt(stack);
+	th->kstack = static_cast<std::byte *>(phys_to_virt(stack));
 	th->magic = THREAD_MAGIC;
 #if defined(CONFIG_KSTACK_CHECK)
 	memset(th->kstack, 0xaa, CONFIG_KSTACK_SIZE);
@@ -171,7 +171,7 @@ thread_createfor(task *task, as *as, thread **thp,
 	 * Initialize thread state.
 	 */
 	th->task = task;
-	void *const ksp = arch_kstack_align(th->kstack + CONFIG_KSTACK_SIZE);
+	void *const ksp = arch_kstack_align((char *)th->kstack + CONFIG_KSTACK_SIZE);
 	if ((r = context_init_uthread(&th->ctx, as, ksp, sp, entry, arg)) < 0) {
 		thread_free(th);
 		return r;
@@ -254,7 +254,7 @@ thread *
 thread_find(int id)
 {
 	const unsigned shift = floor_log2(alignof(thread));
-	thread *th = phys_to_virt((phys*)(id << shift));
+	thread *th = (thread *)phys_to_virt((phys*)(id << shift));
 	if (!k_access_ok(th, sizeof *th, PROT_WRITE))
 		return 0;
 	if (!thread_valid(th))

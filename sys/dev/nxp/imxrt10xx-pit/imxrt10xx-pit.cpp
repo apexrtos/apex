@@ -109,7 +109,7 @@ pit::start(unsigned ch, std::chrono::nanoseconds t)
 
 	std::lock_guard l{lock_};
 	/* write the period to the load register */
-	write32(&r_->channel[ch].LDVAL, v - 1);
+	write32(&r_->channel[ch].LDVAL, static_cast<uint32_t>(v - 1));
 	/* enable the channel */
 	write32(&r_->channel[ch].TCTRL, [&]{
 		auto v = read32(&r_->channel[ch].TCTRL);

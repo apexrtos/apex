@@ -95,9 +95,9 @@ ramfs_allocate_node(const char *name, size_t name_len, mode_t mode)
 	char *rn_name;
 	ramfs_node *np;
 
-	if (!(np = malloc(sizeof(ramfs_node))))
+	if (!(np = (ramfs_node *)malloc(sizeof(ramfs_node))))
 		return NULL;
-	if (!(rn_name = malloc(name_len + 1))) {
+	if (!(rn_name = (char *)malloc(name_len + 1))) {
 		free(np);
 		return NULL;
 	}
@@ -173,7 +173,7 @@ ramfs_rename_node(ramfs_node *np, const char *name, size_t name_len)
 		strlcpy(np->rn_name, name, np->rn_namelen + 1);
 	} else {
 		/* Expand name buffer */
-		if (!(tmp = malloc(name_len + 1)))
+		if (!(tmp = (char *)malloc(name_len + 1)))
 			return -ENOMEM;
 		strlcpy(tmp, name, name_len + 1);
 		free(np->rn_name);
@@ -187,7 +187,7 @@ static int
 ramfs_lookup(vnode *dvp, const char *name, size_t name_len, vnode *vp)
 {
 	ramfs_node *np;
-	ramfs_node *dnp = dvp->v_data;
+	ramfs_node *dnp = (ramfs_node *)dvp->v_data;
 	int found;
 
 	if (*name == '\0')
@@ -218,7 +218,7 @@ ramfs_unlink(vnode *dvp, vnode *vp)
 
 	rfsdbg("unlink %s in %s\n", vp->v_path, dvp->v_path);
 
-	np = vp->v_data;
+	np = (ramfs_node *)vp->v_data;
 
 	if (np->rn_child)
 		return -ENOTEMPTY;
@@ -234,14 +234,14 @@ ramfs_unlink(vnode *dvp, vnode *vp)
 		np->rn_size = 0;
 	}
 	vp->v_size = 0;
-	return ramfs_remove_node(dvp->v_data, np);
+	return ramfs_remove_node((ramfs_node *)dvp->v_data, np);
 }
 
 /* Truncate file */
 static int
 ramfs_truncate(vnode *vp)
 {
-	ramfs_node *np = vp->v_data;
+	ramfs_node *np = (ramfs_node *)vp->v_data;
 
 	rfsdbg("truncate %s\n", vp->v_path);
 	if (np->rn_buf != NULL) {
@@ -264,7 +264,7 @@ ramfs_truncate(vnode *vp)
 static int
 ramfs_mknod(vnode *dvp, const char *name, size_t name_len, int flags, mode_t mode)
 {
-	ramfs_node *dnp = dvp->v_data;
+	ramfs_node *dnp = (ramfs_node *)dvp->v_data;
 	ramfs_node *np;
 
 	rfsdbg("create (%zu):%s in %s\n", name_len, name, dvp->v_path);
@@ -279,7 +279,7 @@ static ssize_t
 ramfs_read(file *fp, void *buf, size_t size, off_t offset)
 {
 	vnode *vp = fp->f_vnode;
-	ramfs_node *np = fp->f_vnode->v_data;
+	ramfs_node *np = (ramfs_node *)fp->f_vnode->v_data;
 
 	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
 		return -EINVAL;
@@ -344,7 +344,7 @@ ramfs_grow(ramfs_node *np, off_t new_size)
 			free(np->rn_buf);
 	}
 
-	np->rn_buf = new_buf;
+	np->rn_buf = (char *)new_buf;
 	np->rn_bufsize = new_size;
 
 	return 0;
@@ -353,7 +353,7 @@ ramfs_grow(ramfs_node *np, off_t new_size)
 static ssize_t
 ramfs_write(file *fp, void *buf, size_t size, off_t offset)
 {
-	ramfs_node *np = fp->f_vnode->v_data;
+	ramfs_node *np = (ramfs_node *)fp->f_vnode->v_data;
 	vnode *vp = fp->f_vnode;
 
 	if (!S_ISREG(vp->v_mode) && !S_ISLNK(vp->v_mode))
@@ -396,20 +396,23 @@ ramfs_rename(vnode *dvp1, vnode *vp1, vnode *dvp2,
 
 	if (vp2) {
 		/* Remove destination file, first */
-		err = ramfs_remove_node(dvp2->v_data, vp2->v_data);
+		err = ramfs_remove_node((ramfs_node *)dvp2->v_data,
+					(ramfs_node *)vp2->v_data);
 		if (err)
 			return err;
 	}
 	/* Same directory ? */
 	if (dvp1 == dvp2) {
 		/* Change the name of existing file */
-		err = ramfs_rename_node(vp1->v_data, name, name_len);
+		err = ramfs_rename_node((ramfs_node *)vp1->v_data, name,
+					name_len);
 		if (err)
 			return err;
 	} else {
 		/* Create new file or directory */
-		old_np = vp1->v_data;
-		if (!(np = ramfs_add_node(dvp2->v_data, name, name_len, vp1->v_mode)))
+		old_np = (ramfs_node *)vp1->v_data;
+		if (!(np = ramfs_add_node((ramfs_node *)dvp2->v_data, name,
+					  name_len, vp1->v_mode)))
 			return -ENOMEM;
 
 		if (S_ISREG(vp1->v_mode)) {
@@ -419,7 +422,8 @@ ramfs_rename(vnode *dvp1, vnode *vp1, vnode *dvp2,
 			np->rn_bufsize = old_np->rn_bufsize;
 		}
 		/* Remove source file */
-		ramfs_remove_node(dvp1->v_data, vp1->v_data);
+		ramfs_remove_node((ramfs_node *)dvp1->v_data,
+				  (ramfs_node *)vp1->v_data);
 	}
 	return 0;
 }
@@ -431,7 +435,7 @@ static int
 ramfs_readdir(file *fp, dirent *buf, size_t len)
 {
 	size_t remain = len;
-	ramfs_node *dnp = fp->f_vnode->v_data;
+	ramfs_node *dnp = (ramfs_node *)fp->f_vnode->v_data;
 	ramfs_node *np;
 
 	if (fp->f_offset == 0) {

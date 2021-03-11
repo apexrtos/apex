@@ -6,7 +6,7 @@
 
 struct arm_armv7m_systick_desc {
 	unsigned long clock;
-	int clksource;
+	bool clksource;
 };
 
 void arm_armv7m_systick_init(const arm_armv7m_systick_desc *);

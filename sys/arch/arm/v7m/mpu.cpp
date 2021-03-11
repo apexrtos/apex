@@ -138,8 +138,8 @@ mpu_user_thread_switch()
 	}
 	stack = 0;
 	const uint32_t rasr_prot = prot_to_rasr(seg_prot(seg));
-	for (void *a = seg_begin(seg); a < seg_end(seg);) {
-		const size_t size = seg_end(seg) - a;
+	for (std::byte *a = (std::byte *)seg_begin(seg); a < seg_end(seg);) {
+		const size_t size = (std::byte *)seg_end(seg) - a;
 		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
 		write32(&MPU->RNR, fixed + stack);
 		write32(&MPU->RASR, 0);
@@ -222,7 +222,7 @@ mpu_fault(const void *addr, size_t len)
 	/* double fault at the same address means that last time we faulted in
 	   a region it didn't satisfy the MPU */
 	if (!seg || seg_prot(seg) == PROT_NONE || addr == fault_addr ||
-	    (len && addr + len > seg_end(seg))) {
+	    (len && (std::byte *)addr + len > (std::byte *)seg_end(seg))) {
 		sig_thread(thread_cur(), SIGSEGV);
 		return;
 	}
@@ -251,10 +251,10 @@ again:;
 
 	/* multiple mappings if access crosses mapping boundary */
 	if (len) {
-		void *region_end = (void *)region_base + (1UL << order);
-		if (addr + len > region_end) {
+		std::byte *region_end = (std::byte *)region_base + (1UL << order);
+		if ((std::byte *)addr + len > region_end) {
 			addr = region_end;
-			len = addr + len - region_end;
+			len = (std::byte *)addr + len - region_end;
 			goto again;
 		}
 	}
@@ -289,7 +289,7 @@ mpu_dump()
 
 		if (rasr.ENABLE)
 			dbg("Region %x: ADDR:%08x SIZE:%08x SRD:%02x TEX:%x C:%d B:%d S:%d AP:%x XN:%d\n",
-			    i, rbar.ADDR << 5, 1 << (rasr.SIZE + 1), rasr.SRD, rasr.TEX, rasr.C, rasr.B, rasr.S, rasr.AP, rasr.XN);
+			    i, rbar.ADDR << 5, 1 << (rasr.SIZE + 1), rasr.SRD, rasr.TEX, rasr.C, rasr.B, rasr.S, (unsigned)rasr.AP, (unsigned)rasr.XN);
 		else
 			dbg("Region %x: disabled\n", i);
 	}

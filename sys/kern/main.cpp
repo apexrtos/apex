@@ -164,7 +164,7 @@ run_init()
 static void
 boot_thread(void *arg)
 {
-	bootargs *args = arg;
+	bootargs *args = reinterpret_cast<bootargs *>(arg);
 
 	/*
 	 * Initialise filesystem.

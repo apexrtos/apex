@@ -73,7 +73,7 @@ arm_mps2_uart_early_print(unsigned long base, const char *s, size_t len)
 
 	auto putch = [&u](char c) {
 		while (read32(&u->STATE).TX_FULL);
-		write32(&u->DATA, c);
+		write32(&u->DATA, static_cast<uint32_t>(c));
 	};
 
 	while (len) {

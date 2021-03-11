@@ -41,7 +41,7 @@ dma_alloc(size_t len)
 	for (auto p : pages) {
 		if (PAGE_SIZE - p.alloc < len)
 			continue;
-		auto r = phys_to_virt(p.page + p.alloc);
+		auto r = static_cast<std::byte *>(phys_to_virt(p.page)) + p.alloc;
 		p.alloc += len;
 		return r;
 	}

@@ -143,9 +143,11 @@ context_init_idle(context *ctx, void *kstack_top)
  * Initialise context for kernel thread
  */
 void
-context_init_kthread(context *ctx, void *kstack_top, void (*entry)(void *),
+context_init_kthread(context *ctx, void *v_kstack_top, void (*entry)(void *),
 		     void *arg)
 {
+	char *kstack_top = (char *)v_kstack_top;
+
 	/* stack must be 8-byte aligned */
 	assert(!((uint32_t)kstack_top & 7));
 
@@ -160,7 +162,7 @@ context_init_kthread(context *ctx, void *kstack_top, void (*entry)(void *),
 
 	/* allocate a new kernel thread stack */
 	kstack_top -= sizeof(stack);
-	stack *s = kstack_top;
+	stack *s = reinterpret_cast<stack *>(kstack_top);
 
 	/* set thread arguments */
 	s->ef.r0 = (uint32_t)arg;
@@ -180,22 +182,25 @@ context_init_kthread(context *ctx, void *kstack_top, void (*entry)(void *),
  * Initialise context for userspace thread
  */
 int
-context_init_uthread(context *child, as *as, void *kstack_top,
-		     void *ustack_top, void (*entry)(), long retval)
+context_init_uthread(context *child, as *as, void *v_kstack_top,
+		     void *v_ustack_top, void (*entry)(), long retval)
 {
 	context *parent = &thread_cur()->ctx;
 	bool shared_ustack = false;
 
 	/* if thread was created by vfork it shares stack with parent */
-	if (!ustack_top) {
+	if (!v_ustack_top) {
 		shared_ustack = true;
-		ustack_top = parent->usp;
+		v_ustack_top = parent->usp;
 	}
-	assert(ustack_top);
+	assert(v_ustack_top);
 
 	/* stack must be 8-byte aligned */
-	assert(!((uint32_t)kstack_top & 7));
-	assert(!((uint32_t)ustack_top & 7));
+	assert(!((uint32_t)v_kstack_top & 7));
+	assert(!((uint32_t)v_ustack_top & 7));
+
+	char *kstack_top = (char *)v_kstack_top;
+	char *ustack_top = (char *)v_ustack_top;
 
 	/* stack layout for new userspace thread */
 	struct stack {
@@ -211,7 +216,7 @@ context_init_uthread(context *child, as *as, void *kstack_top,
 	/* allocate a new thread frame */
 	void *kstack = kstack_top;
 	kstack_top -= sizeof(stack);
-	stack *s = kstack_top;
+	stack *s = (stack *)kstack_top;
 
 	/* threads created by fork/vfork/clone don't specify an entry point and
 	   must return to userspace as an exact clone of their parent */
@@ -291,7 +296,7 @@ context_restore_vfork(context *ctx, as *as)
 		return;
 
 	/* restore userspace exception frame */
-	nvregs *unv = ctx->kstack - sizeof(nvregs);
+	nvregs *unv = (nvregs *)((char *)ctx->kstack - sizeof(nvregs));
 	const size_t sz = is_exception_frame_extended(unv->lr)
 	    ? sizeof(exception_frame_extended)
 	    : sizeof(exception_frame_basic);
@@ -338,7 +343,7 @@ static bool
 fpu_present(const void *p)
 {
 #if defined(CONFIG_FPU)
-	const vfp_sigframe *f = p;
+	const vfp_sigframe *f = (vfp_sigframe *)p;
 	return f->magic == VFP_SIGFRAME_MAGIC && f->size == sizeof(*f);
 #else
 	return false;
@@ -391,7 +396,7 @@ context_set_signal(context *ctx, const k_sigset_t *ss,
 	assert(!((uintptr_t)ctx->usp & 7));
 
 	/* registers stored on entry to kernel */
-	nvregs *unv = ctx->kstack - sizeof(*unv);
+	nvregs *unv = (nvregs *)((char *)ctx->kstack - sizeof(*unv));
 
 	/* userspace exception frame from kernel entry */
 	const bool uef_extended = is_exception_frame_extended(unv->lr);
@@ -404,7 +409,7 @@ context_set_signal(context *ctx, const k_sigset_t *ss,
 		fpu_lazy_sync();
 
 	/* allocate stack frame for signal */
-	void *usp = ctx->usp + uef_sz;
+	char *usp = (char *)ctx->usp + uef_sz;
 	exception_frame_basic *sef;
 	sigframe *ssf;
 	siginfo_t *ssi = 0;
@@ -412,7 +417,7 @@ context_set_signal(context *ctx, const k_sigset_t *ss,
 		struct rt_sigframe_ef {
 			exception_frame_basic ef;
 			rt_sigframe rsf;
-		} *f = usp -= sizeof(*f);
+		} *f = (rt_sigframe_ef *)(usp -= sizeof(*f));
 		sef = &f->ef;
 		ssf = &f->rsf.sf;
 		ssi = &f->rsf.si;
@@ -420,18 +425,18 @@ context_set_signal(context *ctx, const k_sigset_t *ss,
 		struct sigframe_ef {
 			exception_frame_basic ef;
 			sigframe sf;
-		} *f = usp -= sizeof(*f);
+		} *f = (sigframe_ef *)(usp -= sizeof(*f));
 		sef = &f->ef;
 		ssf = &f->sf;
 	}
 
 	/* catch stack overflow */
-	if (!u_access_ok(usp, ctx->usp + uef_sz - usp, PROT_WRITE))
+	if (!u_access_ok(usp, (char *)ctx->usp + uef_sz - usp, PROT_WRITE))
 		return DERR(false);
 
 	/* make a copy of the userspace exception frame as we are going to
 	 * overwrite it's location with the signal frame */
-	exception_frame_extended *uef = alloca(uef_sz);
+	exception_frame_extended *uef = (exception_frame_extended *)alloca(uef_sz);
 	memcpy(uef, ctx->usp, uef_sz);
 
 	/* did exception entry add 4 bytes to align the userspace stack? */
@@ -505,7 +510,7 @@ context_restore(context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 	assert(!((uintptr_t)ctx->usp & 7));
 
 	/* registers stored on sigreturn entry to kernel */
-	nvregs *unv = ctx->kstack - sizeof(*unv);
+	nvregs *unv = (nvregs *)((char *)ctx->kstack - sizeof(*unv));
 
 	/* userspace exception frame from sigreturn kernel entry */
 	const bool sef_extended = is_exception_frame_extended(unv->lr);
@@ -519,7 +524,7 @@ context_restore(context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 
 	/* retrieve signal frame from user stack */
 	sigframe sf;
-	void *ssp = ctx->usp + sef_sz;
+	void *ssp = (char *)ctx->usp + sef_sz;
 
 	/* check access to signal frame on user stack */
 	if (!u_access_ok(ssp, sizeof(sf), PROT_READ))
@@ -530,7 +535,7 @@ context_restore(context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 	memcpy(&sf, ssp, sizeof(sf));
 
 	/* get userspace stack pointer */
-	void *usp = (void *)(sf.uc.uc_mcontext.arm_sp & -7);
+	char *usp = (char *)(sf.uc.uc_mcontext.arm_sp & -7);
 
 	/* size of exception frame depends on whether there's FPU context */
 	const bool uef_extended = fpu_present(sf.uc.uc_regspace);
@@ -539,7 +544,8 @@ context_restore(context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 	    : sizeof(exception_frame_basic);
 
 	/* allocate exception frame on userspace stack */
-	exception_frame_extended *uef = usp -= uef_sz;
+	usp -= uef_sz;
+	exception_frame_extended *uef = (exception_frame_extended *)usp;
 
 	/* check access to exception frame on userspace stack */
 	if (!u_access_ok(uef, uef_sz, PROT_WRITE))
@@ -574,7 +580,7 @@ context_restore(context *ctx, k_sigset_t *ss, int *rval, bool siginfo)
 	    : EXC_RETURN_THREAD_PROCESS_BASIC;
 
 	/* set userspace stack pointer */
-	ctx->usp = uef;
+	ctx->usp = usp;
 
 	*rval = sf.rval;
 	return true;

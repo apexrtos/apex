@@ -19,7 +19,7 @@ extern "C" uint64_t
 __atomic_load_8(const volatile void *p, int m)
 {
 	/* ldrd is restarted on interrupt */
-	const volatile uint64_t *p64 = p;
+	const volatile uint64_t *p64 = static_cast<const volatile uint64_t *>(p);
 	uint64_t tmp;
 	asm volatile(
 		"ldrd %Q[r], %R[r], %[p]\n"
@@ -45,7 +45,7 @@ atomic_load(size_t len, const void *p, void *r, int m)
 extern "C" void
 __atomic_store_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	int s;
 	asm volatile(
 		"mrs %[s], PRIMASK\n"
@@ -73,7 +73,7 @@ atomic_store(size_t len, void *p, const void *v, int m)
 extern "C" uint64_t
 __atomic_exchange_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	int s;
 	uint64_t ret;
 	asm volatile(
@@ -106,8 +106,8 @@ extern "C" bool
 __atomic_compare_exchange_8(volatile void *p, void *e, uint64_t d,
     bool weak, int sm, int fm)
 {
-	volatile uint64_t *p64 = p;
-	const uint64_t *e64 = e;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
+	const uint64_t *e64 = static_cast<const uint64_t *>(e);
 	bool ret;
 	const int s = irq_disable();
 	if ((ret = *p64 == *e64))
@@ -135,7 +135,7 @@ atomic_compare_exchange(size_t len, void *p, const void *e, void *d,
 extern "C" uint64_t
 __atomic_add_fetch_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -151,7 +151,7 @@ __atomic_add_fetch_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_sub_fetch_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -167,7 +167,7 @@ __atomic_sub_fetch_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_and_fetch_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -183,7 +183,7 @@ __atomic_and_fetch_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_xor_fetch_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -199,7 +199,7 @@ __atomic_xor_fetch_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_or_fetch_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -215,7 +215,7 @@ __atomic_or_fetch_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_nand_fetch_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -231,7 +231,7 @@ __atomic_nand_fetch_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_fetch_add_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -246,7 +246,7 @@ __atomic_fetch_add_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_fetch_sub_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -261,7 +261,7 @@ __atomic_fetch_sub_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_fetch_and_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -276,7 +276,7 @@ __atomic_fetch_and_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_fetch_xor_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -291,7 +291,7 @@ __atomic_fetch_xor_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_fetch_or_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;
@@ -306,7 +306,7 @@ __atomic_fetch_or_8(volatile void *p, uint64_t v, int m)
 extern "C" uint64_t
 __atomic_fetch_nand_8(volatile void *p, uint64_t v, int m)
 {
-	volatile uint64_t *p64 = p;
+	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
 	uint64_t ret;
 	const int s = irq_disable();
 	ret = *p64;

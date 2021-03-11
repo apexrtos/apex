@@ -109,7 +109,7 @@ ksigallset(k_sigset_t *ss)
  * Check if signal is ignored
  */
 static bool
-sig_ignore(void *handler, int sig)
+sig_ignore(sig_handler_fn handler, int sig)
 {
 	if (handler == SIG_IGN)
 		return true;
@@ -129,7 +129,7 @@ sig_ignore(void *handler, int sig)
 /*
  * Get handler for signal
  */
-static void *
+static sig_handler_fn
 sig_handler(task *t, int sig)
 {
 	assert(sig > 0 && sig <= NSIG);

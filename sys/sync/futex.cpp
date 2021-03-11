@@ -88,7 +88,7 @@ futex_get(futexes_impl *fi, int *uaddr)
 	if ((f = futex_find_unlocked(fi, uaddr)))
 		goto out;
 
-	if (!(f = malloc(sizeof(k_futex))))
+	if (!(f = (k_futex *)malloc(sizeof(k_futex))))
 		goto out;
 
 	f->addr = virt_to_phys(uaddr);
@@ -235,7 +235,7 @@ futex(task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
 	switch (op & FUTEX_OP_MASK) {
 	case FUTEX_WAIT:
 		assert(!sch_locks());
-		return futex_wait(t, uaddr, val, val2);
+		return futex_wait(t, uaddr, val, (const timespec32 *)val2);
 	case FUTEX_WAKE:
 		return futex_wake(t, uaddr, val);
 	case FUTEX_REQUEUE:

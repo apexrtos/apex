@@ -76,7 +76,7 @@ debug_printf(const char *fmt, ...)
 		return;
 	}
 
-	if (n >= sizeof buf) {
+	if (static_cast<size_t>(n) >= sizeof buf) {
 		debug_puts("*** Error, debug string too long\n");
 		return;
 	}

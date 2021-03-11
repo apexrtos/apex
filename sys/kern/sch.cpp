@@ -239,7 +239,7 @@ schedule()
 static void
 sleep_expire(void *arg)
 {
-	sch_unsleep(arg, -ETIMEDOUT);
+	sch_unsleep((thread *)arg, -ETIMEDOUT);
 }
 
 /*

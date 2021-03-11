@@ -95,7 +95,7 @@ int
 sc_clone(unsigned long flags, void *sp, void *ptid, unsigned long tls,
     void *ctid)
 {
-	sp = arch_ustack_align(sp);
+	sp = arch_ustack_align(static_cast<std::byte *>(sp));
 	if (flags & CLONE_THREAD)
 		return clone_thread(flags, sp, (int*)ptid, (void *)tls, (int*)ctid);
 	else

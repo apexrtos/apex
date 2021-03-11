@@ -50,7 +50,7 @@ struct pipe_data {
 	size_t	     write_fds;	    /* number of fd open for writing */
 	size_t	     wr;	    /* write bytes */
 	size_t	     rd;	    /* read bytes */
-	void	    *buf;	    /* pipe data buffer */
+	std::byte *buf;	    /* pipe data buffer */
 };
 
 /*
@@ -69,7 +69,7 @@ pipe_alloc(file *fp)
 		return -ENOMEM;
 
 	pipe_data *p;
-	if (!(p = malloc(sizeof *p))) {
+	if (!(p = (pipe_data *)malloc(sizeof *p))) {
 		page_free(b, PIPE_BUF, &pipe_id);
 		return -ENOMEM;
 	}
@@ -78,7 +78,7 @@ pipe_alloc(file *fp)
 	p->write_fds = 0;
 	p->wr = 0;
 	p->rd = 0;
-	p->buf = phys_to_virt(b);
+	p->buf = (std::byte *)phys_to_virt(b);
 
 	vp->v_pipe = p;
 	return 0;
@@ -91,7 +91,7 @@ static void
 pipe_free(file *fp)
 {
 	vnode *vp = fp->f_vnode;
-	pipe_data *p = vp->v_pipe;
+	pipe_data *p = (pipe_data *)vp->v_pipe;
 
 	page_free(virt_to_phys(p->buf), PIPE_BUF, &pipe_id);
 	free(p);
@@ -112,7 +112,7 @@ pipe_open(file *fp, int flags, mode_t mode)
 	if ((ret = pipe_alloc(fp)) < 0)
 		return ret;
 
-	pipe_data *p = vp->v_pipe;
+	pipe_data *p = (pipe_data *)vp->v_pipe;
 
 	if ((flags & (O_NONBLOCK | O_ACCMODE)) == (O_NONBLOCK | O_WRONLY)
 	    && p->read_fds == 0)
@@ -143,7 +143,7 @@ pipe_close(file *fp)
 	if (!S_ISFIFO(vp->v_mode))
 		return DERR(-EINVAL);
 
-	pipe_data *p = vp->v_pipe;
+	pipe_data *p = (pipe_data *)vp->v_pipe;
 
 	switch (fp->f_flags & O_ACCMODE) {
 	case O_RDONLY:
@@ -175,7 +175,7 @@ pipe_read(file *fp, void *buf, size_t size, off_t offset)
 	if (!S_ISFIFO(vp->v_mode))
 		return DERR(-EINVAL);
 
-	pipe_data *p = vp->v_pipe;
+	pipe_data *p = (pipe_data *)vp->v_pipe;
 
 	while (size != 0) {
 		size_t avail = p->wr - p->rd;
@@ -234,7 +234,7 @@ pipe_write(file *fp, void *buf, size_t size, off_t offset)
 	if (!S_ISFIFO(vp->v_mode))
 		return DERR(-EINVAL);
 
-	pipe_data *p = vp->v_pipe;
+	pipe_data *p = (pipe_data *)vp->v_pipe;
 
 	while (size != 0) {
 		if (p->read_fds == 0) {

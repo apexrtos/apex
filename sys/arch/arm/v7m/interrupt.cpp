@@ -52,7 +52,7 @@ interrupt_unmask(int vector, int level)
 	assert(vector <= 495);
 
 	/* set priority */
-	write8(&NVIC->IPR[vector], level);
+	write8(&NVIC->IPR[vector], static_cast<uint8_t>(level));
 
 	/* enable */
 	write32(&NVIC->ISER[vector / 32], 1 << vector % 32);

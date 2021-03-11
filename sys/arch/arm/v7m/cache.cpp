@@ -19,22 +19,23 @@
  * Architecture requirements dictate that branch predictor must be invalidated.
  */
 void
-cache_coherent_exec(const void *p, size_t len)
+cache_coherent_exec(const void *vp, size_t len)
 {
 #if defined(CONFIG_CACHE)
-	if (cache_coherent_range(p, len))
+	if (cache_coherent_range(vp, len))
 		return;
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
 	asm volatile("dsb" ::: "memory");
+	const std::byte *p = static_cast<const std::byte *>(vp);
 	const size_t sz = MAX(CONFIG_DCACHE_LINE_SIZE, CONFIG_ICACHE_LINE_SIZE);
-	const void *start = TRUNCn(p, sz);
-	const void *end = ALIGNn(p + len, sz);
-	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
+	const std::byte *start = TRUNCn(p, sz);
+	const std::byte *end = ALIGNn(p + len, sz);
+	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCMVAU, (uintptr_t)l);
 	/* ensure visibliity of the data cleaned from the cache */
 	asm volatile("dsb");
-	for (const void *l = start; l != end; l += CONFIG_ICACHE_LINE_SIZE)
+	for (const std::byte *l = start; l != end; l += CONFIG_ICACHE_LINE_SIZE)
 		write32(&CBP->ICIMVAU, (uintptr_t)l);
 	/* invalidate branch predictor */
 	write32(&CBP->BPIALL, 0);
@@ -49,17 +50,18 @@ cache_coherent_exec(const void *p, size_t len)
  * Flush data cache to memory
  */
 void
-cache_flush(const void *p, size_t len)
+cache_flush(const void *vp, size_t len)
 {
 #if defined(CONFIG_CACHE)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
 	asm volatile("dsb" ::: "memory");
-	if (cache_coherent_range(p, len))
+	if (cache_coherent_range(vp, len))
 		return;
-	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
-	const void *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
-	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
+	const std::byte *p = static_cast<const std::byte *>(vp);
+	const std::byte *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
+	const std::byte *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
+	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCMVAC, (uintptr_t)l);
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");
@@ -70,14 +72,15 @@ cache_flush(const void *p, size_t len)
  * Mark data cache lines as invalid
  */
 void
-cache_invalidate(const void *p, size_t len)
+cache_invalidate(const void *vp, size_t len)
 {
 #if defined(CONFIG_CACHE)
-	if (cache_coherent_range(p, len))
+	if (cache_coherent_range(vp, len))
 		return;
-	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
-	const void *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
-	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
+	const std::byte *p = static_cast<const std::byte *>(vp);
+	const std::byte *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
+	const std::byte *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
+	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCIMVAC, (uintptr_t)l);
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");
@@ -88,17 +91,18 @@ cache_invalidate(const void *p, size_t len)
  * Flush data cache to memory and mark cache lines as invalid
  */
 void
-cache_flush_invalidate(const void *p, size_t len)
+cache_flush_invalidate(const void *vp, size_t len)
 {
 #if defined(CONFIG_CACHE)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
 	asm volatile("dsb" ::: "memory");
-	if (cache_coherent_range(p, len))
+	if (cache_coherent_range(vp, len))
 		return;
-	const void *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
-	const void *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
-	for (const void *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
+	const std::byte *p = static_cast<const std::byte *>(vp);
+	const std::byte *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
+	const std::byte *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
+	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCIMVAC, (uintptr_t)l);
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");

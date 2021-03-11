@@ -179,13 +179,13 @@ syslog_begin(ent **entry, long *seq, const size_t len)
 check_len:
 	rem = (char *)tail - (char *)head;
 	if (rem > 0) {
-		if (rem < ent_len) {
+		if ((size_t)rem < ent_len) {
 			log_trim();
 			goto check_len;
 		}
 	} else {
 		rem = log + sizeof(log) - (char *)head;
-		if (rem < ent_len) {
+		if ((size_t)rem < ent_len) {
 			/*
 			 * not enough space to end of log - wrap head
 			 * back to start
@@ -284,7 +284,7 @@ int
 syslog_format(char *buf, const size_t len)
 {
 	kmsg_output *kmsg = &console_output;
-	int rem = len;
+	size_t rem = len;
 
 	/* lock-less read of log message */
 	while ((log_last_seq - kmsg->seq) >= 0) { /* seq can rollover */
@@ -293,7 +293,7 @@ syslog_format(char *buf, const size_t len)
 		if (overrun > 0) {
 			int n = snprintf(buf, rem, "*** missed %ld messages\n",
 					 overrun);
-			if (n < 0 || n >= rem)
+			if (n < 0 || (size_t)n >= rem)
 				break;
 			buf += n;
 			rem -= n;
@@ -466,7 +466,7 @@ sc_syslog(int type, char *buf, int len)
  */
 static int kmsg_open(file *file)
 {
-	kmsg_output *kmsg = malloc(sizeof (kmsg_output));
+	kmsg_output *kmsg = (kmsg_output *)malloc(sizeof(kmsg_output));
 	if (!kmsg)
 		return -ENOMEM;
 
@@ -480,7 +480,7 @@ static int kmsg_open(file *file)
 
 static int kmsg_close(file *file)
 {
-	kmsg_output *kmsg = file->f_data;
+	kmsg_output *kmsg = (kmsg_output *)file->f_data;
 	if (!kmsg)
 		return -EBADF;
 
@@ -492,7 +492,7 @@ static int kmsg_close(file *file)
 static ssize_t
 kmsg_read(file *file, void *buf, size_t len, off_t offset)
 {
-	kmsg_output *kmsg = file->f_data;
+	kmsg_output *kmsg = (kmsg_output *)file->f_data;
 	if (!kmsg)
 		return -EBADF;
 
@@ -519,7 +519,7 @@ kmsg_read(file *file, void *buf, size_t len, off_t offset)
 	if (rc < 0)
 		return rc;
 
-	return kmsg_format(buf, len, kmsg);
+	return kmsg_format((char *)buf, len, kmsg);
 }
 
 static ssize_t
@@ -549,7 +549,7 @@ kmsg_write_iov(file *file, const iovec *iov, size_t count,
 
 	int priority = LOG_USER | LOG_INFO;
 	int pri_len = 0;
-	const char *src = iov->iov_base;
+	const char *src = (const char *)iov->iov_base;
 	size_t iov_len = iov->iov_len;
 	/* REVISIT: assumes complete log level in first iov */
 	if (src[0] == '<') {
@@ -601,7 +601,7 @@ kmsg_write_iov(file *file, const iovec *iov, size_t count,
 static int
 kmsg_seek(file *file, off_t offset, int whence)
 {
-	kmsg_output *kmsg = file->f_data;
+	kmsg_output *kmsg = (kmsg_output *)file->f_data;
 	if (!kmsg)
 		return -EBADF;
 

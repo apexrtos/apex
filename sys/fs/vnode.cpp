@@ -215,9 +215,9 @@ vget(struct mount *mount, vnode *parent, const char *name, size_t len)
 
 	vdbgvn("vget: parent=%p name=%s len=%zu\n", parent, name, len);
 
-	if (!(vp = malloc(sizeof(vnode))))
+	if (!(vp = (vnode *)malloc(sizeof(vnode))))
 		return NULL;
-	if (!(v_name = malloc(len + 1))) {
+	if (!(v_name = (char *)malloc(len + 1))) {
 		free(vp);
 		return NULL;
 	}
@@ -265,7 +265,7 @@ vget_pipe()
 {
 	vnode *vp;
 
-	if (!(vp = malloc(sizeof(vnode))))
+	if (!(vp = (vnode *)malloc(sizeof(vnode))))
 		return NULL;
 
 	*vp = (vnode) {
