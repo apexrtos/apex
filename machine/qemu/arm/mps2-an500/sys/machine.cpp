@@ -4,7 +4,7 @@
 #include <compiler.h>
 #include <conf/config.h>
 #include <conf/drivers.h>
-#include <dev/arm/mps2-uart/mps2-uart.h>
+#include <dev/arm/mps2-uart/early.h>
 #include <interrupt.h>
 #include <kernel.h>
 #include <page.h>
@@ -75,11 +75,11 @@ void
 early_console_init()
 {
 	/* QEMU doesn't care about baud rate */
-	arm_mps2_uart_early_init(UART0, CONFIG_EARLY_CONSOLE_CFLAG);
+	arm::mps2_uart_early_init(UART0, CONFIG_EARLY_CONSOLE_CFLAG);
 }
 
 void
 early_console_print(const char *s, size_t len)
 {
-	arm_mps2_uart_early_print(UART0, s, len);
+	arm::mps2_uart_early_print(UART0, s, len);
 }
