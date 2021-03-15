@@ -1,5 +1,5 @@
 /*
- * machine_early_memory_init.S
+ * arm_v7m_early_memory_init.S
  */
 
  #include <conf/config.h>
@@ -24,14 +24,14 @@
 #define OCRAM_CONFIG (0x55555555 & (0xffffffff >> (32 - DMA_BANKS << 1)))
 
 /*
- * machine_early_memory_init
+ * arm_v7m_early_memory_init
  *
  * Configure FlexRAM ITCM/DTCM
  */
 .text
 .thumb_func
-.global machine_early_memory_init
-machine_early_memory_init:
+.global arm_v7m_early_memory_init
+arm_v7m_early_memory_init:
 	/* set FLEXRAM_BANK_CFG */
 	ldr r0, =(ITCM_CONFIG + DTCM_CONFIG + OCRAM_CONFIG)
 	ldr r1, =0x400ac044

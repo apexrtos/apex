@@ -189,7 +189,7 @@ machine_panic()
  *	All clocks gated except what is necessary
  */
 extern "C" void
-machine_clock_init()
+arm_v7m_clock_init()
 {
 	/* set core voltage to 1.25V for 600MHz operation */
 	for (dcdc::reg3 v = read32(&DCDC->REG3); v.TRG < (1250 - 800) / 25;) {
@@ -240,7 +240,7 @@ machine_clock_init()
 }
 
 extern "C" void
-machine_memory_init()
+arm_v7m_memory_init()
 {
 	/* SDRAM initialised by DCD */
 }

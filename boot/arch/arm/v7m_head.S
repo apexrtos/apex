@@ -55,10 +55,10 @@ _start:
 	cpsid	i
 
 	/* stack must be available after machine_early_memory_init returns */
-	bl machine_early_memory_init
+	bl arm_v7m_early_memory_init
 
 	/* initialise clocks */
-	bl machine_clock_init
+	bl arm_v7m_clock_init
 
 	mov r11, A_SCS
 
@@ -109,7 +109,7 @@ _start:
 	isb
 
 	/* initialise memory */
-	bl machine_memory_init
+	bl arm_v7m_memory_init
 
 	/* jump to crt_init */
 	b crt_init
