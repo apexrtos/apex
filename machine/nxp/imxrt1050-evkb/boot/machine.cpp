@@ -1,11 +1,11 @@
 #include <machine.h>
 
+#include "lpuart/early.h"
 #include <boot.h>
 #include <cpu/nxp/imxrt10xx/ccm.h>
 #include <cpu/nxp/imxrt10xx/dcdc.h>
 #include <cpu/nxp/imxrt10xx/iomuxc.h>
 #include <cpu/nxp/imxrt10xx/semc.h>
-#include <sys/dev/fsl/lpuart/early.h>
 #include <sys/include/arch/mmio.h>
 
 static const unsigned long LPUART1 = 0x40184000;

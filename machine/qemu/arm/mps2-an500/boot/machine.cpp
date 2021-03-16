@@ -5,8 +5,8 @@
 
 #include <machine.h>
 
+#include "mps2-uart/early.h"
 #include <boot.h>
-#include <sys/dev/arm/mps2-uart/early.h>
 
 constexpr auto UART0 = 0x40004000;
 
