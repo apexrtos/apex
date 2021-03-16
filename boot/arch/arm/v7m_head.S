@@ -54,7 +54,7 @@ _start:
 	/* disable interrupts */
 	cpsid i
 
-	/* stack must be available after machine_early_memory_init returns */
+	/* stack must be available after arm_v7m_early_memory_init returns */
 	bl arm_v7m_early_memory_init
 
 	/* initialise clocks */
