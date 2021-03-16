@@ -13,7 +13,8 @@ constexpr auto UART0 = 0x40004000;
 /*
  * Setup machine state
  */
-void machine_setup()
+void
+machine_setup()
 {
 	/* QEMU doesn't require setup */
 }
@@ -21,7 +22,8 @@ void machine_setup()
 /*
  * Load kernel image
  */
-int machine_load_image()
+int
+machine_load_image()
 {
 	return load_bootimg();
 }
@@ -29,7 +31,8 @@ int machine_load_image()
 /*
  * Panic handler
  */
-[[noreturn]] void machine_panic()
+[[noreturn]] void
+machine_panic()
 {
 	/* Workaround for ancient clang bug. Looks like this will be fixed
 	 * in clang 12,  https://reviews.llvm.org/D85393 */
@@ -57,7 +60,8 @@ boot_console_print(const char *s, size_t len)
 /*
  * Initialise clocks.
  */
-extern "C" void arm_v7m_clock_init()
+extern "C" void
+arm_v7m_clock_init()
 {
 	/* QEMU doesn't require clock initialisation */
 }
@@ -65,7 +69,8 @@ extern "C" void arm_v7m_clock_init()
 /*
  * Initialise stack
  */
-extern "C" void arm_v7m_early_memory_init()
+extern "C" void
+arm_v7m_early_memory_init()
 {
 	/* QEMU doesn't require stack initialisation */
 }
@@ -73,7 +78,8 @@ extern "C" void arm_v7m_early_memory_init()
 /*
  * Initialise memory
  */
-extern "C" void arm_v7m_memory_init()
+extern "C" void
+arm_v7m_memory_init()
 {
 	/* QEMU doesn't require memory initialisation */
 }

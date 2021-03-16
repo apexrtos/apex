@@ -52,7 +52,7 @@ _start:
 	   with interrupts enabled */
 
 	/* disable interrupts */
-	cpsid	i
+	cpsid i
 
 	/* stack must be available after machine_early_memory_init returns */
 	bl arm_v7m_early_memory_init
