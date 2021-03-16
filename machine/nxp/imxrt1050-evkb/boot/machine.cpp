@@ -81,7 +81,7 @@ machine_load_image()
 /*
  * Panic handler
  */
-void
+[[noreturn]] void
 machine_panic()
 {
 	/* Workaround for ancient clang bug. Looks like this will be fixed
