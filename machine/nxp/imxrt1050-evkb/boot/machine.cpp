@@ -8,9 +8,7 @@
 #include <sys/dev/fsl/lpuart/early.h>
 #include <sys/include/arch/mmio.h>
 
-#if defined(CONFIG_BOOT_CONSOLE)
 static const unsigned long LPUART1 = 0x40184000;
-#endif
 
 /*
  * Setup machine state
@@ -18,7 +16,15 @@ static const unsigned long LPUART1 = 0x40184000;
 void
 machine_setup()
 {
-#if defined(CONFIG_BOOT_CONSOLE)
+	/* No special setup required */
+}
+
+/*
+ * Configure boot console
+ */
+void
+boot_console_init()
+{
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
 	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_mux_ctl){{
 		.MUX_MODE = 2,
@@ -52,18 +58,15 @@ machine_setup()
 	}}.r);
 
 	fsl::lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
-#endif
 }
 
 /*
  * Print a string
  */
 void
-machine_print(const char *s, size_t len)
+boot_console_print(const char *s, size_t len)
 {
-#if defined(CONFIG_BOOT_CONSOLE)
 	fsl::lpuart_early_print(LPUART1, s, len);
-#endif
 }
 
 /*

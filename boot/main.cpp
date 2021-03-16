@@ -61,17 +61,17 @@ debug_printf(const char *fmt, ...)
 
 	if (n < 0) {
 		const char *msg = "*** Error, debug vsnprintf\n";
-		machine_print(msg, strlen(msg));
+		boot_console_print(msg, strlen(msg));
 		return;
 	}
 
 	if (static_cast<size_t>(n) >= sizeof buf) {
 		const char *msg = "*** Error, debug string too long\n";
-		machine_print(msg, strlen(msg));
+		boot_console_print(msg, strlen(msg));
 		return;
 	}
 
-	machine_print(buf, n);
+	boot_console_print(buf, n);
 #endif
 }
 
@@ -80,8 +80,8 @@ panic(const char *msg)
 {
 #if defined(CONFIG_BOOT_CONSOLE)
 	const char *panic = "Panic: ";
-	machine_print(panic, strlen(panic));
-	machine_print(msg, strlen(msg));
+	boot_console_print(panic, strlen(panic));
+	boot_console_print(msg, strlen(msg));
 #endif
 	machine_panic();
 }
@@ -107,6 +107,13 @@ loader_main()
 	 * Setup minimum hardware for boot
 	 */
 	machine_setup();
+
+	/*
+	 * Setup boot console
+	 */
+#if defined(CONFIG_BOOT_CONSOLE)
+	boot_console_init();
+#endif
 
 	/*
 	 * Print banner

@@ -32,6 +32,8 @@
 #include <cstddef>
 
 void machine_setup();
-void machine_print(const char *, size_t);
 int machine_load_image();
 [[noreturn]] void machine_panic();
+
+void boot_console_init();
+void boot_console_print(const char *, size_t);

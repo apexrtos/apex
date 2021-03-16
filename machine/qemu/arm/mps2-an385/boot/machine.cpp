@@ -8,29 +8,14 @@
 #include <boot.h>
 #include <sys/dev/arm/mps2-uart/early.h>
 
-#if defined(CONFIG_BOOT_CONSOLE)
 constexpr auto UART0 = 0x40004000;
-#endif
 
 /*
  * Setup machine state
  */
 void machine_setup()
 {
-#if defined(CONFIG_BOOT_CONSOLE)
-	/* QEMU doesn't care about baud rate */
-	arm::mps2_uart_early_init(UART0, CONFIG_EARLY_CONSOLE_CFLAG);
-#endif
-}
-
-/*
- * Print a string
- */
-void machine_print(const char *s, size_t len)
-{
-#if defined(CONFIG_BOOT_CONSOLE)
-	arm::mps2_uart_early_print(UART0, s, len);
-#endif
+	/* QEMU doesn't require setup */
 }
 
 /*
@@ -49,6 +34,24 @@ void machine_panic()
 	/* Workaround for ancient clang bug. Looks like this will be fixed
 	 * in clang 12,  https://reviews.llvm.org/D85393 */
 	while (1) asm("");
+}
+
+/*
+ * Configure boot console
+ */
+void
+boot_console_init()
+{
+	arm::mps2_uart_early_init(UART0, CONFIG_EARLY_CONSOLE_CFLAG);
+}
+
+/*
+ * Print a string
+ */
+void
+boot_console_print(const char *s, size_t len)
+{
+	arm::mps2_uart_early_print(UART0, s, len);
 }
 
 /*
