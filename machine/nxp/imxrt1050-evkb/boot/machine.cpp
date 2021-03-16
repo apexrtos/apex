@@ -20,6 +20,26 @@ machine_setup()
 }
 
 /*
+ * Load kernel image
+ */
+int
+machine_load_image()
+{
+	return load_bootimg();
+}
+
+/*
+ * Panic handler
+ */
+[[noreturn]] void
+machine_panic()
+{
+	/* Workaround for ancient clang bug. Looks like this will be fixed
+	 * in clang 12,  https://reviews.llvm.org/D85393 */
+	while (1) asm("");
+}
+
+/*
  * Configure boot console
  */
 void
@@ -67,26 +87,6 @@ void
 boot_console_print(const char *s, size_t len)
 {
 	fsl::lpuart_early_print(LPUART1, s, len);
-}
-
-/*
- * Load kernel image
- */
-int
-machine_load_image()
-{
-	return load_bootimg();
-}
-
-/*
- * Panic handler
- */
-[[noreturn]] void
-machine_panic()
-{
-	/* Workaround for ancient clang bug. Looks like this will be fixed
-	 * in clang 12,  https://reviews.llvm.org/D85393 */
-	while (1) asm("");
 }
 
 /*
