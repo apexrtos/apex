@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cassert>
-#include <circular_buffer.h>
 #include <kernel.h>
+#include <lib/circular_buffer.h>
 #include <page.h>
 #include <vector>
 
