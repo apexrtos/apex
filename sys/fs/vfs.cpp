@@ -144,8 +144,6 @@ task_getfp_unlocked(task *t, int fd)
 	else if (!(fp = fp_ptr(t->file[fd])))
 		return nullptr;
 
-	++fp->f_count;
-
 	return fp;
 }
 
@@ -158,8 +156,10 @@ static file *
 task_getfp(task *t, int fd)
 {
 	file *fp;
-	if ((fp = task_getfp_unlocked(t, fd)))
-		vn_lock(fp->f_vnode);
+	if (!(fp = task_getfp_unlocked(t, fd)))
+		return nullptr;
+	vn_lock(fp->f_vnode);
+	++fp->f_count;
 	return fp;
 }
 
@@ -177,6 +177,7 @@ task_getfp_interruptible(task *t, int fd)
 		return (file *)DERR(-EBADF);
 	if ((err = vn_lock_interruptible(fp->f_vnode)))
 		return (file*)err;
+	++fp->f_count;
 	return fp;
 }
 
