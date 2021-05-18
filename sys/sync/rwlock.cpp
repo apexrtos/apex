@@ -128,7 +128,7 @@ rwlock_read_locked(rwlock *o)
 
 	std::lock_guard l{p->lock};
 
-	bool r =  p->state > 0;
+	bool r = p->state > 0;
 
 	return r;
 }
