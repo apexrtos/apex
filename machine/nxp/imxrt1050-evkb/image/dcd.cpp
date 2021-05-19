@@ -13,6 +13,12 @@ constexpr uint32_t bswap(uint32_t v)
 	return __builtin_bswap32(v);
 }
 
+template<class T>
+constexpr uint32_t bswap(T r)
+{
+	return bswap(r.r);
+}
+
 constexpr uint32_t bswap(ccm::cbcdr v)
 {
 	uint32_t tmp =
@@ -23,28 +29,6 @@ constexpr uint32_t bswap(ccm::cbcdr v)
 	    v.SEMC_PODF << 16 |
 	    (uint32_t)v.PERIPH_CLK_SEL << 25 |
 	    v.PERIPH_CLK2_PODF << 27;
-	return bswap(tmp);
-}
-
-constexpr uint32_t bswap(iomuxc::sw_mux_ctl v)
-{
-	uint32_t tmp =
-		v.MUX_MODE << 0 |
-		(uint32_t)v.SION << 4;
-	return bswap(tmp);
-}
-
-constexpr uint32_t bswap(iomuxc::sw_pad_ctl v)
-{
-	uint32_t tmp =
-	    (uint32_t)v.SRE << 0 |
-	    (uint32_t)v.DSE << 3 |
-	    (uint32_t)v.SPEED << 6 |
-	    (uint32_t)v.ODE << 11 |
-	    (uint32_t)v.PKE << 12 |
-	    (uint32_t)v.PUE << 13 |
-	    (uint32_t)v.PUS << 14 |
-	    (uint32_t)v.HYS << 16;
 	return bswap(tmp);
 }
 
@@ -187,16 +171,16 @@ constexpr uint32_t bswap(semc::intr v)
 }
 
 /* Configuration for SEMC (SDRAM) pad */
-constexpr uint32_t semc_pad_control = bswap((iomuxc::sw_pad_ctl){{
-	.SRE = iomuxc::sw_pad_ctl::sre::Fast,
-	.DSE = iomuxc::sw_pad_ctl::dse::R0_7,
-	.SPEED = iomuxc::sw_pad_ctl::speed::MHz_200,
-	.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
-	.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
-	.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
-	.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
-	.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Enabled,
-}});
+constexpr uint32_t semc_pad_control = bswap(iomuxc::sw_pad_ctl(
+	iomuxc::sw_pad_ctl::sre::Fast,
+	iomuxc::sw_pad_ctl::dse::R0_7,
+	iomuxc::sw_pad_ctl::speed::MHz_200,
+	iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
+	iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
+	iomuxc::sw_pad_ctl::pue::Keeper,
+	iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
+	iomuxc::sw_pad_ctl::hys::Hysteresis_Enabled
+));
 
 constexpr struct dcd {
 	dcd_header hdr = {
@@ -229,96 +213,93 @@ constexpr struct dcd {
 			bswap(0xf00ff330),
 
 			/* Configure SEMC pad multiplexing. */
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_00)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_01)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_02)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_03)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_04)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_05)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_06)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_07)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_08)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_09)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_10)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_11)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_12)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_13)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_14)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_15)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_16)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_17)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_18)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_19)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_20)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_21)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_22)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_23)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_24)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_25)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_26)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_27)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_28)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_29)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_30)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_31)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_32)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_33)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_34)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_35)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_36)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_37)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_38)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_39)),
-			bswap((iomuxc::sw_mux_ctl){{
-				.MUX_MODE = 0,
-				.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Enabled,
-			}}),
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_40)), 0,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC_41)), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[0])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[1])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[2])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[3])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[4])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[5])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[6])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[7])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[8])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[9])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[10])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[11])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[12])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[13])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[14])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[15])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[16])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[17])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[18])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[19])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[20])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[21])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[22])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[23])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[24])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[25])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[26])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[27])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[28])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[29])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[30])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[31])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[32])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[33])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[34])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[35])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[36])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[37])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[38])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[39])),
+			bswap(iomuxc::sw_mux_ctl(0, iomuxc::sw_mux_ctl::sion::Software_Input_On_Enabled)),
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[40])), 0,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_MUX_CTL_PAD_GPIO_EMC[41])), 0,
 
 			/* Configure SEMC pad control registers */
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_00)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_01)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_02)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_03)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_04)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_05)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_06)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_07)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_08)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_09)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_10)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_11)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_12)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_13)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_14)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_15)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_16)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_17)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_18)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_19)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_20)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_21)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_22)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_23)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_24)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_25)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_26)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_27)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_28)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_29)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_30)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_31)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_32)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_33)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_34)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_35)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_36)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_37)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_38)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_39)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_40)), semc_pad_control,
-			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC_41)), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[0])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[1])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[2])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[3])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[4])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[5])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[6])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[7])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[8])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[9])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[10])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[11])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[12])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[13])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[14])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[15])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[16])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[17])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[18])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[19])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[20])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[21])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[22])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[23])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[24])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[25])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[26])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[27])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[28])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[29])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[30])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[31])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[32])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[33])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[34])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[35])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[36])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[37])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[38])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[39])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[40])), semc_pad_control,
+			bswap(IOMUXC_ADDR + offsetof(iomuxc, SW_PAD_CTL_PAD_GPIO_EMC[41])), semc_pad_control,
 
 			/* Configure DRAM on SEMC module. */
 			bswap(SEMC_ADDR + offsetof(semc, MCR)),
@@ -497,7 +478,7 @@ constexpr struct dcd {
 		};
 		uint32_t args[4] = {
 			bswap(SEMC_ADDR + offsetof(semc, IPTXDAT)),
-			bswap(0x33),
+			bswap(0x33u),
 			bswap(SEMC_ADDR + offsetof(semc, IPCMD)),
 			bswap((semc::ipcmd){{
 				.CMD = semc::ipcmd::cmd::MODESET,

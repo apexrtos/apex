@@ -46,36 +46,20 @@ void
 boot_console_init()
 {
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_mux_ctl){{
-		.MUX_MODE = 2,
-		.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled,
-	}}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_pad_ctl){{
-		.SRE = iomuxc::sw_pad_ctl::sre::Slow,
-		.DSE = iomuxc::sw_pad_ctl::dse::R0_6,
-		.SPEED = iomuxc::sw_pad_ctl::speed::MHz_100,
-		.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
-		.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
-		.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
-		.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
-		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
-	}}.r);
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0[12], {
+		2, iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled});
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0[12],
+		iomuxc::sw_pad_ctl::out_push_pull(
+			iomuxc::sw_pad_ctl::sre::Slow,
+			iomuxc::sw_pad_ctl::dse::R0_6,
+			iomuxc::sw_pad_ctl::speed::MHz_50));
 
 	/* set GPIO_AD_B0_13 as LPUART1_RX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_13, (iomuxc::sw_mux_ctl){{
-		.MUX_MODE = 2,
-		.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled,
-	}}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_pad_ctl){{
-		.SRE = iomuxc::sw_pad_ctl::sre::Slow,
-		.DSE = iomuxc::sw_pad_ctl::dse::R0_6,
-		.SPEED = iomuxc::sw_pad_ctl::speed::MHz_100,
-		.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
-		.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
-		.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
-		.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
-		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
-	}}.r);
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0[13], {
+		2, iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled
+	});
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0[13],
+		iomuxc::sw_pad_ctl::in_digital());
 
 	fsl::lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
 }
@@ -198,7 +182,7 @@ arm_v7m_clock_init()
 	for (dcdc::reg3 v = read32(&DCDC->REG3); v.TRG < (1250 - 800) / 25;) {
 		/* step by 25mV */
 		v.TRG += 1;
-		write32(&DCDC->REG3, v.r);
+		write32(&DCDC->REG3, v);
 		/* wait for core voltage to stabilise */
 		while (!read32(&DCDC->REG0).STS_DC_OK);
 	}
@@ -210,7 +194,7 @@ arm_v7m_clock_init()
 		.ENABLE = 1,
 		.BYPASS_CLK_SRC = ccm_analog::bypass_clk_src::REF_CLK_24M,
 		.BYPASS = 1,
-	}}.r);
+	}});
 	/* wait for PLL1 to stabilise */
 	while (!read32(&CCM_ANALOG->PLL_ARM).LOCK);
 
@@ -221,7 +205,7 @@ arm_v7m_clock_init()
 		.ENABLE = 1,
 		.BYPASS_CLK_SRC = ccm_analog::bypass_clk_src::REF_CLK_24M,
 		.BYPASS = 0,
-	}}.r);
+	}});
 
 	/* configure UART_CLK_ROOT */
 	write32(&CCM->CSCDR1, (ccm::cscdr1){{
@@ -230,16 +214,16 @@ arm_v7m_clock_init()
 		.USDHC1_PODF = 1,
 		.USDHC2_PODF = 1,
 		.TRACE_PODF = 3,
-	}}.r);
+	}});
 
 	/* TODO: gate all unnecessary clocks */
-	write32(&CCM->CCGR0, 0xffffffff);
-	write32(&CCM->CCGR1, 0xffffffff);
-	write32(&CCM->CCGR2, 0xffffffff);
-	write32(&CCM->CCGR3, 0xffffffff);
-	write32(&CCM->CCGR4, 0xffffffff);
-	write32(&CCM->CCGR5, 0xffffffff);
-	write32(&CCM->CCGR6, 0xffffffff);
+	write32(&CCM->CCGR0, {.r = 0xffffffff});
+	write32(&CCM->CCGR1, {.r = 0xffffffff});
+	write32(&CCM->CCGR2, {.r = 0xffffffff});
+	write32(&CCM->CCGR3, {.r = 0xffffffff});
+	write32(&CCM->CCGR4, {.r = 0xffffffff});
+	write32(&CCM->CCGR5, {.r = 0xffffffff});
+	write32(&CCM->CCGR6, {.r = 0xffffffff});
 }
 
 extern "C" void

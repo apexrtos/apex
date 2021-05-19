@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bitfield.h"
 #include <cassert>
 #include <cstdint>
 
@@ -8,26 +9,63 @@
  */
 struct iomuxc {
 	union sw_mux_ctl {
-		enum class sion : unsigned {
+		using S = uint32_t;
+		struct { S r; };
+		enum class sion {
 			Software_Input_On_Disabled,
 			Software_Input_On_Enabled,
 		};
+		bitfield::imxbit<S, sion, 4> SION;
+		bitfield::imxbits<S, unsigned, 2, 0> MUX_MODE;
 
-		struct {
-			uint32_t MUX_MODE : 4;
-				sion SION : 1;
-			uint32_t : 27;
-		};
-		uint32_t r;
+		constexpr
+		sw_mux_ctl()
+		: r{}
+		{}
+
+		constexpr
+		sw_mux_ctl(unsigned mux_mode, sion sion)
+		: r{decltype(MUX_MODE)(mux_mode).r | decltype(SION)(sion).r}
+		{}
 	};
 
 	union sw_pad_ctl {
-		enum class sre : unsigned {
-			Slow,
-			Fast,
+		using S = uint32_t;
+		struct { S r; };
+		enum class hys {
+			Hysteresis_Disabled,
+			Hysteresis_Enabled,
 		};
-
-		enum class dse : unsigned {
+		bitfield::imxbit<S, hys, 16> HYS;
+		enum class pus {
+			Pull_Down_100K,
+			Pull_Up_47K,
+			Pull_Up_100K,
+			Pull_Up_22K,
+		};
+		bitfield::imxbits<S, pus, 15, 14> PUS;
+		enum class pue {
+			Keeper,
+			Pull,
+		};
+		bitfield::imxbit<S, pue, 13> PUE;
+		enum class pke {
+			Pull_Keeper_Disabled,
+			Pull_Keeper_Enabled,
+		};
+		bitfield::imxbit<S, pke, 12> PKE;
+		enum class ode {
+			Open_Drain_Disabled,
+			Open_Drain_Enabled,
+		};
+		bitfield::imxbit<S, ode, 11> ODE;
+		enum class speed {
+			MHz_50 = 0,
+			MHz_100 = 2,
+			MHz_200 = 3,
+		};
+		bitfield::imxbits<S, speed, 7, 6> SPEED;
+		enum class dse {
 			disabled,
 			R0,
 			R0_2,
@@ -37,54 +75,59 @@ struct iomuxc {
 			R0_6,
 			R0_7,
 		};
-
-		enum class speed : unsigned {
-			MHz_50 = 0,
-			MHz_100 = 2,
-			MHz_200 = 3,
+		bitfield::imxbits<S, dse, 5, 3> DSE;
+		enum class sre {
+			Slow,
+			Fast,
 		};
+		bitfield::imxbit<S, sre, 0> SRE;
 
-		enum class ode : unsigned {
-			Open_Drain_Disabled,
-			Open_Drain_Enabled,
-		};
+		constexpr
+		sw_pad_ctl()
+		: r{}
+		{}
 
-		enum class pke : unsigned {
-			Pull_Keeper_Disabled,
-			Pull_Keeper_Enabled,
-		};
+		constexpr
+		sw_pad_ctl(sre sre, dse dse, speed speed, ode ode, pke pke,
+			   pue pue, pus pus, hys hys)
+		: r{decltype(SRE)(sre).r | decltype(DSE)(dse).r |
+		    decltype(SPEED)(speed).r | decltype(ODE)(ode).r |
+		    decltype(PKE)(pke).r | decltype(PUE)(pue).r |
+		    decltype(PUS)(pus).r | decltype(HYS)(hys).r}
+		{}
 
-		enum class pue : unsigned {
-			Keeper,
-			Pull,
-		};
+		static constexpr sw_pad_ctl
+		out_push_pull(sre sre, dse dse, speed speed)
+		{
+			return {sre, dse, speed,
+				ode::Open_Drain_Disabled,
+				pke::Pull_Keeper_Disabled,
+				pue::Keeper,		/* disabled */
+				pus::Pull_Down_100K,	/* disabled */
+				hys::Hysteresis_Enabled};
+		}
 
-		enum class pus : unsigned {
-			Pull_Down_100K,
-			Pull_Up_47K,
-			Pull_Up_100K,
-			Pull_Up_22K,
-		};
+		static constexpr sw_pad_ctl
+		out_open_drain(sre sre, dse dse, speed speed)
+		{
+			return {sre, dse, speed,
+				ode::Open_Drain_Enabled,
+				pke::Pull_Keeper_Disabled,
+				pue::Keeper,		/* disabled */
+				pus::Pull_Down_100K,	/* disabled */
+				hys::Hysteresis_Enabled};
+		}
 
-		enum class hys : unsigned {
-			Hysteresis_Disabled,
-			Hysteresis_Enabled,
-		};
-
-		struct {
-			sre SRE : 1;
-			uint32_t : 2;
-			dse DSE : 3;
-			speed SPEED : 2;
-			uint32_t : 3;
-			ode ODE : 1;
-			pke PKE : 1;
-			pue PUE : 1;
-			pus PUS : 2;
-			hys HYS : 1;
-			uint32_t : 15;
-		};
-		uint32_t r;
+		static constexpr sw_pad_ctl
+		in_digital()
+		{
+			return {sre::Slow, dse::disabled, speed::MHz_50,
+				ode::Open_Drain_Disabled,
+				pke::Pull_Keeper_Disabled,
+				pue::Keeper,		/* disabled */
+				pus::Pull_Down_100K,	/* disabled */
+				hys::Hysteresis_Enabled};
+		}
 	};
 
 	uint32_t : 32;
@@ -95,329 +138,25 @@ struct iomuxc {
 	union {
 		sw_mux_ctl SW_MUX_CTL[124];
 		struct {
-			union {
-				sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC[42];
-				struct {
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_00;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_01;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_02;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_03;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_04;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_05;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_06;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_07;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_08;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_09;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_10;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_11;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_12;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_13;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_14;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_15;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_16;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_17;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_18;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_19;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_20;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_21;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_22;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_23;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_24;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_25;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_26;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_27;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_28;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_29;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_30;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_31;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_32;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_33;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_34;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_35;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_36;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_37;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_38;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_39;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_40;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC_41;
-				};
-			};
-			union {
-				sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0[16];
-				struct {
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_00;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_01;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_02;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_03;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_04;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_05;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_06;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_07;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_08;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_09;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_10;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_11;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_12;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_13;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_14;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0_15;
-				};
-			};
-			union {
-				sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1[16];
-				struct {
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_00;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_01;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_02;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_03;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_04;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_05;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_06;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_07;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_08;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_09;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_10;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_11;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_12;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_13;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_14;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1_15;
-				};
-			};
-			union {
-				sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0[16];
-				struct {
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_00;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_01;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_02;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_03;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_04;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_05;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_06;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_07;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_08;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_09;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_10;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_11;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_12;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_13;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_14;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0_15;
-				};
-			};
-			union {
-				sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1[16];
-				struct {
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_00;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_01;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_02;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_03;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_04;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_05;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_06;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_07;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_08;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_09;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_10;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_11;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_12;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_13;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_14;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1_15;
-				};
-			};
-			union {
-				sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0[6];
-				struct {
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0_00;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0_01;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0_02;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0_03;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0_04;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0_05;
-				};
-			};
-			union {
-				sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1[12];
-				struct {
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_00;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_01;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_02;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_03;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_04;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_05;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_06;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_07;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_08;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_09;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_10;
-					sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1_11;
-				};
-			};
+			sw_mux_ctl SW_MUX_CTL_PAD_GPIO_EMC[42];
+			sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B0[16];
+			sw_mux_ctl SW_MUX_CTL_PAD_GPIO_AD_B1[16];
+			sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B0[16];
+			sw_mux_ctl SW_MUX_CTL_PAD_GPIO_B1[16];
+			sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B0[6];
+			sw_mux_ctl SW_MUX_CTL_PAD_GPIO_SD_B1[12];
 		};
 	};
 	union {
 		sw_pad_ctl SW_PAD_CTL[124];
 		struct {
-			union {
-				sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC[42];
-				struct {
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_00;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_01;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_02;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_03;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_04;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_05;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_06;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_07;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_08;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_09;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_10;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_11;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_12;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_13;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_14;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_15;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_16;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_17;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_18;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_19;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_20;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_21;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_22;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_23;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_24;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_25;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_26;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_27;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_28;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_29;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_30;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_31;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_32;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_33;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_34;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_35;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_36;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_37;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_38;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_39;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_40;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC_41;
-				};
-			};
-			union {
-				sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0[16];
-				struct {
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_00;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_01;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_02;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_03;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_04;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_05;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_06;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_07;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_08;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_09;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_10;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_11;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_12;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_13;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_14;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0_15;
-				};
-			};
-			union {
-				sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1[16];
-				struct {
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_00;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_01;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_02;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_03;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_04;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_05;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_06;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_07;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_08;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_09;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_10;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_11;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_12;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_13;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_14;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1_15;
-				};
-			};
-			union {
-				sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0[16];
-				struct {
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_00;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_01;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_02;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_03;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_04;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_05;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_06;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_07;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_08;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_09;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_10;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_11;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_12;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_13;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_14;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0_15;
-				};
-			};
-			union {
-				sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1[16];
-				struct {
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_00;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_01;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_02;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_03;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_04;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_05;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_06;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_07;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_08;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_09;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_10;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_11;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_12;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_13;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_14;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1_15;
-				};
-			};
-			union {
-				sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0[6];
-				struct {
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0_00;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0_01;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0_02;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0_03;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0_04;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0_05;
-				};
-			};
-			union {
-				sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1[12];
-				struct {
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_00;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_01;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_02;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_03;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_04;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_05;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_06;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_07;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_08;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_09;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_10;
-					sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1_11;
-				};
-			};
+			sw_pad_ctl SW_PAD_CTL_PAD_GPIO_EMC[42];
+			sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B0[16];
+			sw_pad_ctl SW_PAD_CTL_PAD_GPIO_AD_B1[16];
+			sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B0[16];
+			sw_pad_ctl SW_PAD_CTL_PAD_GPIO_B1[16];
+			sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B0[6];
+			sw_pad_ctl SW_PAD_CTL_PAD_GPIO_SD_B1[12];
 		};
 	};
 	uint32_t ANATOP_USB_OTG1_ID_SELECT_INPUT;
@@ -657,54 +396,48 @@ static_assert(sizeof(iomuxc) == 0x790);
 
 struct iomuxc_gpr {
 	union gpr16 {
-		struct {
-			uint32_t INIT_ITCM_EN : 1;
-			uint32_t INIT_DTCM_EN : 1;
-			uint32_t FLEXRAM_BANK_CFG_SEL : 1;
-			uint32_t : 4;
-			uint32_t CM7_INIT_VTOR : 25;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::imxbits<S, unsigned, 31, 7> CM7_INIT_VTOR;
+		enum class flexram_bank_cfg_sel {
+			fuses,
+			FLEXRAM_BANK_CFG,
 		};
-		uint32_t r;
+		bitfield::imxbit<S, flexram_bank_cfg_sel, 2> FLEXRAM_BANK_CFG_SEL;
+		bitfield::imxbit<S, bool, 1> INIT_DTCM_EN;
+		bitfield::imxbit<S, bool, 0> INIT_ITCM_EN;
 	};
 
 	union gpr17 {
-		struct {
-			uint32_t FLEXRAM_BANK_CFG;
-		};
-		uint32_t r;
+		uint32_t FLEXRAM_BANK_CFG;
 	};
 
-	union {
-		uint32_t GPR[26];
-		struct {
-			uint32_t GPR0;
-			uint32_t GPR1;
-			uint32_t GPR2;
-			uint32_t GPR3;
-			uint32_t GPR4;
-			uint32_t GPR5;
-			uint32_t GPR6;
-			uint32_t GPR7;
-			uint32_t GPR8;
-			uint32_t GPR9;
-			uint32_t GPR10;
-			uint32_t GPR11;
-			uint32_t GPR12;
-			uint32_t GPR13;
-			uint32_t GPR14;
-			uint32_t GPR15;
-			gpr16 GPR16;
-			gpr17 GPR17;
-			uint32_t GPR18;
-			uint32_t GPR19;
-			uint32_t GPR20;
-			uint32_t GPR21;
-			uint32_t GPR22;
-			uint32_t GPR23;
-			uint32_t GPR24;
-			uint32_t GPR25;
-		};
-	};
+	uint32_t GPR0;
+	uint32_t GPR1;
+	uint32_t GPR2;
+	uint32_t GPR3;
+	uint32_t GPR4;
+	uint32_t GPR5;
+	uint32_t GPR6;
+	uint32_t GPR7;
+	uint32_t GPR8;
+	uint32_t GPR9;
+	uint32_t GPR10;
+	uint32_t GPR11;
+	uint32_t GPR12;
+	uint32_t GPR13;
+	uint32_t GPR14;
+	uint32_t GPR15;
+	gpr16 GPR16;
+	gpr17 GPR17;
+	uint32_t GPR18;
+	uint32_t GPR19;
+	uint32_t GPR20;
+	uint32_t GPR21;
+	uint32_t GPR22;
+	uint32_t GPR23;
+	uint32_t GPR24;
+	uint32_t GPR25;
 };
 static_assert(sizeof(iomuxc_gpr) == 0x68);
 

@@ -31,14 +31,14 @@ machine_init(bootargs *args)
 		{
 			.paddr = phys{CONFIG_DRAM_BASE_PHYS},
 			.size = CONFIG_DRAM_SIZE,
-			.flags = RASR_KERNEL_RWX_WBWA,
+			.flags = RASR_KERNEL_RWX_WBWA.r,
 		},
 #if (CONFIG_KERNEL_NULL_GUARD_SIZE > 0)
 		/* REVISIT: Use debug hardware instead of wasting MPU entry? */
 		{
 			.paddr = 0_phys,
 			.size = CONFIG_KERNEL_NULL_GUARD_SIZE,
-			.flags = RASR_NONE,
+			.flags = RASR_NONE.r,
 		},
 #endif
 #if (CONFIG_DMA_SIZE > 0)
@@ -47,7 +47,7 @@ machine_init(bootargs *args)
 		{
 			.paddr = phys{CONFIG_DMA_BASE_PHYS},
 			.size = CONFIG_DMA_SIZE,
-			.flags = RASR_KERNEL_RW,
+			.flags = RASR_KERNEL_RW.r,
 		}
 #endif
 	};
@@ -126,17 +126,19 @@ machine_reset()
 	 * boot ROM expects to use OCRAM as stack and is too stupid to make
 	 * sure that it will actually work */
 	iomuxc_gpr::gpr16 gpr16 = read32(&IOMUXC_GPR->GPR16);
-	gpr16.FLEXRAM_BANK_CFG_SEL = 0;
-	write32(&IOMUXC_GPR->GPR16, gpr16.r);
+	gpr16.FLEXRAM_BANK_CFG_SEL = iomuxc_gpr::gpr16::flexram_bank_cfg_sel::fuses;
+	write32(&IOMUXC_GPR->GPR16, gpr16);
 
 	/* wait for FLEXRAM_BANK_CFG_SEL write before asserting reset */
 	memory_barrier();
 
 	/* assert reset */
-	write32(&SCB->AIRCR, (scb::aircr){{
-		.SYSRESETREQ = 1,
-		.VECTKEY = 0x05fa,
-	}}.r);
+	write32(&SCB->AIRCR, []{
+		scb::aircr r{};
+		r.SYSRESETREQ = 1;
+		r.VECTKEY = 0x05fa;
+		return r;
+	}());
 	memory_barrier();
 
 	/* Workaround for ancient clang bug. Looks like this will be fixed
@@ -168,20 +170,13 @@ void
 early_console_init()
 {
 	/* set GPIO_AD_B0_12 as LPUART1_TX */
-	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_mux_ctl){{
-		.MUX_MODE = 2,
-		.SION = iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled,
-	}}.r);
-	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0_12, (iomuxc::sw_pad_ctl){{
-		.SRE = iomuxc::sw_pad_ctl::sre::Slow,
-		.DSE = iomuxc::sw_pad_ctl::dse::R0_6,
-		.SPEED = iomuxc::sw_pad_ctl::speed::MHz_100,
-		.ODE = iomuxc::sw_pad_ctl::ode::Open_Drain_Disabled,
-		.PKE = iomuxc::sw_pad_ctl::pke::Pull_Keeper_Enabled,
-		.PUE = iomuxc::sw_pad_ctl::pue::Keeper,
-		.PUS = iomuxc::sw_pad_ctl::pus::Pull_Down_100K,
-		.HYS = iomuxc::sw_pad_ctl::hys::Hysteresis_Disabled,
-	}}.r);
+	write32(&IOMUXC->SW_MUX_CTL_PAD_GPIO_AD_B0[12], {
+		2, iomuxc::sw_mux_ctl::sion::Software_Input_On_Disabled});
+	write32(&IOMUXC->SW_PAD_CTL_PAD_GPIO_AD_B0[12],
+		iomuxc::sw_pad_ctl::out_push_pull(
+			iomuxc::sw_pad_ctl::sre::Slow,
+			iomuxc::sw_pad_ctl::dse::R0_6,
+			iomuxc::sw_pad_ctl::speed::MHz_50));
 
 	fsl::lpuart_early_init(LPUART1, 24000000, CONFIG_EARLY_CONSOLE_CFLAG);
 }
