@@ -334,7 +334,7 @@ thread_check()
 	thread *th;
 	task *t;
 
-	if (likely(idle_thread.magic == THREAD_MAGIC)) { /* not early in boot */
+	if (idle_thread.magic == THREAD_MAGIC) [[likely]] { /* not early in boot */
 		task_link = &kern_task.link;
 		do {
 			t = list_entry(task_link, task, link);
@@ -409,8 +409,8 @@ thread_init()
 	context_init_idle(&idle_thread.ctx, &__stack_start + (int)&__stack_size);
 	list_insert(&kern_task.threads, &idle_thread.task_link);
 #if defined(CONFIG_KSTACK_CHECK)
-	size_t free = ((void *)__builtin_frame_address(0) -
-		       (void *)idle_thread.kstack);
+	size_t free = ((char *)__builtin_frame_address(0) -
+		       (char *)idle_thread.kstack);
 	/* do not use memset here as it uses stack... */
 	char *sp = (char*)idle_thread.kstack;
 	while (free--)
