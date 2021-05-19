@@ -157,10 +157,8 @@ lpuart::lpuart(unsigned long base)
 void
 lpuart::reset()
 {
-	write32(&r_->GLOBAL, (regs::global){{
-		.RST = true
-	}}.r);
-	write32(&r_->GLOBAL, 0);
+	write32(&r_->GLOBAL, {{.RST = true}});
+	write32(&r_->GLOBAL, {});
 }
 
 void
@@ -170,24 +168,24 @@ lpuart::configure(const dividers &div, DataBits db, Parity p, StopBits sb,
 	const auto ien = ints == Interrupts::Enabled;
 
 	/* disable receiver & transmitter during reconfiguration */
-	write32(&r_->CTRL, 0);
-	write32(&r_->BAUD, (regs::baud){{
+	write32(&r_->CTRL, {});
+	write32(&r_->BAUD, {{
 		.SBR = div.sbr,
 		.SBNS = static_cast<unsigned>(sb),
 		.BOTHEDGE = true,
 		.OSR = div.osr - 1,
-	}}.r);
-	write32(&r_->FIFO, (regs::fifo){{
+	}});
+	write32(&r_->FIFO, {{
 		.RXFE = ien,
 		.TXFE = ien,
 		.RXIDEN = ien,
-	}}.r);
-	write32(&r_->WATER, (regs::water){{
+	}});
+	write32(&r_->WATER, {{
 		.TXWATER = 0,
 		.RXWATER = 1,
-	}}.r);
+	}});
 	write32(&r_->CTRL, [&]{
-		decltype(r_->CTRL) v{};
+		regs::ctrl v{};
 		if (p != Parity::Disabled) {
 			v.PE = true;
 			v.PT = static_cast<unsigned>(p) - 1;
@@ -197,7 +195,7 @@ lpuart::configure(const dividers &div, DataBits db, Parity p, StopBits sb,
 		v.TE = true;
 		v.RIE = ien;
 		v.ORIE = ien;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -206,7 +204,7 @@ lpuart::txint_disable()
 {
 	auto v = read32(&r_->CTRL);
 	v.TIE = false;
-	write32(&r_->CTRL, v.r);
+	write32(&r_->CTRL, v);
 }
 
 void
@@ -214,7 +212,7 @@ lpuart::tcint_disable()
 {
 	auto v = read32(&r_->CTRL);
 	v.TCIE = false;
-	write32(&r_->CTRL, v.r);
+	write32(&r_->CTRL, v);
 }
 
 void
@@ -223,7 +221,7 @@ lpuart::txints_enable()
 	auto v = read32(&r_->CTRL);
 	v.TIE = true;
 	v.TCIE = true;
-	write32(&r_->CTRL, v.r);
+	write32(&r_->CTRL, v);
 }
 
 void
@@ -232,7 +230,7 @@ lpuart::flush(int io)
 	auto v = read32(&r_->FIFO);
 	v.RXFLUSH = io == TCIFLUSH || io == TCIOFLUSH;
 	v.TXFLUSH = io == TCOFLUSH || io == TCIOFLUSH;
-	write32(&r_->FIFO, v.r);
+	write32(&r_->FIFO, v);
 }
 
 bool
@@ -250,9 +248,7 @@ lpuart::overrun()
 void
 lpuart::clear_overrun()
 {
-	write32(&r_->STAT, (regs::stat){{
-		.OR = 1
-	}}.r);
+	write32(&r_->STAT, {{.OR = 1}});
 }
 
 void
