@@ -14,10 +14,8 @@ mps2_uart_early_init(unsigned long base, tcflag_t cflag)
 	auto u = reinterpret_cast<mps2_uart *>(base);
 
 	/* TODO: process cflag */
-	write32(&u->BAUDDIV, 16);    /* QEMU doesn't care as long as >= 16 */
-	write32(&u->CTRL, mps2_uart::ctrl{{
-		.TX_ENABLE = 1
-	}}.r);
+	write32(&u->BAUDDIV, 16u); /* QEMU doesn't care as long as >= 16 */
+	write32(&u->CTRL, {.TX_ENABLE = 1});
 }
 
 /*

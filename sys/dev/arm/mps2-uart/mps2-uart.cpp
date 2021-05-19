@@ -18,9 +18,7 @@ rx_isr(int vector, void *data)
 	auto tp = static_cast<tty *>(data);
 	auto u = static_cast<arm::mps2_uart *>(tty_data(tp));
 
-	write32(&u->INT_STATUS_CLEAR, (arm::mps2_uart::int_status_clear){{
-		.RX = 1
-	}}.r);
+	write32(&u->INT_STATUS_CLEAR, {.RX = 1});
 
 	while (read32(&u->STATE).RX_FULL)
 		tty_rx_putc(tp, read32(&u->DATA));
@@ -37,9 +35,7 @@ tx_isr(int vector, void *data)
 	auto tp = static_cast<tty *>(data);
 	auto u = static_cast<arm::mps2_uart *>(tty_data(tp));
 
-	write32(&u->INT_STATUS_CLEAR, (arm::mps2_uart::int_status_clear){{
-		.TX = 1
-	}}.r);
+	write32(&u->INT_STATUS_CLEAR, {.TX = 1});
 
 	while (!read32(&u->STATE).TX_FULL) {
 		int c;
@@ -47,7 +43,7 @@ tx_isr(int vector, void *data)
 			tty_tx_complete(tp);
 			break;
 		}
-		write32(&u->DATA,  c);
+		write32(&u->DATA, static_cast<uint32_t>(c));
 	}
 
 	return INT_DONE;
@@ -62,13 +58,15 @@ tproc(tty *tp, tcflag_t cflag)
 	auto u = static_cast<arm::mps2_uart *>(tty_data(tp));
 	const bool rx = cflag & CREAD;
 
-	write32(&u->BAUDDIV, 16);    /* QEMU doesn't care as long as >= 16 */
-	write32(&u->CTRL, (arm::mps2_uart::ctrl){{
-		.TX_ENABLE = 1,
-		.RX_ENABLE = rx,
-		.TX_INTERRUPT_ENABLE = 1,
-		.RX_INTERRUPT_ENABLE = rx,
-	}}.r);
+	write32(&u->BAUDDIV, 16u);  /* QEMU doesn't care as long as >= 16 */
+	write32(&u->CTRL, [&]{
+		arm::mps2_uart::ctrl r{};
+		r.TX_ENABLE = 1;
+		r.RX_ENABLE = rx;
+		r.TX_INTERRUPT_ENABLE = 1;
+		r.RX_INTERRUPT_ENABLE = rx;
+		return r;
+	}());
 
 	return 0;
 }

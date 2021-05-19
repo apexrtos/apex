@@ -1,44 +1,43 @@
 #pragma once
 
 #include <cstdint>
+#include <sys/lib/bitfield.h>
 
 /*
  * Hardware registers
+ *
+ *
  */
 namespace arm {
 
 struct mps2_uart {
 	uint32_t DATA;
 	union state {
-		struct {
-			uint32_t TX_FULL : 1;
-			uint32_t RX_FULL : 1;
-			uint32_t TX_OVERRUN : 1;
-			uint32_t RX_OVERRUN : 1;
-			uint32_t : 28;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::bit<S, bool, 3> RX_OVERRUN;
+		bitfield::bit<S, bool, 2> TX_OVERRUN;
+		bitfield::bit<S, bool, 1> RX_FULL;
+		bitfield::bit<S, bool, 0> TX_FULL;
 	} STATE;
 	union ctrl {
-		struct {
-			uint32_t TX_ENABLE : 1;
-			uint32_t RX_ENABLE : 1;
-			uint32_t TX_INTERRUPT_ENABLE : 1;
-			uint32_t RX_INTERRUPT_ENABLE : 1;
-			uint32_t TX_OVERRUN_INTERRUPT_ENABLE : 1;
-			uint32_t RX_OVERRUN_INTERRUPT_ENABLE : 1;
-			uint32_t TX_HIGH_SPEED_TEST_MODE : 1;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::bit<S, bool, 6> TX_HIGH_SPEED_TEST_MODE;
+		bitfield::bit<S, bool, 5> RX_OVERRUN_INTERRUPT_ENABLE;
+		bitfield::bit<S, bool, 4> TX_OVERRUN_INTERRUPT_ENABLE;
+		bitfield::bit<S, bool, 3> RX_INTERRUPT_ENABLE;
+		bitfield::bit<S, bool, 2> TX_INTERRUPT_ENABLE;
+		bitfield::bit<S, bool, 1> RX_ENABLE;
+		bitfield::bit<S, bool, 0> TX_ENABLE;
 	} CTRL;
 	union int_status_clear {
-		struct {
-			uint32_t TX : 1;
-			uint32_t RX : 1;
-			uint32_t TX_OVERRUN : 1;
-			uint32_t RX_OVERRUN : 1;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::bit<S, bool, 3> RX_OVERRUN;
+		bitfield::bit<S, bool, 2> TX_OVERRUN;
+		bitfield::bit<S, bool, 1> RX;
+		bitfield::bit<S, bool, 0> TX;
 	} INT_STATUS_CLEAR;
 	uint32_t BAUDDIV;
 };
