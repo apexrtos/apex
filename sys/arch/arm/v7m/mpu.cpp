@@ -14,6 +14,11 @@
 #include <task.h>
 #include <thread.h>
 
+/* Tell gcc not to use FPU registers */
+#if defined(__arm__) && defined(__GNUC__) && !defined(__clang__)
+#pragma GCC target("general-regs-only")
+#endif
+
 __fast_bss size_t fixed;		    /* number of fixed regions */
 __fast_bss size_t stack;		    /* number of stack regions */
 __fast_bss size_t victim;		    /* next victim to evict */

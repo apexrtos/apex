@@ -17,6 +17,11 @@
 #include <task.h>
 #include <thread.h>
 
+/* Tell gcc not to use FPU registers */
+#if defined(__arm__) && defined(__GNUC__) && !defined(__clang__)
+#pragma GCC target("general-regs-only")
+#endif
+
 typedef void (*sig_restore_fn)();
 typedef void (*sig_handler_fn)(int);
 

@@ -17,15 +17,6 @@ endif
 ASFLAGS += -mimplicit-it=thumb
 
 #
-# Ask gcc not to use FPU registers in critical areas
-#
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/context_EXTRA_CFLAGS_gcc := -mgeneral-regs-only
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/exception_EXTRA_CFLAGS_gcc := -mgeneral-regs-only
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/mpu_EXTRA_CFLAGS_gcc := -mgeneral-regs-only
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/syscall_EXTRA_CFLAGS_gcc := -mgeneral-regs-only
-$(APEX_SUBDIR)sys/kern/sig_EXTRA_CFLAGS_gcc := -mgeneral-regs-only
-
-#
 # Ask clang not to use FPU registers in critical areas
 #
 $(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/context_EXTRA_CFLAGS_clang := -mno-implicit-float

@@ -7,6 +7,11 @@
 #include <task.h>
 #include <thread.h>
 
+/* Tell gcc not to use FPU registers */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC target("general-regs-only")
+#endif
+
 const char *syscall_string(long);
 
 /*
