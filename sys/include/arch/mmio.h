@@ -24,7 +24,6 @@ template<typename T>
 inline T
 readN(const T *p)
 {
-	static_assert(sizeof(T) <= sizeof(uintptr_t));
 	static_assert(std::is_trivially_copyable_v<T>);
 
 	T tmp;
@@ -87,9 +86,8 @@ read64(const T *p)
 
 template<typename T>
 inline void
-writeN(void *p, const T &v)
+writeN(void *p, const T v)
 {
-	static_assert(sizeof(T) <= sizeof(uintptr_t));
 	static_assert(std::is_trivially_copyable_v<T>);
 
 	switch (sizeof(T)) {
@@ -114,38 +112,34 @@ writeN(void *p, const T &v)
 	}
 }
 
-template<typename P, typename T>
+template<typename T>
 inline void
-write8(P *p, const T &v)
+write8(T *p, const T v)
 {
-	static_assert(sizeof(P) == 1);
 	static_assert(sizeof(T) == 1);
 	writeN(p, v);
 }
 
-template<typename P, typename T>
+template<typename T>
 inline void
-write16(P *p, const T &v)
+write16(T *p, const T v)
 {
-	static_assert(sizeof(P) == 2);
 	static_assert(sizeof(T) == 2);
 	writeN(p, v);
 }
 
-template<typename P, typename T>
+template<typename T>
 inline void
-write32(P *p, const T &v)
+write32(T *p, const T v)
 {
-	static_assert(sizeof(P) == 4);
 	static_assert(sizeof(T) == 4);
 	writeN(p, v);
 }
 
-template<typename P, typename T>
+template<typename T>
 inline void
-write64(P *p, const T &v)
+write64(T *p, const T v)
 {
-	static_assert(sizeof(P) == 8);
 	static_assert(sizeof(T) == 8);
 	writeN(p, v);
 }
