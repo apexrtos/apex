@@ -153,30 +153,30 @@ fsl_imx_usbphy_init(const fsl_imx_usbphy_desc *d)
 	usb_analog *const USB_ANALOG = (usb_analog *)d->analog_base;
 
 	/* disable charger & data pin contact detection */
-	write32(&USB_ANALOG->CHRG_DETECT, (usb_analog::chrg_detect) {{
+	write32(&USB_ANALOG->CHRG_DETECT, {{
 		.CHK_CONTACT = 0,
 		.CHK_CHRG_B = 1,
 		.EN_B = 1,
-	}}.r);
+	}});
 
 	/* release from reset & ungate clock */
-	write32(&USBPHY->CTRL, 0);
+	write32(&USBPHY->CTRL, {.r = 0});
 
 	/* configure trimming resistors */
 	usbphy::tx tx = read32(&USBPHY->TX);
 	tx.D_CAL = d->d_cal;
 	tx.TXCAL45DP = d->txcal45dp;
 	tx.TXCAL45DN = d->txcal45dn;
-	write32(&USBPHY->TX, tx.r);
+	write32(&USBPHY->TX, tx);
 
 	/* power on phy */
-	write32(&USBPHY->PWD, 0);
+	write32(&USBPHY->PWD, 0u);
 
 	/* enable UTMI+ Level 2 & 3 */
-	write32(&USBPHY->CTRL, (usbphy::ctrl) {{
+	write32(&USBPHY->CTRL, {{
 		.ENUTMILEVEL2 = 1,
 		.ENUTMILEVEL3 = 1,
-	}}.r);
+	}});
 
 #if defined(CONFIG_DEBUG)
 	const usbphy::version v = read32(&USBPHY->VERSION);
