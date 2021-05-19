@@ -204,7 +204,7 @@ struct regs {
 		};
 		uint32_t r;
 	} DEVICEADDR;
-	phys *ENDPOINTLISTADDR;
+	phys ENDPOINTLISTADDR;
 	uint32_t : 32;
 	uint32_t BURSTSIZE;
 	uint32_t : 32;
@@ -477,11 +477,7 @@ fsl_usb2_udc::fsl_usb2_udc(const char *name, regs *r)
 	}
 
 	/* issue controller reset */
-	write32(&r_->USBCMD, []{
-		decltype(r_->USBCMD) v{};
-		v.RST = 1;
-		return v.r;
-	}());
+	write32(&r_->USBCMD, {{.RST = 1}});
 
 	dbg("FSL-USB2-UDC ID %d REVISION %d initialised\n",
 	    r_->ID.ID, r_->ID.REVISION);
@@ -494,24 +490,20 @@ fsl_usb2_udc::isr()
 
 	/* read & ack interrupts */
 	const auto s = read32(&r_->USBSTS);
-	write32(&r_->USBSTS, s.r);
+	write32(&r_->USBSTS, s);
 
 	/* reset received */
 	if (s.URI) {
-		write32(&r_->ENDPTSETUPSTAT, -1);
-		write32(&r_->ENDPTCOMPLETE, -1);
+		write32(&r_->ENDPTSETUPSTAT, 0xffffffff);
+		write32(&r_->ENDPTCOMPLETE, 0xffffffff);
 		while (read32(&r_->ENDPTPRIME));
-		write32(&r_->ENDPTFLUSH, -1);
+		write32(&r_->ENDPTFLUSH, 0xffffffff);
 
 		/* issue controller reset if we missed reset window */
 		if (read32(&r_->PORTSC1).PR)
 			bus_reset_irq();
 		else {
-			write32(&r_->USBCMD, []{
-				decltype(r_->USBCMD) v{};
-				v.RST = 1;
-				return v.r;
-			}());
+			write32(&r_->USBCMD, {{.RST = 1}});
 			reset_irq();
 		}
 	}
@@ -544,7 +536,7 @@ fsl_usb2_udc::isr()
 				/* read using tripwire for synchronisation */
 				ch9::setup_data s;
 				do {
-					write32(&r_->USBCMD, usbcmd.r);
+					write32(&r_->USBCMD, usbcmd);
 					/* ensure that tripwire is observable
 					   before reading setup data */
 					write_memory_barrier();
@@ -618,7 +610,7 @@ fsl_usb2_udc::v_start()
 	write32(&r_->USBCMD, [&]{
 		auto v = read32(&r_->USBCMD);
 		v.RS = 1;
-		return v.r;
+		return v;
 	}());
 
 	return 0;
@@ -630,11 +622,7 @@ fsl_usb2_udc::v_stop()
 	std::lock_guard l{lock_};
 
 	/* issue controller reset */
-	write32(&r_->USBCMD, []{
-		decltype(r_->USBCMD) v{};
-		v.RST = 1;
-		return v.r;
-	}());
+	write32(&r_->USBCMD, {{.RST = 1}});
 
 	/* wait for reset to complete */
 	while (read32(&r_->USBCMD).RST);
@@ -709,7 +697,7 @@ fsl_usb2_udc::v_open_endpoint(size_t endpoint, ch9::Direction dir,
 		ctrl.TXR = 1;
 		ctrl.TXT = static_cast<int>(tt);
 	}
-	write32(&r_->ENDPTCTRL[endpoint], ctrl.r);
+	write32(&r_->ENDPTCTRL[endpoint], ctrl);
 
 	q.open = true;
 
@@ -735,7 +723,7 @@ fsl_usb2_udc::v_close_endpoint(size_t endpoint, ch9::Direction dir)
 		ctrl.RXE = 0;
 	else
 		ctrl.TXE = 0;
-	write32(&r_->ENDPTCTRL[endpoint], ctrl.r);
+	write32(&r_->ENDPTCTRL[endpoint], ctrl);
 
 	/* abort any queued transactions */
 	while (q.transaction) {
@@ -855,7 +843,7 @@ fsl_usb2_udc::v_set_stall(size_t endpoint, bool stall)
 		ctrl.TXR = true;    /* reset TX data toggle */
 		ctrl.RXR = true;    /* reset RX data toggle */
 	}
-	write32(&r_->ENDPTCTRL[endpoint], ctrl.r);
+	write32(&r_->ENDPTCTRL[endpoint], ctrl);
 }
 
 void
@@ -879,7 +867,7 @@ fsl_usb2_udc::v_set_stall(size_t endpoint, ch9::Direction dir, bool stall)
 		if (!stall && endpoint != 0)
 			ctrl.RXR = true;    /* reset RX data toggle */
 	}
-	write32(&r_->ENDPTCTRL[endpoint], ctrl.r);
+	write32(&r_->ENDPTCTRL[endpoint], ctrl);
 }
 
 int
@@ -907,11 +895,7 @@ fsl_usb2_udc::v_set_address(unsigned address)
 	std::lock_guard l{lock_};
 
 	assert(address < 128);
-	write32(&r_->DEVICEADDR, [&]{
-		decltype(r_->DEVICEADDR) v{};
-		v.USBADR = address;
-		return v.r;
-	}());
+	write32(&r_->DEVICEADDR, {{.USBADR = address}});
 }
 
 void
@@ -998,11 +982,11 @@ fsl_usb2_udc::do_queue(size_t endpoint, ch9::Direction dir,
 		cmd.ATDTW = 1;
 		uint32_t stat;
 		do {
-			write32(&r_->USBCMD, cmd.r);
+			write32(&r_->USBCMD, cmd);
 			stat = read32(&r_->ENDPTSTAT);
 		} while (!read32(&r_->USBCMD).ATDTW);
 		cmd.ATDTW = 0;
-		write32(&r_->USBCMD, cmd.r);
+		write32(&r_->USBCMD, cmd);
 		if (stat & epb) {
 			trace("enqueue continue ep %zu dir %d q %p txn %p\n",
 			    endpoint, static_cast<int>(dir), t, qt);
@@ -1046,23 +1030,20 @@ fsl_usb2_udc::hw_init()
 	}());
 
 	/* configure queue head */
-	write32(&r_->ENDPOINTLISTADDR,
-	    reinterpret_cast<uintptr_t>(virt_to_phys(dqh_).phys()));
+	write32(&r_->ENDPOINTLISTADDR, virt_to_phys(dqh_));
 
 	/* configure interrupts */
-	write32(&r_->USBINTR, []{
-		decltype(r_->USBINTR) v{};
-		v.UE = 1;
-		v.PCE = 1;
-		v.URE = 1;
-		return v.r;
-	}());
+	write32(&r_->USBINTR, {{
+		.UE = 1,
+		.PCE = 1,
+		.URE = 1,
+	}});
 
 	/* set interrupt threshold to immediate */
 	write32(&r_->USBCMD, [&]{
 		auto v = read32(&r_->USBCMD);
 		v.ITC = 0;
-		return v.r;
+		return v;
 	}());
 }
 
