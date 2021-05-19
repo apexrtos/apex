@@ -461,7 +461,7 @@ fsl_usdhc::fsl_usdhc(const fsl_usdhc_desc &d, const regs::host_ctrl_cap cap)
 		panic("Incompatible Hardware");
 
 	/* Disable all interrupts until controller is reset. */
-	write32(&r_->INT_SIGNAL_EN, 0);
+	write32(&r_->INT_SIGNAL_EN, {.r = 0});
 
 	event_init(&event_, "usdhc", event::ev_IO);
 	irq_attach(d.irq, d.ipl, 0, isr_wrapper, nullptr, this);
@@ -491,24 +491,24 @@ fsl_usdhc::v_reset()
 	retuning_required_ = false;
 
 	/* disable all interrupts */
-	write32(&r_->INT_SIGNAL_EN, 0);
+	write32(&r_->INT_SIGNAL_EN, {.r = 0});
 
 	/* issue controller reset */
 	v_disable_device_clock();	    /* to prevent clock glitch */
 	write32(&r_->VEND_SPEC2, [&]{
 		auto v = read32(&r_->VEND_SPEC2);
 		v.BUS_RST = 1;	    /* to avoid bus hang */
-		return v.r;
+		return v;
 	}());
 	write32(&r_->SYS_CTRL, [&]{
 		auto v = read32(&r_->SYS_CTRL);
 		v.RSTA = 1;
-		return v.r;
+		return v;
 	}());
 	write32(&r_->VEND_SPEC2, [&]{
 		auto v = read32(&r_->VEND_SPEC2);
 		v.BUS_RST = 0;
-		return v.r;
+		return v;
 	}());
 
 	/* wait for reset to complete */
@@ -520,20 +520,18 @@ fsl_usdhc::v_reset()
 		auto v = read32(&r_->PROT_CTRL);
 		v.BURST_LEN_EN = 3; /* enable burst length for all transfers */
 		v.DMASEL = 2;	    /* ADMA2 mode */
-		return v.r;
+		return v;
 	}());
-	write32(&r_->WTMK_LVL, [] {
-		regs::wtmk_lvl v{};
-		v.WR_BRST_LEN = 16;
-		v.WR_WML = 64;
-		v.RD_BRST_LEN = 16;
-		v.RD_WML = 64;
-		return v.r;
-	}());
+	write32(&r_->WTMK_LVL, {{
+		.RD_WML = 64,
+		.RD_BRST_LEN = 16,
+		.WR_WML = 64,
+		.WR_BRST_LEN = 16,
+	}});
 	write32(&r_->TUNING_CTRL, [&] {
 		auto v = read32(&r_->TUNING_CTRL);
 		v.STD_TUNING_EN = 0;
-		return v.r;
+		return v;
 	}());
 
 	/* This bit is not documented in the i.MX RT1060 reference manual as at
@@ -543,12 +541,12 @@ fsl_usdhc::v_reset()
 	write32(&r_->VEND_SPEC2, [&]{
 		auto v = read32(&r_->VEND_SPEC2);
 		v.EN_BUSY_IRQ = 1;
-		return v.r;
+		return v;
 	}());
 
 	/* configure interrupts */
-	write32(&r_->INT_STATUS_EN, 0xffffffff);
-	write32(&r_->INT_SIGNAL_EN, int_mask.r);
+	write32(&r_->INT_STATUS_EN, {.r = 0xffffffff});
+	write32(&r_->INT_SIGNAL_EN, int_mask);
 }
 
 void
@@ -558,7 +556,7 @@ fsl_usdhc::v_disable_device_clock()
 	write32(&r_->VEND_SPEC, [&]{
 		auto v = read32(&r_->VEND_SPEC);
 		v.FRC_SDCLK_ON = 0;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -586,7 +584,7 @@ fsl_usdhc::v_set_device_clock(unsigned long hz, mmc::clock_mode mode,
 		auto v = read32(&r_->SYS_CTRL);
 		v.SDCLKFS = d.sdclkfs;
 		v.DVS = d.dvs;
-		return v.r;
+		return v;
 	}());
 	trace("fsl_usdhc::v_set_device_clock: desired %lu actual %lu\n",
 	    hz, d.actual);
@@ -598,7 +596,7 @@ fsl_usdhc::v_set_device_clock(unsigned long hz, mmc::clock_mode mode,
 	write32(&r_->MIX_CTRL, [&]{
 		auto v = read32(&r_->MIX_CTRL);
 		v.DDR_EN = mode == mmc::clock_mode::ddr;
-		return v.r;
+		return v;
 	}());
 
 	/* Restore clock state. */
@@ -615,7 +613,7 @@ fsl_usdhc::v_enable_device_clock()
 	write32(&r_->VEND_SPEC, [&]{
 		auto v = read32(&r_->VEND_SPEC);
 		v.FRC_SDCLK_ON = 1;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -626,7 +624,7 @@ fsl_usdhc::v_auto_device_clock()
 	write32(&r_->VEND_SPEC, [&]{
 		auto v = read32(&r_->VEND_SPEC);
 		v.FRC_SDCLK_ON = 0;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -636,7 +634,7 @@ fsl_usdhc::v_assert_hardware_reset()
 	write32(&r_->SYS_CTRL, [&]{
 		auto v = read32(&r_->SYS_CTRL);
 		v.IPP_RST_N = 0;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -646,7 +644,7 @@ fsl_usdhc::v_release_hardware_reset()
 	write32(&r_->SYS_CTRL, [&]{
 		auto v = read32(&r_->SYS_CTRL);
 		v.IPP_RST_N = 1;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -674,7 +672,7 @@ fsl_usdhc::v_run_command(mmc::command &c)
 			auto v = read32(&r_->SYS_CTRL);
 			v.RSTC = 1;
 			v.RSTD = 1;
-			return v.r;
+			return v;
 		}());
 		dbg("fsl_usdhc: reset command inhibit\n");
 	}
@@ -684,7 +682,7 @@ fsl_usdhc::v_run_command(mmc::command &c)
 	 * device to finish the previous command before starting this one. */
 	if (pres_state.CDIHB && c.uses_data_lines()) {
 		int_mask.TC = 1;
-		write32(&r_->INT_SIGNAL_EN, int_mask.r);
+		write32(&r_->INT_SIGNAL_EN, int_mask);
 		const auto r = wait_event_timeout(event_, 1e9, [&] {
 			return !read32(&r_->PRES_STATE).CDIHB;
 		});
@@ -694,7 +692,7 @@ fsl_usdhc::v_run_command(mmc::command &c)
 				auto v = read32(&r_->SYS_CTRL);
 				v.RSTC = 1;
 				v.RSTD = 1;
-				return v.r;
+				return v;
 			}());
 			dbg("fsl_usdhc: reset data inhibit\n");
 		}
@@ -753,12 +751,10 @@ fsl_usdhc::v_run_command(mmc::command &c)
 		}
 
 		/* Set transfer block size & block count. */
-		write32(&r_->BLK_ATT, [&]{
-			regs::blk_att v{};
-			v.BLKSIZE = c.transfer_block_size();
-			v.BLKCNT = blkcnt;
-			return v.r;
-		}());
+		write32(&r_->BLK_ATT, {{
+			.BLKSIZE = c.transfer_block_size(),
+			.BLKCNT = blkcnt,
+		}});
 
 		/* Set data direction. */
 		mix_ctrl.DTDSEL = c.data_direction() ==
@@ -792,22 +788,22 @@ fsl_usdhc::v_run_command(mmc::command &c)
 		return DERR(-EINVAL);
 	}
 
-	write32(&r_->MIX_CTRL, mix_ctrl.r);
+	write32(&r_->MIX_CTRL, mix_ctrl);
 	write32(&r_->CMD_ARG, c.argument());
 
 	/* Don't wait for command completion when running tuning as tuning uses
 	 * the BRR interrupt. */
 	if (tuning_) {
-		write32(&r_->CMD_XFR_TYP, cmd_xfr_typ.r);
+		write32(&r_->CMD_XFR_TYP, cmd_xfr_typ);
 		return 0;
 	}
 
-	write32(&r_->INT_SIGNAL_EN, int_mask.r);
+	write32(&r_->INT_SIGNAL_EN, int_mask);
 
 	/* Atomically start command & sleep on completion event. */
 	const k_sigset_t sig_mask = sig_block_all();
 	sch_prepare_sleep(&event_, 1e9);
-	write32(&r_->CMD_XFR_TYP, cmd_xfr_typ.r);
+	write32(&r_->CMD_XFR_TYP, cmd_xfr_typ);
 	if (auto r = sch_continue_sleep(); r < 0) {
 		dbg("fsl_usdhc::v_run_command %d arg %x failed %d\n",
 		    c.index(), c.argument(), r);
@@ -817,7 +813,7 @@ fsl_usdhc::v_run_command(mmc::command &c)
 			auto v = read32(&r_->SYS_CTRL);
 			v.RSTC = 1;
 			v.RSTD = 1;
-			return v.r;
+			return v;
 		}());
 		/* Ignore I/O errors if bus test is running. */
 		if (r != -EIO || !bus_test_)
@@ -882,14 +878,14 @@ fsl_usdhc::v_set_bus_width(unsigned w)
 	write32(&r_->PROT_CTRL, [&]{
 		auto v = read32(&r_->PROT_CTRL);
 		v.DTW = w / 4;
-		return v.r;
+		return v;
 	}());
 	write32(&r_->VEND_SPEC2, [&]{
 		auto v = read32(&r_->VEND_SPEC2);
 		v.TUNING_CMD_EN = 1;
 		v.TUNING_1BIT_EN = w == 1;
 		v.TUNING_8BIT_EN = w == 8;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -906,12 +902,12 @@ fsl_usdhc::v_enable_tuning()
 		v.TUNING_COUNTER = 60;	/* USDHC has 128 taps */
 		v.TUNING_STEP = 2;
 		v.TUNING_START_TAP = 10;
-		return v.r;
+		return v;
 	}());
 	write32(&r_->MIX_CTRL, [&]{
 		auto v = read32(&r_->MIX_CTRL);
 		v.FBCLK_SEL = 1;	/* use pad for feedback clock */
-		return v.r;
+		return v;
 	}());
 	reset_tuning();
 }
@@ -964,7 +960,7 @@ fsl_usdhc::reset_tuning()
 	write32(&r_->AUTOCMD12_ERR_STATUS, [&]{
 		auto v = read32(&r_->AUTOCMD12_ERR_STATUS);
 		v.SMP_CLK_SEL = 0;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -980,7 +976,7 @@ fsl_usdhc::do_tuning(const unsigned cmd_index)
 	write32(&r_->AUTOCMD12_ERR_STATUS, [&]{
 		auto v = read32(&r_->AUTOCMD12_ERR_STATUS);
 		v.EXECUTE_TUNING = 1;
-		return v.r;
+		return v;
 	}());
 
 	mmc::command c{cmd_index, 0, mmc::command::response_type::r1};
@@ -992,7 +988,7 @@ fsl_usdhc::do_tuning(const unsigned cmd_index)
 	/* Enable buffer read ready interrupt. */
 	regs::int_flags brr_mask{};
 	brr_mask.BRR = 1;
-	write32(&r_->INT_SIGNAL_EN, brr_mask.r);
+	write32(&r_->INT_SIGNAL_EN, brr_mask);
 
 	/* Request tuning data until hardware is happy. */
 	const k_sigset_t sig_mask = sig_block_all();
@@ -1007,7 +1003,7 @@ fsl_usdhc::do_tuning(const unsigned cmd_index)
 	tuning_ = false;
 
 	/* Restore interrupt mask. */
-	write32(&r_->INT_SIGNAL_EN, int_mask.r);
+	write32(&r_->INT_SIGNAL_EN, int_mask);
 
 	/* Tuning failed if we are now using fixed clock. */
 	if (!read32(&r_->AUTOCMD12_ERR_STATUS).SMP_CLK_SEL)
@@ -1017,7 +1013,7 @@ fsl_usdhc::do_tuning(const unsigned cmd_index)
 	write32(&r_->MIX_CTRL, [&]{
 		auto v = read32(&r_->MIX_CTRL);
 		v.AUTO_TUNE_EN = 1;
-		return v.r;
+		return v;
 	}());
 
 	return 0;
@@ -1086,7 +1082,7 @@ void
 fsl_usdhc::isr()
 {
 	const auto v = read32(&r_->INT_STATUS);
-	write32(&r_->INT_STATUS, v.r);
+	write32(&r_->INT_STATUS, v);
 
 	if (v.RTE)
 		retuning_required_ = true;
