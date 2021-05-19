@@ -122,9 +122,9 @@ void
 imxrt10xx_gpio::v_set(size_t pin, bool state)
 {
 	if (state)
-		write32(&r_->DR_SET, 1ul << pin);
+		write32(&r_->DR_SET, 1u << pin);
 	else
-		write32(&r_->DR_CLEAR, 1ul << pin);
+		write32(&r_->DR_CLEAR, 1u << pin);
 }
 
 /*
@@ -181,9 +181,9 @@ imxrt10xx_gpio::v_interrupt_setup(size_t pin, gpio::irq_mode mode)
 	std::lock_guard l{lock_};
 
 	if (mode == gpio::irq_mode::edge_both)
-		write32(&r_->EDGE_SEL, read32(&r_->EDGE_SEL) | 1ul << pin);
+		write32(&r_->EDGE_SEL, read32(&r_->EDGE_SEL) | 1u << pin);
 	else {
-		write32(&r_->EDGE_SEL, read32(&r_->EDGE_SEL) & ~(1ul << pin));
+		write32(&r_->EDGE_SEL, read32(&r_->EDGE_SEL) & ~(1u << pin));
 
 		if (pin < 16)
 			write32(&r_->ICR1, read32(&r_->ICR1) | icr << pin * 2);
@@ -192,7 +192,7 @@ imxrt10xx_gpio::v_interrupt_setup(size_t pin, gpio::irq_mode mode)
 	}
 
 	/* clear stale interrupts */
-	write32(&r_->ISR, 1ul << pin);
+	write32(&r_->ISR, 1u << pin);
 
 	return 0;
 }
@@ -204,7 +204,7 @@ void
 imxrt10xx_gpio::v_interrupt_mask(size_t pin)
 {
 	std::lock_guard l{lock_};
-	write32(&r_->IMR, read32(&r_->IMR) & ~(1ul << pin));
+	write32(&r_->IMR, read32(&r_->IMR) & ~(1u << pin));
 }
 
 /*
@@ -214,7 +214,7 @@ void
 imxrt10xx_gpio::v_interrupt_unmask(size_t pin)
 {
 	std::lock_guard l{lock_};
-	write32(&r_->IMR, read32(&r_->IMR) | 1ul << pin);
+	write32(&r_->IMR, read32(&r_->IMR) | 1u << pin);
 }
 
 /*
