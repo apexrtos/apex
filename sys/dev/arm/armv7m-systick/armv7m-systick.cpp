@@ -6,31 +6,28 @@
 #include <debug.h>
 #include <sections.h>
 #include <timer.h>
+#include <v7m/bitfield.h>
 
 /*
  * SysTick registers
  */
 struct syst {
 	union csr {
-		struct {
-			uint32_t ENABLE : 1;
-			uint32_t TICKINT : 1;
-			uint32_t CLKSOURCE : 1;
-			uint32_t : 13;
-			uint32_t COUNTFLAG : 1;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbit<S, bool, 16> COUNTFLAG;
+		bitfield::armbit<S, bool, 2> CLKSOURCE;
+		bitfield::armbit<S, bool, 1> TICKINT;
+		bitfield::armbit<S, bool, 0> ENABLE;
 	} CSR;
 	uint32_t RVR;
 	uint32_t CVR;
 	union calib {
-		struct {
-			uint32_t TENMS : 24;
-			uint32_t : 6;
-			uint32_t SKEW : 1;
-			uint32_t NOREF : 1;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbit<S, bool, 31> NOREF;
+		bitfield::armbit<S, bool, 30> SKEW;
+		bitfield::armbits<S, unsigned, 23, 0> TENMS;
 	} CALIB;
 };
 static_assert(sizeof(syst) == 16, "Bad SYST size");
@@ -48,15 +45,17 @@ arm_armv7m_systick_init(const arm_armv7m_systick_desc *d)
 	assert(!read32(&SYST->CSR).ENABLE);
 
 	/* set systick timer to interrupt us at CONFIG_HZ */
-	write32(&SYST->RVR, d->clock / CONFIG_HZ - 1);
-	write32(&SYST->CVR, 0);
+	write32(&SYST->RVR, static_cast<uint32_t>(d->clock / CONFIG_HZ - 1));
+	write32(&SYST->CVR, 0u);
 
 	/* enable timer & interrupts */
-	write32(&SYST->CSR, (syst::csr){{
-		.ENABLE = 1,
-		.TICKINT = 1,
-		.CLKSOURCE = d->clksource,
-	}}.r);
+	write32(&SYST->CSR, [&]{
+		syst::csr r{};
+		r.ENABLE = 1;
+		r.TICKINT = 1;
+		r.CLKSOURCE = d->clksource;
+		return r;
+	}());
 
 	/* scaling factor from count to ns * 2^32 */
 	scale = 1000000000ull * 0x100000000 / d->clock;
