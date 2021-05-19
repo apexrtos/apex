@@ -445,8 +445,8 @@ kmem_check()
 			assert(PAGE_MAGIC_OK(pg));
 
 			for (blk = &(pg->first_blk); blk; blk = blk->pg_next) {
-				assert((void *)blk > (void *)pg);
-				assert((void *)blk < ((void *)pg + MAX_BLOCK_SIZE));
+				assert((char *)blk > (char *)pg);
+				assert((char *)blk < ((char *)pg + MAX_BLOCK_SIZE));
 				assert(ALLOC_MAGIC_OK(blk) || FREE_MAGIC_OK(blk));
 			}
 		}
