@@ -1,9 +1,11 @@
 #include <arch/early_console.h>
 #include <arch/machine.h>
 
+#include <arch/mmu.h>
 #include <compiler.h>
 #include <conf/config.h>
 #include <conf/drivers.h>
+#include <cpu.h>
 #include <dev/arm/mps2-uart/early.h>
 #include <interrupt.h>
 #include <kernel.h>
@@ -14,6 +16,8 @@ constexpr auto UART0 = 0x40004000;
 void
 machine_init(bootargs *args)
 {
+	mpu_init(nullptr, 0, MPU_ENABLE_DEFAULT_MAP);
+
 	const meminfo memory[] = {
 		/* Main memory */
 		{
