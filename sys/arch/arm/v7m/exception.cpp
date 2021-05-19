@@ -50,7 +50,7 @@ derived_exception(int sig)
 	 * from this thread. */
 	scb::shcsr shcsr = read32(&SCB->SHCSR);
 	shcsr.SVCALLPENDED = 0;
-	write32(&SCB->SHCSR, shcsr.r);
+	write32(&SCB->SHCSR, shcsr);
 
 	/* kill the process */
 	proc_exit(task_cur(), 0, sig);
@@ -119,7 +119,7 @@ exc_MemManage(exception_frame_basic *e, bool handler_mode, int exc)
 	}
 
 	/* clear fault */
-	write8(&SCB->CFSR.MMFSR, uint8_t{0xff});
+	write8(&SCB->CFSR.MMFSR, {.r = 0xff});
 #endif
 }
 
@@ -144,7 +144,7 @@ exc_BusFault(exception_frame_basic *e, bool handler_mode, int exc)
 		sig_thread(thread_cur(), SIGBUS);
 
 	/* clear fault */
-	write8(&SCB->CFSR.BFSR, uint8_t{0xff});
+	write8(&SCB->CFSR.BFSR, {.r = 0xff});
 }
 
 /*
@@ -179,7 +179,7 @@ exc_UsageFault(exception_frame_basic *e, bool handler_mode, int exc)
 	sig_thread(thread_cur(), sig);
 
 	/* clear fault */
-	write16(&SCB->CFSR.UFSR, uint16_t{0xffff});
+	write16(&SCB->CFSR.UFSR, {.r = 0xffff});
 }
 
 /*

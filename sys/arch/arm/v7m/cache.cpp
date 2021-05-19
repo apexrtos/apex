@@ -32,13 +32,13 @@ cache_coherent_exec(const void *vp, size_t len)
 	const std::byte *start = TRUNCn(p, sz);
 	const std::byte *end = ALIGNn(p + len, sz);
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
-		write32(&CBP->DCCMVAU, (uintptr_t)l);
+		write32(&CBP->DCCMVAU, reinterpret_cast<uint32_t>(l));
 	/* ensure visibliity of the data cleaned from the cache */
 	asm volatile("dsb");
 	for (const std::byte *l = start; l != end; l += CONFIG_ICACHE_LINE_SIZE)
-		write32(&CBP->ICIMVAU, (uintptr_t)l);
+		write32(&CBP->ICIMVAU, reinterpret_cast<uint32_t>(l));
 	/* invalidate branch predictor */
-	write32(&CBP->BPIALL, 0);
+	write32(&CBP->BPIALL, 0u);
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");
 	/* flush instruction pipeline */
@@ -62,7 +62,7 @@ cache_flush(const void *vp, size_t len)
 	const std::byte *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
 	const std::byte *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
-		write32(&CBP->DCCMVAC, (uintptr_t)l);
+		write32(&CBP->DCCMVAC, reinterpret_cast<uint32_t>(l));
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");
 #endif
@@ -81,7 +81,7 @@ cache_invalidate(const void *vp, size_t len)
 	const std::byte *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
 	const std::byte *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
-		write32(&CBP->DCIMVAC, (uintptr_t)l);
+		write32(&CBP->DCIMVAC, reinterpret_cast<uint32_t>(l));
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");
 #endif
@@ -103,7 +103,7 @@ cache_flush_invalidate(const void *vp, size_t len)
 	const std::byte *start = TRUNCn(p, CONFIG_DCACHE_LINE_SIZE);
 	const std::byte *end = ALIGNn(p + len, CONFIG_DCACHE_LINE_SIZE);
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
-		write32(&CBP->DCCIMVAC, (uintptr_t)l);
+		write32(&CBP->DCCIMVAC, reinterpret_cast<uint32_t>(l));
 	/* wait for cache maintenance operations to complete */
 	asm volatile("dsb");
 #endif

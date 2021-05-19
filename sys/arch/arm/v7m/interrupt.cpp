@@ -43,7 +43,8 @@ interrupt_mask(int vector)
 	assert(vector <= 495);
 
 	/* disable */
-	write32(&NVIC->ICER[vector / 32], 1 << vector % 32);
+	write32(&NVIC->ICER[vector / 32],
+				static_cast<uint32_t>(1 << vector % 32));
 }
 
 void
@@ -55,7 +56,8 @@ interrupt_unmask(int vector, int level)
 	write8(&NVIC->IPR[vector], static_cast<uint8_t>(level));
 
 	/* enable */
-	write32(&NVIC->ISER[vector / 32], 1 << vector % 32);
+	write32(&NVIC->ISER[vector / 32],
+				static_cast<uint32_t>(1 << vector % 32));
 }
 
 void

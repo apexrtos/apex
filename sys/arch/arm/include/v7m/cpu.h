@@ -29,6 +29,7 @@
 
 #ifndef __ASSEMBLY__
 
+#include "bitfield.h"
 #include <cassert>
 #include <cstdint>
 
@@ -38,37 +39,28 @@
 struct scb {
 	uint32_t CPUID;
 	union icsr {
-		struct {
-			uint32_t VECTACTIVE : 9;
-			uint32_t : 2;
-			uint32_t RETTOBASE : 1;
-			uint32_t VECTPENDING : 9;
-			uint32_t : 1;
-			uint32_t ISRPENDING : 1;
-			uint32_t ISRPREEMPT : 1;
-			uint32_t : 1;
-			uint32_t PENDSTCLR : 1;
-			uint32_t PENDSTSET : 1;
-			uint32_t PENDSVCLR : 1;
-			uint32_t PENDSVSET : 1;
-			uint32_t : 2;
-			uint32_t NMIPENDSET : 1;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbit<S, bool, 31> NMIPENDSET;
+		bitfield::armbit<S, bool, 28> PENDSVSET;
+		bitfield::armbit<S, bool, 26> PENDSTSET;
+		bitfield::armbit<S, bool, 25> PENDSTCLR;
+		bitfield::armbit<S, bool, 23> ISRPREEMPT;
+		bitfield::armbit<S, bool, 22> ISRPENDING;
+		bitfield::armbits<S, unsigned, 20, 12> VECTPENDING;
+		bitfield::armbit<S, bool, 11> RETTOBASE;
+		bitfield::armbits<S, unsigned, 8, 0> VECTACTIVE;
 	} ICSR;
 	uint32_t VTOR;
 	union aircr {
-		struct {
-			uint32_t VECTRESET : 1;
-			uint32_t VECTCLRACTIVE : 1;
-			uint32_t SYSRESETREQ : 1;
-			uint32_t : 5;
-			uint32_t PRIGROUP : 3;
-			uint32_t : 4;
-			uint32_t ENDIANNESS : 1;
-			uint32_t VECTKEY : 16;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbits<S, unsigned, 31, 16> VECTKEY;
+		bitfield::armbit<S, bool, 15> ENDIANNESS;
+		bitfield::armbits<S, unsigned, 10, 8> PRIGROUP;
+		bitfield::armbit<S, bool, 2> SYSRESETREQ;
+		bitfield::armbit<S, bool, 1> VECTCLRACTIVE;
+		bitfield::armbit<S, bool, 0> VECTRESET;
 	} AIRCR;
 	uint32_t SCR;
 	uint32_t CCR;
@@ -76,67 +68,54 @@ struct scb {
 	uint32_t SHPR2;
 	uint32_t SHPR3;
 	union shcsr {
-		struct {
-			uint32_t MEMFAULTACT : 1;
-			uint32_t BUSFAULTACT : 1;
-			uint32_t : 1;
-			uint32_t USGFAULTACT : 1;
-			uint32_t : 3;
-			uint32_t SVCALLACT : 1;
-			uint32_t MONITORACT : 1;
-			uint32_t : 1;
-			uint32_t PENDSVACT : 1;
-			uint32_t SYSTICKACT : 1;
-			uint32_t USGFAULTPENDED : 1;
-			uint32_t MEMFAULTPENDED : 1;
-			uint32_t BUSFAULTPENDED : 1;
-			uint32_t SVCALLPENDED : 1;
-			uint32_t MEMFAULTENA : 1;
-			uint32_t BUSFAULTENA : 1;
-			uint32_t USGFAULTENA : 1;
-			uint32_t : 13;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbit<S, bool, 18> USGFAULTENA;
+		bitfield::armbit<S, bool, 17> BUSFAULTENA;
+		bitfield::armbit<S, bool, 16> MEMFAULTENA;
+		bitfield::armbit<S, bool, 15> SVCALLPENDED;
+		bitfield::armbit<S, bool, 14> BUSFAULTPENDED;
+		bitfield::armbit<S, bool, 13> MEMFAULTPENDED;
+		bitfield::armbit<S, bool, 12> USGFAULTPENDED;
+		bitfield::armbit<S, bool, 11> SYSTICKACT;
+		bitfield::armbit<S, bool, 10> PENDSVACT;
+		bitfield::armbit<S, bool, 8> MONITORACT;
+		bitfield::armbit<S, bool, 7> SVCALLACT;
+		bitfield::armbit<S, bool, 3> USGFAULTACT;
+		bitfield::armbit<S, bool, 1> BUSFAULTACT;
+		bitfield::armbit<S, bool, 0> MEMFAULTACT;
 	} SHCSR;
 	struct cfsr {
 		union mmfsr {
-			uint8_t r;
-			struct {
-				uint8_t IACCVIOL : 1;
-				uint8_t DACCVIOL : 1;
-				uint8_t : 1;
-				uint8_t MUNSTKERR : 1;
-				uint8_t MSTKERR : 1;
-				uint8_t MLSPERR : 1;
-				uint8_t : 1;
-				uint8_t MMARVALID : 1;
-			};
+			using S = uint8_t;
+			struct { S r; };
+			bitfield::armbit<S, bool, 7> MMARVALID;
+			bitfield::armbit<S, bool, 5> MLSPERR;
+			bitfield::armbit<S, bool, 4> MSTKERR;
+			bitfield::armbit<S, bool, 3> MUNSTKERR;
+			bitfield::armbit<S, bool, 1> DACCVIOL;
+			bitfield::armbit<S, bool, 0> IACCVIOL;
 		} MMFSR;
 		union bfsr {
-			uint8_t r;
-			struct {
-				uint8_t IBUSERR : 1;
-				uint8_t PRECISERR : 1;
-				uint8_t IMPRECISERR : 1;
-				uint8_t UNSTKERR : 1;
-				uint8_t STKERR : 1;
-				uint8_t LSPERR : 1;
-				uint8_t : 1;
-				uint8_t BFARVALID : 1;
-			};
+			using S = uint8_t;
+			struct { S r; };
+			bitfield::armbit<S, bool, 7> BFARVALID;
+			bitfield::armbit<S, bool, 5> LSPERR;
+			bitfield::armbit<S, bool, 4> STKERR;
+			bitfield::armbit<S, bool, 3> UNSTKERR;
+			bitfield::armbit<S, bool, 2> IMPRECISERR;
+			bitfield::armbit<S, bool, 1> PRECISERR;
+			bitfield::armbit<S, bool, 0> IBUSERR;
 		} BFSR;
 		union ufsr {
-			uint16_t r;
-			struct {
-				uint16_t UNDEFINSTR : 1;
-				uint16_t INVSTATE : 1;
-				uint16_t INVPC : 1;
-				uint16_t NOCP : 1;
-				uint16_t : 4;
-				uint16_t UNALIGNED : 1;
-				uint16_t DIVBYZERO : 1;
-				uint16_t : 6;
-			};
+			using S = uint16_t;
+			struct { S r; };
+			bitfield::armbit<S, bool, 9> DIVBYZERO;
+			bitfield::armbit<S, bool, 8> UNALIGNED;
+			bitfield::armbit<S, bool, 3> NOCP;
+			bitfield::armbit<S, bool, 2> INVPC;
+			bitfield::armbit<S, bool, 1> INVSTATE;
+			bitfield::armbit<S, bool, 0> UNDEFINSTR;
 		} UFSR;
 	} CFSR;
 	uint32_t HFSR;
@@ -195,21 +174,17 @@ static nvic *const NVIC = (nvic*)0xe000e100;
  */
 struct fpu {
 	union fpccr {
-		struct {
-			uint32_t LSPACT : 1;
-			uint32_t USER : 1;
-			uint32_t : 1;
-			uint32_t THREAD : 1;
-			uint32_t HFRDY : 1;
-			uint32_t MMRDY : 1;
-			uint32_t BFRDY : 1;
-			uint32_t : 1;
-			uint32_t MONRDY : 1;
-			uint32_t : 20;
-			uint32_t LSPEN : 1;
-			uint32_t ASPEN : 1;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbit<S, bool, 31> ASPEN;
+		bitfield::armbit<S, bool, 30> LSPEN;
+		bitfield::armbit<S, bool, 8> MONRDY;
+		bitfield::armbit<S, bool, 6> BFRDY;
+		bitfield::armbit<S, bool, 5> MMRDY;
+		bitfield::armbit<S, bool, 4> HFRDY;
+		bitfield::armbit<S, bool, 3> THREAD;
+		bitfield::armbit<S, bool, 1> USER;
+		bitfield::armbit<S, bool, 0> LSPACT;
 	} FPCCR;
 	uint32_t FPCAR;
 	uint32_t FPDSCR;
@@ -225,29 +200,26 @@ static fpu *const FPU = (fpu*)0xe000ef34;
  */
 struct dwt {
 	union ctrl {
-		struct {
-			uint32_t CYCCNTENA : 1;
-			uint32_t POSTPRESET : 4;
-			uint32_t POSTINIT: 4;
-			uint32_t CYCTAP : 1;
-			uint32_t SYNCTAP : 2;
-			uint32_t PCSAMPLENA : 1;
-			uint32_t : 3;
-			uint32_t EXCTRCENA : 1;
-			uint32_t CPIEVTENA: 1;
-			uint32_t EXCEVTENA : 1;
-			uint32_t SLEEPEVTENA: 1;
-			uint32_t LSUEVTENA : 1;
-			uint32_t FOLDEVTENA : 1;
-			uint32_t CYCEVTENA : 1;
-			uint32_t : 1;
-			uint32_t NOPRFCNT : 1;
-			uint32_t NOCYCCNT : 1;
-			uint32_t NOEXTTRIG : 1;
-			uint32_t NOTRCPKT : 1;
-			uint32_t NUMCOMP : 4;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbits<S, unsigned, 31, 28> NUMCOMP;
+		bitfield::armbit<S, bool, 27> NOTRCPKT;
+		bitfield::armbit<S, bool, 26> NOEXTTRIG;
+		bitfield::armbit<S, bool, 25> NOCYCCNT;
+		bitfield::armbit<S, bool, 24> NOPRFCNT;
+		bitfield::armbit<S, bool, 22> CYCEVTENA;
+		bitfield::armbit<S, bool, 21> FOLDEVTENA;
+		bitfield::armbit<S, bool, 20> LSUEVTENA;
+		bitfield::armbit<S, bool, 19> SLEEPEVTENA;
+		bitfield::armbit<S, bool, 18> EXCEVTENA;
+		bitfield::armbit<S, bool, 17> CPIEVTENA;
+		bitfield::armbit<S, bool, 16> EXCTRCENA;
+		bitfield::armbit<S, bool, 12> PCSAMPLENA;
+		bitfield::armbits<S, unsigned, 11, 10> SYNCTAP;
+		bitfield::armbit<S, bool, 9> CYCTAP;
+		bitfield::armbits<S, unsigned, 8, 5> POSTINIT;
+		bitfield::armbits<S, unsigned, 4, 1> POSTPRESET;
+		bitfield::armbit<S, bool, 0> CYCCNTENA;
 	} CTRL;
 	uint32_t CYCCNT;
 	uint32_t CPICNT;
@@ -283,34 +255,35 @@ static dwt *const DWT = (dwt*)0xe0001000;
  */
 struct mpu {
 	union type {
-		struct {
-			uint32_t SEPARATE : 1;
-			uint32_t : 7;
-			uint32_t DREGION : 8;
-			uint32_t IREGION : 8;
-			uint32_t : 8;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbits<S, unsigned, 23, 16> IREGION;
+		bitfield::armbits<S, unsigned, 15, 8> DREGION;
+		bitfield::armbit<S, bool, 0> SEPARATE;
 	} TYPE;
 	union ctrl {
-		struct {
-			uint32_t ENABLE : 1;
-			uint32_t HFNMIENA : 1;
-			uint32_t PRIVDEFENA : 1;
-			uint32_t : 29;
-		};
-		uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbit<S, bool, 2> PRIVDEFENA;
+		bitfield::armbit<S, bool, 1> HFNMIENA;
+		bitfield::armbit<S, bool, 0> ENABLE;
 	} CTRL;
 	uint32_t RNR;
 	union rbar {
-	struct {
-		uint32_t REGION : 4;
-		uint32_t VALID : 1;
-		uint32_t ADDR : 27;
-	};
-	uint32_t r;
+		using S = uint32_t;
+		struct { S r; };
+		bitfield::armbits<S, unsigned, 31, 5> ADDR;
+		bitfield::armbit<S, bool, 4> VALID;
+		bitfield::armbits<S, unsigned, 3, 0> REGION;
 	} RBAR;
 	union rasr {
+		using T = uint32_t;
+		struct { T r; };
+		enum class xn {
+			Execute = 0,
+			No_Execute = 1,
+		};
+		bitfield::armbit<T, xn, 28> XN;
 		enum class ap {
 			None = 0,
 			Kern_RW = 1,
@@ -318,27 +291,27 @@ struct mpu {
 			Kern_RW_User_RW = 3,
 			Kern_RO = 5,
 			Kern_RO_User_RO = 6,
-};
-		enum class xn {
-			Execute = 0,
-			No_Execute = 1,
-};
-	struct {
-		uint32_t ENABLE : 1;
-		uint32_t SIZE : 5;
-		uint32_t : 2;
-		uint32_t SRD : 8;
-		uint32_t B : 1;
-		uint32_t C : 1;
-		uint32_t S : 1;
-		uint32_t TEX : 3;
-		uint32_t : 2;
-			ap AP : 3;
-		uint32_t : 1;
-			xn XN : 1;
-		uint32_t : 3;
-	};
-	uint32_t r;
+		};
+		bitfield::armbits<T, ap, 26, 24> AP;
+		bitfield::armbits<T, unsigned, 21, 19> TEX;
+		bitfield::armbit<T, bool, 18> S;
+		bitfield::armbit<T, bool, 17> C;
+		bitfield::armbit<T, bool, 16> B;
+		bitfield::armbits<T, unsigned, 15, 8> SRD;
+		bitfield::armbits<T, unsigned, 5, 1> SIZE;
+		bitfield::armbit<T, bool, 0> ENABLE;
+
+		constexpr
+		rasr()
+		: r{}
+		{}
+
+		constexpr
+		rasr(xn xn, ap ap, unsigned tex, bool s, bool c, bool b)
+		: r{decltype(XN)(xn).r | decltype(AP)(ap).r |
+		    decltype(TEX)(tex).r | decltype(S)(s).r |
+		    decltype(C)(c).r | decltype(B)(b).r}
+		{}
 	} RASR;
 	rbar RBAR_A1;
 	rasr RASR_A1;
@@ -371,54 +344,25 @@ static mpu *const MPU = (mpu*)0xe000ed90;
 /*
  * values for RASR register
  */
-#define RASR_KERNEL_RWX_WBWA ((mpu::rasr){{ \
-	.B = 1, \
-	.C = 1, \
-	.S = 0, \
-	.TEX = 0b001, \
-	.AP = mpu::rasr::ap::Kern_RW, \
-	.XN = mpu::rasr::xn::Execute, \
-}}.r)
-#define RASR_KERNEL_RW ((mpu::rasr){{ \
-	.B = 0, \
-	.C = 0, \
-	.S = 0, \
-	.TEX = 0b001, \
-	.AP = mpu::rasr::ap::Kern_RW, \
-	.XN = mpu::rasr::xn::No_Execute, \
-}}.r)
-#define RASR_USER_R_WBWA ((mpu::rasr){{ \
-	.B = 1, \
-	.C = 1, \
-	.S = 0, \
-	.TEX = 0b001, \
-	.AP = mpu::rasr::ap::Kern_RW_User_RO, \
-	.XN = mpu::rasr::xn::No_Execute, \
-}}.r)
-#define RASR_USER_RX_WBWA ((mpu::rasr){{ \
-	.B = 1, \
-	.C = 1, \
-	.S = 0, \
-	.TEX = 0b001, \
-	.AP = mpu::rasr::ap::Kern_RW_User_RO, \
-	.XN = mpu::rasr::xn::Execute, \
-}}.r)
-#define RASR_USER_RW_WBWA ((mpu::rasr){{ \
-	.B = 1, \
-	.C = 1, \
-	.S = 0, \
-	.TEX = 0b001, \
-	.AP = mpu::rasr::ap::Kern_RW_User_RW, \
-	.XN = mpu::rasr::xn::No_Execute, \
-}}.r)
-#define RASR_USER_RWX_WBWA ((mpu::rasr){{ \
-	.B = 1, \
-	.C = 1, \
-	.S = 0, \
-	.TEX = 0b001, \
-	.AP = mpu::rasr::ap::Kern_RW_User_RW, \
-	.XN = mpu::rasr::xn::Execute, \
-}}.r)
-#define RASR_NONE 0
+constexpr mpu::rasr RASR_KERNEL_RWX_WBWA{
+	mpu::rasr::xn::Execute, mpu::rasr::ap::Kern_RW, 0b001, 0, 1, 1};
+
+constexpr mpu::rasr RASR_KERNEL_RW{
+	mpu::rasr::xn::No_Execute, mpu::rasr::ap::Kern_RW, 0b001, 0, 0, 0};
+
+constexpr mpu::rasr RASR_USER_R_WBWA{
+	mpu::rasr::xn::No_Execute, mpu::rasr::ap::Kern_RW_User_RO, 0b001, 0, 1, 1};
+
+constexpr mpu::rasr RASR_USER_RX_WBWA{
+	mpu::rasr::xn::Execute, mpu::rasr::ap::Kern_RW_User_RO, 0b001, 0, 1, 1};
+
+constexpr mpu::rasr RASR_USER_RW_WBWA{
+	mpu::rasr::xn::No_Execute, mpu::rasr::ap::Kern_RW_User_RW, 0b001, 0, 1, 1};
+
+constexpr mpu::rasr RASR_USER_RWX_WBWA{
+	mpu::rasr::xn::Execute, mpu::rasr::ap::Kern_RW_User_RW, 0b001, 0, 1, 1};
+
+constexpr mpu::rasr RASR_NONE{
+	mpu::rasr::xn::No_Execute, mpu::rasr::ap::None, 0, 0, 0, 0};
 
 #endif /* !__ASSEMBLY__ */

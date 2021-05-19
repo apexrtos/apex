@@ -35,7 +35,7 @@ clear_dynamic()
 	const size_t regions = read32(&MPU->TYPE).DREGION;
 	for (size_t i = fixed; i < regions; ++i) {
 		write32(&MPU->RNR, i);
-		write32(&MPU->RASR, 0);
+		write32(&MPU->RASR, {});
 	}
 }
 
@@ -46,18 +46,23 @@ static_region(const mmumap *map, size_t i)
 		panic("region must be power-of-2 sized");
 	if (map->paddr.phys() & (map->size - 1))
 		panic("region must be aligned on size boundary");
-	write32(&MPU->RBAR, (mpu::rbar){{
-		.REGION = i,
-		.VALID = 1,
-		.ADDR = map->paddr.phys() >> 5,
-	}}.r);
-	write32(&MPU->RASR, map->flags | (mpu::rasr){{
-		.ENABLE = 1,
-		.SIZE = floor_log2(map->size) - 1,
-	}}.r);
+	write32(&MPU->RBAR, [&] {
+		mpu::rbar r{};
+		r.REGION = i;
+		r.VALID = 1;
+		r.ADDR = map->paddr.phys() >> 5;
+		return r;
+	}());
+	write32(&MPU->RASR, [&] {
+		mpu::rasr r{};
+		r.r = map->flags;
+		r.ENABLE = 1;
+		r.SIZE = floor_log2(map->size) - 1;
+		return r;
+	}());
 }
 
-__fast_text static uint32_t
+__fast_text static mpu::rasr
 prot_to_rasr(int prot)
 {
 	switch (prot & (PROT_READ | PROT_WRITE | PROT_EXEC)) {
@@ -95,10 +100,12 @@ mpu_init(const mmumap *map, size_t count, int flags)
 	fixed = victim = count;
 	clear_dynamic();
 
-	write32(&MPU->CTRL, (mpu::ctrl){{
-		.ENABLE = 1,
-		.PRIVDEFENA = !!(flags & MPU_ENABLE_DEFAULT_MAP),
-	}}.r);
+	write32(&MPU->CTRL, [&]{
+		mpu::ctrl r{};
+		r.ENABLE = 1;
+		r.PRIVDEFENA = flags & MPU_ENABLE_DEFAULT_MAP;
+		return r;
+	}());
 
 	dbg("PMSAv7 MPU initialised, %d dynamic regions\n", regions - fixed);
 }
@@ -142,19 +149,19 @@ mpu_user_thread_switch()
 		return;
 	}
 	stack = 0;
-	const uint32_t rasr_prot = prot_to_rasr(seg_prot(seg));
+	const auto rasr_prot = prot_to_rasr(seg_prot(seg));
 	for (std::byte *a = (std::byte *)seg_begin(seg); a < seg_end(seg);) {
 		const size_t size = (std::byte *)seg_end(seg) - a;
 		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
 		write32(&MPU->RNR, fixed + stack);
-		write32(&MPU->RASR, 0);
-		write32(&MPU->RBAR, (mpu::rbar){{
-			.ADDR = (uintptr_t)a >> 5,
-		}}.r);
-		write32(&MPU->RASR, rasr_prot | (mpu::rasr){{
-			.ENABLE = 1,
-			.SIZE = o - 1,
-		}}.r);
+		write32(&MPU->RASR, {});
+		write32(&MPU->RBAR, {.ADDR = (uintptr_t)a >> 5});
+		write32(&MPU->RASR, [&] {
+			mpu::rasr r{rasr_prot};
+			r.ENABLE = 1;
+			r.SIZE = o - 1;
+			return r;
+		}());
 		a += 1 << o;
 		++stack;
 
@@ -242,14 +249,14 @@ again:;
 	/* configure MPU */
 	const uintptr_t region_base = (uintptr_t)addr & -(1UL << order);
 	write32(&MPU->RNR, victim);
-	write32(&MPU->RASR, 0);
-	write32(&MPU->RBAR, (mpu::rbar){{
-		.ADDR = region_base >> 5,
-	}}.r);
-	write32(&MPU->RASR, prot_to_rasr(seg_prot(seg)) | (mpu::rasr){{
-		.ENABLE = 1,
-		.SIZE = order - 1,
-	}}.r);
+	write32(&MPU->RASR, {});
+	write32(&MPU->RBAR, {.ADDR = region_base >> 5});
+	write32(&MPU->RASR, [&] {
+		mpu::rasr r{prot_to_rasr(seg_prot(seg))};
+		r.ENABLE = 1;
+		r.SIZE = order - 1;
+		return r;
+	}());
 
 	if (++victim == read32(&MPU->TYPE).DREGION)
 		victim = fixed + stack;
@@ -278,11 +285,11 @@ mpu_dump()
 
 	const mpu::type type = read32(&MPU->TYPE);
 	dbg("MPU_TYPE %08x: SEPARATE:%d IREGION:%d DREGION:%d\n",
-	    type.r, type.SEPARATE, type.IREGION, type.DREGION);
+	    type.r, type.SEPARATE.value(), type.IREGION.value(), type.DREGION.value());
 
 	const mpu::ctrl ctrl = read32(&MPU->CTRL);
 	dbg("MPU_CTRL %08x: ENABLE:%d HFNMIENA:%d PRIVDEFENA:%d\n",
-	    ctrl.r, ctrl.ENABLE, ctrl.HFNMIENA, ctrl.PRIVDEFENA);
+	    ctrl.r, ctrl.ENABLE.value(), ctrl.HFNMIENA.value(), ctrl.PRIVDEFENA.value());
 
 	for (size_t i = 0; i < read32(&MPU->TYPE).DREGION; ++i) {
 		write32(&MPU->RNR, i);
@@ -294,7 +301,7 @@ mpu_dump()
 
 		if (rasr.ENABLE)
 			dbg("Region %x: ADDR:%08x SIZE:%08x SRD:%02x TEX:%x C:%d B:%d S:%d AP:%x XN:%d\n",
-			    i, rbar.ADDR << 5, 1 << (rasr.SIZE + 1), rasr.SRD, rasr.TEX, rasr.C, rasr.B, rasr.S, (unsigned)rasr.AP, (unsigned)rasr.XN);
+			    i, rbar.ADDR << 5, 1 << (rasr.SIZE + 1), rasr.SRD.value(), rasr.TEX.value(), rasr.C.value(), rasr.B.value(), rasr.S.value(), static_cast<int>(rasr.AP.value()), static_cast<int>(rasr.XN.value()));
 		else
 			dbg("Region %x: disabled\n", i);
 	}
