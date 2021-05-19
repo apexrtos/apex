@@ -191,7 +191,7 @@ ocotp::ocotp(const nxp_imxrt10xx_ocotp_desc *d)
 	std::lock_guard l{mutex_};
 
 	write32(&r_->TIMING, [&]{
-		decltype(r_->TIMING) v{};
+		regs::timing v{};
 		v.WAIT = wait;
 		v.STROBE_READ = read;
 		v.RELAX = relax;
@@ -200,7 +200,7 @@ ocotp::ocotp(const nxp_imxrt10xx_ocotp_desc *d)
 	}());
 
 	write32(&r_->TIMING2, [&]{
-		decltype(r_->TIMING2) v{};
+		regs::timing2 v{};
 		v.RELAX_PROG = relax_prog;
 		v.RELAX_READ = relax_read;
 		return v.r;
@@ -245,7 +245,7 @@ ocotp::check_and_clear_error()
 
 	trace("OCOTP(%p) Error\n", r_);
 	write32(&r_->CTRL_CLR, [&]{
-		decltype(r_->CTRL_CLR) v{};
+		regs::ctrl_clr v{};
 		v.ERROR = 1;
 		return v.r;
 	}());
@@ -327,7 +327,7 @@ ocotp::write(std::span<const std::byte> buf, off_t off)
 		trace("index: %llu data: 0x%08x\n", addr, tmp);
 
 		write32(&r_->CTRL, [&]{
-			decltype(r_->CTRL) v{};
+			regs::ctrl v{};
 			v.ADDR = addr;
 			v.WR_UNLOCK = unlock_key;
 			return v.r;
