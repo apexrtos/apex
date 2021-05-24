@@ -611,7 +611,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 		panic("no memory");
 
 	/* helper to iterate reserved memory regions in bootargs & kernel */
-	auto for_each_reserved_region = [&](auto fn) {
+	auto for_each_reserved_range = [&](auto fn) {
 		if (args->archive_size)
 			fn(args->archive_addr, args->archive_size);
 		const ElfN_Phdr *ph = (ElfN_Phdr *)(__elf_headers + eh->e_phoff);
@@ -623,7 +623,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	};
 
 	/* adjust m_alloc and m_end for reserved areas */
-	for_each_reserved_region([&] (paddr_t p, size_t len) {
+	for_each_reserved_range([&] (paddr_t p, size_t len) {
 		const paddr_t r_begin = PAGE_TRUNC(p);
 		const paddr_t r_end = PAGE_ALIGN(p + len);
 
@@ -724,7 +724,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	}
 
 	/* reserve unusable memory */
-	for_each_reserved_region([&](paddr_t p, size_t len) {
+	for_each_reserved_range([&](paddr_t p, size_t len) {
 		auto r = page_reserve(p, len, PG_SYSTEM, 0, &kern_task);
 		/* reservation can fail for ROM addresses or other unmappable
 		 * memory */
