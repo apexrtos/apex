@@ -603,8 +603,8 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 			continue;
 		if ((m.attr & MA_SPEED_MASK) != MA_NORMAL)
 			continue;
-		m_alloc = m.base.phys();
-		m_end = m.base.phys() + m.size;
+		m_alloc = PAGE_ALIGN(m.base.phys());
+		m_end = PAGE_TRUNC(m.base.phys() + m.size);
 	}
 
 	if (!m_end)
