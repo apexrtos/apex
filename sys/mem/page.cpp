@@ -583,8 +583,8 @@ void
 page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 {
 	/* make sure kernel ELF headers are sane */
-	extern const char __elf_headers[1];
-	const ElfN_Ehdr *eh = reinterpret_cast<const ElfN_Ehdr *>(__elf_headers);
+	extern ElfN_Ehdr __elf_headers;
+	const ElfN_Ehdr *eh = &__elf_headers;
 	if (eh->e_ident[EI_MAG0] != ELFMAG0 ||
 	    eh->e_ident[EI_MAG1] != ELFMAG1 ||
 	    eh->e_ident[EI_MAG2] != ELFMAG2 ||
@@ -614,7 +614,7 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	auto for_each_reserved_range = [&](auto fn) {
 		if (args->archive_size)
 			fn(args->archive_addr, args->archive_size);
-		const ElfN_Phdr *ph = (ElfN_Phdr *)(__elf_headers + eh->e_phoff);
+		const ElfN_Phdr *ph = (ElfN_Phdr *)((uintptr_t)eh + eh->e_phoff);
 		for (size_t i = 0; i < eh->e_phnum; ++i, ++ph) {
 			if (ph->p_type != PT_LOAD)
 				continue;
