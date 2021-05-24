@@ -194,7 +194,7 @@ find_region(const paddr_t begin, size_t len)
 static size_t
 page_num(const region &r, const paddr_t addr)
 {
-	assert(addr >= r.base && addr < (r.base + r.size));
+	assert(addr >= r.base && addr - r.base < r.size);
 	return (addr - r.base) / PAGE_SIZE;
 }
 
