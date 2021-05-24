@@ -588,7 +588,8 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 	if (eh->e_ident[EI_MAG0] != ELFMAG0 ||
 	    eh->e_ident[EI_MAG1] != ELFMAG1 ||
 	    eh->e_ident[EI_MAG2] != ELFMAG2 ||
-	    eh->e_ident[EI_MAG3] != ELFMAG3)
+	    eh->e_ident[EI_MAG3] != ELFMAG3 ||
+	    eh->e_ident[EI_CLASS] != ELFCLASSN)
 		panic("bad ELF header");
 
 	/* analyse meminfo to count regions & find the first piece of
