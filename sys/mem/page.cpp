@@ -802,8 +802,8 @@ void page_dump()
 			       end->owner == begin->owner)
 				++end;
 
-			info("    %d[%d]: %d %p\n", j, end - begin,
-			     begin->state, begin->owner);
+			info("    %zu[%" PRIdPTR "]: %s %p\n", j, end - begin,
+			     to_string(begin->state), begin->owner);
 
 			j += end - begin - 1;
 		}
