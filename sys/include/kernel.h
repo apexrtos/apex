@@ -44,8 +44,8 @@ extern struct task	kern_task;	/* kernel task */
 /*
  * Memory page
  */
-#define PAGE_SIZE	CONFIG_PAGE_SIZE
-#define PAGE_MASK	(CONFIG_PAGE_SIZE-1)
+#define PAGE_SIZE	((unsigned)(CONFIG_PAGE_SIZE))
+#define PAGE_MASK	((uintptr_t)PAGE_SIZE - 1)
 #define PAGE_OFF(n)	((unsigned)((intmax_t)(n) & PAGE_MASK))
 #define PAGE_ALIGN(n)	((__typeof__(n))(((((uintptr_t)(n)) + PAGE_MASK) & (uintptr_t)~PAGE_MASK)))
 #define PAGE_TRUNC(n)	((__typeof__(n))((((uintptr_t)(n)) & (uintptr_t)~PAGE_MASK)))
