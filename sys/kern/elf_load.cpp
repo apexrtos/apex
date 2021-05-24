@@ -6,7 +6,7 @@
 #include <arch/elf.h>
 #include <arch/stack.h>
 #include <debug.h>
-#include <elf.h>
+#include <elf_native.h>
 #include <errno.h>
 #include <kernel.h>
 #include <mmap.h>
@@ -16,18 +16,8 @@
 
 namespace {
 
-#if UINTPTR_MAX == 0xffffffff
-using Ehdr = Elf32_Ehdr;
-using Phdr = Elf32_Phdr;
-using Eaddr = Elf32_Addr;
-#else
-using Ehdr = Elf64_Ehdr;
-using Phdr = Elf64_Phdr;
-using Eaddr = Elf64_Addr;
-#endif
-
 int
-ph_flags_to_prot(const Phdr &ph)
+ph_flags_to_prot(const ElfN_Phdr &ph)
 {
 	return
 	    (ph.p_flags & PF_R ? PROT_READ : 0) |
@@ -44,7 +34,7 @@ int
 elf_load(as *a, int fd, void (**entry)(),
 	 std::array<unsigned, AUX_CNT> &auxv, void **stack)
 {
-	Ehdr eh;
+	ElfN_Ehdr eh;
 
 	/* read and validate file header */
 	if (auto r{pread(fd, &eh, sizeof eh, 0)}; r != sizeof eh)
@@ -54,7 +44,7 @@ elf_load(as *a, int fd, void (**entry)(),
 	    eh.e_ident[EI_MAG2] != ELFMAG2 ||
 	    eh.e_ident[EI_MAG3] != ELFMAG3 ||
 	    (eh.e_type != ET_EXEC && eh.e_type != ET_DYN) ||
-	    eh.e_phentsize != sizeof(Phdr) ||
+	    eh.e_phentsize != sizeof(ElfN_Phdr) ||
 	    eh.e_phnum < 1 ||
 	    !arch_check_elfhdr(&eh))
 		return DERR(-ENOEXEC);
@@ -62,10 +52,10 @@ elf_load(as *a, int fd, void (**entry)(),
 	/* determine extent of program image & stack size */
 	size_t stack_size = PAGE_SIZE;
 	int stack_prot = PROT_READ | PROT_WRITE | PROT_EXEC;
-	Eaddr img_beg{std::numeric_limits<Eaddr>::max()};
-	Eaddr img_end{std::numeric_limits<Eaddr>::min()};
+	ElfN_Addr img_beg{std::numeric_limits<ElfN_Addr>::max()};
+	ElfN_Addr img_end{std::numeric_limits<ElfN_Addr>::min()};
 	for (auto i{0}; i < eh.e_phnum; ++i) {
-		Phdr ph;
+		ElfN_Phdr ph;
 
 		if (auto r{pread(fd, &ph, sizeof(ph),
 				 eh.e_phoff + (i * sizeof(ph)))};
@@ -115,7 +105,7 @@ elf_load(as *a, int fd, void (**entry)(),
 
 	/* load program segments */
 	for (auto i{0}; i < eh.e_phnum; ++i) {
-		Phdr ph;
+		ElfN_Phdr ph;
 
 		if (auto r{pread(fd, &ph, sizeof(ph),
 				 eh.e_phoff + (i * sizeof(ph)))};
@@ -171,7 +161,7 @@ elf_load(as *a, int fd, void (**entry)(),
 	 * Populate auxv
 	 */
 	auxv[0] = AT_PHDR;	auxv[1] = (uintptr_t)(load + eh.e_phoff);
-	auxv[2] = AT_PHENT;	auxv[3] = sizeof(Phdr);
+	auxv[2] = AT_PHENT;	auxv[3] = sizeof(ElfN_Phdr);
 	auxv[4] = AT_PHNUM;	auxv[5] = eh.e_phnum;
 	auxv[6] = AT_PAGESZ;	auxv[7] = PAGE_SIZE;
 	auxv[8] = AT_BASE;	auxv[9] = (uintptr_t)load;
