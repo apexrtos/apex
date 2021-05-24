@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <compare>
 #include <conf/config.h>
 
 /*
@@ -45,6 +46,8 @@ public:
 	{
 		return phys_ != invalid;
 	}
+
+	auto operator<=>(const physT &) const = default;
 
 private:
 	T phys_;
