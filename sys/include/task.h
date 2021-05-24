@@ -35,6 +35,8 @@
 #include <sync.h>
 #include <timer.h>
 
+struct thread;
+
 /*
  * Task struct
  */
