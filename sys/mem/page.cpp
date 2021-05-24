@@ -725,11 +725,19 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 
 	/* reserve unusable memory */
 	for_each_reserved_range([&](paddr_t p, size_t len) {
-		auto r = page_reserve(p, len, PG_SYSTEM, 0, &kern_task);
-		/* reservation can fail for ROM addresses or other unmappable
-		 * memory */
-		dbg("page_init: reserve %" PRIpa " -> %" PRIpa" %s\n",
-		    p, p + len, r ? "OK" : "Failed");
+		/* find regions overlapping range */
+		for (size_t i = 0; i < s.nr_regions; ++i) {
+			auto &r = s.regions[i];
+			auto begin = std::max(p, r.begin);
+			auto end = std::min(p + len, r.end);
+			if (begin >= end)
+				continue;
+			dbg("page_init: reserve %" PRIpa " -> %" PRIpa "\n",
+			    begin, end);
+			if (!page_reserve(r, begin, end - begin,
+					  PG_SYSTEM, PAF_REALLOC, &kern_task))
+				panic("bug");
+		}
 	});
 
 	/* reserve memory allocated for region & page structures */
