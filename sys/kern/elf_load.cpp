@@ -43,6 +43,7 @@ elf_load(as *a, int fd, void (**entry)(),
 	    eh.e_ident[EI_MAG1] != ELFMAG1 ||
 	    eh.e_ident[EI_MAG2] != ELFMAG2 ||
 	    eh.e_ident[EI_MAG3] != ELFMAG3 ||
+	    eh.e_ident[EI_CLASS] != ELFCLASSN ||
 	    (eh.e_type != ET_EXEC && eh.e_type != ET_DYN) ||
 	    eh.e_phentsize != sizeof(ElfN_Phdr) ||
 	    eh.e_phnum < 1 ||
