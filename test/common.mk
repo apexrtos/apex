@@ -22,5 +22,6 @@ INCLUDE := \
 	$(CONFIG_APEXDIR)/sys/include
 
 SOURCES := \
+	src/circular_buffer.cpp \
 	src/init_rand.cpp \
 	src/page.cpp \
