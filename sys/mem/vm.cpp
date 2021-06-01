@@ -614,7 +614,7 @@ vm_dump()
 }
 
 /*
- * as_init
+ * as_create
  */
 as *
 as_create(pid_t pid)
