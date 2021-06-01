@@ -168,7 +168,7 @@ page_to_max_order(const region &r, const size_t page)
 {
 	if (!page)
 		return r.nr_orders - 1;
-	return __builtin_ctz(page);
+	return std::countr_zero(page);
 }
 
 /*

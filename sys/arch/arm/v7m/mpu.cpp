@@ -152,7 +152,7 @@ mpu_user_thread_switch()
 	const auto rasr_prot = prot_to_rasr(seg_prot(seg));
 	for (std::byte *a = (std::byte *)seg_begin(seg); a < seg_end(seg);) {
 		const size_t size = (std::byte *)seg_end(seg) - a;
-		size_t o = MIN(__builtin_ctz((uintptr_t)a), floor_log2(size));
+		size_t o = MIN(std::countr_zero((uintptr_t)a), floor_log2(size));
 		write32(&MPU->RNR, fixed + stack);
 		write32(&MPU->RASR, {});
 		write32(&MPU->RBAR, {.ADDR = (uintptr_t)a >> 5});

@@ -694,8 +694,9 @@ udc::process_events()
 
 	if (e & ep_complete_event) {
 		auto c = complete_.exchange(0);
-		for (int i; (i = __builtin_ffsl(c)); c -= 1UL << i) {
-			i -= 1; /* ffsl returns 1 + bit number */
+		while (c) {
+			auto i = std::countr_zero(c);
+			c -= 1ul << i;
 			v_complete(i / 2, static_cast<ch9::Direction>(i % 2));
 		}
 	}

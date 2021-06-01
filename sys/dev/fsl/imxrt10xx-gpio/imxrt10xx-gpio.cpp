@@ -98,9 +98,8 @@ imxrt10xx_gpio::isr()
 	uint32_t s = read32(&r_->ISR) & read32(&r_->IMR);
 	write32(&r_->ISR, s);
 
-	int i;
-	while ((i = __builtin_ffsl(s))) {
-		i -= 1;		    /* ffsl returns 1 + bit number */
+	while (s) {
+		auto i = std::countr_zero(s);
 		irq(i);
 		s -= 1ul << i;
 	}

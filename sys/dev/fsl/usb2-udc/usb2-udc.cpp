@@ -523,8 +523,9 @@ fsl_usb2_udc::isr()
 			auto usbcmd = read32(&r_->USBCMD);
 			usbcmd.SUTW = 1;
 
-			for (int e; (e = __builtin_ffsl(v)); v -= 1UL << e) {
-				e -= 1; /* ffsl returns 1 + bit number */
+			while (v) {
+				auto e = std::countr_zero(v);
+				v -= 1ul << e;
 
 				/* cancel any primed transfers pending from a
 				 * previous setup transaction - note that the
@@ -557,8 +558,9 @@ fsl_usb2_udc::isr()
 		if (v) {
 			trace("ENDPTCOMPLETE %x\n", v);
 			write32(&r_->ENDPTCOMPLETE, v);
-			for (int i; (i = __builtin_ffsl(v)); v -= 1UL << i) {
-				i -= 1; /* ffsl returns 1 + bit number */
+			while (v) {
+				auto i = std::countr_zero(v);
+				v -= 1ul << i;
 				ep_complete_irq(i & 0xf, i & 0x10
 				    ? ch9::Direction::DeviceToHost
 				    : ch9::Direction::HostToDevice);

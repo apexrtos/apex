@@ -75,16 +75,17 @@ ksigdelset(k_sigset_t *os, int sig)
 static int
 ksigfirst(const k_sigset_t *ss)
 {
+	constexpr auto sz = NSIG / 8 / sizeof(long);
 	const unsigned long *s = ss->__bits;
-	switch (NSIG / 8 / sizeof(long)) {
-	case 4: return __builtin_ffsl(s[0]) ?:
-			8 * sizeof(long) + __builtin_ffsl(s[1]) ?:
-			16 * sizeof(long) + __builtin_ffsl(s[2]) ?:
-			24 * sizeof(long) + __builtin_ffsl(s[3]);
-	case 2: return __builtin_ffsl(s[0]) ?:
-			8 * sizeof(long) + __builtin_ffsl(s[1]);
-	case 1: return __builtin_ffsl(s[0]);
-	}
+	if (sz > 0 && s[0])
+		return std::countr_zero(s[0]) + 1;
+	if (sz > 1 && s[1])
+		return std::countr_zero(s[1]) + 1 + 8 * sizeof(long);
+	if (sz > 2 && s[2])
+		return std::countr_zero(s[2]) + 1 + 16 * sizeof(long);
+	if (sz > 3 && s[3])
+		return std::countr_zero(s[3]) + 1 + 24 * sizeof(long);
+	return 0;
 }
 
 static bool

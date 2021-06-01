@@ -99,7 +99,7 @@ verify_allocator(const region &r)
 			while (begin != end) {
 				const auto size = end - begin;
 				const auto order = std::min<size_t>(
-					begin ? __builtin_ctz(begin) : r.nr_orders - 1,
+					begin ? std::countr_zero(begin) : r.nr_orders - 1,
 					floor_log2(size));
 				free_entries[order].insert(begin);
 				begin += 1 << order;

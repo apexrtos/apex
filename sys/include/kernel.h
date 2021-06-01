@@ -29,6 +29,7 @@
 
 #pragma once
 
+#include <bit>
 #include <cassert>
 #include <conf/config.h>
 #include <sys/include/types.h>
@@ -75,40 +76,22 @@ extern struct task	kern_task;	/* kernel task */
 #define ALIGNED(p, t) ALIGNEDn(p, alignof(t))
 
 /*
- * Count the number of leading zeroes in n
- */
-template<class T>
-std::enable_if_t<std::is_integral_v<T>, unsigned>
-clz(T n)
-{
-	if (n == 0)
-		return sizeof(T) * 8;
-	if constexpr (sizeof(T) == sizeof(int))
-		return __builtin_clz(n);
-	else if constexpr (sizeof(T) == sizeof(long))
-		return __builtin_clzl(n);
-	else if constexpr (sizeof(T) == sizeof(long long))
-		return __builtin_clzll(n);
-	else
-		static_assert(!sizeof(T), "type not supported for clz");
-}
-
-/*
  * Calculate integer logarithm of an integer
  */
 template<class T>
-std::enable_if_t<std::is_integral_v<T>, T>
+unsigned
 floor_log2(T n)
 {
 	assert(n > 0);
-	return sizeof(T) * 8 - clz(n) - 1;
+	return std::bit_width(n) - 1;
 }
 
 template<class T>
-std::enable_if_t<std::is_integral_v<T>, T>
+unsigned
 ceil_log2(T n)
 {
-	return floor_log2(n) + (n & (n - 1) ? 1 : 0);
+	assert(n > 0);
+	return std::bit_width(n) - std::has_single_bit(n);
 }
 
 /*
@@ -141,8 +124,8 @@ div_ceil(T n, T d)
  * Determine if integer is a non-zero power of 2.
  */
 template<class T>
-std::enable_if_t<std::is_unsigned_v<T>, bool>
+bool
 is_pow2(T v)
 {
-	return v && !(v & (v - 1));
+	return std::has_single_bit(v);
 }
