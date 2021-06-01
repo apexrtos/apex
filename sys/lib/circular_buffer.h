@@ -12,9 +12,9 @@
 #include <utility>
 
 #if defined(CIRCULAR_BUFFER_DEBUG)
-#define ASSERT(x) assert(x)
+#define CIRCULAR_BUFFER_DEBUG_ASSERT(x) assert(x)
 #else
-#define ASSERT(x)
+#define CIRCULAR_BUFFER_DEBUG_ASSERT(x)
 #endif
 
 /*
@@ -288,94 +288,94 @@ public:
 
 	reference front()
 	{
-		ASSERT(!empty());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(!empty());
 		return ref(begin_);
 	}
 
 	const_reference front() const
 	{
-		ASSERT(!empty());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(!empty());
 		return ref(begin_);
 	}
 
 	reference back()
 	{
-		ASSERT(!empty());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(!empty());
 		return ref(end_ - 1);
 	}
 
 	const_reference back() const
 	{
-		ASSERT(!empty());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(!empty());
 		return ref(end_ - 1);
 	}
 
 	template<typename ...A> void emplace_front(A &&...a)
 	{
-		ASSERT(size() != capacity());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(size() != capacity());
 		--begin_;
 		new(&front()) T(std::forward<A>(a)...);
 	}
 
 	template<typename ...A> void emplace_back(A &&...a)
 	{
-		ASSERT(size() != capacity());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(size() != capacity());
 		++end_;
 		new(&back()) T(std::forward<A>(a)...);
 	}
 
 	void push_front(const T &v)
 	{
-		ASSERT(size() != capacity());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(size() != capacity());
 		--begin_;
 		new(&front()) T(v);
 	}
 
 	void push_front(T &&v)
 	{
-		ASSERT(size() != capacity());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(size() != capacity());
 		--begin_;
 		new(&front()) T(std::move(v));
 	}
 
 	void push_back(const T &v)
 	{
-		ASSERT(size() != capacity());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(size() != capacity());
 		++end_;
 		new(&back()) T(v);
 	}
 
 	void push_back(T &&v)
 	{
-		ASSERT(size() != capacity());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(size() != capacity());
 		++end_;
 		new(&back()) T(std::move(v));
 	}
 
 	void pop_front()
 	{
-		ASSERT(!empty());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(!empty());
 		front().~T();
 		++begin_;
 	}
 
 	void pop_back()
 	{
-		ASSERT(!empty());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(!empty());
 		back().~T();
 		--end_;
 	}
 
 	reference operator[](size_type i)
 	{
-		ASSERT(i < size());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(i < size());
 		return ref(begin_ + i);
 
 	}
 
 	const_reference operator[](size_type i) const
 	{
-		ASSERT(i < size());
+		CIRCULAR_BUFFER_DEBUG_ASSERT(i < size());
 		return ref(begin_ + i);
 	}
 
@@ -448,7 +448,7 @@ public:
 
 	iterator erase(const_iterator begin, const_iterator end)
 	{
-		ASSERT(end >= begin);
+		CIRCULAR_BUFFER_DEBUG_ASSERT(end >= begin);
 		return {collapse(begin.it_, end - begin), this};
 	}
 
@@ -510,7 +510,7 @@ public:
 
 	size_type linear(const_iterator pos, const_iterator end)
 	{
-		ASSERT(end >= pos);
+		CIRCULAR_BUFFER_DEBUG_ASSERT(end >= pos);
 		return std::min<size_type>(
 		    end - pos, capacity_ - wrap(pos.it_));
 	}
@@ -597,7 +597,7 @@ private:
 
 	size_type expand(size_type begin, size_type len)
 	{
-		ASSERT(capacity() - size() >= len);
+		CIRCULAR_BUFFER_DEBUG_ASSERT(capacity() - size() >= len);
 
 		const size_type end = begin + len;
 
@@ -638,7 +638,7 @@ private:
 
 	size_type collapse(size_type begin, size_type len)
 	{
-		ASSERT(len <= size_type(end_ - begin));
+		CIRCULAR_BUFFER_DEBUG_ASSERT(len <= size_type(end_ - begin));
 
 		const size_type end = begin + len;
 
@@ -739,3 +739,5 @@ using circular_buffer_wrapper = cb_impl__<T, S, cb_wrap__<T, S>>;
  */
 template<typename T, size_t N, typename S = size_t>
 using circular_buffer_fixed = cb_impl__<T, S, cb_fixed__<T, S, N>>;
+
+#undef CIRCULAR_BUFFER_DEBUG_ASSERT
