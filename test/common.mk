@@ -23,6 +23,7 @@ INCLUDE := \
 	$(CONFIG_APEXDIR)/sys \
 
 SOURCES := \
+	src/address_map.cpp \
 	src/circular_buffer.cpp \
 	src/expect.cpp \
 	src/init_rand.cpp \
