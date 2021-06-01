@@ -187,12 +187,12 @@ type_to_attr(unsigned type)
 static block_hdr *
 block_find(size_t size, unsigned type)
 {
-	int i;
+	unsigned i;
 	list *n;
 
 	assert(type < MEM_ALLOC);
 
-	for (i = (int)((u_int)size >> 4); i < NR_BLOCK_LIST; i++) {
+	for (i = size >> 4; i < NR_BLOCK_LIST; i++) {
 		if (!list_empty(&free_blocks[type][i]))
 			break;
 	}
@@ -460,7 +460,7 @@ kmem_dump()
 	spinlock_lock(&kmem_lock);
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
 		list *head, *n;
-		int i, cnt;
+		unsigned i, cnt;
 
 		info("kmem dump (%d)\n", type);
 		info("==============\n");
@@ -527,7 +527,7 @@ kmem_init()
 {
 	for (unsigned type = 0; type < MEM_ALLOC; ++type) {
 		list_init(&kmem_pages[type]);
-		for (int i = 0; i < NR_BLOCK_LIST; i++)
+		for (unsigned i = 0; i < NR_BLOCK_LIST; i++)
 			list_init(&free_blocks[type][i]);
 	}
 	spinlock_init(&kmem_lock);
