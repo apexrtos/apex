@@ -875,6 +875,12 @@ page_ptr::get()
 	return phys_;
 }
 
+size_t
+page_ptr::size() const
+{
+	return size_;
+}
+
 page_ptr::operator bool() const
 {
 	return !!phys_;

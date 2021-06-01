@@ -39,6 +39,7 @@ public:
 	phys release();
 	void reset();
 	phys get();
+	size_t size() const;
 	explicit operator bool() const;
 
 private:
