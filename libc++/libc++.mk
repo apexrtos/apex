@@ -5,7 +5,7 @@
 TYPE := klib
 TARGET := libc++.a
 CXXFLAGS += -nostdinc++ -fno-exceptions -fno-pic
-DEFS := -D_LIBCPP_BUILDING_LIBRARY -DLIBCXXRT
+DEFS := -DLIBCXXRT
 
 INCLUDE := \
 	$(CONFIG_BUILDDIR) \

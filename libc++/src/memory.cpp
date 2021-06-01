@@ -128,15 +128,11 @@ __shared_weak_count::lock() _NOEXCEPT
     return nullptr;
 }
 
-#if !defined(_LIBCPP_NO_RTTI) || !defined(_LIBCPP_BUILD_STATIC)
-
 const void*
 __shared_weak_count::__get_deleter(const type_info&) const _NOEXCEPT
 {
     return nullptr;
 }
-
-#endif  // _LIBCPP_NO_RTTI
 
 #if 0	/* no std::atomic<std::shared_ptr<T>> on Apex for now */
 
