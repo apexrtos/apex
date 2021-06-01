@@ -91,9 +91,6 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
 	const auto fixed = flags & MAP_FIXED;
 	const auto pg_off = PAGE_OFF(req_addr);
 
-	if (fixed && vn && pg_off != PAGE_OFF(off))
-		return (void*)DERR(-EINVAL);
-
 	page_ptr pages{fixed
 			? page_reserve(virt_to_phys(req_addr), len, attr, a)
 			: page_alloc(pg_off + len, attr, a)};

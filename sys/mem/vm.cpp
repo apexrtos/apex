@@ -246,6 +246,7 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 {
 	std::unique_ptr<vnode> vn;
 	const bool anon = flags & MAP_ANONYMOUS;
+	const bool fixed = flags & MAP_FIXED;
 	const bool priv = flags & MAP_PRIVATE;
 	const bool shared = flags & MAP_SHARED;
 
@@ -259,6 +260,8 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 		vn.reset(vn_open(fd, oflg));
 		if (!vn.get())
 			return (void*)DERR(-EBADF);
+		if (fixed && PAGE_OFF(addr) != PAGE_OFF(off))
+			return (void*)DERR(-EINVAL);
 	}
 
 	return as_map(a, addr, len, prot, flags, std::move(vn), off, attr);
