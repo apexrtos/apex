@@ -71,7 +71,8 @@ extern struct task	kern_task;	/* kernel task */
 /*
  * Test if pointer has approprate alignment for type
  */
-#define ALIGNED(p, t) (!((uintptr_t)(p) & (alignof(t) - 1)))
+#define ALIGNEDn(p, n) (!((uintptr_t)(p) & (n - 1)))
+#define ALIGNED(p, t) ALIGNEDn(p, alignof(t))
 
 /*
  * Count the number of leading zeroes in n
