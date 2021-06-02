@@ -219,12 +219,6 @@ u_arraylen(const void *const *u_arr, const size_t maxlen)
 }
 
 bool
-u_access_ok(const void *u_addr, size_t len, int access)
-{
-	return u_access_okfor(task_cur()->as, u_addr, len, access);
-}
-
-bool
 u_access_okfor(as *a, const void *u_addr, size_t len, int access)
 {
 	/* u_access_okfor only makes sense if the address space is locked or if
@@ -240,12 +234,6 @@ u_access_okfor(as *a, const void *u_addr, size_t len, int access)
 	if ((access & seg_prot(seg)) != access)
 		return false;
 	return true;
-}
-
-bool
-k_access_ok(const void *k_addr, size_t len, int access)
-{
-	return page_valid(virt_to_phys(k_addr), len, &kern_task);
 }
 
 int
@@ -303,34 +291,4 @@ u_access_continue(const void *u_addr, size_t len, int prot)
 {
 	const auto suspended{thread_cur()->state & TH_U_ACCESS_S};
 	return !suspended || u_access_ok(u_addr, len, prot);
-}
-
-bool
-u_fault()
-{
-	return false;
-}
-
-void
-u_fault_clear()
-{
-	/* nothing to do */
-}
-
-bool
-u_address(const void *u_addr)
-{
-	return u_addressfor(task_cur()->as, u_addr);
-}
-
-bool
-u_addressfor(const as *a, const void *u_addr)
-{
-	return as_find_seg(a, u_addr).ok();
-}
-
-bool
-k_address(const void *k_addr)
-{
-	return page_valid(virt_to_phys(k_addr), 0, &kern_task);
 }
