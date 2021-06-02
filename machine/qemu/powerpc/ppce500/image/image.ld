@@ -1,0 +1,9 @@
+INCLUDE conf/config.ld
+
+ENTRY(CONFIG_BOOTIMAGE_BASE_PHYS)
+
+SECTIONS {
+	.data CONFIG_BOOTIMAGE_BASE_PHYS : {
+		*(.data)
+	}
+}

@@ -1,0 +1,10 @@
+/*
+ * Options for PowerPC e500v2
+ */
+arch powerpc
+subarch e500v2
+option MMU
+option PAE
+makeoption MCPU := -mcpu=e500v2
+makeoption USER_LDFLAGS += -static -no-pie
+makeoption USER_CFLAGS += -fno-pie

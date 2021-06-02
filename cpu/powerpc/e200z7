@@ -1,0 +1,7 @@
+/*
+ * Options for PowerPC e200z7
+ */
+arch powerpc
+subarch e200z7
+makeoption MCPU := -mcpu=e200z7
+makeoption USER_LDFLAGS += -static

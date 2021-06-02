@@ -116,6 +116,10 @@ SOURCES += \
 endif
 
 ifeq ($(CONFIG_ARCH),powerpc)
+ifeq ($(CONFIG_SUBARCH),e500v2)
+$(warning REVISIT: https://bugs.llvm.org/show_bug.cgi?id=50070)
+CFLAGS += -mno-spe -msoft-float
+endif
 SOURCES += \
     src/string/memcpy.c
 endif

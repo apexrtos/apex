@@ -119,7 +119,7 @@ static event dpc_event;		/* event for DPC */
 /* currently active thread */
 extern thread idle_thread;
 __attribute__((used)) __fast_data thread *active_thread = &idle_thread;
-__fast_bss static int resched;
+__attribute__((used)) __fast_bss int resched;
 __fast_bss static int locks;
 
 /*
