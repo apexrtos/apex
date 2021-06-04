@@ -31,6 +31,7 @@
 
 #include <list.h>
 #include <sync.h>
+#include <lib/address_map.h>
 
 struct dirent;
 struct file;
@@ -42,6 +43,8 @@ struct stat;
  * appropriate lock.
  */
 struct vnode {
+	vnode();
+
 	list v_link;		/* link for hash map */
 	struct mount *v_mount;	/* mounted vfs pointer */
 	vnode *v_parent;	/* pointer to parent vnode */
@@ -54,6 +57,8 @@ struct vnode {
 	char *v_name;		/* name of node */
 	void *v_data;		/* private data for fs */
 	void *v_pipe;		/* pipe data */
+	unsigned v_maprefcnt;	/* memory map reference count */
+	address_map v_map;	/* memory map of file data */
 };
 
 /* flags for vnode */
@@ -94,6 +99,8 @@ typedef	int (*vnop_getattr_fn) (vnode *, vattr *);
 typedef	int (*vnop_setattr_fn) (vnode *, vattr *);
 typedef	int (*vnop_inactive_fn) (vnode *);
 typedef	int (*vnop_truncate_fn) (vnode *);
+typedef int (*vnop_map_fn) (vnode *);
+typedef int (*vnop_unmap_fn) (vnode *);
 
 struct vnops {
 	vnop_open_fn vop_open;
@@ -112,6 +119,8 @@ struct vnops {
 	vnop_setattr_fn vop_setattr;
 	vnop_inactive_fn vop_inactive;
 	vnop_truncate_fn vop_truncate;
+	vnop_map_fn vop_map;
+	vnop_unmap_fn vop_unmap;
 };
 
 /*
@@ -133,12 +142,15 @@ struct vnops {
 #define VOP_SETATTR(VP, VAP) ((VP)->v_mount->m_op->vfs_vnops->vop_setattr)(VP, VAP)
 #define VOP_INACTIVE(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_inactive)(VP)
 #define VOP_TRUNCATE(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_truncate)(VP)
+#define VOP_MAP(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_map)(VP)
+#define VOP_UNMAP(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_unmap)(VP)
 
 /*
  * Generic null/invalid operations
  */
 int vop_nullop();
 int vop_einval();
+int vop_enotsup();
 
 /*
  * vnode cache interface

@@ -87,6 +87,8 @@ const vnops ramfs_vnops = {
 	.vop_setattr = ((vnop_setattr_fn)vop_nullop),
 	.vop_inactive = ((vnop_inactive_fn)vop_nullop),
 	.vop_truncate = ramfs_truncate,
+	.vop_map = (vnop_map_fn)vop_enotsup,
+	.vop_unmap = (vnop_unmap_fn)vop_enotsup,
 };
 
 ramfs_node *

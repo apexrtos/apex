@@ -734,6 +734,96 @@ vn_name(vnode *vn)
 }
 
 /*
+ * vn_map - establish memory map for vnode
+ */
+expect_ok
+vn_map(vnode *vp)
+{
+	expect_ok rc;
+	off_t off = 0;
+
+	vn_lock(vp);
+
+	/* already mapped? */
+	if (vp->v_maprefcnt) {
+		++vp->v_maprefcnt;
+		goto out;
+	}
+
+	/* only supported on normal files */
+	if (!S_ISREG(vp->v_mode)) {
+		rc = DERR(std::errc::invalid_argument);
+		goto out;
+	}
+
+	/* try filesystems specific mapping */
+	if (auto r = VOP_MAP(vp); r != -ENOTSUP) {
+		rc = std::errc{-r};
+		goto out;
+	}
+
+	/* otherwise map by reading */
+	rc = page_alloc_multi(vp->v_size, MA_NORMAL, vp,
+			      [&](page_ptr &&p) -> expect_ok {
+		size_t rd;
+		if (auto r = vn_pread(vp, phys_to_virt(p), p.size(), off);
+		    r < 0)
+			return std::errc{-r};
+		else
+			rd = r;
+		/* short reads not expected here */
+		assert(rd == p.size() || off + rd == vp->v_size);
+		/* zero final partial page */
+		if (rd < p.size())
+			memset((char *)phys_to_virt(p) + rd, 0, p.size() - rd);
+		vp->v_map.map((void *)off, p.release(), p.size(), 0);
+		off += rd;
+		return {};
+	});
+
+	++vp->v_maprefcnt;
+
+	/* free pages on failure */
+	if (!rc.ok())
+		vn_unmap(vp);
+
+out:
+	vn_unlock(vp);
+	return rc;
+}
+
+/*
+ * vn_unmap - release memory map of vnode
+ */
+void
+vn_unmap(vnode *vp)
+{
+	off_t off = 0;
+
+	vn_lock(vp);
+
+	if (--vp->v_maprefcnt > 0)
+		goto out;
+
+	/* try filesystem specific unmapping */
+	if (!VOP_UNMAP(vp))
+		goto out;
+
+	while (true) {
+		auto r = vp->v_map.find((void *)off);
+		if (!r)
+			break;
+		if (!page_free(r->phys, r->size, vp).ok())
+			panic("BUG");
+		off += r->size;
+	}
+	vp->v_map.clear();
+
+out:
+	vn_unlock(vp);
+}
+
+/*
  * putfp - release reference on file pointer
  */
 static int

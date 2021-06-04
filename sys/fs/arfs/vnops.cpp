@@ -310,6 +310,8 @@ const vnops arfs_vnops = {
 	.vop_setattr = (vnop_setattr_fn)vop_nullop,
 	.vop_inactive = (vnop_inactive_fn)vop_nullop,
 	.vop_truncate = (vnop_truncate_fn)vop_nullop,
+	.vop_map = (vnop_map_fn)vop_enotsup,
+	.vop_unmap = (vnop_unmap_fn)vop_enotsup,
 };
 
 /*

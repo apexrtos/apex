@@ -79,6 +79,26 @@ static list vnode_table[VNODE_BUCKETS];
 static mutex vnode_mutex;
 
 /*
+ * vnode::vnode - vnode default constructor
+ */
+vnode::vnode()
+: v_mount{nullptr}
+, v_parent{nullptr}
+, v_refcnt{0}
+, v_flags{0}
+, v_mode{0}
+, v_size{0}
+, v_blkno{0}
+, v_name{nullptr}
+, v_data{nullptr}
+, v_pipe{nullptr}
+, v_maprefcnt{0}
+{
+	list_init(&v_link);
+	mutex_init(&v_lock);
+}
+
+/*
  * vn_hash - Get the hash value for a vnode from its parent and name.
  */
 static unsigned
@@ -215,8 +235,7 @@ vget(struct mount *m, vnode *parent, const char *name, size_t len)
 
 	vdbgvn("vget: parent=%p name=%s len=%zu\n", parent, name, len);
 
-	if (!(vp = (vnode *)malloc(sizeof(vnode))))
-		return nullptr;
+	vp = new vnode;
 	if (!(v_name = (char *)malloc(len + 1))) {
 		free(vp);
 		return nullptr;
@@ -224,12 +243,10 @@ vget(struct mount *m, vnode *parent, const char *name, size_t len)
 
 	strlcpy(v_name, name, len + 1);
 
-	*vp = (vnode) {
-		.v_mount = m,
-		.v_parent = parent,
-		.v_refcnt = 1,
-		.v_name = v_name,
-	};
+	vp->v_mount = m;
+	vp->v_parent = parent;
+	vp->v_refcnt = 1;
+	vp->v_name = v_name;
 
 	mutex_init(&vp->v_lock);
 
@@ -263,17 +280,10 @@ vget(struct mount *m, vnode *parent, const char *name, size_t len)
 vnode *
 vget_pipe()
 {
-	vnode *vp;
+	vnode *vp = new vnode;
 
-	if (!(vp = (vnode *)malloc(sizeof(vnode))))
-		return nullptr;
-
-	*vp = (vnode) {
-		.v_refcnt = 1,
-		.v_mode = S_IFIFO,
-	};
-
-	mutex_init(&vp->v_lock);
+	vp->v_refcnt = 1;
+	vp->v_mode = S_IFIFO;
 
 	vn_lock(vp);
 
@@ -428,6 +438,12 @@ int
 vop_einval()
 {
 	return -EINVAL;
+}
+
+int
+vop_enotsup()
+{
+	return -ENOTSUP;
 }
 
 void
