@@ -16,7 +16,7 @@ public:
 	using value_type = T;
 	static constexpr T invalid = -1;
 
-	physT()
+	constexpr physT()
 	: phys_{invalid}
 	{ }
 
