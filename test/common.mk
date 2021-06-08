@@ -19,9 +19,11 @@ LDFLAGS_clang :=
 INCLUDE := \
 	$(CONFIG_APEXDIR)/test \
 	$(CONFIG_APEXDIR) \
-	$(CONFIG_APEXDIR)/sys/include
+	$(CONFIG_APEXDIR)/sys/include \
+	$(CONFIG_APEXDIR)/sys \
 
 SOURCES := \
 	src/circular_buffer.cpp \
+	src/expect.cpp \
 	src/init_rand.cpp \
 	src/page.cpp \
