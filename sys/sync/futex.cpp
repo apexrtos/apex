@@ -255,7 +255,6 @@ futex(task *t, int *uaddr, int op, int val, void *val2, int *uaddr2)
 int
 sc_futex(int *uaddr, int op, int val, void *val2, int *uaddr2)
 {
-	int ret;
 	timespec32 ts;
 
 	/* copy in userspace timespec */
@@ -263,8 +262,9 @@ sc_futex(int *uaddr, int op, int val, void *val2, int *uaddr2)
 	case FUTEX_WAIT:
 		if (!val2)
 			break;
-		if ((ret = vm_read(task_cur()->as, &ts, val2, sizeof(ts))) < 0)
-			return ret;
+		if (auto r = vm_read(task_cur()->as, &ts, val2, sizeof(ts));
+		    !r.ok())
+			return r.sc_rval();
 		val2 = &ts;
 	}
 

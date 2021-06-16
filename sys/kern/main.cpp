@@ -143,8 +143,9 @@ run_init()
 	 */
 	thread *th;
 	as_modify_begin(task->as);
-	if ((th = exec_into(task, argv[0], argv, 0)) > (thread*)-4096UL)
+	if (auto r = exec_into(task, argv[0], argv, 0); !r.ok())
 		panic("failed to run init");
+	else th = r.val();
 
 	/*
 	 * Open stdin, stdout, stderr

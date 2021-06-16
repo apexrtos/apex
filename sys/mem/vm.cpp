@@ -56,7 +56,7 @@ struct as {
  * do_vm_io - walk local and remote iovs calling f for each overlapping area
  */
 template<typename fn>
-static ssize_t
+static expect_pos
 do_vm_io(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc, fn f)
 {
 	if (!lc || !rc)
@@ -69,7 +69,7 @@ do_vm_io(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc, fn f
 		while (l.iov_len) {
 			const auto s = std::min(l.iov_len, r.iov_len);
 			const auto err = f(a, l.iov_base, r.iov_base, s);
-			if (err < 0)
+			if (!err.ok())
 				return err;
 			l.iov_len -= s;
 			l.iov_base = (char*)l.iov_base + s;
@@ -92,7 +92,7 @@ do_vm_io(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc, fn f
 /*
  * oflags - calculate required oflags from map flags & protection
  */
-static int
+static expect_pos
 oflags(int prot, int flags)
 {
 	constexpr auto rdwr = PROT_READ | PROT_WRITE;
@@ -106,19 +106,19 @@ oflags(int prot, int flags)
 		return O_RDONLY;
 	if (prot & PROT_WRITE)
 		return O_WRONLY;
-	return DERR(-EINVAL);
+	return DERR(std::errc::invalid_argument);
 }
 
 /*
  * seg_insert - insert new segment
  */
-static int
+static expect_ok
 seg_insert(seg *prev, page_ptr pages, size_t len, int prot,
     std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	seg *ns;
 	if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
-		return DERR(-ENOMEM);
+		return std::errc::not_enough_memory;
 	ns->prot = prot;
 	ns->base = phys_to_virt(pages.release());
 	ns->len = PAGE_ALIGN(PAGE_OFF(off) + len);
@@ -127,7 +127,7 @@ seg_insert(seg *prev, page_ptr pages, size_t len, int prot,
 	ns->vn = vn.release();
 	ns->mapped = ns->vn ? len : 0;
 	list_insert(&prev->link, &ns->link);
-	return 0;
+	return {};
 }
 
 /*
@@ -162,15 +162,15 @@ seg_combine(as *a)
  *
  * Must be called with address space write lock held.
  */
-static int
+static expect_ok
 do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
 {
-	int err = 0;
+	expect_ok rc;
 
 	if (PAGE_OFF(vaddr) || PAGE_OFF(ulen))
-		return DERR(-EINVAL);
+		return DERR(std::errc::invalid_argument);
 	if (!ulen)
-		return 0;
+		return {};
 
 	const auto uaddr = (char*)vaddr;
 	const auto uend = uaddr + ulen;
@@ -185,8 +185,7 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
 		if (s->base >= uaddr && send <= uend) {
 			/* entire segment */
 			if (!remap)
-				err = as_unmap(a, s->base, s->len, s->vn,
-				    s->off);
+				rc = as_unmap(a, s->base, s->len, s->vn, s->off);
 			list_remove(&s->link);
 			if (s->vn)
 				vn_close(s->vn);
@@ -195,11 +194,11 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
 			/* hole in segment */
 			seg *ns;
 			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
-				return DERR(-ENOMEM);
+				return DERR(std::errc::not_enough_memory);
 			s->len = uaddr - (char*)s->base;
 			if (!remap)
-				err = as_unmap(a, uaddr, ulen, s->vn,
-				    s->off + s->len);
+				rc = as_unmap(a, uaddr, ulen, s->vn,
+					      s->off + s->len);
 			*ns = *s;
 			ns->base = uend;
 			ns->len = send - uend;
@@ -214,25 +213,25 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
 			/* end of segment */
 			const auto l = uaddr - (char*)s->base;
 			if (!remap)
-				err = as_unmap(a, uaddr, s->len - l, s->vn,
-				    s->off + l);
+				rc = as_unmap(a, uaddr, s->len - l, s->vn,
+					      s->off + l);
 			s->len = l;
 		} else if (s->base < uend) {
 			/* start of segment */
 			const auto l = uend - (char*)s->base;
 			if (!remap)
-				err = as_unmap(a, s->base, l, s->vn, s->off);
+				rc = as_unmap(a, s->base, l, s->vn, s->off);
 			if (s->vn)
 				s->off += l;
 			s->base = (char*)s->base + l;
 			s->len -= l;
 		} else
 			panic("BUG");
-		if (err < 0)
+		if (!rc.ok())
 			break;
 	}
 
-	return err;
+	return rc;
 }
 
 /*
@@ -240,7 +239,7 @@ do_munmapfor(as *a, void *const vaddr, const size_t ulen, bool remap)
  *
  * Must be called with address space write lock held.
  */
-static void *
+static expect<void *>
 do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
     off_t off, long attr)
 {
@@ -251,17 +250,18 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 	const bool shared = flags & MAP_SHARED;
 
 	if (priv == shared || !len)
-		return (void*)DERR(-EINVAL);
+		return DERR(std::errc::invalid_argument);
 	if (!anon) {
 		int oflg;
-		if ((oflg = oflags(prot, flags)) < 0)
-			return (void*)oflg;
+		if (auto r = oflags(prot, flags); !r.ok())
+			return r.err();
+		else oflg = r.val();
 		/* REVISIT: do we need to check if file is executable? */
 		vn.reset(vn_open(fd, oflg));
 		if (!vn.get())
-			return (void*)DERR(-EBADF);
+			return DERR(std::errc::bad_file_descriptor);
 		if (fixed && PAGE_OFF(addr) != PAGE_OFF(off))
-			return (void*)DERR(-EINVAL);
+			return DERR(std::errc::invalid_argument);
 	}
 
 	return as_map(a, addr, len, prot, flags, std::move(vn), off, attr);
@@ -270,13 +270,13 @@ do_mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd,
 /*
  * mmapfor - map memory into task address space
  */
-void *
+expect<void *>
 mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
     long attr)
 {
 	interruptible_lock l(a->lock.write());
 	if (int err = l.lock(); err < 0)
-		return (void*)err;
+		return std::errc{-err};
 
 	/* mmap replaces existing mappings */
 	attr |= PAF_REALLOC;
@@ -287,12 +287,12 @@ mmapfor(as *a, void *addr, size_t len, int prot, int flags, int fd, off_t off,
 /*
  * munmapfor - unmap memory in address space
  */
-int
-munmapfor(as *a, void *const vaddr, const size_t ulen)
+expect_ok
+munmapfor(as *a, void *vaddr, const size_t ulen)
 {
 	interruptible_lock l(a->lock.write());
 	if (int err = l.lock(); err < 0)
-		return err;
+		return std::errc{-err};
 
 	return do_munmapfor(a, vaddr, ulen, false);
 }
@@ -300,21 +300,21 @@ munmapfor(as *a, void *const vaddr, const size_t ulen)
 /*
  * mprotectfor
  */
-int
+expect_ok
 mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 {
-	int err = 0;
+	expect_ok rc;
 
 	if (PAGE_OFF(vaddr) || PAGE_OFF(ulen))
-		return DERR(-EINVAL);
+		return DERR(std::errc::invalid_argument);
 	if ((prot & (PROT_READ | PROT_WRITE | PROT_EXEC)) != prot)
-		return DERR(-EINVAL);
+		return DERR(std::errc::invalid_argument);
 	if (!ulen)
-		return 0;
+		return {};
 
 	interruptible_lock l(a->lock.write());
-	if (err = l.lock(); err < 0)
-		return err;
+	if (auto r = l.lock(); r < 0)
+		return std::errc{-r};
 
 	const auto uaddr = (char*)vaddr;
 	const auto uend = uaddr + ulen;
@@ -330,19 +330,19 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 			continue;
 		if (s->base >= uaddr && send <= uend) {
 			/* entire segment */
-			err = as_mprotect(a, s->base, s->len, prot);
+			rc = as_mprotect(a, s->base, s->len, prot);
 			s->prot = prot;
 		} else if (s->base < uaddr && send > uend) {
 			/* hole in segment */
 			seg *ns1, *ns2;
 			if (!(ns1 = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
-				return DERR(-ENOMEM);
+				return DERR(std::errc::not_enough_memory);
 			if (!(ns2 = (seg*)kmem_alloc(sizeof(seg), MA_FAST))) {
 				kmem_free(ns1);
-				return DERR(-ENOMEM);
+				return DERR(std::errc::not_enough_memory);
 			}
 
-			err = as_mprotect(a, uaddr, ulen, prot);
+			rc = as_mprotect(a, uaddr, ulen, prot);
 
 			s->len = uaddr - (char*)s->base;
 
@@ -370,10 +370,10 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 			/* end of segment */
 			seg *ns;
 			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
-				return DERR(-ENOMEM);
+				return DERR(std::errc::not_enough_memory);
 
 			const auto l = uaddr - (char*)s->base;
-			err = as_mprotect(a, uaddr, s->len - l, prot);
+			rc = as_mprotect(a, uaddr, s->len - l, prot);
 
 			*ns = *s;
 			ns->prot = prot;
@@ -390,9 +390,9 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 			/* start of segment */
 			seg *ns;
 			if (!(ns = (seg*)kmem_alloc(sizeof(seg), MA_FAST)))
-				return DERR(-ENOMEM);
+				return DERR(std::errc::not_enough_memory);
 			const auto l = uend - (char*)s->base;
-			err = as_mprotect(a, s->base, l, prot);
+			rc = as_mprotect(a, s->base, l, prot);
 
 			*ns = *s;
 			ns->prot = prot;
@@ -407,12 +407,12 @@ mprotectfor(as *a, void *const vaddr, const size_t ulen, const int prot)
 			s->len -= l;
 		} else
 			panic("BUG");
-		if (err < 0)
+		if (!rc.ok())
 			break;
 	}
 
 	seg_combine(a);
-	return err;
+	return rc;
 }
 
 /*
@@ -429,7 +429,7 @@ vm_init_brk(as *a, void *brk)
 /*
  * vm_readv
  */
-ssize_t
+expect_pos
 vm_readv(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 {
 	return do_vm_io(a, liov, lc, riov, rc, vm_read);
@@ -438,7 +438,7 @@ vm_readv(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 /*
  * vm_writev
  */
-ssize_t
+expect_pos
 vm_writev(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 {
 	return do_vm_io(a, liov, lc, riov, rc, vm_write);
@@ -447,12 +447,12 @@ vm_writev(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc)
 /*
  * sc_mmap2
  */
-void*
+long
 sc_mmap2(void *addr, size_t len, int prot, int flags, int fd, int pgoff)
 {
 	/* mmap maps whole pages, Apex requires that addr is page aligned */
 	return mmapfor(task_cur()->as, addr, len, prot, flags, fd,
-	    (off_t)pgoff * PAGE_SIZE, MA_NORMAL);
+		       (off_t)pgoff * PAGE_SIZE, MA_NORMAL).sc_rval();
 }
 
 /*
@@ -463,7 +463,7 @@ sc_munmap(void *addr, size_t len)
 {
 	/* munmap unmaps any whole page in the range [addr, addr + len) */
 	return munmapfor(task_cur()->as, PAGE_TRUNC(addr),
-			 PAGE_ALIGN(PAGE_OFF(addr) + len));
+			 PAGE_ALIGN(PAGE_OFF(addr) + len)).sc_rval();
 }
 
 /*
@@ -472,7 +472,7 @@ sc_munmap(void *addr, size_t len)
 int
 sc_mprotect(void *addr, size_t len, int prot)
 {
-	return mprotectfor(task_cur()->as, addr, len, prot);
+	return mprotectfor(task_cur()->as, addr, len, prot).sc_rval();
 }
 
 /*
@@ -515,12 +515,12 @@ sc_madvise(void *vaddr, size_t ulen, int advice)
 		return DERR(-EINVAL);
 	}
 
-	int err;
+	expect_ok rc;
 	as *a = task_cur()->as;
 
 	interruptible_lock l(a->lock.write());
-	if (err = l.lock(); err < 0)
-		return err;
+	if (auto r = l.lock(); r < 0)
+		return r;
 
 	const auto uaddr = (char*)vaddr;
 	const auto uend = uaddr + ulen;
@@ -534,59 +534,60 @@ sc_madvise(void *vaddr, size_t ulen, int advice)
 			break;
 		if (s->base >= uaddr && send <= uend) {
 			/* entire segment */
-			err = as_madvise(a, s, s->base, s->len, advice);
+			rc = as_madvise(a, s, s->base, s->len, advice);
 		} else if (s->base < uaddr && send > uend) {
 			/* part of segment */
-			err = as_madvise(a, s, uaddr, ulen, advice);
+			rc = as_madvise(a, s, uaddr, ulen, advice);
 			break;
 		} else if (s->base < uaddr) {
 			/* end of segment */
 			const auto l = uaddr - (char*)s->base;
-			err = as_madvise(a, s, uaddr, s->len - l, advice);
+			rc = as_madvise(a, s, uaddr, s->len - l, advice);
 		} else if (s->base < uend) {
 			/* start of segment */
 			const auto l = uend - (char*)s->base;
-			err = as_madvise(a, s, s->base, l, advice);
+			rc = as_madvise(a, s, s->base, l, advice);
 		} else
 			panic("BUG");
-		if (err < 0)
+		if (!rc.ok())
 			break;
 	}
 
-	return err;
+	return rc.sc_rval();
 }
 
 /*
  * sc_brk
  */
-void *
+long
 sc_brk(void *addr)
 {
 	auto a = task_cur()->as;
 
 	if (!addr)
-		return a->brk;
+		return (long)a->brk;
 
 	interruptible_lock l(a->lock.write());
 	if (auto r = l.lock(); r < 0)
-		return (void*)r;
+		return r;
 
 	/* shrink */
 	if (addr < a->brk)
 		if (auto r = do_munmapfor(a, addr,
-		    (uintptr_t)a->brk - (uintptr_t)addr, false); r < 0)
-			return (void*)r;
+		    (uintptr_t)a->brk - (uintptr_t)addr, false); !r.ok())
+			return r.sc_rval();
 
 	/* grow */
 	if (addr > a->brk)
 		if (auto r = do_mmapfor(a, a->brk,
-		    (uintptr_t)addr - (uintptr_t)a->brk,
-		    PROT_READ | PROT_WRITE,
-		    MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE,
-		    0, 0, MA_NORMAL); r > (void*)-4096UL)
-			return r;
+					(uintptr_t)addr - (uintptr_t)a->brk,
+					PROT_READ | PROT_WRITE,
+					MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE,
+					0, 0, MA_NORMAL);
+		    !r.ok())
+			return r.sc_rval();
 
-	return a->brk = addr;
+	return (long)(a->brk = addr);
 }
 
 /*
@@ -766,7 +767,7 @@ as_dump(const as *a)
  * REVISIT: This really needs to be as fast as possible. We should use some
  * kind of tree rather than a linear search in the future.
  */
-__fast_text const seg *
+__fast_text expect<const seg *>
 as_find_seg(const as *a, const void *uaddr)
 {
 	seg *s;
@@ -774,7 +775,7 @@ as_find_seg(const as *a, const void *uaddr)
 		if (seg_begin(s) <= uaddr && seg_end(s) > uaddr)
 			return s;
 	}
-	return nullptr;
+	return std::errc::bad_address;
 }
 
 /*
@@ -825,20 +826,20 @@ seg_vnode(seg *s)
 /*
  * as_insert - insert memory into address space (nommu)
  */
-int
+expect_ok
 as_insert(as *a, page_ptr pages, size_t len, int prot,
     int flags, std::unique_ptr<vnode> vn, off_t off, long attr)
 {
-	int err;
+	expect_ok rc;
 	const bool fixed = flags & MAP_FIXED;
 
 	assert(vn || !off);
 
 	/* remove any existing mappings */
 	if (fixed &&
-	    (err = do_munmapfor(a, phys_to_virt(pages),
-				PAGE_ALIGN(PAGE_OFF(off) + len), true)) < 0)
-		return err;
+	    !(rc = do_munmapfor(a, phys_to_virt(pages),
+				PAGE_ALIGN(PAGE_OFF(off) + len), true)).ok())
+		return rc;
 
 	/* find insertion point */
 	seg *s;
@@ -849,10 +850,10 @@ as_insert(as *a, page_ptr pages, size_t len, int prot,
 	s = list_entry(list_prev(&s->link), seg, link);
 
 	/* insert new segment */
-	if ((err = seg_insert(s, std::move(pages), len, prot, std::move(vn),
-	    off, attr)) < 0)
-		return err;
+	if (!(rc = seg_insert(s, std::move(pages), len, prot, std::move(vn),
+			       off, attr)).ok())
+		return rc;
 
 	seg_combine(a);
-	return 0;
+	return {};
 }

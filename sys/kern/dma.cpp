@@ -77,11 +77,11 @@ dma_iterate(const bool from_iov, const iovec *iov, size_t iov_offset,
 	if (bounce_size) {
 		auto attr = page_attr(virt_to_phys(bounce_p), bounce_size);
 
-		if (attr < 0)
+		if (!attr.ok())
 			return DERR(-EFAULT);
 
 		/* bounce buffer must reside in DMA capable memory */
-		if (!(attr & MA_DMA))
+		if (!(attr.val() & MA_DMA))
 			return DERR(-EINVAL);
 
 		auto bounce = reinterpret_cast<uintptr_t>(bounce_p);
@@ -91,8 +91,8 @@ dma_iterate(const bool from_iov, const iovec *iov, size_t iov_offset,
 			return DERR(-EINVAL);
 
 		/* bounce buffer must meet cache alignment requirements */
-		if (!(attr & MA_CACHE_COHERENT) && (bounce & (dclsz - 1) ||
-		    bounce_size & (dclsz - 1)))
+		if (!(attr.val() & MA_CACHE_COHERENT) &&
+		    (bounce & (dclsz - 1) || bounce_size & (dclsz - 1)))
 			return DERR(-EINVAL);
 	}
 
@@ -155,10 +155,11 @@ dma_iterate(const bool from_iov, const iovec *iov, size_t iov_offset,
 			dmadbg(" p %p len %zu\n", p, len);
 
 		/* get attributes for next buffer */
-		if (nb)
-			attr = page_attr(virt_to_phys(p), len);
-		if (attr < 0)
-			return DERR(-EFAULT);
+		if (nb) {
+			if (auto r = page_attr(virt_to_phys(p), len); !r.ok())
+				return DERR(-EFAULT);
+			else attr = r.val();
+		}
 
 		/* bounce if destination cannot be written by DMA */
 		if (!(attr & MA_DMA)) {

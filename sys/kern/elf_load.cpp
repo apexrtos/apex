@@ -30,15 +30,14 @@ ph_flags_to_prot(const ElfN_Phdr &ph)
 /*
  * elf_load - load an elf file, attempt to execute in place.
  */
-int
-elf_load(as *a, int fd, void (**entry)(),
-	 std::array<unsigned, AUX_CNT> &auxv, void **stack)
+expect<elf_load_result>
+elf_load(as *a, int fd)
 {
 	ElfN_Ehdr eh;
 
 	/* read and validate file header */
 	if (auto r{pread(fd, &eh, sizeof eh, 0)}; r != sizeof eh)
-		return r < 0 ? r : DERR(-ENOEXEC);
+		return to_errc(r, DERR(std::errc::executable_format_error));
 	if (eh.e_ident[EI_MAG0] != ELFMAG0 ||
 	    eh.e_ident[EI_MAG1] != ELFMAG1 ||
 	    eh.e_ident[EI_MAG2] != ELFMAG2 ||
@@ -48,7 +47,7 @@ elf_load(as *a, int fd, void (**entry)(),
 	    eh.e_phentsize != sizeof(ElfN_Phdr) ||
 	    eh.e_phnum < 1 ||
 	    !arch_check_elfhdr(&eh))
-		return DERR(-ENOEXEC);
+		return DERR(std::errc::executable_format_error);
 
 	/* determine extent of program image & stack size */
 	size_t stack_size = PAGE_SIZE;
@@ -61,7 +60,7 @@ elf_load(as *a, int fd, void (**entry)(),
 		if (auto r{pread(fd, &ph, sizeof(ph),
 				 eh.e_phoff + (i * sizeof(ph)))};
 		    r != sizeof ph)
-			return r < 0 ? r : DERR(-ENOEXEC);
+			return to_errc(r, DERR(std::errc::executable_format_error));
 
 		if (ph.p_type == PT_GNU_STACK) {
 			stack_size = PAGE_ALIGN(ph.p_memsz);
@@ -73,10 +72,10 @@ elf_load(as *a, int fd, void (**entry)(),
 			continue;
 
 		if (ph.p_filesz > ph.p_memsz)
-			return DERR(-ENOEXEC);
+			return DERR(std::errc::executable_format_error);
 
 		if (ph.p_align < PAGE_SIZE)
-			return DERR(-ENOEXEC);
+			return DERR(std::errc::executable_format_error);
 
 		img_beg = std::min(img_beg, ph.p_vaddr);
 		img_end = std::max(img_end, ph.p_vaddr + ph.p_memsz);
@@ -88,17 +87,17 @@ elf_load(as *a, int fd, void (**entry)(),
 
 	/* dynamic executables should start at address 0 */
 	if (dyn && img_beg)
-		return DERR(-ENOEXEC);
+		return DERR(std::errc::executable_format_error);
 
 #if defined(CONFIG_MMU)
 	load = dyn ? random_load_address() : img_beg;
 #else
 	/* create a mapping covering the entire program image */
-	if (load = (std::byte*)mmapfor(a, (void*)img_beg, img_end - img_beg,
-				       PROT_NONE, flags | MAP_ANONYMOUS, -1,
-				       0, MA_NORMAL);
-	    load > (std::byte*)-4096UL)
-		return (int)load;
+	if (auto r = mmapfor(a, (void*)img_beg, img_end - img_beg, PROT_NONE,
+			     flags | MAP_ANONYMOUS, -1, 0, MA_NORMAL);
+	    !r.ok())
+		return r.err();
+	else load = (std::byte *)r.val();
 #endif
 
 	flags |= MAP_FIXED;
@@ -111,7 +110,7 @@ elf_load(as *a, int fd, void (**entry)(),
 		if (auto r{pread(fd, &ph, sizeof(ph),
 				 eh.e_phoff + (i * sizeof(ph)))};
 		    r != sizeof ph)
-			return r < 0 ? r : DERR(-ENOEXEC);
+			return to_errc(r, DERR(std::errc::executable_format_error));
 
 		if (ph.p_type != PT_LOAD || !ph.p_memsz)
 			continue;
@@ -121,8 +120,8 @@ elf_load(as *a, int fd, void (**entry)(),
 			if (auto r{mmapfor(a, vaddr, ph.p_filesz,
 					   ph_flags_to_prot(ph), flags, fd,
 					   ph.p_offset, MA_NORMAL)};
-			    r > (void*)-4096UL)
-				return (int)r;
+			    !r.ok())
+				return r.err();
 
 		const auto file_end{PAGE_ALIGN(vaddr + ph.p_filesz)};
 		const auto mem_end{vaddr + ph.p_memsz};
@@ -132,8 +131,8 @@ elf_load(as *a, int fd, void (**entry)(),
 					   ph_flags_to_prot(ph),
 					   flags | MAP_ANONYMOUS, -1, 0,
 					   MA_NORMAL)};
-			    r > (void*)-4096UL)
-				return (int)r;
+			    !r.ok())
+				return r.err();
 	}
 
 #if !defined(CONFIG_MMU)
@@ -143,39 +142,45 @@ elf_load(as *a, int fd, void (**entry)(),
 	/* REVISIT: assuming the data segment is last.. */
 	vm_init_brk(a, base + PAGE_ALIGN(img_end));
 
+	elf_load_result res;
+
 	/* map stack with optional guard page */
 #if defined(CONFIG_MMU) || defined(CONFIG_MPU)
 	const size_t guard_size = PAGE_SIZE;
 #else
 	const size_t guard_size = 0;
 #endif
-	if ((*stack = mmapfor(a, 0, stack_size + guard_size, PROT_NONE,
-	    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, MA_NORMAL)) > (void*)-4096UL)
-		return (int)*stack;
-	if (auto r{mprotectfor(a, (std::byte*)*stack + guard_size, stack_size,
-	    stack_prot)}; r < 0)
-		return r;
-	*stack = (std::byte*)*stack + stack_size + guard_size;
-	*entry = (void (*)())(base + eh.e_entry);
+	if (auto r = mmapfor(a, 0, stack_size + guard_size, PROT_NONE,
+			     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0, MA_NORMAL);
+	    !r.ok())
+		return r.err();
+	else res.sp = r.val();
+
+	if (auto r = mprotectfor(a, (std::byte*)res.sp + guard_size,
+				 stack_size, stack_prot);
+	    !r.ok())
+		return r.err();
+
+	res.sp = (std::byte*)res.sp + stack_size + guard_size;
+	res.entry = (void(*)())(base + eh.e_entry);
 
 	/*
 	 * Populate auxv
 	 */
-	auxv[0] = AT_PHDR;	auxv[1] = (uintptr_t)(load + eh.e_phoff);
-	auxv[2] = AT_PHENT;	auxv[3] = sizeof(ElfN_Phdr);
-	auxv[4] = AT_PHNUM;	auxv[5] = eh.e_phnum;
-	auxv[6] = AT_PAGESZ;	auxv[7] = PAGE_SIZE;
-	auxv[8] = AT_BASE;	auxv[9] = (uintptr_t)load;
-	auxv[10] = AT_ENTRY;	auxv[11] = (uintptr_t)*entry;
-	auxv[12] = AT_UID;	auxv[13] = 500;
-	auxv[14] = AT_EUID;	auxv[15] = 500;
-	auxv[16] = AT_GID;	auxv[17] = 500;
-	auxv[18] = AT_EGID;	auxv[19] = 500;
-	auxv[20] = AT_HWCAP;	auxv[21] = arch_elf_hwcap();
-	auxv[22] = AT_NULL;	auxv[23] = 0;	/* terminating entry */
-	static_assert(AUX_CNT == 24);
+	res.auxv[0] = AT_PHDR;	    res.auxv[1] = (uintptr_t)(load + eh.e_phoff);
+	res.auxv[2] = AT_PHENT;	    res.auxv[3] = sizeof(ElfN_Phdr);
+	res.auxv[4] = AT_PHNUM;	    res.auxv[5] = eh.e_phnum;
+	res.auxv[6] = AT_PAGESZ;    res.auxv[7] = PAGE_SIZE;
+	res.auxv[8] = AT_BASE;	    res.auxv[9] = (uintptr_t)load;
+	res.auxv[10] = AT_ENTRY;    res.auxv[11] = (uintptr_t)res.entry;
+	res.auxv[12] = AT_UID;	    res.auxv[13] = 500;
+	res.auxv[14] = AT_EUID;	    res.auxv[15] = 500;
+	res.auxv[16] = AT_GID;	    res.auxv[17] = 500;
+	res.auxv[18] = AT_EGID;	    res.auxv[19] = 500;
+	res.auxv[20] = AT_HWCAP;    res.auxv[21] = arch_elf_hwcap();
+	res.auxv[22] = AT_NULL;	    res.auxv[23] = 0; /* terminating entry */
 
-	return 0;
+	return res;
 }
 
 /*
@@ -209,7 +214,7 @@ elf_load(as *a, int fd, void (**entry)(),
  *
  * returns stack pointer
  */
-void *
+expect<void *>
 build_args(as *a, void *stack, const char *const prgv[],
 	   const char *const argv[], const char *const envp[],
 	   std::span<const unsigned> auxv)
@@ -242,43 +247,43 @@ build_args(as *a, void *stack, const char *const prgv[],
 
 	/* Copy in strings & fill in arguments */
 	if (vm_write(a, &argc, arg, argsz) != argsz)
-		return (void*)DERR(-ENOMEM);
+		return DERR(std::errc::not_enough_memory);
 	arg += argsz;
 	for (i = 0; prgv && prgv[i]; ++i) {
 		if (vm_write(a, &str, arg, argsz) != argsz)
-			return (void*)DERR(-ENOMEM);
+			return DERR(std::errc::not_enough_memory);
 		arg += argsz;
 		const ssize_t len = strlen(prgv[i]) + 1;
 		if (vm_write(a, prgv[i], str, len) != len)
-			return (void*)DERR(-ENOMEM);
+			return DERR(std::errc::not_enough_memory);
 		str += len;
 	}
 	for (i = 0; argv[i]; ++i) {
 		if (vm_write(a, &str, arg, argsz) != argsz)
-			return (void*)DERR(-ENOMEM);
+			return DERR(std::errc::not_enough_memory);
 		arg += argsz;
 		const ssize_t len = strlen(argv[i]) + 1;
 		if (vm_write(a, argv[i], str, len) != len)
-			return (void*)DERR(-ENOMEM);
+			return DERR(std::errc::not_enough_memory);
 		str += len;
 	}
 	if (vm_write(a, &zero, arg, argsz) != argsz)
-		return (void*)DERR(-ENOMEM);
+		return DERR(std::errc::not_enough_memory);
 	arg += argsz;
 	for (i = 0; envp && envp[i]; ++i) {
 		if (vm_write(a, &str, arg, argsz) != argsz)
-			return (void*)DERR(-ENOMEM);
+			return DERR(std::errc::not_enough_memory);
 		arg += argsz;
 		const ssize_t len = strlen(envp[i]) + 1;
 		if (vm_write(a, envp[i], str, len) != len)
-			return (void*)DERR(-ENOMEM);
+			return DERR(std::errc::not_enough_memory);
 		str += len;
 	}
 	if (vm_write(a, &zero, arg, argsz) != argsz)
-		return (void*)DERR(-ENOMEM);
+		return DERR(std::errc::not_enough_memory);
 	arg += argsz;
 	if (vm_write(a, data(auxv), arg, auxvlen * argsz) != auxvlen * argsz)
-		return (void*)DERR(-ENOMEM);
+		return DERR(std::errc::not_enough_memory);
 
 	return sp;
 }

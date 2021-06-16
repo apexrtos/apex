@@ -24,7 +24,7 @@
 
 // #define TRACE_EXEC
 
-thread *
+expect<thread *>
 exec_into(task *t, const char *path, const char *const argv[],
     const char *const envp[])
 {
@@ -38,18 +38,17 @@ exec_into(task *t, const char *path, const char *const argv[],
 
 	/* check target path */
 	if (auto r = access(path, X_OK); r < 0)
-		return (thread *)r;
+		return std::errc{-r};
 
 	/* open target file */
 	a::fd fd(path, O_RDONLY | O_CLOEXEC);
 	if (fd < 0)
-		return (thread *)(int)fd;
+		return std::errc{-fd};
 
 	/* handle #!<ws>command<ws>arg */
 	if (auto r = pread(fd, buf, sizeof buf, 0); r < 0)
-		return (thread *)r;
-	else
-		buf[r == sizeof buf ? sizeof buf - 1 : r] = 0;
+		return std::errc{-r};
+	else buf[r == sizeof buf ? sizeof buf - 1 : r] = 0;
 	if (buf[0] == '#' && buf[1] == '!') {
 		char *sv;
 		size_t i = 0;
@@ -59,32 +58,34 @@ exec_into(task *t, const char *path, const char *const argv[],
 		    s = strtok_r(0, ws, &sv))
 			prgv[i++] = s;
 		if (i == 3)
-			return (thread *)DERR(-ENOEXEC);
+			return DERR(std::errc::executable_format_error);
 		path = prgv[0];
 		fd.open(path, O_RDONLY | O_CLOEXEC);
 		if (fd < 0)
-			return (thread *)(int)fd;
+			return std::errc{-fd};
 	}
 
 	/* create new address space for task */
 	std::unique_ptr<as> as(as_create(getpid()));
 
 	/* load program image into new address space */
-	void (*entry)();
-	std::array<unsigned, AUX_CNT> auxv;
-	void *sp;
-	if (auto r = elf_load(as.get(), fd, &entry, auxv, &sp); r < 0)
-		return (thread *)r;
+	elf_load_result e;
+	if (auto r = elf_load(as.get(), fd); !r.ok())
+		return r.err();
+	else e = r.val();
 
 	/* build arguments on new stack */
-	if ((sp = build_args(as.get(), sp, prgv, argv, envp, auxv)) > (void*)-4096UL)
-		return (thread *)sp;
+	if (auto r = build_args(as.get(), e.sp, prgv, argv, envp, e.auxv);
+	    !r.ok())
+		return r.err();
+	else e.sp = r.val();
 
 	/* create new main thread */
 	thread *main;
-	if (auto r = thread_createfor(t, as.get(), &main, sp, MA_NORMAL, entry,
-	    0); r < 0)
-		return (thread *)r;
+	if (auto r = thread_createfor(t, as.get(), &main, e.sp, MA_NORMAL,
+				      e.entry, 0);
+	    r < 0)
+		return std::errc{-r};
 
 	/* terminate all other threads in current task */
 	thread *th;
@@ -193,10 +194,10 @@ sc_execve(const char *path, const char *const argv[], const char *const envp[])
 	}
 
 	thread *main;
-	if ((main = exec_into(task_cur(), path, argv, envp)) > (void*)-4096UL) {
+	if (auto r = exec_into(task_cur(), path, argv, envp); !r.ok()) {
 		as_modify_end(task_cur()->as);
-		return (int)main;
-	}
+		return r.sc_rval();
+	} else main = r.val();
 	sch_resume(main);
 
 	/* no as_modify_end() - the address space on which the lock was taken

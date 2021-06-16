@@ -168,15 +168,15 @@ task_getfp(task *t, int fd)
  *
  * returns -ve error code on failure, valid file pointer otherwise.
  */
-static file *
+static expect<file *>
 task_getfp_interruptible(task *t, int fd)
 {
 	int err;
 	file *fp;
 	if (!(fp = task_getfp_unlocked(t, fd)))
-		return (file *)DERR(-EBADF);
+		return DERR(std::errc::bad_file_descriptor);
 	if ((err = vn_lock_interruptible(fp->f_vnode)))
-		return (file*)err;
+		return std::errc{-err};
 	++fp->f_count;
 	return fp;
 }
@@ -200,13 +200,13 @@ task_file(task *t, int fd)
  *
  * returns -ve error code on failure, valid file pointer otherwise.
  */
-static file *
+static expect<file *>
 task_file_interruptible(task *t, int fd)
 {
 	int err;
 	if ((err = task_read_lock_interruptible(t)))
-		return (file *)err;
-	file *fp = task_getfp_interruptible(t, fd);
+		return std::errc{-err};
+	auto fp = task_getfp_interruptible(t, fd);
 	task_read_unlock(t);
 	return fp;
 }
@@ -487,8 +487,9 @@ lookup_t(task *t, const int fd, const char *path, vnode **vpp,
 	int err;
 	file *fp;
 
-	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(t, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	/* lookup_v always calls vput on vp */
 	--fp->f_count;
@@ -519,8 +520,9 @@ lookup_t_dir(task *t, const int fd, const char *path,
 {
 	file *fp;
 
-	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(t, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	/* lookup_v always calls vput on vp */
 	--fp->f_count;
@@ -551,8 +553,9 @@ lookup_t_noexist(task *t, const int fd, const char *path,
 	size_t node_len_;
 	const char *node_;
 
-	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(t, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	/* lookup_v always calls vput on vp */
 	--fp->f_count;
@@ -1131,8 +1134,9 @@ closefor(task *t, int fd)
 
 	vdbgsys("closefor: task=%p fd=%d\n", t, fd);
 
-	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(t, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	task_write_lock(t);
 	err = fs_closefp(fp);
@@ -1247,8 +1251,9 @@ lseek(int fd, off_t off, int whence)
 
 	vdbgsys("lseek: fd=%d off=%lld whence=%d\n", fd, off, whence);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	vnode *vp = fp->f_vnode;
 
@@ -1367,8 +1372,9 @@ ssize_t
 readv(int fd, const iovec *iov, int count)
 {
 	file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (ssize_t)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	const bool update_offset = true;
 	return do_readv(fp, iov, count, fp->f_offset, update_offset);
@@ -1389,8 +1395,9 @@ ssize_t
 preadv(int fd, const iovec *iov, int count, off_t offset)
 {
 	file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (ssize_t)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	const bool update_offset = false;
 	return do_readv(fp, iov, count, offset, update_offset);
@@ -1411,8 +1418,9 @@ ssize_t
 kpreadv(int fd, const iovec *iov, int count, off_t offset)
 {
 	file *fp;
-	if ((fp = task_file_interruptible(&kern_task, fd)) > (file *)-4096UL)
-		return (ssize_t)fp;
+	if (auto r = task_file_interruptible(&kern_task, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	const bool update_offset = false;
 	return do_readv(fp, iov, count, offset, update_offset);
@@ -1523,8 +1531,9 @@ ssize_t
 writev(int fd, const iovec *iov, int count)
 {
 	file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (ssize_t)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	/* append sets file position to end before writing */
 	const off_t offset = fp->f_flags & O_APPEND ? fp->f_vnode->v_size
@@ -1552,8 +1561,9 @@ ssize_t
 pwritev(int fd, const iovec *iov, int count, off_t offset)
 {
 	file *fp;
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (ssize_t)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	const bool update_offset = false;
 	return do_writev(fp, iov, count, offset, update_offset);
@@ -1574,8 +1584,9 @@ ssize_t
 kpwritev(int fd, const iovec *iov, int count, off_t offset)
 {
 	file *fp;
-	if ((fp = task_file_interruptible(&kern_task, fd)) > (file *)-4096UL)
-		return (ssize_t)fp;
+	if (auto r = task_file_interruptible(&kern_task, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	const bool update_offset = false;
 	return do_writev(fp, iov, count, offset, update_offset);
@@ -1596,8 +1607,9 @@ do_ioctl(task *t, int fd, int request, va_list ap)
 	vdbgsys("ioctl: task=%p fd=%d request=%x arg=%p\n",
 	    t, fd, request, arg);
 
-	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(t, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	if (!fp->f_vnode->v_mount)
 		err = -ENOSYS; /* pipe */
@@ -1645,8 +1657,9 @@ fsync(int fd)
 
 	vdbgsys("fs_fsync: fd=%d\n", fd);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	if (!flags_allow_write(fp->f_flags)) {
 		putfp(fp);
@@ -1695,8 +1708,9 @@ do_fstat(task *t, int fd, struct stat *st)
 
 	vdbgsys("fstat: task=%p fd=%d st=%p\n", t, fd, st);
 
-	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(t, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	err = vn_stat(fp->f_vnode, st);
 
@@ -1727,8 +1741,9 @@ getdents(int dirfd, dirent *buf, size_t len)
 
 	vdbgsys("getdents: dirfd=%d buf=%p len=%zu\n", dirfd, buf, len);
 
-	if ((fp = task_file_interruptible(task_cur(), dirfd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(task_cur(), dirfd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	if (!S_ISDIR(fp->f_vnode->v_mode)) {
 		err = DERR(-ENOTDIR);
@@ -1838,10 +1853,10 @@ dup(int fildes)
 	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
-	if ((fp = task_getfp_interruptible(t, fildes)) > (file *)-4096UL) {
+	if (auto r = task_getfp_interruptible(t, fildes); !r.ok()) {
 		task_write_unlock(t);
-		return (int)fp;
-	}
+		return r.sc_rval();
+	} else fp = r.val();
 
 	vp = fp->f_vnode;
 
@@ -1883,10 +1898,10 @@ dup2for(task *t, int fildes, int fildes2)
 	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
-	if ((fp = task_getfp_interruptible(t, fildes)) > (file *)-4096UL) {
+	if (auto r = task_getfp_interruptible(t, fildes); !r.ok()) {
 		task_write_unlock(t);
-		return (int)fp;
-	}
+		return r.sc_rval();
+	} else fp = r.val();
 
 	if ((fp2 = task_getfp(t, fildes2))) {
 		/* Close previous file if it's opened. */
@@ -1950,8 +1965,9 @@ getcwd(char *buf, size_t size)
 	if (size < 2)
 		return (char*)DERR(-ERANGE);
 
-	if ((fp = task_file_interruptible(task_cur(), AT_FDCWD)) > (file *)-4096UL)
-		return (char*)fp;
+	if (auto r = task_file_interruptible(task_cur(), AT_FDCWD); !r.ok())
+		return (char*)r.err();
+	else fp = r.val();
 
 	/* build path from child to parent node */
 	char *p = buf + size - 1;
@@ -2108,10 +2124,10 @@ fcntl(int fd, int cmd, ...)
 	if ((err = task_write_lock_interruptible(t)))
 		return err;
 
-	if ((fp = task_getfp_interruptible(t, fd)) > (file *)-4096UL) {
+	if (auto r = task_getfp_interruptible(t, fd); !r.ok()) {
 		task_write_unlock(t);
-		return (int)fp;
-	}
+		return r.sc_rval();
+	} else fp = r.val();
 
 	int ret = 0;
 	switch (cmd) {
@@ -2175,8 +2191,9 @@ fstatfs(int fd, struct statfs *stf)
 
 	vdbgsys("fstatfs fd=%d stf=%p\n", fd, stf);
 
-	if ((fp = task_file_interruptible(t, fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(t, fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	vp = fp->f_vnode;
 
@@ -2576,8 +2593,9 @@ fchmod(int fd, mode_t mode)
 
 	vdbgsys("fchmod fd=%d mode=0%03o\n", fd, mode);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	vp = fp->f_vnode;
 
@@ -2628,8 +2646,9 @@ fchown(int fd, uid_t uid, gid_t gid)
 
 	vdbgsys("fchown fd=%d uid=%d gid=%d\n", fd, uid, gid);
 
-	if ((fp = task_file_interruptible(task_cur(), fd)) > (file *)-4096UL)
-		return (int)fp;
+	if (auto r = task_file_interruptible(task_cur(), fd); !r.ok())
+		return r.sc_rval();
+	else fp = r.val();
 
 	vp = fp->f_vnode;
 

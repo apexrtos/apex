@@ -4,11 +4,13 @@
  * seg.h - segment management
  */
 
+#include <lib/expect.h>
+
 struct as;
 struct seg;
 struct vnode;
 
-const seg *as_find_seg(const as *, const void *);
+expect<const seg *> as_find_seg(const as *, const void *);
 void *seg_begin(const seg *);
 void *seg_end(const seg *);
 size_t seg_size(const seg *);

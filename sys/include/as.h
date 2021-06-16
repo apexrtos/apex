@@ -4,6 +4,7 @@
  * as.h - address space management
  */
 
+#include <lib/expect.h>
 #include <memory>
 #include <page.h>
 #include <sys/types.h>
@@ -29,11 +30,11 @@ void as_dump(const as *);
 /*
  * memory management interface
  */
-void *as_map(as *, void *, size_t, int, int, std::unique_ptr<vnode>, off_t, long);
-int as_unmap(as *, void *, size_t, vnode *, off_t);
-int as_mprotect(as *, void *, size_t, int);
-int as_madvise(as *, seg *, void *, size_t, int);
-int as_insert(as *, page_ptr, size_t, int, int, std::unique_ptr<vnode>, off_t, long);
+expect<void *> as_map(as *, void *, size_t, int, int, std::unique_ptr<vnode>, off_t, long);
+expect_ok as_unmap(as *, void *, size_t, vnode *, off_t);
+expect_ok as_mprotect(as *, void *, size_t, int);
+expect_ok as_madvise(as *, seg *, void *, size_t, int);
+expect_ok as_insert(as *, page_ptr, size_t, int, int, std::unique_ptr<vnode>, off_t, long);
 
 namespace std {
 

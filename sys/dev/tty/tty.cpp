@@ -1261,25 +1261,25 @@ tty_ioctl(file *f, u_long cmd, void *data)
  * iproc: routine to start input
  * fproc: routine to flush queues
  */
-tty *
+expect<tty *>
 tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
     tty_tproc tproc, tty_oproc oproc, tty_iproc iproc, tty_fproc fproc,
     void *driver_data)
 {
 	if (rx_bufsiz > PAGE_SIZE || PAGE_SIZE % rx_bufsiz)
-		return (tty *)DERR(-EINVAL);
+		return DERR(std::errc::invalid_argument);
 	const size_t rx_sz = ALIGNn(rx_bufsiz * rx_bufmin, PAGE_SIZE);
 
 	page_ptr rxp = page_alloc(rx_sz, attr, &tty_id);
 	page_ptr txp = page_alloc(PAGE_SIZE, attr, &tty_id);
 	if (!rxp.get() || !txp.get())
-		return (tty *)DERR(-ENOMEM);
+		return DERR(std::errc::not_enough_memory);
 	const size_t rx_bufcnt = rx_sz / rx_bufsiz;
 	std::unique_ptr<tty> t{std::make_unique<tty>(rx_bufcnt, rx_bufsiz,
 	    std::move(rxp), PAGE_SIZE, std::move(txp), tproc, oproc,
 	    iproc, fproc, driver_data)};
 	if (!t.get())
-		return (tty *)DERR(-ENOMEM);
+		return DERR(std::errc::not_enough_memory);
 
 	device *dev;
 	static constinit devio tty_io{
@@ -1290,7 +1290,7 @@ tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
 		.ioctl = tty_ioctl,
 	};
 	if (dev = device_create(&tty_io, name, DF_CHR, t.get()); !dev)
-		return (tty *)DERR(-EINVAL);
+		return DERR(std::errc::invalid_argument);
 
 	t->set_device(dev);
 

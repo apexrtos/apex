@@ -21,14 +21,14 @@
 /*
  * vm_read - read data from address space
  */
-int
+expect_pos
 vm_read(as *a, void *l, const void *r, size_t s)
 {
 	if (auto r = as_transfer_begin(a); r < 0)
 		return r;
 	if (!u_access_okfor(a, r, s, PROT_READ)) {
 		as_transfer_end(a);
-		return DERR(-EFAULT);
+		return DERR(std::errc::bad_address);
 	}
 	memcpy(l, r, s);
 	as_transfer_end(a);
@@ -38,14 +38,14 @@ vm_read(as *a, void *l, const void *r, size_t s)
 /*
  * vm_write - write data to address space
  */
-int
+expect_pos
 vm_write(as *a, const void *l, void *r, size_t s)
 {
 	if (auto r = as_transfer_begin(a); r < 0)
 		return r;
 	if (!u_access_okfor(a, r, s, PROT_WRITE)) {
 		as_transfer_end(a);
-		return DERR(-EFAULT);
+		return DERR(std::errc::bad_address);
 	}
 	memcpy(r, l, s);
 	as_transfer_end(a);
@@ -55,7 +55,7 @@ vm_write(as *a, const void *l, void *r, size_t s)
 /*
  * vm_copy - copy data in address space
  */
-int
+expect_pos
 vm_copy(as *a, void *dst, const void *src, size_t s)
 {
 	if (auto r = as_transfer_begin(a); r < 0)
@@ -63,7 +63,7 @@ vm_copy(as *a, void *dst, const void *src, size_t s)
 	if (!u_access_okfor(a, src, s, PROT_READ) ||
 	    !u_access_okfor(a, dst, s, PROT_WRITE)) {
 		as_transfer_end(a);
-		return DERR(-EFAULT);
+		return DERR(std::errc::bad_address);
 	}
 	memcpy(dst, src, s);
 	as_transfer_end(a);
@@ -84,7 +84,7 @@ as_switch(as *a)
 /*
  * as_map - map memory into address space
  */
-void *
+expect<void *>
 as_map(as *a, void *req_addr, size_t len, int prot, int flags,
     std::unique_ptr<vnode> vn, off_t off, long attr)
 {
@@ -96,7 +96,7 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
 			: page_alloc(pg_off + len, attr, a)};
 
 	if (!pages)
-		return (void *)-ENOMEM;
+		return std::errc::not_enough_memory;
 
 	std::byte *addr = (std::byte*)phys_to_virt(pages);
 
@@ -106,7 +106,7 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
 	if (vn)
 		if (r = vn_pread(vn.get(), addr + pg_off, len, off);
 		    r != (ssize_t)len)
-			return (void*)(r < 0 ? r : DERR(-ENXIO));
+			return to_errc(r, DERR(std::errc::no_such_device_or_address));
 	r += pg_off;
 	auto pg_len{PAGE_ALIGN(pg_off + len)};
 	memset(addr + r, 0, pg_len - r);
@@ -114,9 +114,10 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
 	if (prot & PROT_EXEC)
 		cache_coherent_exec(addr, pg_len);
 
-	if ((r = as_insert(a, std::move(pages), len, prot, flags,
-	    std::move(vn), off, attr)) < 0)
-		return (void*)r;
+	if (auto r = as_insert(a, std::move(pages), len, prot, flags,
+			       std::move(vn), off, attr);
+	    !r.ok())
+		return r.err();
 
 #if defined(CONFIG_MPU)
 	if (a == task_cur()->as)
@@ -131,7 +132,7 @@ as_map(as *a, void *req_addr, size_t len, int prot, int flags,
  *
  * nommu cannot mark pages as dirty.
  */
-int
+expect_ok
 as_unmap(as *a, void *addr, size_t len, vnode *vn, off_t off)
 {
 #if defined(DEBUG)
@@ -149,7 +150,7 @@ as_unmap(as *a, void *addr, size_t len, vnode *vn, off_t off)
 /*
  * as_mprotect - set protection flags on memory in address space
  */
-int
+expect_ok
 as_mprotect(as *a, void *addr, size_t len, int prot)
 {
 #if defined(CONFIG_MPU)
@@ -157,30 +158,30 @@ as_mprotect(as *a, void *addr, size_t len, int prot)
 		mpu_protect(addr, len, prot);
 #endif
 
-	return 0;
+	return {};
 }
 
 /*
  * as_madvise - act on advice about intended memory use
  */
-int
+expect_ok
 as_madvise(as *a, seg *s, void *addr, size_t len, int advice)
 {
 	switch (advice) {
 	case MADV_DONTNEED:
 		if (seg_vnode(s))
-			return 0;
+			return {};
 		/* anonymous private mappings must be zero-filled */
 		memset(addr, 0, len);
 		break;
 	case MADV_FREE:
 		if (seg_vnode(s))
-			return DERR(-EINVAL);
+			return DERR(std::errc::bad_address);
 		/* no need to zero as free is allowed to be lazy */
 		break;
 	}
 
-	return 0;
+	return {};
 }
 
 /*
@@ -189,9 +190,10 @@ as_madvise(as *a, seg *s, void *addr, size_t len, int advice)
 ssize_t
 u_strnlen(const char *u_str, const size_t maxlen)
 {
-	const auto seg = as_find_seg(task_cur()->as, u_str);
-	if (!seg)
+	const seg *seg;
+	if (auto r = as_find_seg(task_cur()->as, u_str); !r.ok())
 		return DERR(-EFAULT);
+	else seg = r.val();
 	const auto lim = std::min<size_t>(maxlen, (char *)seg_end(seg) - u_str);
 	const auto r = strnlen(u_str, lim);
 	if (r == maxlen)
@@ -204,9 +206,10 @@ u_strnlen(const char *u_str, const size_t maxlen)
 ssize_t
 u_arraylen(const void *const *u_arr, const size_t maxlen)
 {
-	const auto seg = as_find_seg(task_cur()->as, u_arr);
-	if (!seg)
+	const seg *seg;
+	if (auto r = as_find_seg(task_cur()->as, u_arr); !r.ok())
 		return DERR(-EFAULT);
+	else seg = r.val();
 	const auto lim = std::min<size_t>(maxlen, (const void **)seg_end(seg) - u_arr);
 	size_t i;
 	for (i = 0; i < lim && u_arr[i]; ++i);
@@ -228,9 +231,10 @@ u_access_okfor(as *a, const void *u_addr, size_t len, int access)
 	 * preemption is disabled. Otherwise the address space could be
 	 * modified by some other thread. */
 	assert(sch_locks() || as_locked(a));
-	const auto seg = as_find_seg(a, u_addr);
-	if (!seg)
+	const seg *seg;
+	if (auto r = as_find_seg(a, u_addr); !r.ok())
 		return false;
+	else seg = r.val();
 	if ((uintptr_t)seg_end(seg) - (uintptr_t)u_addr < len)
 		return false;
 	if ((access & seg_prot(seg)) != access)
@@ -322,7 +326,7 @@ u_address(const void *u_addr)
 bool
 u_addressfor(const as *a, const void *u_addr)
 {
-	return as_find_seg(a, u_addr);
+	return as_find_seg(a, u_addr).ok();
 }
 
 bool

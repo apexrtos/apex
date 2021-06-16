@@ -532,13 +532,13 @@ TEST_F(page_test, alloc_free_cornercases)
 	/* allocate/free entire region */
 	EXPECT_EQ(page_alloc(fast_size_, MA_FAST, 0).release(), mem_fast_);
 	verify_regions();
-	EXPECT_EQ(page_free(mem_fast_, fast_size_, 0), 0);
+	EXPECT_TRUE(page_free(mem_fast_, fast_size_, 0).ok());
 	verify_regions();
 
 	/* allocate/free single page */
 	EXPECT_EQ(page_alloc(1, MA_FAST, 0).release(), mem_fast_);
 	verify_regions();
-	EXPECT_EQ(page_free(mem_fast_, 1, 0), 0);
+	EXPECT_TRUE(page_free(mem_fast_, 1, 0).ok());
 	verify_regions();
 
 	/* allocate/free multiple single pages */
@@ -548,22 +548,22 @@ TEST_F(page_test, alloc_free_cornercases)
 		verify_regions();
 	}
 	for (size_t i = 0; i < 32; ++i) {
-		EXPECT_EQ(page_free(phys{mem_fast_.phys() + PAGE_SIZE * i}, 1, 0), 0);
+		EXPECT_TRUE(page_free(phys{mem_fast_.phys() + PAGE_SIZE * i}, 1, 0).ok());
 		verify_regions();
 	}
 
 	/* free partial range */
 	EXPECT_EQ(page_alloc(16 * PAGE_SIZE, MA_FAST, 0).release(), mem_fast_);
 	verify_regions();
-	EXPECT_EQ(page_free(phys{mem_fast_.phys() + PAGE_SIZE * 4}, PAGE_SIZE * 8, 0), 0);
+	EXPECT_TRUE(page_free(phys{mem_fast_.phys() + PAGE_SIZE * 4}, PAGE_SIZE * 8, 0).ok());
 	verify_regions();
-	EXPECT_EQ(page_free(phys{mem_fast_.phys() + PAGE_SIZE * 12}, PAGE_SIZE * 4, 0), 0);
+	EXPECT_TRUE(page_free(phys{mem_fast_.phys() + PAGE_SIZE * 12}, PAGE_SIZE * 4, 0).ok());
 	verify_regions();
-	EXPECT_EQ(page_free(phys{mem_fast_.phys()}, PAGE_SIZE * 4, 0), 0);
+	EXPECT_TRUE(page_free(phys{mem_fast_.phys()}, PAGE_SIZE * 4, 0).ok());
 	verify_regions();
 
 	/* alloc too large */
-	EXPECT_EQ(page_alloc(fast_size_ * 2, MA_FAST, 0).release(), phys{});
+	EXPECT_FALSE(page_alloc(fast_size_ * 2, MA_FAST, 0));
 }
 
 TEST_F(page_test, alloc_free_fuzz)
@@ -572,8 +572,10 @@ TEST_F(page_test, alloc_free_fuzz)
 		init_random();
 
 		for (size_t i = 0; i < 1000; ++i) {
-			page_alloc(rand_in_range(0, 128 * PAGE_SIZE), rand_in_range(MA_NORMAL, MA_FAST) | rand_in_range(0, 1) * PAF_MAPPED, 0).release();
-			page_alloc(rand_in_range(0, 128 * PAGE_SIZE), rand_in_range(MA_FAST, MA_FAST) | rand_in_range(0, 1) * PAF_MAPPED, 0).release();
+			if (auto r = page_alloc(rand_in_range(0, 128 * PAGE_SIZE), rand_in_range(MA_NORMAL, MA_FAST) | rand_in_range(0, 1) * PAF_MAPPED, 0); r)
+				r.release();
+			if (auto r = page_alloc(rand_in_range(0, 128 * PAGE_SIZE), rand_in_range(MA_FAST, MA_FAST) | rand_in_range(0, 1) * PAF_MAPPED, 0); r)
+				r.release();
 			page_free(phys{mem_normal_.phys() + rand_in_range(0, normal_size_)}, rand_in_range(0, 128 * PAGE_SIZE), 0);
 			page_free(phys{mem_fast_.phys() + rand_in_range(0, fast_size_)}, rand_in_range(0, 128 * PAGE_SIZE), 0);
 		}
@@ -584,14 +586,14 @@ TEST_F(page_test, alloc_free_fuzz)
 TEST_F(page_test, invalid_lengths)
 {
 	init_normal();
-	EXPECT_EQ(page_alloc_order(-1, MA_FAST, 0).release(), phys{});
+	EXPECT_FALSE(page_alloc_order(-1, MA_FAST, 0));
 	verify_regions();
-	EXPECT_EQ(page_alloc(-PAGE_SIZE, MA_FAST, 0).release(), phys{});
+	EXPECT_FALSE(page_alloc(-PAGE_SIZE, MA_FAST, 0));
 	verify_regions();
-	EXPECT_EQ(page_reserve(mem_fast_, -PAGE_SIZE, 0, 0).release(), phys{});
+	EXPECT_FALSE(page_reserve(mem_fast_, -PAGE_SIZE, 0, 0));
 	verify_regions();
 	EXPECT_EQ(page_alloc(PAGE_SIZE, MA_FAST, 0).release(), mem_fast_);
 	verify_regions();
-	EXPECT_LT(page_free(mem_fast_, -PAGE_SIZE, 0), 0);
+	EXPECT_FALSE(page_free(mem_fast_, -PAGE_SIZE, 0).ok());
 	verify_regions();
 }

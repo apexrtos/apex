@@ -228,10 +228,10 @@ again:
 		err = cpid;
 		if (ustatus) {
 			sch_unlock();
-			int r = vm_write(task_cur()->as, &status, ustatus,
-					 sizeof *ustatus);
-			if (r < 0)
-				err = r;
+			if (auto r = vm_write(task_cur()->as, &status, ustatus,
+					      sizeof *ustatus);
+			    !r.ok())
+				err = r.sc_rval();
 			sch_lock();
 		}
 	} else if (options & WNOHANG) {

@@ -143,11 +143,12 @@ mpu_user_thread_switch()
 
 	/* map stack */
 	const size_t regions = read32(&MPU->TYPE).DREGION;
-	const seg *seg = as_find_seg(t->task->as, (void *)t->ctx.usp);
-	if (!seg || seg_prot(seg) == PROT_NONE) {
+	const seg *seg;
+	if (auto r = as_find_seg(t->task->as, (void *)t->ctx.usp);
+	    !r.ok() || seg_prot(r.val()) == PROT_NONE) {
 		sig_thread(t, SIGSEGV);
 		return;
-	}
+	} else seg = r.val();
 	stack = 0;
 	const auto rasr_prot = prot_to_rasr(seg_prot(seg));
 	for (std::byte *a = (std::byte *)seg_begin(seg); a < seg_end(seg);) {
@@ -229,15 +230,15 @@ mpu_protect(const void *addr, size_t len, int prot)
 __fast_text void
 mpu_fault(const void *addr, size_t len)
 {
-	const seg *seg = as_find_seg(task_cur()->as, addr);
-
 	/* double fault at the same address means that last time we faulted in
 	   a region it didn't satisfy the MPU */
-	if (!seg || seg_prot(seg) == PROT_NONE || addr == fault_addr ||
-	    (len && (std::byte *)addr + len > (std::byte *)seg_end(seg))) {
+	const seg *seg;
+	if (auto r = as_find_seg(task_cur()->as, addr);
+	   !r.ok() || seg_prot(r.val()) == PROT_NONE || addr == fault_addr ||
+	    (len && (std::byte *)addr + len > (std::byte *)seg_end(r.val()))) {
 		sig_thread(thread_cur(), SIGSEGV);
 		return;
-	}
+	} else seg = r.val();
 	fault_addr = addr;
 
 again:;

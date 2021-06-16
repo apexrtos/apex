@@ -194,9 +194,9 @@ cdc_acm::v_configure(std::string_view c)
 			    MA_NORMAL | MA_DMA,
 			    bulk_max_packet_len(Speed::High), rx_txn, nullptr,
 			    oproc, iproc, fproc, this);
-			if (t > (void*)-4096UL)
-				return (int)t;
-			t_ = t;
+			if (!t.ok())
+				return (int)t.err();
+			t_ = t.val();
 		} else if (name == "function")
 			function_ = value;
 		return 0;

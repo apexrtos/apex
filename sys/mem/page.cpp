@@ -33,6 +33,7 @@
 #include <elf_native.h>
 #include <errno.h>
 #include <kernel.h>
+#include <lib/expect.h>
 #include <list.h>
 #include <sync.h>
 
@@ -378,7 +379,7 @@ page_alloc(size_t len, unsigned long attr, void *owner)
  * extending an existing allocation is supported.
  * returns invalid address on failure, physical address otherwise.
  */
-static phys
+static expect<phys>
 page_reserve(region &r, const paddr_t addr, const size_t len,
     const PG_STATE st, unsigned long attr, void *owner)
 {
@@ -397,7 +398,7 @@ page_reserve(region &r, const paddr_t addr, const size_t len,
 		if (r.pages[i].state == st && r.pages[i].owner == owner &&
 		    attr & PAF_REALLOC)
 			continue;
-		return phys{};
+		return std::errc::address_in_use;
 	}
 
 	/* reserve pages */
@@ -417,13 +418,13 @@ page_reserve(region &r, const paddr_t addr, const size_t len,
  * 'addr' and 'len' are rounded to the nearest page boundaries.
  * returns invalid address on failure, physical address otherwise.
  */
-static phys
+static expect<phys>
 page_reserve(paddr_t addr, size_t len, const PG_STATE st, unsigned long attr,
 	     void *owner)
 {
 	auto *r = find_region(addr, len);
 	if (!r)
-		return phys{};
+		return std::errc::invalid_argument;
 	return page_reserve(*r, addr, len, st, attr, owner);
 }
 
@@ -442,7 +443,10 @@ page_reserve(phys addr, size_t len, unsigned long attr, void *owner)
 	if (!r)
 		return page_ptr{};
 	std::lock_guard l(r->lock);
-	return {page_reserve(*r, addr.phys(), len, st, attr, owner), len, owner};
+	auto p = page_reserve(*r, addr.phys(), len, st, attr, owner);
+	if (!p.ok())
+		return page_ptr{};
+	return {p.val(), len, owner};
 }
 
 /*
@@ -473,15 +477,15 @@ page_free(region &r, const size_t page, const size_t o)
  *
  * returns 0 on success, -ve error code on failure
  */
-int
+expect_ok
 page_free(phys addr, size_t len, void *owner)
 {
 	if (len == 0)
-		return 0;
+		return {};
 
 	auto *r = find_region(addr.phys(), len);
 	if (!r)
-		return DERR(-EFAULT);
+		return DERR(std::errc::bad_address);
 
 	std::lock_guard l(r->lock);
 
@@ -492,12 +496,12 @@ page_free(phys addr, size_t len, void *owner)
 	/* verify that range is allocated and correctly owned */
 	for (auto i = begin; i != end; ++i) {
 		if (r->pages[i].owner != owner)
-			return DERR(-EINVAL);
+			return DERR(std::errc::invalid_argument);
 		switch (r->pages[i].state) {
 		case PG_FREE:
 		case PG_HOLE:
 		case PG_SYSTEM:
-			return DERR(-EFAULT);
+			return DERR(std::errc::bad_address);
 		case PG_FIXED:
 		case PG_MAPPED:
 			continue;
@@ -513,7 +517,7 @@ page_free(phys addr, size_t len, void *owner)
 		i += 1 << o;
 	}
 
-	return 0;
+	return {};
 }
 
 /*
@@ -559,7 +563,7 @@ page_valid(const phys addr, size_t len, void *owner)
 /*
  * page_attr - retrieve page attributes
  */
-unsigned long
+expect_pos
 page_attr(const phys addr, size_t len)
 {
 	/* no need to lock - we aren't modifying anything, and after page_init
@@ -568,7 +572,7 @@ page_attr(const phys addr, size_t len)
 	/* find region */
 	auto *r = find_region(addr.phys(), len);
 	if (!r)
-		return DERR(-EINVAL);
+		return DERR(std::errc::bad_address);
 
 	return r->attr;
 }
@@ -705,9 +709,9 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 		list_insert(&r.blocks[r.nr_orders - 1], &r.pages[0].link);
 
 		/* reserve pages without physical backing */
-		if (!page_reserve(r, r.base, r.begin - r.base, PG_HOLE, 0, nullptr))
+		if (!page_reserve(r, r.base, r.begin - r.base, PG_HOLE, 0, nullptr).ok())
 			panic("bad meminfo");
-		if (!page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, 0, nullptr))
+		if (!page_reserve(r, r.end, r.base + r.size - r.end, PG_HOLE, 0, nullptr).ok())
 			panic("bad meminfo");
 
 		dbg("page_init: region %zu: %" PRIpa " -> %" PRIpa" covering "
@@ -735,13 +739,13 @@ page_init(const meminfo *mi, const size_t mi_size, const bootargs *args)
 			dbg("page_init: reserve %" PRIpa " -> %" PRIpa "\n",
 			    begin, end);
 			if (!page_reserve(r, begin, end - begin,
-					  PG_SYSTEM, PAF_REALLOC, &kern_task))
+					  PG_SYSTEM, PAF_REALLOC, &kern_task).ok())
 				panic("bug");
 		}
 	});
 
 	/* reserve memory allocated for region & page structures */
-	if (!page_reserve(m_begin, m_alloc - m_begin, PG_SYSTEM, 0, &page_id))
+	if (!page_reserve(m_begin, m_alloc - m_begin, PG_SYSTEM, 0, &page_id).ok())
 		panic("bug");
 
 	/* initialise regions_by_priority */

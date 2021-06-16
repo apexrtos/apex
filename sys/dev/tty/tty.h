@@ -37,6 +37,7 @@
 #pragma once
 
 #include <cstddef>
+#include <lib/expect.h>
 #include <termios.h>
 
 struct tty;
@@ -46,8 +47,8 @@ typedef void (*tty_oproc)(tty *);
 typedef void (*tty_iproc)(tty *);
 typedef void (*tty_fproc)(tty *, int);
 
-tty *tty_create(const char *, long attr, size_t bufsiz, size_t bufmin,
-		tty_tproc, tty_oproc, tty_iproc, tty_fproc, void *);
+expect<tty *> tty_create(const char *, long attr, size_t bufsiz, size_t bufmin,
+			 tty_tproc, tty_oproc, tty_iproc, tty_fproc, void *);
 void tty_destroy(tty *);
 void *tty_data(tty *);
 
