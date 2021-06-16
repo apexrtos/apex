@@ -1,6 +1,7 @@
 #pragma once
 
 #include <address.h>
+#include <functional>
 #include <lib/expect.h>
 #include <memory>
 
@@ -51,6 +52,8 @@ private:
 
 page_ptr page_alloc_order(size_t order, unsigned long ma_paf, void *);
 page_ptr page_alloc(size_t, unsigned long ma_paf, void *);
+expect_ok page_alloc_multi(size_t, unsigned long ma_paf, void *,
+			   std::function<expect_ok(page_ptr &&)>);
 page_ptr page_reserve(phys, size_t, unsigned long paf, void *);
 expect_ok page_free(phys, size_t, void *);
 bool page_valid(const phys, size_t, void *);

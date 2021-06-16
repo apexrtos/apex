@@ -6,10 +6,11 @@
 
 #include <address.h>
 #include <conf/config.h>
-#include <cstddef>
+#include <lib/expect.h>
+#include <span>
+#include <sys/types.h>
 
 struct as;
-struct pgd;
 
 struct mmumap {
 	phys paddr;	    /* physical address */
@@ -17,18 +18,24 @@ struct mmumap {
 	void *vaddr;	    /* virtual address */
 #endif
 	size_t size;	    /* size */
+	int prot;	    /* memory protection PROT_{READ,WRITE,EXEC} */
 	unsigned flags;	    /* machine specific flags */
 };
 
+class pgd {
+public:
+	virtual ~pgd() = 0;
+};
+
 #if defined(CONFIG_MMU)
-void mmu_init(mmumap *, size_t);
-pgd *mmu_newmap(pid_t);
-void mmu_delmap(pgd *);
-int mmu_map(pgd *, phys, void *, size_t, int);
-void mmu_premap(void *, void *);
-void mmu_switch(pgd *);
-void mmu_preload(void *, void *, void *);
-phys mmu_extract(pgd *, void *, size_t, int);
+void mmu_init(std::span<const mmumap>);
+expect<std::unique_ptr<pgd>> mmu_newmap(pid_t);
+expect_ok mmu_map(as &, phys, void *, size_t, int prot);
+void mmu_unmap(as &, void *, size_t);
+void mmu_early_map(phys, void *, size_t, unsigned flags);
+void mmu_switch(const as &);
+expect<phys> mmu_extract(const as &, void *, size_t, int prot);
+void mmu_dump();
 #endif
 
 #if defined(CONFIG_MPU)

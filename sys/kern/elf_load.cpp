@@ -25,6 +25,14 @@ ph_flags_to_prot(const ElfN_Phdr &ph)
 	    (ph.p_flags & PF_X ? PROT_EXEC : 0);
 }
 
+uintptr_t
+random_load_address(as *a)
+{
+#warning DO THIS BETTER
+	/* actually figure out a random load address in a */
+	return 0x10000000;
+}
+
 }
 
 /*
@@ -90,7 +98,7 @@ elf_load(as *a, int fd)
 		return DERR(std::errc::executable_format_error);
 
 #if defined(CONFIG_MMU)
-	load = dyn ? random_load_address() : img_beg;
+	load = (std::byte*)(dyn ? random_load_address(a) : img_beg);
 #else
 	/* create a mapping covering the entire program image */
 	if (auto r = mmapfor(a, (void*)img_beg, img_end - img_beg, PROT_NONE,

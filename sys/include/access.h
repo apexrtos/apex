@@ -25,12 +25,6 @@ int u_access_resume(const void *, size_t, int);
 bool u_access_continue(const void *, size_t, int);
 
 /*
- * User access fault detection
- */
-bool u_fault();
-void u_fault_clear();
-
-/*
  * Address validation
  */
 bool k_address(const void *);

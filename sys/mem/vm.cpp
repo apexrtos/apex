@@ -48,7 +48,7 @@ struct as {
 	unsigned ref;	/* reference count */
 	a::rwlock lock;	/* address space lock */
 #if defined(CONFIG_MMU)
-	struct pgd *pgd;/* page directory */
+	std::unique_ptr<pgd> pgd;   /* page directory */
 #endif
 };
 
@@ -87,6 +87,25 @@ do_vm_io(as *a, const iovec *liov, size_t lc, const iovec *riov, size_t rc, fn f
 	}
 
 	return ret;
+}
+
+/*
+ * for_each_free - call fn for each free area in address space
+ */
+static void
+for_each_free(as *a, void *min_addr, auto fn)
+{
+	auto p = (char *)std::max(a->base, min_addr);
+	seg *s;
+	list_for_each_entry(s, &a->segs, link) {
+		if (s->base > p)
+			if (fn(p, (char *)s->base - p))
+				return;
+		p = (char *)s->base + s->len;
+	}
+	const auto aend = (char *)a->base + a->len;
+	if (aend > p)
+		fn(p, aend - p);
 }
 
 /*
@@ -628,13 +647,19 @@ as_create(pid_t pid)
 	list_init(&a->segs);
 
 #if defined(CONFIG_MMU)
-	a->base = PAGE_SIZE;
-	a->len = CONFIG_USER_LIMIT - PAGE_SIZE;
-	if (auto r = mmu_newmap(&a->pgd, pid); r < 0)
-		return r;
+	if (pid) {
+		a->base = 0;
+		a->len = CONFIG_PAGE_OFFSET;
+	} else {
+		a->base = (void *)CONFIG_PAGE_OFFSET;
+		a->len = SIZE_MAX - CONFIG_PAGE_OFFSET + 1;
+	}
+	if (auto pgd = mmu_newmap(pid); !pgd.ok())
+		return nullptr;
+	else a->pgd = std::move(pgd.val());
 #else
 	a->base = 0;
-	a->len = SIZE_MAX;
+	a->len = SIZE_MAX - PAGE_SIZE + 1;
 #endif
 	a->brk = 0;
 	a->ref = 1;
@@ -671,7 +696,7 @@ as_destroy(as *a)
 		kmem_free(s);
 	}
 	a->lock.write().unlock();
-	kmem_free(a);
+	delete a;
 }
 
 /*
@@ -851,9 +876,59 @@ as_insert(as *a, page_ptr pages, size_t len, int prot,
 
 	/* insert new segment */
 	if (!(rc = seg_insert(s, std::move(pages), len, prot, std::move(vn),
-			       off, attr)).ok())
+			      off, attr)).ok())
 		return rc;
 
 	seg_combine(a);
 	return {};
+}
+
+/*
+ * as_find_free - find free area in address space
+ */
+expect<void *>
+as_find_free(as *a, void *vreq_addr, size_t len, int flags)
+{
+	char *req_addr = (char *)vreq_addr;
+	const bool fixed = flags & MAP_FIXED;
+
+	/* catch length overflow */
+	if (len > SIZE_MAX - PAGE_SIZE + 1 - PAGE_OFF(req_addr))
+		return DERR(std::errc::invalid_argument);
+
+	len = PAGE_ALIGN(PAGE_OFF(req_addr) + len);
+	req_addr = req_addr ? PAGE_TRUNC(req_addr) : (char *)a->base;
+
+	/* [req_addr, req_addr + len) must fit in address space */
+	if (req_addr < a->base ||
+	    (size_t)((char *)a->base + a->len - (char *)req_addr) < len)
+		return DERR(std::errc::invalid_argument);
+
+	/* fixed mappings replace existing mappings */
+	if (fixed)
+		return (void *)req_addr;
+
+	expect<char *> res = std::errc::not_enough_memory;
+
+	/* try to find something near req_addr, do not use address 0 */
+	for_each_free(a, (void *)0x100000, [&](void *vfp, size_t flen) {
+		char *fp = (char *)vfp;
+		/* free area is further from req_addr - free areas are returned
+		 * in increasing address order so stop searching */
+		if (res.ok() && abs(req_addr - fp) > abs(req_addr - res.val()))
+			return true;
+		/* free area is too small */
+		if (flen < len)
+			return false;
+		/* requested area is free */
+		if (fp <= req_addr && (size_t)(fp + flen - req_addr) > len) {
+			res = req_addr;
+			return true;
+		}
+		/* use closest address to req_addr */
+		res = req_addr < fp ? fp : fp + flen - len;
+		return false;
+	});
+
+	return res;
 }

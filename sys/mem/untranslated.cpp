@@ -221,9 +221,9 @@ u_arraylen(const void *const *u_arr, const size_t maxlen)
 bool
 u_access_okfor(as *a, const void *u_addr, size_t len, int access)
 {
-	/* u_access_okfor only makes sense if the address space is locked or if
-	 * preemption is disabled. Otherwise the address space could be
-	 * modified by some other thread. */
+	/* u_access_okfor only makes sense if the address space is locked
+	 * otherwise the address space could be modified by another thread */
+#warning does this make sense!? are we calling this from an interrupt!?
 	assert(sch_locks() || as_locked(a));
 	const seg *seg;
 	if (auto r = as_find_seg(a, u_addr); !r.ok())
