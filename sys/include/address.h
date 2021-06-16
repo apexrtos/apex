@@ -14,23 +14,18 @@ template<typename T>
 class physT {
 public:
 	using value_type = T;
-	static constexpr T invalid = -1;
 
-	constexpr physT()
-	: phys_{invalid}
-	{ }
+	constexpr physT() = default;
 
 	explicit constexpr physT(unsigned long long phys)
 	: phys_(phys)
 	{
-		assert(phys_ != invalid);
 		assert(phys_ == phys);
 	}
 
 	/* get physical address pointer */
 	void *phys_ptr() const
 	{
-		assert(phys_ != invalid);
 		assert(phys_ <= UINTPTR_MAX);
 		return reinterpret_cast<void *>(phys_);
 	}
@@ -38,13 +33,7 @@ public:
 	/* get physical address */
 	T phys() const
 	{
-		assert(phys_ != invalid);
 		return phys_;
-	}
-
-	explicit operator bool() const
-	{
-		return phys_ != invalid;
 	}
 
 	auto operator<=>(const physT &) const = default;

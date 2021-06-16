@@ -825,6 +825,10 @@ void page_dump()
 /*
  * page_ptr
  */
+page_ptr::page_ptr()
+: size_{0}
+{}
+
 page_ptr::page_ptr(phys p, size_t size, void *owner)
 : phys_{p}
 , size_{size}
@@ -836,12 +840,12 @@ page_ptr::page_ptr(page_ptr &&o)
 , size_{o.size_}
 , owner_{o.owner_}
 {
-	o.phys_ = phys{};
+	o.size_ = 0;
 }
 
 page_ptr::~page_ptr()
 {
-	if (!phys_)
+	if (!size_)
 		return;
 	page_free(phys_, size_, owner_);
 }
@@ -852,30 +856,31 @@ page_ptr::operator=(page_ptr &&o)
 	phys_ = o.phys_;
 	size_ = o.size_;
 	owner_ = o.owner_;
-	o.phys_ = phys{};
+	o.size_ = 0;
 	return *this;
 }
 
 phys
 page_ptr::release()
 {
-	auto tmp{phys_};
-	phys_ = phys{};
-	return tmp;
+	assert(size_);
+	size_ = 0;
+	return phys_;
 }
 
 void
 page_ptr::reset()
 {
-	if (!phys_)
+	if (!size_)
 		return;
 	page_free(phys_, size_, owner_);
-	phys_ = phys{};
+	size_ = 0;
 }
 
 phys
 page_ptr::get()
 {
+	assert(size_);
 	return phys_;
 }
 
@@ -887,5 +892,5 @@ page_ptr::size() const
 
 page_ptr::operator bool() const
 {
-	return !!phys_;
+	return size_;
 }

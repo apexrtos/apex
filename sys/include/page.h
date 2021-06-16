@@ -29,7 +29,7 @@ struct meminfo {
  */
 class page_ptr {
 public:
-	page_ptr() = default;
+	page_ptr();
 	page_ptr(page_ptr &&);
 	page_ptr(phys p, size_t size, void *owner);
 

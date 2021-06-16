@@ -1272,7 +1272,7 @@ tty_create(const char *name, long attr, size_t rx_bufsiz, size_t rx_bufmin,
 
 	page_ptr rxp = page_alloc(rx_sz, attr, &tty_id);
 	page_ptr txp = page_alloc(PAGE_SIZE, attr, &tty_id);
-	if (!rxp.get() || !txp.get())
+	if (!rxp || !txp)
 		return DERR(std::errc::not_enough_memory);
 	const size_t rx_bufcnt = rx_sz / rx_bufsiz;
 	std::unique_ptr<tty> t{std::make_unique<tty>(rx_bufcnt, rx_bufsiz,
