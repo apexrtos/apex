@@ -15,28 +15,33 @@ class physT {
 public:
 	using value_type = T;
 
-	constexpr physT() = default;
+	constexpr
+	physT() = default;
 
-	explicit constexpr physT(unsigned long long phys)
+	explicit constexpr
+	physT(unsigned long long phys)
 	: phys_(phys)
 	{
 		assert(phys_ == phys);
 	}
 
 	/* get physical address pointer */
-	void *phys_ptr() const
+	void *
+	phys_ptr() const
 	{
 		assert(phys_ <= UINTPTR_MAX);
 		return reinterpret_cast<void *>(phys_);
 	}
 
 	/* get physical address */
-	T phys() const
+	T
+	phys() const
 	{
 		return phys_;
 	}
 
-	auto operator<=>(const physT &) const = default;
+	auto
+	operator<=>(const physT &) const = default;
 
 private:
 	T phys_;
