@@ -27,6 +27,13 @@ public:
 
 	/* get physical address pointer */
 	void *
+	phys_ptr()
+	{
+		assert(phys_ <= UINTPTR_MAX);
+		return reinterpret_cast<void *>(phys_);
+	}
+
+	const void *
 	phys_ptr() const
 	{
 		assert(phys_ <= UINTPTR_MAX);
