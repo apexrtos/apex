@@ -79,7 +79,7 @@ extern struct task	kern_task;	/* kernel task */
  * Calculate integer logarithm of an integer
  */
 template<class T>
-unsigned
+constexpr unsigned
 floor_log2(T n)
 {
 	assert(n > 0);
@@ -87,7 +87,7 @@ floor_log2(T n)
 }
 
 template<class T>
-unsigned
+constexpr unsigned
 ceil_log2(T n)
 {
 	assert(n > 0);
@@ -98,7 +98,7 @@ ceil_log2(T n)
  * Integer division to closest integer
  */
 template<class T>
-std::enable_if_t<std::is_integral_v<T>, T>
+constexpr std::enable_if_t<std::is_integral_v<T>, T>
 div_closest(T n, T d)
 {
 	if ((n > 0) == (d > 0))
@@ -111,7 +111,7 @@ div_closest(T n, T d)
  * Integer division to ceiling of quotient
  */
 template<class T>
-std::enable_if_t<std::is_integral_v<T>, T>
+constexpr std::enable_if_t<std::is_integral_v<T>, T>
 div_ceil(T n, T d)
 {
 	if (n % d)
@@ -124,7 +124,7 @@ div_ceil(T n, T d)
  * Determine if integer is a non-zero power of 2.
  */
 template<class T>
-bool
+constexpr bool
 is_pow2(T v)
 {
 	return std::has_single_bit(v);
