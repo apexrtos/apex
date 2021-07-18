@@ -83,7 +83,7 @@ rtwdog::configure(clock clock, bool prescale_256)
 	std::lock_guard l{lock_};
 
 	/* unlock and configure within 255 bus clocks */
-	write32(&r_->CNT, unlock_key);
+	write32(&r_->CNT, {.r = unlock_key});
 	while (!read32(&r_->CS).ULK);
 
 	/*
@@ -92,7 +92,7 @@ rtwdog::configure(clock clock, bool prescale_256)
 	 * Bootrom writes UPDATE = 1 shortly after reset. This allows this
 	 * driver to update the value of CS.
 	 */
-	write32(&r_->CS, decltype(r_->CS){{
+	write32(&r_->CS, {{
 		.STOP{0},
 		.WAIT{0},
 		.DBG{0},
@@ -104,7 +104,7 @@ rtwdog::configure(clock clock, bool prescale_256)
 		.PRES{prescale_256},
 		.CMD32EN{1},
 		.WIN{0},
-	}}.r);
+	}});
 	while (!read32(&r_->CS).RCS);
 }
 
@@ -115,12 +115,12 @@ rtwdog::enable(bool en)
 
 	std::lock_guard l{lock_};
 	/* unlock and enable timer within 255 bus clocks */
-	write32(&r_->CNT, unlock_key);
+	write32(&r_->CNT, {.r = unlock_key});
 	while (!read32(&r_->CS).ULK);
 	write32(&r_->CS, [&]{
 		auto v = read32(&r_->CS);
 		v.EN = en;
-		return v.r;
+		return v;
 	}());
 	while (!read32(&r_->CS).RCS);
 }
@@ -135,9 +135,9 @@ rtwdog::set_timeout(unsigned t)
 		return DERR(-ERANGE);
 
 	std::lock_guard l{lock_};
-	write32(&r_->CNT, unlock_key);
+	write32(&r_->CNT, {.r = unlock_key});
 	while (!read32(&r_->CS).ULK);
-	write32(&r_->TOVAL, t * clock_);
+	write32(&r_->TOVAL, {.r = t * clock_});
 	while (!read32(&r_->CS).RCS);
 
 	return 0;
@@ -175,7 +175,7 @@ rtwdog::refresh()
 	 * One 32bit write of the key to the CNT register when
 	 * CMD32EN = 1 to reset the CNT value to 0
 	 */
-	write32(&r_->CNT, refresh_key);
+	write32(&r_->CNT, {.r = refresh_key});
 }
 
 int
