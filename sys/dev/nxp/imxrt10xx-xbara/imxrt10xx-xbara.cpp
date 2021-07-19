@@ -63,7 +63,7 @@ xbara::set_connection(output out, input in)
 	const auto i{static_cast<unsigned>(in)};
 
 	trace("XBARA(%p) Set connection: OUT:%u <- IN:%u\n", r_, o, i);
-	write8(&r_->SEL[o], static_cast<uint8_t>(i));
+	write8(&r_->SEL[o], {{.SEL = i}});
 }
 
 }
