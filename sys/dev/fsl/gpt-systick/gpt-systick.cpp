@@ -80,7 +80,7 @@ __fast_text int
 fsl_gpt_systick_isr(int, void *)
 {
 	/* acknowledge interrupt */
-	write32(&gpt->SR, -1);
+	write32(&gpt->SR, {.r = 0xffffffff});
 
 	timer_tick(1);
 	return INT_DONE;
@@ -104,20 +104,20 @@ fsl_gpt_systick_init(const fsl_gpt_systick_desc *d)
 		.CLKSRC = static_cast<unsigned>(d->clksrc),
 		.EN_24M = d->clksrc == fsl::gpt::clock::ipg_24M,
 	}};
-	write32(&gpt->CR, cr.r);
-	write32(&gpt->PR, (regs::pr){{
+	write32(&gpt->CR, cr);
+	write32(&gpt->PR, {{
 		.PRESCALER = d->prescaler - 1,
 		.PRESCALER24M = d->prescaler_24M - 1,
-	}}.r);
-	write32(&gpt->OCR[0], d->clock / d->prescaler / CONFIG_HZ - 1);
-	write32(&gpt->IR, (regs::ir){{ .OF1IE = 1 }}.r);
+	}});
+	write32(&gpt->OCR[0], static_cast<uint32_t>(d->clock / d->prescaler / CONFIG_HZ - 1));
+	write32(&gpt->IR, {{.OF1IE = 1}});
 
 	if (!irq_attach(d->irq, d->ipl, 0, fsl_gpt_systick_isr, 0, 0))
 		panic("irq_attach");
 
 	/* start timer */
 	cr.EN = 1;
-	write32(&gpt->CR, cr.r);
+	write32(&gpt->CR, cr);
 
 	/* scaling factor from count to ns * 2^32 */
 	scale = 1000000000ull * 0x100000000 / (d->clock / d->prescaler);
