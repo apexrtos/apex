@@ -190,21 +190,17 @@ ocotp::ocotp(const nxp_imxrt10xx_ocotp_desc *d)
 
 	std::lock_guard l{mutex_};
 
-	write32(&r_->TIMING, [&]{
-		regs::timing v{};
-		v.WAIT = wait;
-		v.STROBE_READ = read;
-		v.RELAX = relax;
-		v.STROBE_PROG = prog;
-		return v.r;
-	}());
+	write32(&r_->TIMING, {{
+		.STROBE_PROG = prog,
+		.RELAX = relax,
+		.STROBE_READ = read,
+		.WAIT = wait,
+	}});
 
-	write32(&r_->TIMING2, [&]{
-		regs::timing2 v{};
-		v.RELAX_PROG = relax_prog;
-		v.RELAX_READ = relax_read;
-		return v.r;
-	}());
+	write32(&r_->TIMING2, {{
+		.RELAX_PROG = relax_prog,
+		.RELAX_READ = relax_read,
+	}});
 
 	wait_busy();
 }
@@ -220,11 +216,7 @@ ocotp::reload_shadow()
 {
 	check_and_clear_error();
 
-	write32(&r_->CTRL_SET, [&]{
-		auto v = read32(&r_->CTRL_SET);
-		v.RELOAD_SHADOWS = 1;
-		return v.r;
-	}());
+	write32(&r_->CTRL_SET, {{.RELOAD_SHADOWS = 1}});
 
 	wait_busy();
 }
@@ -244,11 +236,7 @@ ocotp::check_and_clear_error()
 		return false;
 
 	trace("OCOTP(%p) Error\n", r_);
-	write32(&r_->CTRL_CLR, [&]{
-		regs::ctrl_clr v{};
-		v.ERROR = 1;
-		return v.r;
-	}());
+	write32(&r_->CTRL_CLR, {{.ERROR = 1}});
 
 	return true;
 }
@@ -316,7 +304,7 @@ ocotp::write(std::span<const std::byte> buf, off_t off)
 		 * (72) become non linear. We therefore must remove a value
 		 * of 16 to re-align.
 		 */
-		auto addr = i + off;
+		uint32_t addr = i + off;
 		if (addr >= 72)
 			addr -= 16;
 
@@ -326,12 +314,10 @@ ocotp::write(std::span<const std::byte> buf, off_t off)
 
 		trace("index: %llu data: 0x%08x\n", addr, tmp);
 
-		write32(&r_->CTRL, [&]{
-			regs::ctrl v{};
-			v.ADDR = addr;
-			v.WR_UNLOCK = unlock_key;
-			return v.r;
-		}());
+		write32(&r_->CTRL, {{
+			.ADDR = addr,
+			.WR_UNLOCK = unlock_key,
+		}});
 
 		write32(&r_->DATA, tmp);
 
