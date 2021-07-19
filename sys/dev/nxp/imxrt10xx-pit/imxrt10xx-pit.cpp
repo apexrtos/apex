@@ -74,12 +74,10 @@ pit::pit(const nxp_imxrt10xx_pit_desc *d)
 	static_assert(sizeof(regs) == 0x140);
 	static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
-	write32(&r_->MCR, [&]{
-		decltype(r_->MCR) v{};
-		v.FRZ = 1;	/* Timers are stopped in Debug mode */
-		v.MDIS = 0;	/* Module enabled */
-		return v.r;
-	}());
+	write32(&r_->MCR, {{
+		.FRZ = 1,	/* Timers are stopped in Debug mode */
+		.MDIS = 0,	/* Module enabled */
+	}});
 
 	::irq_attach(d->irq, d->ipl, 0, isr_wrapper, nullptr, this);
 }
@@ -114,7 +112,7 @@ pit::start(unsigned ch, std::chrono::nanoseconds t)
 	write32(&r_->channel[ch].TCTRL, [&]{
 		auto v = read32(&r_->channel[ch].TCTRL);
 		v.TEN = 1;
-		return v.r;
+		return v;
 	}());
 
 	return 0;
@@ -129,7 +127,7 @@ pit::stop(unsigned ch)
 	write32(&r_->channel[ch].TCTRL, [&]{
 		auto v = read32(&r_->channel[ch].TCTRL);
 		v.TEN = 0;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -157,7 +155,7 @@ pit::irq_attach(unsigned ch, isr_fn fn)
 	write32(&r_->channel[ch].TCTRL, [&]{
 		auto v = read32(&r_->channel[ch].TCTRL);
 		v.TIE = 1;
-		return v.r;
+		return v;
 	}());
 
 	return 0;
@@ -175,7 +173,7 @@ pit::irq_detach(unsigned ch)
 	write32(&r_->channel[ch].TCTRL, [&]{
 		auto v = read32(&r_->channel[ch].TCTRL);
 		v.TIE = 0;
-		return v.r;
+		return v;
 	}());
 }
 
@@ -191,7 +189,7 @@ pit::isr()
 			continue;
 
 		/* write 1 to the flag to clear the interrupt */
-		write32(&r_->channel[ch].TFLG, v.r);
+		write32(&r_->channel[ch].TFLG, v);
 		std::unique_lock l{lock_};
 		auto e = irq_table_[ch];
 		l.unlock();
