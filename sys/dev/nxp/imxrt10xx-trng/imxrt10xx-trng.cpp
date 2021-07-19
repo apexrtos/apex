@@ -299,41 +299,33 @@ trng::trng(const nxp_imxrt10xx_trng_desc *d)
 	event_init(&wakeup_, "trng", event::ev_IO);
 
 	/* Put TRNG into program mode and reset to defaults */
-	write32(&r_->MCTL, [&]{
-		decltype(r_->MCTL) v{};
-		v.PRGM = 1;
-		v.RST_DEF = 1;
-		v.FOR_SCLK = 0; /* Ring Oscillator */
-		v.OSC_DIV = 0; /* Ring Oscillator / 1 */
-		v.SAMP_MODE = 0; /* Von Neumann */
-		return v.r;
-	}());
+	write32(&r_->MCTL, {{
+		.SAMP_MODE = 0, /* Von Neumann */
+		.OSC_DIV = 0, /* Ring Oscillator / 1 */
+		.RST_DEF = 1,
+		.FOR_SCLK = 0, /* Ring Oscillator */
+		.PRGM = 1,
+	}});
 
 	/*
 	 * Enable interrupts:
 	 * Entropy ready
 	 * Hardware error
 	 */
-	write32(&r_->INT_MASK, [&]{
-		decltype(r_->INT_MASK) v{};
-		v.ENT_VAL = 1;
-		v.HW_ERR = 1;
-		return v.r;
-	}());
+	write32(&r_->INT_MASK, {{
+		.HW_ERR = 1,
+		.ENT_VAL = 1,
+	}});
 
 	/* Set to Run mode */
 	write32(&r_->MCTL, [&]{
 		auto v = read32(&r_->MCTL);
 		v.PRGM = 0;
-		return v.r;
+		return v;
 	}());
 
 	/* Lock registers */
-	write32(&r_->SEC_CFG, [&]{
-		decltype(r_->SEC_CFG) v{};
-		v.NO_PRGM = 1;
-		return v.r;
-	}());
+	write32(&r_->SEC_CFG, {{.NO_PRGM = 1}});
 
 	/* Read last entropy register to start entropy generation */
 	read32(std::end(r_->ENT) - 1);
@@ -391,11 +383,7 @@ trng::read(std::span<std::byte> buf)
 			trace("TRNG(%p): entropy generation error\n", r_);
 
 			/* Write 1 to ERR to clear ERR or FCT_FAIL */
-			write32(&r_->MCTL, [&]{
-				auto v = read32(&r_->MCTL);
-				v.ERR = 1;
-				return v.r;
-			}());
+			write32(&r_->MCTL, {{.ERR = 1}});
 
 			trace("TRNG(%p): restarting entropy generation\n", r_);
 			read32(std::end(r_->ENT) - 1);
@@ -421,7 +409,7 @@ trng::isr()
 	 *
 	 * Clear all.
 	 */
-	write32(&r_->INT_CTRL, 0);
+	write32(&r_->INT_CTRL, {});
 	sch_wakeone(&wakeup_);
 }
 
