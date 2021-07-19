@@ -128,6 +128,17 @@ struct iomuxc {
 				pus::Pull_Down_100K,	/* disabled */
 				hys::Hysteresis_Enabled};
 		}
+
+		static constexpr sw_pad_ctl
+		in_analog()
+		{
+			return {sre::Slow, dse::disabled, speed::MHz_50,
+				ode::Open_Drain_Disabled,
+				pke::Pull_Keeper_Disabled,
+				pue::Keeper,		/* disabled */
+				pus::Pull_Down_100K,	/* disabled */
+				hys::Hysteresis_Disabled};
+		}
 	};
 
 	uint32_t : 32;
