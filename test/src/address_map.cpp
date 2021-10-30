@@ -41,7 +41,8 @@ struct alloc_malloc {
 	}
 };
 
-using address_map_test = address_map_4k_32b_32B<alloc_malloc>;
+using file_map_test = address_map_4k_32b_32B<uint64_t, alloc_malloc>;
+using address_map_test = address_map_4k_32b_32B<void *, alloc_malloc>;
 
 TEST(address_map, simple)
 {
@@ -248,8 +249,16 @@ TEST(address_map, clear)
 	address_map_test am;
 	address_map_test::find_result r;
 
+	EXPECT_EQ(am.size(), 0);
+	EXPECT_TRUE(am.empty());
+
 	am.map((void *)0x1000, phys{0x10001000}, PAGE_SIZE, 0);
+	EXPECT_GE(am.size(), 1);    /* number of clusters */
+	EXPECT_FALSE(am.empty());
+
 	am.map((void *)0x2000, phys{0x10002000}, PAGE_SIZE, 1);
+	EXPECT_GE(am.size(), 1);    /* number of clusters */
+	EXPECT_FALSE(am.empty());
 
 	r = am.find((void *)0);
 	EXPECT_FALSE(r);
@@ -265,6 +274,8 @@ TEST(address_map, clear)
 	EXPECT_EQ(r->attr, 1);
 
 	am.clear();
+	EXPECT_EQ(am.size(), 0);
+	EXPECT_TRUE(am.empty());
 
 	r = am.find((void *)0);
 	EXPECT_FALSE(r);
@@ -337,3 +348,51 @@ TEST(address_map, fuzz)
 		}
 	}
 }
+
+/*
+ * file_map with 4k/32b/32B clusters supports file offsets up to ~128TiB.
+ */
+TEST(file_map, address_limits)
+{
+	file_map_test fm;
+	file_map_test::find_result r;
+
+	/* map virt 0 -> phys 0xfffff000 */
+	fm.map(0, phys{0xfffff000}, PAGE_SIZE, 2);
+
+	/* map virt 0x7fffffff7000 -> phys 0 */
+	fm.map(0x7fffffff7000, phys{0}, PAGE_SIZE, 3);
+
+	r = fm.find(0);
+	EXPECT_EQ(r->phys.phys(), 0xfffff000);
+	EXPECT_EQ(r->size, PAGE_SIZE);
+	EXPECT_EQ(r->attr, 2);
+
+	r = fm.find(0x1000);
+	EXPECT_FALSE(r);
+
+	r = fm.find(0x7ffffffef000);
+	EXPECT_FALSE(r);
+
+	r = fm.find(0x7fffffff7000);
+	EXPECT_EQ(r->phys.phys(), 0);
+	EXPECT_EQ(r->size, PAGE_SIZE);
+	EXPECT_EQ(r->attr, 3);
+
+	/* unmap virt 0 */
+	fm.unmap(0, PAGE_SIZE);
+
+	/* unmap virt 0x7fffffff7000 */
+	fm.unmap(0x7fffffff7000, PAGE_SIZE);
+
+	r = fm.find(0);
+	EXPECT_FALSE(r);
+
+	r = fm.find(0x7fffffff7000);
+	EXPECT_FALSE(r);
+
+	/* address out of range */
+	EXPECT_DEATH(fm.map(0x7fffffff8000, phys{0}, PAGE_SIZE, 0), "");
+	EXPECT_DEATH(fm.map(0xffffffffffffffff, phys{0}, PAGE_SIZE, 0), "");
+}
+

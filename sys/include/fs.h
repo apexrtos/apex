@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <fcntl.h>
+#include <lib/address_map.h>
 #include <lib/expect.h>
 #include <memory>
 #include <sys/stat.h>
@@ -50,8 +51,7 @@ void vn_close(vnode *);
 ssize_t vn_pread(vnode *, void *, size_t, off_t);
 ssize_t vn_preadv(vnode *, const iovec *, int, off_t);
 char *vn_name(vnode *);
-expect_ok vn_map(vnode *);
-void vn_unmap(vnode *);
+expect<file_map *> vn_map(vnode *, off_t, size_t, int flags, long attr);
 
 namespace std {
 

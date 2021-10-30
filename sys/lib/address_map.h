@@ -24,8 +24,8 @@
  * Each mapping has associated attributes which can be used to store the
  * access permissions for the mapping.
  *
- * Load factor is controllable. The table increase in size and rehash if the
- * load factor is exceeded but will not currently reduce in size.
+ * Load factor is controllable. The table increases in size and rehashes if the
+ * load factor is exceeded but will not reduce in size.
  *
  * The table entry and hash function are customisable to allow for different
  * address space sizes and cache line sizes.
@@ -61,38 +61,42 @@ struct hash_32_6shift {
 };
 
 /*
- * address_map_dtl::cluster_entry_4k_32b
+ * address_map_dtl::entry_32b
  *
  * Cluster entry suitable for 4k pages and 32 bit addressing.
- *
- * NOTE: impl initialises clusters to zero.
  */
-class cluster_entry_4k_32b {
+struct entry_32b {
 public:
+	entry_32b(bool multi_page, unsigned attr, uint32_t value);
+
 	bool valid() const;
 	bool multi_page() const;
 	unsigned attr() const;
 	uint32_t value() const;
 
-	void set(bool multi_page, unsigned attr, uint32_t value);
-	void invalidate();
-
 private:
-	uint32_t multi_page_ : 1;	/* set if multi page entry */
-	uint32_t attr_ : 3;		/* attributes (0 == invalid) */
-	uint32_t value_ : 20;		/* physical page number or size */
-} __attribute__((packed));
+	uint32_t multi_page_ : 1;	    /* set if multi page entry */
+	uint32_t attr_ : 7;		    /* attributes (0 == invalid) */
+	uint32_t value_ : 20;		    /* physical page number or size */
+};
+
+inline
+entry_32b::entry_32b(bool multi_page, unsigned attr, uint32_t value)
+: multi_page_{multi_page}
+, attr_{attr}
+, value_{value}
+{ }
 
 inline
 bool
-cluster_entry_4k_32b::valid() const
+entry_32b::valid() const
 {
 	return attr_;
 }
 
 inline
 bool
-cluster_entry_4k_32b::multi_page() const
+entry_32b::multi_page() const
 {
 	assert(valid());
 	return multi_page_;
@@ -100,7 +104,7 @@ cluster_entry_4k_32b::multi_page() const
 
 inline
 unsigned
-cluster_entry_4k_32b::attr() const
+entry_32b::attr() const
 {
 	assert(valid());
 	return attr_ - 1;
@@ -108,31 +112,10 @@ cluster_entry_4k_32b::attr() const
 
 inline
 uint32_t
-cluster_entry_4k_32b::value() const
+entry_32b::value() const
 {
 	assert(valid());
 	return value_;
-}
-
-inline
-void
-cluster_entry_4k_32b::set(bool multi_page, unsigned attr, uint32_t value)
-{
-	multi_page_ = multi_page;
-	attr_ = attr + 1;
-	value_ = value;
-
-	/* check for overflows */
-	assert(attr_);
-	assert(attr_ == attr + 1);
-	assert(value_ == value);
-}
-
-inline
-void
-cluster_entry_4k_32b::invalidate()
-{
-	attr_ = 0;
 }
 
 /*
@@ -144,21 +127,31 @@ cluster_entry_4k_32b::invalidate()
  */
 class cluster_4k_32b_32B {
 public:
-	using entry = cluster_entry_4k_32b; /* type of entry in cluster */
+	using entry = entry_32b;	    /* type of entry in cluster */
 	static constexpr auto capacity = 8; /* number of entries in cluster */
 
 	void initialise(uint32_t);	    /* assign cluster number */
 	void invalidate();		    /* set cluster as invalid */
-	entry &operator[](size_t);	    /* access cluster entries */
 
 	bool valid() const;		    /* test if cluster is valid */
 	uint32_t cnr() const;		    /* get cluster number */
 	bool empty() const;		    /* test if cluster is empty */
 
+	/* entry manipulation */
+	entry entry_get(size_t) const;
+	void entry_set(size_t, bool multi_page, unsigned attr, uint32_t value);
+	void entry_invalidate(size_t);
+
 private:
 	uint32_t cnr_;			    /* cluster number (0 == invalid) */
-	entry entries_[capacity];	    /* cluster entries */
-	uint32_t : 32;			    /* spare */
+	struct {
+		uint32_t multi_page_0 : 1;  /* set if multi page entry */
+		uint32_t attr_0 : 7;	    /* attributes (0 == invalid) */
+		uint32_t value_0 : 20;	    /* physical page number or size */
+		uint32_t multi_page_1 : 1;  /* set if multi page entry */
+		uint32_t attr_1 : 7;	    /* attributes (0 == invalid) */
+		uint32_t value_1 : 20;	    /* physical page number or size */
+	} __attribute__((packed)) entries_[capacity / 2];
 };
 static_assert(sizeof(cluster_4k_32b_32B) == 32);
 
@@ -178,18 +171,8 @@ cluster_4k_32b_32B::invalidate()
 {
 	cnr_ = 0;
 	for (auto &e : entries_)
-		e.invalidate();
+		e.attr_0 = e.attr_1 = 0;
 }
-
-inline
-cluster_4k_32b_32B::entry &
-cluster_4k_32b_32B::operator[](size_t idx)
-{
-	assert(valid());
-	assert(idx < capacity);
-	return entries_[idx];
-}
-
 
 inline
 bool
@@ -212,9 +195,64 @@ cluster_4k_32b_32B::empty() const
 {
 	assert(valid());
 	for (const auto &e : entries_)
-		if (e.valid())
+		if (e.attr_0 || e.attr_1)
 			return false;
 	return true;
+}
+
+inline
+cluster_4k_32b_32B::entry
+cluster_4k_32b_32B::entry_get(size_t idx) const
+{
+	assert(valid());
+	assert(idx < capacity);
+	auto &e = entries_[idx / 2];
+	if (idx & 1)
+		return {!!e.multi_page_1, e.attr_1, e.value_1};
+	else
+		return {!!e.multi_page_0, e.attr_0, e.value_0};
+}
+
+inline
+void
+cluster_4k_32b_32B::entry_set(size_t idx, bool multi_page, unsigned attr,
+			      uint32_t value)
+{
+	assert(valid());
+	assert(idx < capacity);
+	auto &e = entries_[idx / 2];
+	if (idx & 1) {
+		e.multi_page_1 = multi_page;
+		e.attr_1 = attr + 1;
+		e.value_1 = value;
+
+		/* check for overflows */
+		assert(e.attr_1);
+		assert(e.attr_1 == attr + 1);
+		assert(e.value_1 == value);
+	} else {
+		e.multi_page_0 = multi_page;
+		e.attr_0 = attr + 1;
+		e.value_0 = value;
+
+		/* check for overflows */
+		assert(e.attr_0);
+		assert(e.attr_0 == attr + 1);
+		assert(e.value_0 == value);
+	}
+}
+
+inline
+void
+cluster_4k_32b_32B::entry_invalidate(size_t idx)
+{
+	assert(valid());
+	assert(idx < capacity);
+	auto &e = entries_[idx / 2];
+	if (idx & 1)
+		e.attr_1 = 0;
+	else
+		e.attr_0 = 0;
 }
 
 /*
@@ -238,6 +276,8 @@ struct alloc_page {
 	static void
 	free(void *p, size_t size, void *owner)
 	{
+		if (!p)
+			return;
 		page_free(virt_to_phys(p), size, owner);
 	}
 };
@@ -245,13 +285,14 @@ struct alloc_page {
 /*
  * address_map_dtl::impl - address map implementation
  */
-template<class Cluster, class Hash, class Alloc>
+template<class Addr, class Cluster, class Hash, class Alloc>
 class impl {
 public:
 	static constexpr auto cluster_capacity = Cluster::capacity;
 	using hash = Hash;
 
 	struct entry {
+		Addr virt;
 		::phys phys;
 		size_t size;
 		unsigned attr;
@@ -262,12 +303,14 @@ public:
 	impl(size_t initial_entries = 0, unsigned max_load = 50);
 	~impl();
 
-	void map(void *virt, phys phys, size_t size, unsigned attr);
-	void unmap(void *virt, size_t size);
+	void map(Addr virt, phys phys, size_t size, unsigned attr);
+	void unmap(Addr virt, size_t size);
 	void clear();
-	find_result find(void *virt) const;
+	template<class Fn> void for_each(Fn);
+	find_result find(Addr virt) const;
 	size_t capacity() const;
 	size_t size() const;
+	bool empty() const;
 
 private:
 	void rehash();
@@ -278,8 +321,8 @@ private:
 	Cluster *t_;
 };
 
-template<class Cluster, class Hash, class Alloc>
-impl<Cluster, Hash, Alloc>::impl(size_t initial_entries, unsigned max_load)
+template<class Addr, class Cluster, class Hash, class Alloc>
+impl<Addr, Cluster, Hash, Alloc>::impl(size_t initial_entries, unsigned max_load)
 : max_load_{max_load}
 , capacity_{(initial_entries + cluster_capacity - 1) / cluster_capacity}
 , size_{0}
@@ -291,15 +334,15 @@ impl<Cluster, Hash, Alloc>::impl(size_t initial_entries, unsigned max_load)
 		panic("OOM!");
 }
 
-template<class Cluster, class Hash, class Alloc>
-impl<Cluster, Hash, Alloc>::~impl()
+template<class Addr, class Cluster, class Hash, class Alloc>
+impl<Addr, Cluster, Hash, Alloc>::~impl()
 {
 	Alloc::free(t_, capacity_ * sizeof(Cluster), this);
 }
 
-template<class Cluster, class Hash, class Alloc>
+template<class Addr, class Cluster, class Hash, class Alloc>
 void
-impl<Cluster, Hash, Alloc>::map(void *virt, phys phys, size_t size, unsigned attr)
+impl<Addr, Cluster, Hash, Alloc>::map(Addr virt, phys phys, size_t size, unsigned attr)
 {
 	assert(size);
 	assert(std::countr_zero(size) >= std::countr_zero(PAGE_SIZE));
@@ -328,11 +371,11 @@ impl<Cluster, Hash, Alloc>::map(void *virt, phys phys, size_t size, unsigned att
 		/* set cluster entries */
 		auto ci = vnr % cluster_capacity;
 		while (pages && ci < cluster_capacity) {
-			assert(!t_[ti][ci].valid());
+			assert(!t_[ti].entry_get(ci).valid());
 			if (size > 1)
-				t_[ti][ci].set(true, attr, ci % 2 ? size : pnr);
+				t_[ti].entry_set(ci, true, attr, ci % 2 ? size : pnr);
 			else
-				t_[ti][ci].set(false, attr, pnr);
+				t_[ti].entry_set(ci, false, attr, pnr);
 			--pages;
 			++vnr;
 			++ci;
@@ -340,9 +383,9 @@ impl<Cluster, Hash, Alloc>::map(void *virt, phys phys, size_t size, unsigned att
 	}
 }
 
-template<class Cluster, class Hash, class Alloc>
+template<class Addr, class Cluster, class Hash, class Alloc>
 void
-impl<Cluster, Hash, Alloc>::unmap(void *virt, size_t size)
+impl<Addr, Cluster, Hash, Alloc>::unmap(Addr virt, size_t size)
 {
 	assert(size);
 	assert(std::countr_zero(size) >= std::countr_zero(PAGE_SIZE));
@@ -363,8 +406,8 @@ impl<Cluster, Hash, Alloc>::unmap(void *virt, size_t size)
 		/* invalidate cluster entries */
 		auto ci = vnr % cluster_capacity;
 		while (pages && ci < cluster_capacity) {
-			assert(t_[ti][ci].valid());
-			t_[ti][ci].invalidate();
+			assert(t_[ti].entry_get(ci).valid());
+			t_[ti].entry_invalidate(ci);
 			--pages;
 			++vnr;
 			++ci;
@@ -388,9 +431,9 @@ impl<Cluster, Hash, Alloc>::unmap(void *virt, size_t size)
 	}
 }
 
-template<class Cluster, class Hash, class Alloc>
+template<class Addr, class Cluster, class Hash, class Alloc>
 void
-impl<Cluster, Hash, Alloc>::clear()
+impl<Addr, Cluster, Hash, Alloc>::clear()
 {
 	Alloc::free(t_, capacity_ * sizeof(Cluster), this);
 	capacity_ = 0;
@@ -398,9 +441,18 @@ impl<Cluster, Hash, Alloc>::clear()
 	t_ = nullptr;
 }
 
-template<class Cluster, class Hash, class Alloc>
-typename impl<Cluster, Hash, Alloc>::find_result
-impl<Cluster, Hash, Alloc>::find(void *virt) const
+template<class Addr, class Cluster, class Hash, class Alloc>
+template<class Fn>
+void
+impl<Addr, Cluster, Hash, Alloc>::for_each(Fn f)
+{
+#warning IMPLEMENT
+assert(0);
+}
+
+template<class Addr, class Cluster, class Hash, class Alloc>
+typename impl<Addr, Cluster, Hash, Alloc>::find_result
+impl<Addr, Cluster, Hash, Alloc>::find(Addr virt) const
 {
 	const auto vnr = (uintptr_t)virt / PAGE_SIZE;
 	const auto cnr = vnr / cluster_capacity;
@@ -410,36 +462,49 @@ impl<Cluster, Hash, Alloc>::find(void *virt) const
 	while (t_[ti].valid() && t_[ti].cnr() != cnr)
 		ti = (ti + 1) % capacity_;
 	const auto ci = vnr % cluster_capacity;
-	if (!t_[ti].valid() || !t_[ti][ci].valid())
+	if (!t_[ti].valid() || !t_[ti].entry_get(ci).valid())
 		return std::nullopt;
-	if (t_[ti][ci].multi_page())
+	assert(0);
+#warning FIX FIX FIX!!
+	if (t_[ti].entry_get(ci).multi_page())
 		return entry{
-			phys{t_[ti][ci & ~1ul].value() * PAGE_SIZE},
-			t_[ti][ci | 1ul].value() * PAGE_SIZE,
-			t_[ti][ci].attr()};
+#warning FIX FIX FIX!!
+			0,
+			phys{t_[ti].entry_get(ci & ~1ul).value() * PAGE_SIZE},
+			     t_[ti].entry_get(ci | 1ul).value() * PAGE_SIZE,
+			     t_[ti].entry_get(ci).attr()};
 	return entry{
-		phys{t_[ti][ci].value() * PAGE_SIZE},
+#warning FIX FIX FIX!!
+		0,
+		phys{t_[ti].entry_get(ci).value() * PAGE_SIZE},
 		PAGE_SIZE,
-		t_[ti][ci].attr()};
+		t_[ti].entry_get(ci).attr()};
 }
 
-template<class Cluster, class Hash, class Alloc>
+template<class Addr, class Cluster, class Hash, class Alloc>
 size_t
-impl<Cluster, Hash, Alloc>::capacity() const
+impl<Addr, Cluster, Hash, Alloc>::capacity() const
 {
 	return capacity_;
 }
 
-template<class Cluster, class Hash, class Alloc>
+template<class Addr, class Cluster, class Hash, class Alloc>
 size_t
-impl<Cluster, Hash, Alloc>::size() const
+impl<Addr, Cluster, Hash, Alloc>::size() const
 {
 	return size_;
 }
 
-template<class Cluster, class Hash, class Alloc>
+template<class Addr, class Cluster, class Hash, class Alloc>
+bool
+impl<Addr, Cluster, Hash, Alloc>::empty() const
+{
+	return !size_;
+}
+
+template<class Addr, class Cluster, class Hash, class Alloc>
 void
-impl<Cluster, Hash, Alloc>::rehash()
+impl<Addr, Cluster, Hash, Alloc>::rehash()
 {
 	static_assert(Alloc::initial_size / sizeof(Cluster) > 0);
 
@@ -471,8 +536,9 @@ impl<Cluster, Hash, Alloc>::rehash()
  *
  * Address map suitable for 4k pages, 32 bit addressing and 32 byte cachelines.
  */
-template<class Alloc = address_map_dtl::alloc_page>
+template<class Addr, class Alloc = address_map_dtl::alloc_page>
 using address_map_4k_32b_32B = address_map_dtl::impl<
+					Addr,
 					address_map_dtl::cluster_4k_32b_32B,
 					address_map_dtl::hash_32_6shift,
 					Alloc>;
@@ -483,13 +549,15 @@ using address_map_4k_32b_32B = address_map_dtl::impl<
 #if UINTPTR_MAX == 0xffffffff
 	#ifdef CONFIG_CACHE
 		#if CONFIG_DCACHE_LINE_SIZE == 32
-			using address_map = address_map_4k_32b_32B<>;
+			using address_map = address_map_4k_32b_32B<void *>;
+			using file_map = address_map_4k_32b_32B<uint64_t>;
 		#else
 			#error No default address_map defined for this platform.
 		#endif
 	#else
 		/* Use 32-byte clusters when there's no cache */
-		using address_map = address_map_4k_32b_32B<>;
+		using address_map = address_map_4k_32b_32B<void *>;
+		using file_map = address_map_4k_32b_32B<uint64_t>;
 	#endif
 #elif UINTPTR_MAX == 0xffffffffffffffff
 	#warning TODO: 64-bit address_map.

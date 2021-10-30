@@ -57,8 +57,7 @@ struct vnode {
 	char *v_name;		/* name of node */
 	void *v_data;		/* private data for fs */
 	void *v_pipe;		/* pipe data */
-	unsigned v_maprefcnt;	/* memory map reference count */
-	address_map v_map;	/* memory map of file data */
+	file_map v_map;		/* memory map of file data */
 };
 
 /* flags for vnode */
@@ -99,7 +98,7 @@ typedef	int (*vnop_getattr_fn) (vnode *, vattr *);
 typedef	int (*vnop_setattr_fn) (vnode *, vattr *);
 typedef	int (*vnop_inactive_fn) (vnode *);
 typedef	int (*vnop_truncate_fn) (vnode *);
-typedef int (*vnop_map_fn) (vnode *);
+typedef int (*vnop_map_fn) (vnode *, off_t, size_t, int, long);
 typedef int (*vnop_unmap_fn) (vnode *);
 
 struct vnops {
@@ -142,7 +141,7 @@ struct vnops {
 #define VOP_SETATTR(VP, VAP) ((VP)->v_mount->m_op->vfs_vnops->vop_setattr)(VP, VAP)
 #define VOP_INACTIVE(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_inactive)(VP)
 #define VOP_TRUNCATE(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_truncate)(VP)
-#define VOP_MAP(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_map)(VP)
+#define VOP_MAP(VP, O, L, F, A) ((VP)->v_mount->m_op->vfs_vnops->vop_map)(VP, O, L, F, A)
 #define VOP_UNMAP(VP) ((VP)->v_mount->m_op->vfs_vnops->vop_unmap)(VP)
 
 /*

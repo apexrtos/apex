@@ -350,8 +350,7 @@ page_alloc_order(const size_t o, unsigned long attr, void *owner)
 }
 
 /*
- * page_alloc - allocate physical pages of size 'len' in region of type 'mt'
- *              for use in allocation of type 'at'
+ * page_alloc - allocate 'len' bytes of physical pages in one allocation
  *
  * tries to allocate using requested type but falls back if memory is low.
  * 'len' is rounded up to next page sized boundary.
@@ -366,9 +365,44 @@ page_alloc(size_t len, unsigned long attr, void *owner)
 	auto pages = page_alloc_order(order, attr, owner);
 	if (!pages)
 		return pages;
-	const auto excess = (PAGE_SIZE << order) - len;
+	const auto excess = pages.size() - len;
 	page_free(pages.get(), excess, owner);
 	return {phys{pages.release().phys() + excess}, len, owner};
+}
+
+/*
+ * page_alloc_multi - allocate 'len' bytes of physical pages
+ *
+ * tries to allocate using requested type but falls back if memory is low.
+ * 'len' is rounded up to next page sized boundary.
+ */
+expect_ok
+page_alloc_multi(size_t len, unsigned long attr, void *owner,
+		 std::function<expect_ok(page_ptr &&)> fn)
+{
+#warning WRITE TEST
+	if (!len)
+		return {};
+	len = PAGE_ALIGN(len);
+	auto order = ceil_log2(len) - floor_log2(PAGE_SIZE);
+	while (len && order >= 0) {
+		auto pages = page_alloc_order(order, attr, owner);
+		if (!pages) {
+			--order;
+			continue;
+		}
+		if (pages.size() > len) {
+			const auto excess = pages.size() - len;
+			page_free(phys{pages.get().phys() + len}, excess, owner);
+			pages = {pages.release(), len, owner};
+		}
+		len -= pages.size();
+		if (auto r = fn(std::move(pages)); !r.ok())
+			return r;
+	}
+	if (order < 0)
+		return std::errc::not_enough_memory;
+	return {};
 }
 
 /*

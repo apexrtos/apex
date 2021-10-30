@@ -69,7 +69,7 @@ machine_init(bootargs *args)
 			.flags = mas2_device,
 		},
 	};
-	mmu_init(maps, ARRAY_SIZE(maps));
+	mmu_init(maps);
 
 	const meminfo memory[] = {
 		/* Main memory */

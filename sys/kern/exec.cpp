@@ -66,7 +66,7 @@ exec_into(task *t, const char *path, const char *const argv[],
 	}
 
 	/* create new address space for task */
-	std::unique_ptr<as> as(as_create(getpid()));
+	std::unique_ptr<as> as(as_create(task_pid(t)));
 
 	/* load program image into new address space */
 	elf_load_result e;

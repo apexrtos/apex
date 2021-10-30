@@ -92,7 +92,6 @@ vnode::vnode()
 , v_name{nullptr}
 , v_data{nullptr}
 , v_pipe{nullptr}
-, v_maprefcnt{0}
 {
 	list_init(&v_link);
 	mutex_init(&v_lock);

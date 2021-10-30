@@ -27,11 +27,14 @@ public:
 	virtual ~pgd() = 0;
 };
 
+inline pgd::~pgd() { }
+
 #if defined(CONFIG_MMU)
 void mmu_init(std::span<const mmumap>);
 expect<std::unique_ptr<pgd>> mmu_newmap(pid_t);
 expect_ok mmu_map(as &, phys, void *, size_t, int prot);
-void mmu_unmap(as &, void *, size_t);
+expect_ok mmu_map(as &, void *, size_t, int prot, long attr);
+expect_ok mmu_unmap(as &, void *, size_t);
 void mmu_early_map(phys, void *, size_t, unsigned flags);
 void mmu_switch(const as &);
 expect<phys> mmu_extract(const as &, void *, size_t, int prot);

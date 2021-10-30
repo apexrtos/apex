@@ -66,6 +66,7 @@ SOURCES := \
     src/stdio/vfwprintf.c \
     src/stdio/vsnprintf.c \
     src/stdio/vswprintf.c \
+    src/stdlib/abs.c \
     src/stdlib/atol.c \
     src/stdlib/lldiv.c \
     src/stdlib/qsort.c \

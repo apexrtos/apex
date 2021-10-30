@@ -6,11 +6,12 @@
 #include <arch/mmu.h>
 #include <cassert>
 #include <debug.h>
+#include <sys/mman.h>
 
 /*
  * vm_read - read data from address space
  */
-int
+expect_pos
 vm_read(as *a, void *l, const void *r, size_t s)
 {
 	#warning vm_read not implemented
@@ -20,7 +21,7 @@ vm_read(as *a, void *l, const void *r, size_t s)
 /*
  * vm_write - write data to address space
  */
-int
+expect_pos
 vm_write(as *a, const void *l, void *r, size_t s)
 {
 	#warning vm_write not implemented
@@ -30,7 +31,7 @@ vm_write(as *a, const void *l, void *r, size_t s)
 /*
  * vm_copy - copy data in address space
  */
-int
+expect_pos
 vm_copy(as *a, void *dst, const void *src, size_t s)
 {
 	#warning vm_copy not implemented
@@ -49,56 +50,59 @@ as_switch(as *a)
 /*
  * as_map - map memory into address space
  */
-ptr_err<void>
+expect<void *>
 as_map(as *a, void *req_addr, size_t len, int prot, int flags,
     std::unique_ptr<vnode> vn, off_t off, long attr)
 {
 	/* fixed replaces any existing mapping */
-	const auto fixed = flags & MAP_FIXED;
-
-	as_find_free(a, req_addr, len, flags);
-
+	const bool fixed = flags & MAP_FIXED;
+	const bool shared = flags & MAP_SHARED;
 
 	/* find free area in address space */
-
+	char *virt;
+	if (auto r = as_find_free(a, req_addr, len, flags); !r.ok())
+		return r.err();
+	else virt = (char *)r.val();
 
 	if (vn) {
-		/* establish memory mapping for vnode */
-		vn_map(vn.get());
+		virt += PAGE_OFF(off);
+
+		/* establish mapping from file to memory */
+		file_map *fmap;
+		if (auto r = vn_map(vn.get(), off, len, flags, attr); !r.ok())
+			return r.err();
+		else fmap = r.val();
+
+		/* establish mapping from file to virtual address space */
+		char *v = virt;
+		while (len) {
+#warning _WHOA_ this is totally wrong
+#warning find will find the mapping containg off, which could be a large mapping with
+#warning off somewhere in the middle!
+			auto p = fmap->find(off)->phys + PAGE_OFF(v);
+			auto l = std::min(p->size, len) - PAGE_OFF(v);
+			if (auto r = mmu_map(*a, p, v, l, prot); !r.ok())
+				return r.err();
+			off += l;
+			len -= l;
+			v += l;
+		}
+	} else {
+		/* establish anonymous mapping */
+		if (auto r = mmu_map(*a, virt, len, prot, attr); !r.ok())
+			return r.err();
 	}
 
-	/* map file */
-	/* find region in address space */
-	/* pass region & file to mmu to establish mmu mapping */
-	/* - RO? RW? COW? */
-
-
-
-	/* should a vnode (file) know how to map itself? readonly for now? */
-	/* vnode needs to have the same virt->phys mapping as addr space */
-	/* allows for a nice XIP implementation? */
-	/* all files read/write like that? */
-	/* cached pages? - can be reused freely */
-	/* reference page from underlying storage? e.g. file on mmc should not
-	 * doubly 'map' if it is aligned nicely */
-
-	/* what's a 'quick' way to do this? */
-
-
-#warning as_map not implemented
-assert(0);
+	return (void *)virt;
 }
 
 /*
  * as_unmap - unmap memory from address space
  */
-int
+expect_ok
 as_unmap(as *a, void *addr, size_t len, vnode *vn, off_t off)
 {
-	mmu_unmap(a, addr, len);
-
-	if (vn)
-		vn_unmap(vn);
+	mmu_unmap(*a, addr, len);
 
 	#warning as_unmap not implemented
 	assert(0);
@@ -107,7 +111,7 @@ as_unmap(as *a, void *addr, size_t len, vnode *vn, off_t off)
 /*
  * as_mprotect - set protection flags on memory in address space
  */
-int
+expect_ok
 as_mprotect(as *a, void *addr, size_t len, int prot)
 {
 	#warning as_mprotect not implemented
@@ -117,7 +121,7 @@ as_mprotect(as *a, void *addr, size_t len, int prot)
 /*
  * as_madvise - act on advice about intended memory use
  */
-int
+expect_ok
 as_madvise(as *a, seg *s, void *addr, size_t len, int advice)
 {
 	#warning as_madvise not implemented

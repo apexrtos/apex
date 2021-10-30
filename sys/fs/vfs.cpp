@@ -31,6 +31,7 @@
 #include <sch.h>
 #include <sig.h>
 #include <sync.h>
+#include <sys/mman.h>
 #include <sys/param.h>
 #include <sys/uio.h>
 #include <sys/vfs.h>
@@ -734,21 +735,45 @@ vn_name(vnode *vn)
 }
 
 /*
+ * vn_unmap - release memory map of vnode
+ */
+static void
+vn_unmap(vnode *vp)
+{
+	vn_lock(vp);
+
+	if (vp->v_map.empty())
+		goto out;
+
+	/* try filesystem specific unmapping */
+	if (!VOP_UNMAP(vp))
+		goto out;
+
+	vp->v_map.for_each([&](phys phys, size_t size, unsigned attr) {
+		if (!page_free(phys, size, vp).ok())
+			panic("BUG");
+	});
+	vp->v_map.clear();
+
+out:
+	vn_unlock(vp);
+}
+
+/*
  * vn_map - establish memory map for vnode
  */
-expect_ok
-vn_map(vnode *vp)
+expect<file_map *>
+vn_map(vnode *vp, off_t off, size_t len, int flags, long attr)
 {
-	expect_ok rc;
-	off_t off = 0;
+	expect_ok tmp;
+	expect<file_map *> rc = &vp->v_map;
 
 	vn_lock(vp);
 
 	/* already mapped? */
-	if (vp->v_maprefcnt) {
-		++vp->v_maprefcnt;
+#warning ONLY MAP WHAT WAS REQUESTED?
+	if (!vp->v_map.empty())
 		goto out;
-	}
 
 	/* only supported on normal files */
 	if (!S_ISREG(vp->v_mode)) {
@@ -757,70 +782,43 @@ vn_map(vnode *vp)
 	}
 
 	/* try filesystems specific mapping */
-	if (auto r = VOP_MAP(vp); r != -ENOTSUP) {
+	if (auto r = VOP_MAP(vp, off, len, flags, attr); r != -ENOTSUP) {
 		rc = std::errc{-r};
 		goto out;
 	}
 
+	/* writing to files via mmap is not supported on Apex */
+	if (flags & MAP_SHARED) {
+		rc = std::errc::not_supported;
+		goto out;
+	}
+
 	/* otherwise map by reading */
-	rc = page_alloc_multi(vp->v_size, MA_NORMAL, vp,
-			      [&](page_ptr &&p) -> expect_ok {
+#warning ONLY MAP WHAT WAS REQUESTED?
+	tmp = page_alloc_multi(len, attr, vp, [&](page_ptr &&p) -> expect_ok {
 		size_t rd;
-		if (auto r = vn_pread(vp, phys_to_virt(p), p.size(), off);
-		    r < 0)
+		if (auto r = vn_pread(vp, phys_to_virt(p), p.size(), off); r < 0)
 			return std::errc{-r};
-		else
-			rd = r;
+		else rd = r;
 		/* short reads not expected here */
-		assert(rd == p.size() || off + rd == vp->v_size);
-		/* zero final partial page */
+		assert(rd == p.size() || off + rd == vp->v_size || !rd);
+		/* zero any partial pages */
 		if (rd < p.size())
 			memset((char *)phys_to_virt(p) + rd, 0, p.size() - rd);
-		vp->v_map.map((void *)off, p.release(), p.size(), 0);
+		vp->v_map.map(off, p.get(), p.size(), 0);
+		p.release();
 		off += rd;
 		return {};
 	});
-
-	++vp->v_maprefcnt;
-
-	/* free pages on failure */
-	if (!rc.ok())
+	if (!tmp.ok()) {
+		/* free pages on failure */
 		vn_unmap(vp);
+		rc = tmp.err();
+	}
 
 out:
 	vn_unlock(vp);
 	return rc;
-}
-
-/*
- * vn_unmap - release memory map of vnode
- */
-void
-vn_unmap(vnode *vp)
-{
-	off_t off = 0;
-
-	vn_lock(vp);
-
-	if (--vp->v_maprefcnt > 0)
-		goto out;
-
-	/* try filesystem specific unmapping */
-	if (!VOP_UNMAP(vp))
-		goto out;
-
-	while (true) {
-		auto r = vp->v_map.find((void *)off);
-		if (!r)
-			break;
-		if (!page_free(r->phys, r->size, vp).ok())
-			panic("BUG");
-		off += r->size;
-	}
-	vp->v_map.clear();
-
-out:
-	vn_unlock(vp);
 }
 
 /*
@@ -847,6 +845,7 @@ putfp(file *fp)
 	else
 		err = VOP_CLOSE(fp);
 
+	vn_unmap(fp->f_vnode);
 	vput(fp->f_vnode);
 	free(fp);
 	return err;

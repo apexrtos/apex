@@ -673,8 +673,12 @@ as_create(pid_t pid)
 as *
 as_copy(as *a, pid_t pid)
 {
-	/* REVISIT: implement */
+#if defined(CONFIG_MMU)
+#warning TODO: fork
+	assert(0);
+#else
 	return (as*)DERR(-ENOSYS);
+#endif
 }
 
 /*
@@ -771,6 +775,8 @@ as_modify_end(as *a)
 void
 as_dump(const as *a)
 {
+	info("  as %p base %p len %zx brk %p ref %u\n",
+	     a, a->base, a->len, a->brk, a->ref);
 	seg *s;
 	list_for_each_entry(s, &a->segs, link) {
 		info("  %p-%p %c%c%c%c %8zu %8lld %8zu %s\n",
@@ -901,7 +907,7 @@ as_find_free(as *a, void *vreq_addr, size_t len, int flags)
 
 	/* [req_addr, req_addr + len) must fit in address space */
 	if (req_addr < a->base ||
-	    (size_t)((char *)a->base + a->len - (char *)req_addr) < len)
+	    (size_t)((char *)a->base + a->len - req_addr) < len)
 		return DERR(std::errc::invalid_argument);
 
 	/* fixed mappings replace existing mappings */
@@ -932,3 +938,14 @@ as_find_free(as *a, void *vreq_addr, size_t len, int flags)
 
 	return res;
 }
+
+/*
+ * as_pgd - get page directory for address space
+ */
+#if defined(CONFIG_MMU)
+pgd *
+as_pgd(as *a)
+{
+	return a->pgd.get();
+}
+#endif

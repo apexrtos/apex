@@ -100,7 +100,7 @@ serial_ns16550_init(const serial_ns16550_desc *d)
 {
 	auto tp = tty_create(d->name, MA_NORMAL, 128, 1, tproc, oproc, nullptr,
 			     nullptr, new ns16550_inst{d});
-	if (tp > (void *)-4096UL)
+	if (!tp.ok())
 		panic("tty_create");
-	irq_attach(d->irq, d->ipl, d->irq_mode, isr, nullptr, tp);
+	irq_attach(d->irq, d->ipl, d->irq_mode, isr, nullptr, tp.val());
 }
