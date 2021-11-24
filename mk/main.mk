@@ -496,7 +496,7 @@ define fn_process_mkfile
         # include any MK files
         ifneq ($$(MK),)
             mk_dir_stack := $$(mk_dir) $$(mk_dir_stack)
-            $$(foreach f,$$(addprefix $$(firstword $$(mk_dir_stack)),$$(MK)),$$(eval $$(call fn_process_mkfile,$$(f))))
+            $$(foreach f,$$(call fn_relative_path,$$(firstword $$(mk_dir_stack)),$$(MK)),$$(eval $$(call fn_process_mkfile,$$(f))))
             mk_dir_stack := $$(wordlist 2,$$(words $$(mk_dir_stack)),$$(mk_dir_stack))
         endif
     endif
