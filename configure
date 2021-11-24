@@ -111,7 +111,7 @@ parse_config()
 		option)
 			param=$(expr "x$rest" : 'x\([^=[:space:]]*\)')
 			value=$(expr "x$rest" : 'x[^=[:space:]]*=*[[:space:]]*\(.*\)')
-			if [ "x$value" = x ] ; then
+			if [ "$value" = "" ] ; then
 				echo "CONFIG_$param := y" >> "$CONFIG_MK"
 				echo "#define CONFIG_$param 1" >> "$CONFIG_H"
 			else
@@ -184,11 +184,11 @@ parse_config()
 				;;
 			esac
 
-			if [ "x$order" = x ]; then
+			if [ "$order" = "" ]; then
 				order=0
 			fi
 
-			if [ "x$args" != x ]; then
+			if [ "$args" != "" ]; then
 				echo "#include <$path/init.h>" >> "$DRIVERS_H"
 				echo "/* $order */ { $decls $c_name""_init$template$args; }" >> "$DRIVERS_C"
 			fi
@@ -209,7 +209,7 @@ parse_config()
 			parse_config "$I"
 			;;
 		machine)
-			[ "x$machine" != x ] &&
+			[ "$machine" != "" ] &&
 				quit "machine already specified"
 			machine=$rest
 			find_config MACHINE_IN machine "$machine"
@@ -217,24 +217,24 @@ parse_config()
 			machinedir=${MACHINE_IN%%/conf*}
 			;;
 		cpu)
-			[ "x$cpu" != x ] &&
+			[ "$cpu" != "" ] &&
 				quit "cpu already specified"
 			cpu=$rest
 			find_config CPU_IN cpu "$cpu"
 			parse_config "$CPU_IN"
 			;;
 		arch)
-			[ "x$arch" != x ] &&
+			[ "$arch" != "" ] &&
 				quit "arch already specified"
 			arch=$rest
 			;;
 		subarch)
-			[ "x$subarch" != x ] &&
+			[ "$subarch" != "" ] &&
 				quit "subarch already specified"
 			subarch=$rest
 			;;
 		cross-compile)
-			[ "x$cross" != x ] &&
+			[ "$cross" != "" ] &&
 				quit "cross-compile already specified"
 			cross=$rest
 			;;
@@ -334,13 +334,13 @@ main()
 	} > "$MACHCFG_C"
 
 	# Handle --cpu option
-	if [ "x$cpu" != x ]; then
+	if [ "$cpu" != "" ]; then
 		find_config CPU_IN cpu "$cpu"
 		parse_config "$CPU_IN"
 	fi
 
 	# Handle --machine option
-	if [ "x$machine" != x ]; then
+	if [ "$machine" != "" ]; then
 		find_config MACHINE_IN machine "$machine"
 		machine=${machine%%/conf*}
 		parse_config "$MACHINE_IN"
@@ -348,15 +348,15 @@ main()
 	fi
 
 	# Handle --project option
-	[ "x$project" = x ] &&
+	[ "$project" = "" ] &&
 		quit "'--project' option not specified"
 	find_config PROJECT_IN project "$project"
 	parse_config "$PROJECT_IN"
 
 	# Check options
-	[ "x$machine" = x ] &&
+	[ "$machine" = "" ] &&
 		quit "no machine specified"
-	[ "x$cpu" = x ] &&
+	[ "$cpu" = "" ] &&
 		quit "no cpu specified"
 
 	# Verify architecture is sane
@@ -372,7 +372,7 @@ main()
 	esac
 
 	# Guess cross compiler if it wasn't explicitly specified
-	if [ "x$cross" = x ]; then
+	if [ "$cross" = "" ]; then
 		cross=$arch$subarch-linux-musleabi$hf
 		$print "Guessing cross compiler prefix... $cross"
 	fi
@@ -406,9 +406,9 @@ main()
 		echo "CONFIG_CROSS_COMPILE := $cross-"
 		echo "CONFIG_COMPILER := $compiler"
 		echo "CONFIG_DRIVERS := \$(sort \$(CONFIG_DRIVER_LIST))"
-		[ "x$subarch" != x ] &&
+		[ "$subarch" != "" ] &&
 			echo "CONFIG_SUBARCH := $subarch"
-		[ "x$nodebug" != x ] &&
+		[ "$nodebug" != "" ] &&
 			echo "CONFIG_DEFS += -DNDEBUG"
 		echo "MK += \$(FINALMK)"
 	} >> "$CONFIG_MK"
@@ -418,7 +418,7 @@ main()
 		echo "#define CONFIG_MACHINE \"$machine\""
 		echo "#define CONFIG_CPU \"$cpu\""
 		echo "#define CONFIG_ARCH \"$arch\""
-		if [ "x$subarch" != x ]; then
+		if [ "$subarch" != "" ]; then
 			echo "#define CONFIG_SUBARCH \"$subarch\""
 			echo "#define CONFIG_SUBARCH_$subarch 1"
 		fi
