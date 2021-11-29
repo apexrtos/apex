@@ -25,6 +25,7 @@ INCLUDE := \
 	$(CONFIG_BUILDDIR) \
 	$(CONFIG_APEXDIR)/sys/include \
 	arch/$(CONFIG_ARCH) \
+	arch/generic \
 	src/internal \
 	src/include \
 

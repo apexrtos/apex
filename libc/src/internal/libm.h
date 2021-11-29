@@ -5,6 +5,7 @@
 #include <float.h>
 #include <math.h>
 #include <endian.h>
+#include "fp_arch.h"
 
 #if LDBL_MANT_DIG == 53 && LDBL_MAX_EXP == 1024
 #elif LDBL_MANT_DIG == 64 && LDBL_MAX_EXP == 16384 && __BYTE_ORDER == __LITTLE_ENDIAN
@@ -149,9 +150,6 @@ static inline long double fp_barrierl(long double x)
    mode that does so (e.g. -frounding-math in gcc). Then it can be
    used to evaluate an expression for its fenv side-effects only.   */
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
-
 #ifndef fp_force_evalf
 #define fp_force_evalf fp_force_evalf
 static inline void fp_force_evalf(float x)
@@ -178,8 +176,6 @@ static inline void fp_force_evall(long double x)
 	y = x;
 }
 #endif
-
-#pragma GCC diagnostic pop
 
 #define FORCE_EVAL(x) do {                        \
 	if (sizeof(x) == sizeof(float)) {         \
@@ -240,13 +236,13 @@ hidden int    __rem_pio2(double,double*);
 hidden double __sin(double,double,int);
 hidden double __cos(double,double);
 hidden double __tan(double,double,int);
-hidden double __expo2(double);
+hidden double __expo2(double,double);
 
 hidden int    __rem_pio2f(float,double*);
 hidden float  __sindf(double);
 hidden float  __cosdf(double);
 hidden float  __tandf(double,int);
-hidden float  __expo2f(float);
+hidden float  __expo2f(float,float);
 
 hidden int __rem_pio2l(long double, long double *);
 hidden long double __sinl(long double, long double, int);
@@ -271,5 +267,8 @@ hidden double __math_uflow(uint32_t);
 hidden double __math_oflow(uint32_t);
 hidden double __math_divzero(uint32_t);
 hidden double __math_invalid(double);
+#if LDBL_MANT_DIG != DBL_MANT_DIG
+hidden long double __math_invalidl(long double);
+#endif
 
 #endif
