@@ -30,6 +30,7 @@ INCLUDE := \
     $(CONFIG_APEXDIR)/libc++/include \
     $(CONFIG_APEXDIR) \
     $(CONFIG_BUILDDIR) \
+    $(CONFIG_APEXDIR)/sys \
 
 SOURCES := \
     errno.cpp \
