@@ -367,7 +367,7 @@ main()
 		quit "Architecture not specified"
 		;;
 	*)
-		quit "Unkown target architecture: $arch"
+		quit "Unknown target architecture: $arch"
 		;;
 	esac
 
