@@ -42,8 +42,8 @@ cpu arm/cortex-m3
 /*
  * QEMU command line
  */
-option QEMU_IMG bootimg
-option QEMU_CMD qemu-system-arm -nographic -machine mps2-an385 -kernel
+makeoption QEMU_IMG := bootimg
+makeoption QEMU_CMD := qemu-system-arm -nographic -machine mps2-an385 -kernel
 
 /*
  * Pretty machine name

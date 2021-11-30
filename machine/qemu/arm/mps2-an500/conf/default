@@ -43,8 +43,8 @@ option MPU
 /*
  * QEMU command line
  */
-option QEMU_IMG bootimg
-option QEMU_CMD qemu-system-arm -nographic -machine mps2-an500 -kernel
+makeoption QEMU_IMG := bootimg
+makeoption QEMU_CMD := qemu-system-arm -nographic -machine mps2-an500 -kernel
 
 /*
  * Pretty machine name
