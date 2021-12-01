@@ -361,7 +361,7 @@ main()
 
 	# Verify architecture is sane
 	case $arch in
-	arm|i386|powerpc)
+	arm|i386|powerpc|riscv32)
 		;;
 	"")
 		quit "Architecture not specified"
