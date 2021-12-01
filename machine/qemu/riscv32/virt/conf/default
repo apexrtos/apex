@@ -1,0 +1,56 @@
+/*
+ * Kernel
+ */
+#ifdef CONFIG_MMU
+memory PAGE_OFFSET	0x80000000
+#else
+memory PAGE_OFFSET	0x00000000
+#endif
+memory KSTACK_SIZE	8192		// Kernel stack size
+option TIME_SLICE_MS	50		// milliseconds
+option HZ		1000
+option PAGE_SIZE	0x1000
+option IRQS		53		// External interrupts
+option MA_NORMAL_ATTR	(MA_SPEED_0)	// Normal allocations in DRAM
+option MA_FAST_ATTR	(MA_SPEED_0)	// Fast allocations in DRAM
+
+/*
+ * RAM
+ */
+memory RAM_BASE		0x80000000
+memory RAM_SIZE		0x8000000
+
+/*
+ * QEMU loads boot image at start of RAM when using -bios option.
+ * Allow up to 16MiB image.
+ * Place loader data at end of RAM.
+ */
+memory BOOTIMAGE_SIZE	0x1000000
+memory BOOTIMAGE_BASE	(CONFIG_RAM_BASE_VIRT)
+memory LOADER_RAM_SIZE	0x2000
+memory LOADER_RAM_BASE	(CONFIG_RAM_BASE_VIRT + CONFIG_RAM_SIZE - CONFIG_LOADER_RAM_SIZE)
+
+/*
+ * Load kernel after boot image.
+ * Allow up to 16MiB image.
+ */
+memory KERNEL_BASE	(CONFIG_RAM_BASE_VIRT + CONFIG_BOOTIMAGE_SIZE)
+memory KERNEL_MAX_SIZE	0x1000000
+
+/*
+ * Device drivers
+ */
+driver-2 sys/dev/intc/sifive/clint{.base = 0x02000000_phys, .clock = 10000000}
+driver-1 sys/dev/intc/sifive/plic{.base = 0x0c000000_phys}
+driver sys/dev/serial/ns16550{.name = "ttyS0", .base = 0x10000000_phys, .ipl = IPL_MIN, .irq = 10, .irq_mode = 0}
+
+/*
+ * QEMU command line
+ */
+makeoption QEMU_IMG := bootimg
+makeoption QEMU_CMD := qemu-system-riscv32 -nographic -machine virt -cpu $(CONFIG_QEMU_CPU) -bios
+
+/*
+ * Pretty machine name
+ */
+option MACHINE_NAME QEMU RISC-V 32-bit virt
