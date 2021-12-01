@@ -1,0 +1,9 @@
+/*
+ * Options for basic RISC-V 32-bit soft-float core with machine/user PMP
+ */
+arch riscv32
+makeoption MCPU := -march=rv32ima
+makeoption QEMU_CPU := rv32,g=off,d=off,f=off,c=off,s=off
+makeoption USER_CFLAGS += -fPIE
+makeoption USER_LDFLAGS += -z max-page-size=0x1000 -static -static-pie
+option MPU
