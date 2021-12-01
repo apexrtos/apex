@@ -121,6 +121,11 @@ SOURCES += \
     src/string/memcpy.c
 endif
 
+ifeq ($(CONFIG_ARCH),riscv32)
+SOURCES += \
+    src/string/memcpy.c
+endif
+
 CFLAGS_MEMOPS := $(if $(filter $(COMPILER),gcc),-fno-tree-loop-distribute-patterns,)
 
 $(APEX_SUBDIR)libc/src/string/memchr_EXTRA_CFLAGS := -O3
