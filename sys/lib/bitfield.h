@@ -54,6 +54,12 @@ struct bits {
 		return static_cast<data_type>(r >> offset & max);
 	}
 
+	constexpr
+	storage_type raw() const
+	{
+		return r & mask;
+	}
+
 	constexpr bits &
 	operator=(data_type v)
 	{
