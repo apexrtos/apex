@@ -6,7 +6,7 @@
 
 void interrupt_enable();
 void interrupt_disable();
-void interrupt_save(int *);
+void interrupt_save_disable(int *);
 void interrupt_restore(int);
 bool interrupt_enabled();
 void interrupt_mask(int);

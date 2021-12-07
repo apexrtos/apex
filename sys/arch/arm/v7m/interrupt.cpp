@@ -18,9 +18,10 @@ interrupt_disable()
 }
 
 void
-interrupt_save(int *l)
+interrupt_save_disable(int *l)
 {
 	asm volatile("mrs %0, primask" : "=r" (*l));
+	interrupt_disable();
 }
 
 void
@@ -33,7 +34,7 @@ bool
 interrupt_enabled()
 {
 	int primask;
-	interrupt_save(&primask);
+	asm volatile("mrs %0, primask" : "=r" (primask));
 	return primask == 0;
 }
 

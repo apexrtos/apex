@@ -171,8 +171,7 @@ int
 irq_disable()
 {
 	int s;
-	interrupt_save(&s);
-	interrupt_disable();
+	interrupt_save_disable(&s);
 	return s;
 }
 
