@@ -703,12 +703,11 @@ sch_stop(thread *th)
 bool
 sch_testexit()
 {
-	assert(interrupt_enabled());
 	assert(!locks);
 
-	interrupt_disable();
+	const int s = irq_disable();
 	if (!(active_thread->state & TH_EXIT)) {
-		interrupt_enable();
+		irq_restore(s);
 		return false;
 	}
 
@@ -716,7 +715,7 @@ sch_testexit()
 	active_thread->state |= TH_ZOMBIE;
 	resched = RESCHED_SWITCH;
 	arch_schedule();
-	interrupt_enable();
+	irq_restore(s);
 
 	return true;
 }
@@ -746,7 +745,6 @@ void
 sch_unlock()
 {
 	assert(locks > 0);
-	assert(locks > 1 || interrupt_enabled());
 
 	thread_check();
 	compiler_barrier();
@@ -755,10 +753,10 @@ sch_unlock()
 	if (locks)
 		return;
 
-	interrupt_disable();
+	const int s = irq_disable();
 	if (resched)
 		arch_schedule();
-	interrupt_enable();
+	irq_restore(s);
 }
 
 /*
