@@ -84,18 +84,28 @@
  */
 __fast_rodata const void *const
 syscall_table[SYSCALL_TABLE_SIZE] = {
+#ifdef SYS_access
 	[SYS_access] = sc_access,
+#endif
 	[SYS_brk] = sc_brk,
 	[SYS_chdir] = sc_chdir,
+#ifdef SYS_chmod
 	[SYS_chmod] = sc_chmod,				/* stub */
+#endif
+#ifdef SYS_chown
 	[SYS_chown] = sc_chown,
+#endif
 	[SYS_clock_gettime64] = sc_clock_gettime,
 	[SYS_clock_settime64] = sc_clock_settime,
+#ifdef SYS_clock_settime32
 	[SYS_clock_settime32] = sc_clock_settime32,
+#endif
 	[SYS_clone] = sc_clone,
 	[SYS_close] = close,
-	[SYS_dup2] = dup2,
 	[SYS_dup] = dup,
+#ifdef SYS_dup2
+	[SYS_dup2] = dup2,
+#endif
 	[SYS_execve] = sc_execve,
 	[SYS_exit] = sc_exit,
 	[SYS_exit_group] = sc_exit_group,
@@ -105,9 +115,15 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_fchown] = fchown,				/* stub */
 	[SYS_fchownat] = sc_fchownat,			/* stub */
 	[SYS_fcntl64] = sc_fcntl,
+#ifdef SYS_fork
 	[SYS_fork] = sc_fork,
+#endif
+#ifdef SYS_fstat64
 	[SYS_fstat64] = sc_fstat,
+#endif
+#ifdef SYS_fstatat64
 	[SYS_fstatat64] = sc_fstatat,
+#endif
 	[SYS_fstatfs64] = sc_fstatfs,
 	[SYS_fsync] = fsync,
 	[SYS_futex] = sc_futex,
@@ -123,35 +139,55 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_getuid] = getuid,			/* no user support */
 	[SYS_ioctl] = sc_ioctl,
 	[SYS_kill] = kill,
+#ifdef SYS_lchown
 	[SYS_lchown] = sc_lchown,
+#endif
+#ifdef SYS_lstat64
 	[SYS_lstat64] = sc_lstat,
+#endif
 	[SYS_madvise] = sc_madvise,
+#ifdef SYS_mkdir
 	[SYS_mkdir] = sc_mkdir,
+#endif
 	[SYS_mkdirat] = sc_mkdirat,
+#ifdef SYS_mknod
 	[SYS_mknod] = sc_mknod,
+#endif
 	[SYS_mknodat] = sc_mknodat,
 	[SYS_mmap2] = sc_mmap2,
 	[SYS_mount] = sc_mount,
 	[SYS_mprotect] = sc_mprotect,
 	[SYS_munmap] = sc_munmap,
 	[SYS_nanosleep] = sc_nanosleep,
+#ifdef SYS_open
 	[SYS_open] = sc_open,
+#endif
 	[SYS_openat] = sc_openat,
 	[SYS_pipe2] = sc_pipe2,
+#ifdef SYS_pipe
 	[SYS_pipe] = sc_pipe,
+#endif
 	[SYS_prctl] = prctl,
 	[SYS_pread64] = sc_pread,
 	[SYS_preadv] = sc_preadv,
 	[SYS_pwrite64] = sc_pwrite,
 	[SYS_pwritev] = sc_pwritev,
 	[SYS_read] = sc_read,
+#ifdef SYS_readlink
 	[SYS_readlink] = sc_readlink,
+#endif
 	[SYS_readlinkat] = sc_readlinkat,
 	[SYS_readv] = sc_readv,
 	[SYS_reboot] = sc_reboot,
+#ifdef SYS_rename
 	[SYS_rename] = sc_rename,
+#endif
+#ifdef SYS_renameat
 	[SYS_renameat] = sc_renameat,
+#endif
+#ifdef SYS_rmdir
 	[SYS_rmdir] = sc_rmdir,
+#endif
 	[SYS_rt_sigaction] = sc_rt_sigaction,
 	[SYS_rt_sigprocmask] = sc_rt_sigprocmask,
 	[SYS_rt_sigreturn] = sc_rt_sigreturn,
@@ -165,11 +201,17 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_setitimer] = sc_setitimer,
 	[SYS_setpgid] = setpgid,
 	[SYS_setsid] = setsid,
+#ifdef SYS_sigreturn
 	[SYS_sigreturn] = sc_sigreturn,
+#endif
+#ifdef SYS_stat64
 	[SYS_stat64] = sc_stat,
+#endif
 	[SYS_statfs64] = sc_statfs,
 	[SYS_statx] = sc_statx,			    /* stub */
+#ifdef SYS_symlink
 	[SYS_symlink] = sc_symlink,
+#endif
 	[SYS_symlinkat] = sc_symlinkat,
 	[SYS_sync] = sc_sync,
 	[SYS_syslog] = sc_syslog,
@@ -178,11 +220,19 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_umask] = umask,
 	[SYS_umount2] = sc_umount2,
 	[SYS_uname] = sc_uname,
+#ifdef SYS_unlink
 	[SYS_unlink] = sc_unlink,
+#endif
 	[SYS_unlinkat] = sc_unlinkat,
+#ifdef SYS_utimensat
 	[SYS_utimensat] = sc_utimensat,		    /* no time support in FS */
+#endif
+#ifdef SYS_vfork
 	[SYS_vfork] = sc_vfork,
+#endif
+#ifdef SYS_wait4
 	[SYS_wait4] = sc_wait4,
+#endif
 	[SYS_write] = sc_write,
 	[SYS_writev] = sc_writev,
 #if UINTPTR_MAX == 0xffffffff
