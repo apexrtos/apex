@@ -233,6 +233,9 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 #ifdef SYS_wait4
 	[SYS_wait4] = sc_wait4,
 #endif
+#ifdef SYS_waitid
+	[SYS_waitid] = sc_waitid,
+#endif
 	[SYS_write] = sc_write,
 	[SYS_writev] = sc_writev,
 #if UINTPTR_MAX == 0xffffffff

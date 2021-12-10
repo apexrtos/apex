@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 struct dirent;
 struct iovec;
@@ -105,6 +106,7 @@ int sc_rt_sigreturn(void);
 int sc_sigreturn(void);
 int sc_syslog(int, char *, int);
 pid_t sc_wait4(pid_t, int *, int, struct rusage *);
+int sc_waitid(idtype_t, id_t, siginfo_t *, int, struct rusage *);
 int sc_tkill(int, int);
 int sc_tgkill(pid_t, int, int);
 

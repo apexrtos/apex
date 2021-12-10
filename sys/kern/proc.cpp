@@ -109,6 +109,45 @@ proc_exit(task *t, int status, int signal)
 }
 
 /*
+ * proc_reap_zombie - reap a zombie process
+ *
+ * Must be called with scheduler locked.
+ */
+static
+void
+proc_reap_zombie(task *t)
+{
+	assert(sch_locks() == 1);
+	assert(t->state == PS_ZOMB);
+
+	/*
+	 * Wait for threads to finish
+	 */
+	const k_sigset_t sig_mask = sig_block_all();
+	while (!list_empty(&t->threads)) {
+		sch_prepare_sleep(&t->thread_event, 0);
+		sch_unlock();
+		sch_continue_sleep();
+		sch_lock();
+	}
+	sig_restore(&sig_mask);
+
+	/*
+	 * Free resources
+	 */
+	list_remove(&t->link);
+	sch_unlock();
+	fs_exit(t);
+	futexes_destroy(task_futexes(t));
+	as_modify_begin(t->as);
+	as_destroy(t->as);
+	t->magic = 0;
+	free(t->path);
+	free(t);
+	sch_lock();
+}
+
+/*
  * Find the zombie process in the child processes. It just
  * returns the pid and exit code if it find at least one zombie
  * process.
@@ -136,7 +175,7 @@ sc_wait4(pid_t pid, int *ustatus, int options, rusage *rusage)
 	int have_children;
 
 	if (rusage)
-		dbg("WARNING: wait4 rusage not yet implemented\n");
+		DERR(-ENOTSUP);
 
 again:
 	sch_lock();
@@ -187,33 +226,9 @@ again:
 			} else if (t->state == PS_ZOMB) {
 				cpid = task_pid(t);
 				status = t->exitcode;
-
-				/*
-				 * Wait for child threads to finish
-				 */
-				const k_sigset_t sig_mask = sig_block_all();
-				while (!list_empty(&t->threads)) {
-					sch_prepare_sleep(&t->thread_event, 0);
-					sch_unlock();
-					sch_continue_sleep();
-					sch_lock();
-				}
-				sig_restore(&sig_mask);
-
-				/*
-				 * Free child resources
-				 */
-				list_remove(&t->link);
-				sch_unlock();
-				fs_exit(t);
-				futexes_destroy(task_futexes(t));
-				as_modify_begin(t->as);
-				as_destroy(t->as);
-				t->magic = 0;
-				free(t->path);
-				free(t);
-				sch_lock();
+				proc_reap_zombie(t);
 				break;
+
 			}
 		}
 
@@ -252,6 +267,101 @@ again:
 	}
 
 	sch_unlock();
+	return err;
+}
+
+/*
+ * sc_waitid
+ */
+int
+sc_waitid(idtype_t type, id_t id, siginfo_t *uinfop, int options, rusage *ru)
+{
+	int err, status, code;
+	task *t, *cur = task_cur();
+	pid_t cpid = 0;
+	int have_children;
+
+	if (!(options & (WSTOPPED | WEXITED | WCONTINUED)))
+		return DERR(-EINVAL);
+
+	/* Apex doesn't support all options for waitid yet */
+	if (ru || options & WCONTINUED)
+		return DERR(-ENOTSUP);
+
+again:
+	sch_lock();
+	have_children = 0;
+	list_for_each_entry(t, &kern_task.link, link) {
+		if (t->parent != cur)
+			continue;
+
+		have_children = 1;
+
+		int match = 0;
+		if (type == P_ALL) {
+			/* wait for any child process */
+			match = 1;
+		} else if (type == P_PID) {
+			/* wait for a specific child process */
+			if (task_pid(t) == static_cast<pid_t>(id))
+				match = 1;
+		} else if (type == P_PGID) {
+			/* wait for a process with matching pgid */
+			if (t->pgid == cur->pgid)
+				match = 1;
+		} else {
+			err = DERR(-EINVAL);
+			break;
+		}
+		if (!match)
+			continue;
+		if (options & WSTOPPED && t->state == PS_STOP) {
+			cpid = task_pid(t);
+			status = t->exitcode;
+			code = CLD_STOPPED;
+			break;
+		}
+		if (options & WEXITED && t->state == PS_ZOMB) {
+			cpid = task_pid(t);
+			status = t->exitcode;
+			code = CLD_EXITED;
+			if (!(options & WNOWAIT))
+				proc_reap_zombie(t);
+			break;
+		}
+	}
+
+	siginfo_t info = {};
+	if (!have_children)
+		err = -ECHILD;
+	else if (cpid) {
+		err = 0;
+		info.si_pid = cpid;
+		info.si_code = code;
+		info.si_status = status;
+		info.si_signo = SIGCHLD;
+	} else if (options & WNOHANG) {
+		/* No child exited, but caller has asked us not to block */
+		err = 0;
+		/* si_signo and si_pid are already set to 0 */
+	} else {
+		/* Wait for a signal or child exit */
+		if (!(err = sch_prepare_sleep(&task_cur()->child_event, 0))) {
+			sch_unlock();
+			if (!(err = sch_continue_sleep()))
+				goto again;
+			sch_lock();
+		}
+	}
+
+	sch_unlock();
+	if (err == 0) {
+		if (auto r = vm_write(task_cur()->as, &info, uinfop,
+				      sizeof *uinfop);
+		    !r.ok())
+			err = r.sc_rval();
+	}
+
 	return err;
 }
 
