@@ -1929,6 +1929,13 @@ dup2(int fildes, int fildes2)
 	return dup2for(task_cur(), fildes, fildes2);
 }
 
+int
+dup3(int fildes, int fildes2, int flags)
+{
+	if (flags)
+		return DERR(-ENOTSUP);
+	return dup2for(task_cur(), fildes, fildes2);
+}
 /*
  * umask
  */

@@ -106,6 +106,9 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 #ifdef SYS_dup2
 	[SYS_dup2] = dup2,
 #endif
+#ifdef SYS_dup3
+	[SYS_dup3] = dup3,
+#endif
 	[SYS_execve] = sc_execve,
 	[SYS_exit] = sc_exit,
 	[SYS_exit_group] = sc_exit_group,
