@@ -262,13 +262,8 @@ sch_switch()
 	/*
 	 * Ignore spurious sch_switch calls.
 	 */
-	if (!resched)
+	if (!resched || locks)
 		return;
-
-	/*
-	 * Switching threads with preemption disabled makes no sense!
-	 */
-	assert(!locks);
 
 	/*
 	 * Switching threads while holding a spinlock is very bad.
