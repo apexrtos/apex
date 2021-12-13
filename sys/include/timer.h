@@ -62,7 +62,7 @@ void timer_callout(timer *, uint_fast64_t, uint_fast64_t, void (*)(void *), void
 void timer_redirect(timer *, void (*)(void *), void *);
 void timer_stop(timer *);
 uint_fast64_t timer_delay(uint_fast64_t);
-void timer_tick(int);
+void timer_tick(uint_fast64_t, uint_fast32_t);
 uint_fast64_t timer_monotonic();
 uint_fast64_t timer_monotonic_coarse();
 int timer_realtime_set(uint_fast64_t);

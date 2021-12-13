@@ -1,12 +1,15 @@
 #include "init.h"
 
 #include <arch/mmio.h>
-#include <clock.h>
+#include <atomic>
 #include <cpu.h>
 #include <debug.h>
+#include <irq.h>
 #include <sections.h>
 #include <timer.h>
 #include <v7m/bitfield.h>
+
+namespace {
 
 /*
  * SysTick registers
@@ -34,6 +37,34 @@ static_assert(sizeof(syst) == 16, "Bad SYST size");
 static syst *const SYST = (syst*)0xe000e010;
 
 __fast_bss uint64_t scale;
+__fast_bss std::atomic<uint64_t> monotonic;
+constexpr uint32_t tick_ns = 1000000000 / CONFIG_HZ;
+
+/*
+ * Compute how many nanoseconds we are through the current tick
+ *
+ * Must be called with SysTick interrupt disabled
+ */
+uint32_t
+ns_since_tick()
+{
+	if (!read32(&SYST->CSR).ENABLE)
+		return 0;
+
+	/* get CVR, making sure that we handle rollovers */
+	uint32_t cvr = read32(&SYST->CVR);
+	bool tick_pending = read32(&SCB->ICSR).PENDSTSET;
+	if (tick_pending)
+		cvr = read32(&SYST->CVR);
+
+	/* convert count to nanoseconds */
+	uint32_t ns = cvr ? ((read32(&SYST->RVR) + 1 - cvr) * scale) >> 32 : 0;
+	if (tick_pending)
+		ns += tick_ns;
+	return ns;
+}
+
+}
 
 /*
  * Initialise
@@ -64,34 +95,31 @@ arm_armv7m_systick_init(const arm_armv7m_systick_desc *d)
 }
 
 /*
- * Compute how many nanoseconds we are through the current tick
- *
- * Must be called with SysTick interrupt disabled
- */
-unsigned long
-clock_ns_since_tick()
-{
-	if (!read32(&SYST->CSR).ENABLE)
-		return 0;
-
-	/* get CVR, making sure that we handle rollovers */
-	uint32_t cvr = read32(&SYST->CVR);
-	bool tick_pending = read32(&SCB->ICSR).PENDSTSET;
-	if (tick_pending)
-		cvr = read32(&SYST->CVR);
-
-	/* convert count to nanoseconds */
-	uint32_t ns = cvr ? ((read32(&SYST->RVR) + 1 - cvr) * scale) >> 32 : 0;
-	if (tick_pending)
-		ns += 1000000000 / CONFIG_HZ;
-	return ns;
-}
-
-/*
  * SysTick exception
  */
 extern "C" __fast_text void
 exc_SysTick()
 {
-	timer_tick(1);
+	timer_tick(monotonic += tick_ns, tick_ns);
+}
+
+/*
+ * Get monotonic time
+ */
+uint_fast64_t
+timer_monotonic()
+{
+	const int s = irq_disable();
+	const uint_fast64_t r = monotonic + ns_since_tick();
+	irq_restore(s);
+	return r;
+}
+
+/*
+ * Get monotonic time (coarse, fast version), 1/CONFIG_HZ resolution.
+ */
+uint_fast64_t
+timer_monotonic_coarse()
+{
+	return monotonic;
 }

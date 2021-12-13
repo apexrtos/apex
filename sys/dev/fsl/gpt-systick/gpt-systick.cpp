@@ -1,6 +1,7 @@
 #include "init.h"
 
 #include <arch/mmio.h>
+#include <atomic>
 #include <cassert>
 #include <debug.h>
 #include <irq.h>
@@ -75,6 +76,8 @@ static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 
 __fast_bss regs *gpt;
 __fast_bss uint64_t scale;
+__fast_bss std::atomic<uint64_t> monotonic;
+constexpr uint32_t tick_ns = 1000000000 / CONFIG_HZ;
 
 __fast_text int
 fsl_gpt_systick_isr(int, void *)
@@ -82,8 +85,32 @@ fsl_gpt_systick_isr(int, void *)
 	/* acknowledge interrupt */
 	write32(&gpt->SR, {.r = 0xffffffff});
 
-	timer_tick(1);
+	timer_tick(monotonic += tick_ns, tick_ns);
 	return INT_DONE;
+}
+
+/*
+ * Compute how many nanoseconds we are through the current tick
+ *
+ * Must be called with gpt interrupt disabled
+ */
+uint32_t
+ns_since_tick()
+{
+	if (!gpt)
+		return 0;
+
+	/* get CNT, making sure that we handle rollovers */
+	uint32_t cnt = read32(&gpt->CNT);
+	bool tick_pending = read32(&gpt->SR).OF1;
+	if (tick_pending)
+		cnt = read32(&gpt->CNT);
+
+	/* convert count to nanoseconds */
+	uint32_t ns = (cnt * scale) >> 32;
+	if (tick_pending)
+		ns += tick_ns;
+	return ns;
 }
 
 }
@@ -126,25 +153,22 @@ fsl_gpt_systick_init(const fsl_gpt_systick_desc *d)
 }
 
 /*
- * Compute how many nanoseconds we are through the current tick
- *
- * Must be called with gpt interrupt disabled
+ * Get monotonic time
  */
-unsigned long
-clock_ns_since_tick()
+uint_fast64_t
+timer_monotonic()
 {
-	if (!gpt)
-		return 0;
+	const int s = irq_disable();
+	const uint_fast64_t r = monotonic + ns_since_tick();
+	irq_restore(s);
+	return r;
+}
 
-	/* get CNT, making sure that we handle rollovers */
-	uint32_t cnt = read32(&gpt->CNT);
-	bool tick_pending = read32(&gpt->SR).OF1;
-	if (tick_pending)
-		cnt = read32(&gpt->CNT);
-
-	/* convert count to nanoseconds */
-	uint32_t ns = (cnt * scale) >> 32;
-	if (tick_pending)
-		ns += 1000000000 / CONFIG_HZ;
-	return ns;
+/*
+ * Get monotonic time (coarse, fast version), 1/CONFIG_HZ resolution.
+ */
+uint_fast64_t
+timer_monotonic_coarse()
+{
+	return monotonic;
 }

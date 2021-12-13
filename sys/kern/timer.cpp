@@ -31,8 +31,6 @@
  * timer.c - kernel timer services.
  *
  * TODO:
- * - monotonic should not be volatile
- * - realtime_offset should not be volatile
  * - replace irq_disable/irq_restore with spinlock (required for SMP)
  */
 
@@ -41,7 +39,7 @@
 #include <access.h>
 #include <arch/interrupt.h>
 #include <cassert>
-#include <clock.h>
+#include <compiler.h>
 #include <cstdlib>	    /* remove when lldiv is no longer required */
 #include <debug.h>
 #include <errno.h>
@@ -56,8 +54,7 @@
 #include <thread.h>
 #include <time32.h>
 
-static volatile uint_fast64_t monotonic __fast_bss; /* nanoseconds elapsed since bootup */
-static volatile uint_fast64_t realtime_offset;	    /* monotonic + realtime_offset = realtime */
+uint_fast64_t realtime_offset;	/* monotonic + realtime_offset = realtime */
 
 static event	timer_event;	/* event to wakeup a timer thread */
 static event	delay_event;	/* event for the thread delay */
@@ -71,7 +68,7 @@ static list	expire_list;	/* list of expired timers */
 static uint_fast64_t
 time_remain(uint_fast64_t expire)
 {
-	uint_fast64_t t = monotonic;
+	uint_fast64_t t = timer_monotonic_coarse();
 	if (expire > t)
 		return expire - t;
 	return 0;
@@ -207,7 +204,7 @@ timer_callout(timer *tmr, uint_fast64_t nsec, uint_fast64_t interval,
 	/*
 	 * Guarantee that we will call out after at least nsec.
 	 */
-	tmr->expire = monotonic + period + (nsec == 1 ? 0 : nsec);
+	tmr->expire = timer_monotonic_coarse() + period + (nsec == 1 ? 0 : nsec);
 	timer_insert(tmr);
 	irq_restore(s);
 }
@@ -339,21 +336,11 @@ run_itimer(itimer *it, uint_fast32_t ns, int sig)
  * timer_tick() is called straight from the real time clock interrupt.
  */
 __fast_text void
-timer_tick(int ticks)
+timer_tick(uint_fast64_t monotonic, uint_fast32_t ns)
 {
 	timer *tmr;
 	int wakeup = 0;
 	task *t = task_cur();
-
-	/*
-	 * Convert elapsed time to nanoseconds
-	 */
-	const uint_fast32_t ns = ticks * 1000000000 / CONFIG_HZ;
-
-	/*
-	 * Bump time.
-	 */
-	monotonic = monotonic + ns;
 
 	/*
 	 * Handle all of the timer elements that have expired.
@@ -386,36 +373,15 @@ timer_tick(int ticks)
 }
 
 /*
- * Return monotonic time
- */
-uint_fast64_t
-timer_monotonic()
-{
-	const int s = irq_disable();
-	const uint_fast64_t r = monotonic + clock_ns_since_tick();
-	irq_restore(s);
-	return r;
-}
-
-/*
- * Return monotonic time (coarse, fast version)
- */
-uint_fast64_t
-timer_monotonic_coarse()
-{
-	return monotonic;
-}
-
-/*
  * Set real time
  */
 int
 timer_realtime_set(uint_fast64_t ns)
 {
-	uint_fast64_t m = monotonic;
+	uint_fast64_t m = timer_monotonic();
 	if (ns < m)
 		return DERR(-EINVAL);
-	realtime_offset = ns - m;
+	write_once(&realtime_offset, ns - m);
 	return 0;
 }
 
@@ -434,7 +400,7 @@ timer_realtime()
 uint_fast64_t
 timer_realtime_coarse()
 {
-	return monotonic + realtime_offset;
+	return timer_monotonic_coarse() + realtime_offset;
 }
 
 /*
