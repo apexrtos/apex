@@ -52,6 +52,7 @@
 
 static void
 boot_thread(void *arg);
+static bootargs args;
 
 /*
  * Initialization code.
@@ -76,7 +77,7 @@ kernel_main(unsigned long archive_addr, unsigned long archive_size,
 	dbg("Kernel arguments: 0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
 	    archive_addr, archive_size, machdep0, machdep1);
 
-	bootargs args = {archive_addr, archive_size, machdep0, machdep1};
+	args = {archive_addr, archive_size, machdep0, machdep1};
 
 	/*
 	 * Do machine dependent initialisation.
