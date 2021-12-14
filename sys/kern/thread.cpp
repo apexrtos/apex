@@ -409,8 +409,9 @@ thread_init()
 	context_init_idle(&idle_thread.ctx, &__stack_start + (int)&__stack_size);
 	list_insert(&kern_task.threads, &idle_thread.task_link);
 #if defined(CONFIG_KSTACK_CHECK)
-	size_t free = ((char *)__builtin_frame_address(0) -
-		       (char *)idle_thread.kstack);
+	int free = ((char *)__builtin_frame_address(0) -
+		    (char *)idle_thread.kstack) - 128;
+	assert(free > 0);
 	/* do not use memset here as it uses stack... */
 	char *sp = (char*)idle_thread.kstack;
 	while (free--)
