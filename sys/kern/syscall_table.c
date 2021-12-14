@@ -96,6 +96,9 @@ syscall_table[SYSCALL_TABLE_SIZE] = {
 	[SYS_chown] = sc_chown,
 #endif
 	[SYS_clock_gettime64] = sc_clock_gettime,
+#ifdef SYS_clock_nanosleep_time64
+	[SYS_clock_nanosleep_time64] = sc_clock_nanosleep,
+#endif
 	[SYS_clock_settime64] = sc_clock_settime,
 #ifdef SYS_clock_settime32
 	[SYS_clock_settime32] = sc_clock_settime32,

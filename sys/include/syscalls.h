@@ -37,6 +37,7 @@ int sc_nanosleep(const struct timespec32 *, struct timespec32 *);
 int sc_clock_gettime(clockid_t, struct timespec *);
 int sc_clock_settime(clockid_t, const struct timespec *);
 int sc_clock_settime32(clockid_t, const struct timespec32 *);
+int sc_clock_nanosleep(clockid_t, int flags, const struct timespec *, struct timespec *);
 int sc_gettid(void);
 int sc_sched_getparam(int, struct sched_param *);
 int sc_sched_getscheduler(int);

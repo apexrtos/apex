@@ -166,6 +166,35 @@ sc_clock_gettime(clockid_t id, timespec *ts)
 	}
 }
 
+int
+sc_clock_nanosleep(clockid_t id, int flags, const struct timespec *req,
+		   struct timespec *rem)
+{
+	if (flags || id != CLOCK_REALTIME)
+		return DERR(-ENOTSUP);
+
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_access_ok(req, sizeof *req, PROT_READ))
+		return DERR(-EFAULT);
+	const uint_fast64_t ns = ts_to_ns(*req);
+	if (!ns)
+		return 0;
+	l.unlock();
+	const uint_fast64_t r = timer_delay(ns);
+	if (!r)
+		return 0;
+	if (rem) {
+		if (auto r = l.lock(); r < 0)
+			return r;
+		if (!u_access_ok(rem, sizeof *rem, PROT_WRITE))
+			return DERR(-EFAULT);
+		*rem = ns_to_ts(r);
+	}
+	return -EINTR_NORESTART;
+}
+
 int sc_clock_settime(clockid_t id, const timespec *ts)
 {
 	interruptible_lock l(u_access_lock);
