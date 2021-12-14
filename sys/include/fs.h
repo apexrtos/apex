@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 struct iovec;
+struct statx;
 struct task;
 struct vnode;
 
@@ -49,6 +50,11 @@ void vn_close(vnode *);
 ssize_t vn_pread(vnode *, void *, size_t, off_t);
 ssize_t vn_preadv(vnode *, const iovec *, int, off_t);
 char *vn_name(vnode *);
+
+/*
+ * REVISIT: statx is not defined by C library yet
+ */
+int statx(int, const char *, int, unsigned int, struct statx *);
 
 namespace std {
 

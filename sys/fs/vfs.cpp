@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <kernel.h>
+#include <linux/stat.h>
 #include <page.h>
 #include <sch.h>
 #include <sig.h>
@@ -1728,6 +1729,34 @@ int
 kfstat(int fd, struct stat *st)
 {
 	return do_fstat(&kern_task, fd, st);
+}
+
+/*
+ * statx
+ */
+int
+statx(int fd, const char *path, int flags, unsigned mask, struct statx *sx)
+{
+	int err;
+	struct stat st;
+
+	if (flags & AT_EMPTY_PATH)
+		err = fstat(fd, &st);
+	else
+		err = fstatat(fd, path, &st, flags);
+	if (err)
+		return err;
+
+	memset(sx, 0, sizeof *sx);
+	sx->stx_ino = st.st_ino;
+	sx->stx_size = st.st_size;
+	sx->stx_mode = st.st_mode;
+	sx->stx_blksize = st.st_blksize;
+	sx->stx_blocks = st.st_blocks;
+	sx->stx_uid = st.st_uid;
+	sx->stx_gid = st.st_gid;
+
+	return 0;
 }
 
 /*

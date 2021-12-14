@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <linux/fs.h>
 #include <linux/ioctl.h>
+#include <linux/stat.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/mount.h>
@@ -198,13 +199,6 @@ sc_fstatfs(int fd, size_t bufsiz, struct statfs *stf)
 	if (!u_access_ok(stf, sizeof(*stf), PROT_WRITE))
 		return DERR(-EFAULT);
 	return fstatfs(fd, stf);
-}
-
-int
-sc_statx(int dirfd, const char *path, int flags, unsigned mask, struct statx *sx)
-{
-	/* TODO: implement */
-	return -ENOSYS;
 }
 
 int
@@ -455,6 +449,18 @@ sc_statfs(const char *path, size_t bufsiz, struct statfs *stf)
 	    !u_access_ok(stf, sizeof(*stf), PROT_WRITE))
 		return DERR(-EFAULT);
 	return statfs(path, stf);
+}
+
+int
+sc_statx(int dirfd, const char *path, int flags, unsigned mask, struct statx *sx)
+{
+	interruptible_lock l(u_access_lock);
+	if (auto r = l.lock(); r < 0)
+		return r;
+	if (!u_strcheck(path, PATH_MAX) ||
+	    !u_access_ok(sx, sizeof *sx, PROT_WRITE))
+		return DERR(-EFAULT);
+	return statx(dirfd, path, flags, mask, sx);
 }
 
 int
