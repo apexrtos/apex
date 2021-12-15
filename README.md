@@ -89,7 +89,7 @@ or1k			| Future
 powerpc	(Classic)	| Future
 powerpc	(Book E)	| On Hold
 powerpc64		| Future
-riscv32			| In Progress
+riscv32			| Complete
 riscv64			| Future
 s390x			| Future
 sh			| Future
@@ -118,7 +118,7 @@ arm		| mps2-an500	| Cortex-M7 (ARMv7E-M)		| Complete
 arm		| virt		| Cortex-A15 (ARMv7-A)		| Future
 aarch64		| virt		| Cortex-A53 (ARMv8-A)		| Future
 powerpc		| ppce500	| e500v2 (PowerPC Book E)	| On Hold
-riscv32		| virt		| rv32 (RV32IMAFDCSU)		| In Progress
+riscv32		| virt		| rv32 (RV32IMAFDCSU)		| Complete
 
 Toolchain
 =========
