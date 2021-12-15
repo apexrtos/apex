@@ -429,13 +429,14 @@ device *
 device_reserve(const char *name, bool indexed)
 {
 	device *dev;
-	char namei[ARRAY_SIZE(((device *)0)->name)];
+	const auto namesz = ARRAY_SIZE(((device *)0)->name);
+	char namei[namesz];
 
 	if (!indexed)
 		return device_create(nullptr, name, 0, nullptr);
 
 	for (size_t i = 0; i < 100; ++i) {
-		snprintf(namei, ARRAY_SIZE(namei), "%s%d", name, i);
+		snprintf(namei, namesz, "%s%d", name, i);
 		if ((dev = device_create(nullptr, namei, 0, nullptr)))
 			return dev;
 	}
