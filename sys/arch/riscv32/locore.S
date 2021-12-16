@@ -51,6 +51,7 @@ _start:
  */
 .section .fast_text, "ax"
 .global trap_entry
+.align 2				/* must be 4-byte aligned */
 trap_entry:
 #ifdef CONFIG_S_MODE
 	csrrw tp, sscratch, tp		/* swap tp and sscratch */
