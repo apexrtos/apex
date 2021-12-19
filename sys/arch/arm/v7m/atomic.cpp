@@ -23,7 +23,7 @@ __atomic_load_8(const volatile void *p, int m)
 	uint64_t tmp;
 	asm volatile(
 		"ldrd %Q[r], %R[r], %[p]\n"
-		: [r]"=lh"(tmp)
+		: [r]"=r"(tmp)
 		: [p]"m"(*p64)
 		: "memory"
 	);
