@@ -37,9 +37,7 @@ write_memory_barrier()
 uint8_t
 mmio_read8(const void *p)
 {
-	uint8_t v;
-	asm volatile("ldrb %0, %1" : "=lh"(v) : "m"(*(const uint8_t *)p));
-	return v;
+	return *(const volatile uint8_t *)p;
 }
 
 /*
@@ -48,9 +46,7 @@ mmio_read8(const void *p)
 uint16_t
 mmio_read16(const void *p)
 {
-	uint16_t v;
-	asm volatile("ldrh %0, %1" : "=lh"(v) : "m"(*(const uint16_t *)p));
-	return v;
+	return *(const volatile uint16_t *)p;
 }
 
 /*
@@ -59,9 +55,7 @@ mmio_read16(const void *p)
 uint32_t
 mmio_read32(const void *p)
 {
-	uint32_t v;
-	asm volatile("ldr %0, %1" : "=lh"(v) : "m"(*(const uint32_t *)p));
-	return v;
+	return *(const volatile uint32_t *)p;
 }
 
 /*
@@ -70,7 +64,7 @@ mmio_read32(const void *p)
 void
 mmio_write8(void *p, uint8_t v)
 {
-	asm volatile("strb %1, %0" : "=m"(*(uint8_t *)p) : "lh"(v));
+	*(volatile uint8_t *)p = v;
 }
 
 /*
@@ -79,7 +73,7 @@ mmio_write8(void *p, uint8_t v)
 void
 mmio_write16(void *p, uint16_t v)
 {
-	asm volatile("strh %1, %0" : "=m"(*(uint16_t *)p) : "lh"(v));
+	*(volatile uint16_t *)p = v;
 }
 
 /*
@@ -88,5 +82,5 @@ mmio_write16(void *p, uint16_t v)
 void
 mmio_write32(void *p, uint32_t v)
 {
-	asm volatile("str %1, %0" : "=m"(*(uint32_t *)p) : "lh"(v));
+	*(volatile uint32_t *)p = v;
 }
