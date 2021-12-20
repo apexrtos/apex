@@ -46,16 +46,9 @@ extern "C" void
 __atomic_store_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
-	int s;
-	asm volatile(
-		"mrs %[s], PRIMASK\n"
-		"cpsid i\n"
-		"strd %Q[v], %R[v], %[p]\n"
-		"msr PRIMASK, %[s]\n"
-		: [s]"=&lh"(s), [p]"=m"(*p64)
-		: [v]"lh"(v)
-		: "memory"
-	);
+	const int s = irq_disable();
+	*p64 = v;
+	irq_restore(s);
 }
 
 #pragma redefine_extname atomic_store __atomic_store
@@ -74,18 +67,11 @@ extern "C" uint64_t
 __atomic_exchange_8(volatile void *p, uint64_t v, int m)
 {
 	volatile uint64_t *p64 = static_cast<volatile uint64_t *>(p);
-	int s;
 	uint64_t ret;
-	asm volatile(
-		"mrs %[s], PRIMASK\n"
-		"cpsid i\n"
-		"ldrd %Q[ret], %R[ret], %[p]\n"
-		"strd %Q[v], %R[v], %[p]\n"
-		"msr PRIMASK, %[s]\n"
-		: [s]"=&lh"(s), [p]"=m"(*p64), [ret]"=&lh"(ret)
-		: [v]"lh"(v), "m"(*p64)
-		: "memory"
-	);
+	const int s = irq_disable();
+	ret = *p64;
+	*p64 = v;
+	irq_restore(s);
 	return ret;
 }
 
