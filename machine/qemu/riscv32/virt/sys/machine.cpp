@@ -46,7 +46,7 @@ machine_init(bootargs *args)
 	csrw(mscratch{});
 #endif
 	/* initialise kernel thread pointer */
-	asm volatile("mv tp, %0" : : "r"(thread_cur()));
+	asm("mv tp, %0" : : "r"(thread_cur()));
 }
 
 void

@@ -10,7 +10,7 @@
 void
 memory_barrier()
 {
-	asm volatile("dmb" ::: "memory");
+	asm("dmb" ::: "memory");
 }
 
 /*
@@ -19,7 +19,7 @@ memory_barrier()
 void
 read_memory_barrier()
 {
-	asm volatile("dmb" ::: "memory");
+	asm("dmb" ::: "memory");
 }
 
 /*
@@ -28,7 +28,7 @@ read_memory_barrier()
 void
 write_memory_barrier()
 {
-	asm volatile("dmb" ::: "memory");
+	asm("dmb" ::: "memory");
 }
 
 /*

@@ -9,7 +9,7 @@ csrr()
 {
 	CSR v;
 	static_assert(sizeof v == 4);
-	asm volatile(
+	asm(
 		"csrr %0, %1"
 		: "=r"(v.r)
 		: "i"(CSR::CSRN)
@@ -25,7 +25,7 @@ void
 csrw(CSR v)
 {
 	static_assert(sizeof v == 4);
-	asm volatile(
+	asm(
 		"csrw %0, %1"
 		:
 		: "i"(CSR::CSRN), "r"(v.r)
@@ -41,13 +41,13 @@ csrs(CSR v)
 {
 	static_assert(sizeof v == 4);
 	if (__builtin_constant_p(v.r) && v.r < 32) {
-		asm volatile(
+		asm(
 			"csrsi %0, %1"
 			:
 			: "i"(CSR::CSRN), "i"(v.r)
 		);
 	} else {
-		asm volatile(
+		asm(
 			"csrs %0, %1"
 			:
 			: "i"(CSR::CSRN), "r"(v.r)
@@ -64,13 +64,13 @@ csrc(CSR v)
 {
 	static_assert(sizeof v == 4);
 	if (__builtin_constant_p(v.r) && v.r < 32) {
-		asm volatile(
+		asm(
 			"csrci %0, %1"
 			:
 			: "i"(CSR::CSRN), "i"(v.r)
 		);
 	} else {
-		asm volatile(
+		asm(
 			"csrc %0, %1"
 			:
 			: "i"(CSR::CSRN), "r"(v.r)

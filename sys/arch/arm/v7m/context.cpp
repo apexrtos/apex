@@ -120,7 +120,7 @@ arch_schedule()
 	write32(&SCB->ICSR, {.PENDSVSET = 1});
 
 	/* make sure the write to ICSR happens before the next instruction */
-	asm volatile("dsb");
+	asm("dsb");
 }
 
 /*

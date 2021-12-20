@@ -8,13 +8,13 @@
 void
 interrupt_enable()
 {
-	asm volatile("cpsie i" ::: "memory");
+	asm("cpsie i" ::: "memory");
 }
 
 void
 interrupt_disable()
 {
-	asm volatile("cpsid i" ::: "memory");
+	asm("cpsid i" ::: "memory");
 }
 
 void
@@ -34,7 +34,7 @@ bool
 interrupt_enabled()
 {
 	int primask;
-	asm volatile("mrs %0, primask" : "=r" (primask));
+	asm("mrs %0, primask" : "=r" (primask));
 	return primask == 0;
 }
 

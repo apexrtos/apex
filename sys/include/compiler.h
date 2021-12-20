@@ -10,7 +10,7 @@
 static inline void
 compiler_barrier()
 {
-	asm volatile("" ::: "memory");
+	asm("" ::: "memory");
 }
 
 /*

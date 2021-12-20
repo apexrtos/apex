@@ -21,7 +21,7 @@ __atomic_load_8(const volatile void *p, int m)
 	/* ldrd is restarted on interrupt */
 	const volatile uint64_t *p64 = static_cast<const volatile uint64_t *>(p);
 	uint64_t tmp;
-	asm volatile(
+	asm(
 		"ldrd %Q[r], %R[r], %[p]\n"
 		: [r]"=r"(tmp)
 		: [p]"m"(*p64)

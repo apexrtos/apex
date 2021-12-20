@@ -26,7 +26,7 @@ cache_coherent_exec(const void *vp, size_t len)
 		return;
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
-	asm volatile("dsb" ::: "memory");
+	asm("dsb" ::: "memory");
 	const std::byte *p = static_cast<const std::byte *>(vp);
 	const size_t sz = MAX(CONFIG_DCACHE_LINE_SIZE, CONFIG_ICACHE_LINE_SIZE);
 	const std::byte *start = TRUNCn(p, sz);
@@ -34,15 +34,15 @@ cache_coherent_exec(const void *vp, size_t len)
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCMVAU, reinterpret_cast<uint32_t>(l));
 	/* ensure visibliity of the data cleaned from the cache */
-	asm volatile("dsb");
+	asm("dsb");
 	for (const std::byte *l = start; l != end; l += CONFIG_ICACHE_LINE_SIZE)
 		write32(&CBP->ICIMVAU, reinterpret_cast<uint32_t>(l));
 	/* invalidate branch predictor */
 	write32(&CBP->BPIALL, 0u);
 	/* wait for cache maintenance operations to complete */
-	asm volatile("dsb");
+	asm("dsb");
 	/* flush instruction pipeline */
-	asm volatile("isb");
+	asm("isb");
 #endif
 }
 
@@ -55,7 +55,7 @@ cache_flush(const void *vp, size_t len)
 #if defined(CONFIG_CACHE)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
-	asm volatile("dsb" ::: "memory");
+	asm("dsb" ::: "memory");
 	if (cache_coherent_range(vp, len))
 		return;
 	const std::byte *p = static_cast<const std::byte *>(vp);
@@ -64,7 +64,7 @@ cache_flush(const void *vp, size_t len)
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCMVAC, reinterpret_cast<uint32_t>(l));
 	/* wait for cache maintenance operations to complete */
-	asm volatile("dsb");
+	asm("dsb");
 #endif
 }
 
@@ -83,7 +83,7 @@ cache_invalidate(const void *vp, size_t len)
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCIMVAC, reinterpret_cast<uint32_t>(l));
 	/* wait for cache maintenance operations to complete */
-	asm volatile("dsb");
+	asm("dsb");
 #endif
 }
 
@@ -96,7 +96,7 @@ cache_flush_invalidate(const void *vp, size_t len)
 #if defined(CONFIG_CACHE)
 	/* ensure all previous memory accesses complete before we start cache
 	 * maintenance operations */
-	asm volatile("dsb" ::: "memory");
+	asm("dsb" ::: "memory");
 	if (cache_coherent_range(vp, len))
 		return;
 	const std::byte *p = static_cast<const std::byte *>(vp);
@@ -105,7 +105,7 @@ cache_flush_invalidate(const void *vp, size_t len)
 	for (const std::byte *l = start; l != end; l += CONFIG_DCACHE_LINE_SIZE)
 		write32(&CBP->DCCIMVAC, reinterpret_cast<uint32_t>(l));
 	/* wait for cache maintenance operations to complete */
-	asm volatile("dsb");
+	asm("dsb");
 #endif
 }
 
