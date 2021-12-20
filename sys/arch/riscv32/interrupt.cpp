@@ -42,6 +42,7 @@ interrupt_save_disable(int *l)
 void
 interrupt_restore(int l)
 {
+	compiler_barrier();
 #ifdef CONFIG_S_MODE
 	csrs(sstatus{.r = static_cast<uint32_t>(l)});
 #else
