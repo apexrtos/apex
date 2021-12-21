@@ -120,16 +120,8 @@ timespec
 ns_to_ts(uint_fast64_t ns)
 {
 	timespec ts;
-	/* REVISIT: this crap shouldn't be required, but:
-	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
-#if UINTPTR_MAX == 0xffffffff
-	const lldiv_t res = lldiv(ns, 1000000000);
-	ts.tv_sec = res.quot;
-	ts.tv_nsec = res.rem;
-#else
-	ts.tv_sec = ns / 1000000000ULL;
-	ts.tv_nsec = ns % 1000000000ULL;
-#endif
+	ts.tv_sec = ns / 1000000000;
+	ts.tv_nsec = ns % 1000000000;
 	return ts;
 }
 
@@ -137,16 +129,8 @@ timespec32
 ns_to_ts32(uint_fast64_t ns)
 {
 	timespec32 ts;
-	/* REVISIT: this crap shouldn't be required, but:
-	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
-#if UINTPTR_MAX == 0xffffffff
-	const lldiv_t res = lldiv(ns, 1000000000);
-	ts.tv_sec = res.quot;
-	ts.tv_nsec = res.rem;
-#else
-	ts.tv_sec = ns / 1000000000ULL;
-	ts.tv_nsec = ns % 1000000000ULL;
-#endif
+	ts.tv_sec = ns / 1000000000;
+	ts.tv_nsec = ns % 1000000000;
 	return ts;
 }
 
@@ -166,16 +150,8 @@ timeval
 ns_to_tv(uint_fast64_t ns)
 {
 	timeval tv;
-	/* REVISIT: this crap shouldn't be required, but:
-	   https://gcc.gnu.org/bugzilla/show_bug.cgi?id=86011 */
-#if UINTPTR_MAX == 0xffffffff
-	const lldiv_t res = lldiv(ns, 1000000000);
-	tv.tv_sec = res.quot;
-	tv.tv_usec = (uint32_t)res.rem / 1000;
-#else
 	tv.tv_sec = ns / 1000000000;
 	tv.tv_usec = (uint32_t)(ns % 1000000000) / 1000;
-#endif
 	return tv;
 }
 
