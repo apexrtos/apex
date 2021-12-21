@@ -1,6 +1,7 @@
 #include <arch/mmu.h>
 
 #include <cassert>
+#include <conf/config.h>
 #include <cpu.h>
 #include <debug.h>
 #include <intrinsics.h>
@@ -30,8 +31,9 @@ clear()
 	csrw(pmpcfg3{.r = 0});
 }
 
+#ifndef CONFIG_PMP_MISSING_TOR
 void
-map_range(const void *begin, const void *end, int prot)
+map_range_tor(const void *begin, const void *end, int prot)
 {
 	pmpcfg cfg{};
 	cfg.A = pmpcfg::Match::TOR;
@@ -119,6 +121,152 @@ map_range(const void *begin, const void *end, int prot)
 	if (++victim == 8)
 		victim = 0;
 }
+#else
+void
+map_range_napot(uintptr_t base, size_t order, int prot)
+{
+	pmpcfg cfg{};
+	cfg.A = pmpcfg::Match::NAPOT;
+	cfg.X = prot & PROT_EXEC;
+	cfg.W = prot & PROT_WRITE;
+	cfg.R = prot & PROT_READ;
+	auto a = base >> 2 | 0xffffffffu >> (35 - order);
+
+	switch (victim) {
+	case 0:
+		csrw([&] {
+			auto v = csrr<pmpcfg0>();
+			v.pmp0cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr0{a});
+		break;
+	case 1:
+		csrw([&] {
+			auto v = csrr<pmpcfg0>();
+			v.pmp1cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr1{a});
+		break;
+	case 2:
+		csrw([&] {
+			auto v = csrr<pmpcfg0>();
+			v.pmp2cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr2{a});
+		break;
+	case 3:
+		csrw([&] {
+			auto v = csrr<pmpcfg0>();
+			v.pmp3cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr3{a});
+		break;
+	case 4:
+		csrw([&] {
+			auto v = csrr<pmpcfg1>();
+			v.pmp4cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr4{a});
+		break;
+	case 5:
+		csrw([&] {
+			auto v = csrr<pmpcfg1>();
+			v.pmp5cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr5{a});
+		break;
+	case 6:
+		csrw([&] {
+			auto v = csrr<pmpcfg1>();
+			v.pmp6cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr6{a});
+		break;
+	case 7:
+		csrw([&] {
+			auto v = csrr<pmpcfg1>();
+			v.pmp7cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr7{a});
+		break;
+	case 8:
+		csrw([&] {
+			auto v = csrr<pmpcfg2>();
+			v.pmp8cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr8{a});
+		break;
+	case 9:
+		csrw([&] {
+			auto v = csrr<pmpcfg2>();
+			v.pmp9cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr9{a});
+		break;
+	case 10:
+		csrw([&] {
+			auto v = csrr<pmpcfg2>();
+			v.pmp10cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr10{a});
+		break;
+	case 11:
+		csrw([&] {
+			auto v = csrr<pmpcfg2>();
+			v.pmp11cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr11{a});
+		break;
+	case 12:
+		csrw([&] {
+			auto v = csrr<pmpcfg3>();
+			v.pmp12cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr12{a});
+		break;
+	case 13:
+		csrw([&] {
+			auto v = csrr<pmpcfg3>();
+			v.pmp13cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr13{a});
+		break;
+	case 14:
+		csrw([&] {
+			auto v = csrr<pmpcfg3>();
+			v.pmp14cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr14{a});
+		break;
+	case 15:
+		csrw([&] {
+			auto v = csrr<pmpcfg3>();
+			v.pmp15cfg = cfg;
+			return v;
+		}());
+		csrw(pmpaddr15{a});
+		break;
+	}
+
+	if (++victim == 16)
+		victim = 0;
+}
+#endif
 
 }
 
@@ -204,7 +352,16 @@ mpu_fault(const void *addr, size_t len)
 	} else seg = r.val();
 	fault_addr = addr;
 
-	map_range(seg_begin(seg), seg_end(seg), seg_prot(seg));
+#ifndef CONFIG_PMP_MISSING_TOR
+	map_range_tor(seg_begin(seg), seg_end(seg), seg_prot(seg));
+#else
+	/* find largest power-of-2 sized region containing addr within seg */
+	const size_t order = std::min(
+	    floor_log2((uintptr_t)addr ^ (uintptr_t)seg_end(seg)),
+	    floor_log2((-(uintptr_t)addr - 1) ^ -(uintptr_t)seg_begin(seg)));
+	const uintptr_t region_base = (uintptr_t)addr & -(1ul << order);
+	map_range_napot(region_base, order, seg_prot(seg));
+#endif
 }
 
 /*
