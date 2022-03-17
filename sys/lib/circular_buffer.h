@@ -492,10 +492,37 @@ public:
 
 	std::array<std::pair<T *, size_type>, 2> data()
 	{
+		return data(begin(), end());
+	}
+
+	std::array<std::pair<const T *, size_type>, 2> data() const
+	{
+		return data(begin(), end());
+	}
+
+	std::array<std::pair<const T *, size_type>, 2> data(
+				const_iterator pos, const_iterator end) const
+	{
+		CIRCULAR_BUFFER_DEBUG_ASSERT(end >= pos);
+		std::array<std::pair<const T *, size_type>, 2> r{};
+		auto o = r.begin();
+		for (auto it = pos; it != end; ++o) {
+			const auto lin = linear(it, end);
+			o->first = &*it;
+			o->second = lin;
+			it += lin;
+		}
+		return r;
+	}
+
+	std::array<std::pair<T *, size_type>, 2> data(
+				iterator pos, iterator end)
+	{
+		CIRCULAR_BUFFER_DEBUG_ASSERT(end >= pos);
 		std::array<std::pair<T *, size_type>, 2> r{};
 		auto o = r.begin();
-		for (auto it = begin(); it != end(); ++o) {
-			const auto lin = linear(it);
+		for (auto it = pos; it != end; ++o) {
+			const auto lin = linear(it, end);
 			o->first = &*it;
 			o->second = lin;
 			it += lin;
