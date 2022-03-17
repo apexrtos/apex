@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cassert>
 #include <compare>
 #include <cstring>
@@ -178,7 +179,7 @@ public:
 	, end_{0}
 	{
 		/* capacity_ must be power of 2 */
-		static_assert(capacity_ && !(capacity_ & (capacity_ - 1)));
+		static_assert(!capacity_ || std::has_single_bit(capacity_));
 
 		/* arithmetic requires size_type to be unsigned */
 		static_assert(std::is_unsigned_v<size_type>);
@@ -193,7 +194,7 @@ public:
 	, end_{0}
 	{
 		/* capacity_ must be power of 2 */
-		assert(capacity_ && !(capacity_ & (capacity_ - 1)));
+		assert(!capacity_ || std::has_single_bit(capacity_));
 
 		/* arithmetic requires size_type to be unsigned */
 		static_assert(std::is_unsigned_v<size_type>);
@@ -208,7 +209,7 @@ public:
 	, end_{0}
 	{
 		/* capacity_ must be power of 2 */
-		assert(capacity_ && !(capacity_ & (capacity_ - 1)));
+		assert(!capacity_ || std::has_single_bit(capacity_));
 
 		/* arithmetic requires size_type to be unsigned */
 		static_assert(std::is_unsigned_v<size_type>);
