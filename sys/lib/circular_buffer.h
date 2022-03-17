@@ -530,13 +530,12 @@ public:
 		return r;
 	}
 
-	size_type linear(const_iterator pos)
+	size_type linear(const_iterator pos) const
 	{
-		return std::min<size_type>(
-		    end() - pos, capacity_ - wrap(pos.it_));
+		return linear(pos, end());
 	}
 
-	size_type linear(const_iterator pos, const_iterator end)
+	size_type linear(const_iterator pos, const_iterator end) const
 	{
 		CIRCULAR_BUFFER_DEBUG_ASSERT(end >= pos);
 		return std::min<size_type>(
