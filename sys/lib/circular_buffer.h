@@ -709,6 +709,125 @@ private:
 	}
 };
 
+template<typename T, typename S, typename B>
+auto
+begin(cb_impl__<T, S, B> &c)
+{
+	return c.begin();
+}
+
+template<typename T, typename S, typename B>
+auto
+begin(const cb_impl__<T, S, B> &c)
+{
+	return c.begin();
+}
+
+template<typename T, typename S, typename B>
+auto
+cbegin(const cb_impl__<T, S, B> &c)
+{
+	return c.cbegin();
+}
+
+template<typename T, typename S, typename B>
+auto
+end(cb_impl__<T, S, B> &c)
+{
+	return c.end();
+}
+
+template<typename T, typename S, typename B>
+auto
+end(const cb_impl__<T, S, B> &c)
+{
+	return c.end();
+}
+
+template<typename T, typename S, typename B>
+auto
+cend(const cb_impl__<T, S, B> &c)
+{
+	return c.cend();
+}
+
+template<typename T, typename S, typename B>
+auto
+rbegin(cb_impl__<T, S, B> &c)
+{
+	return c.rbegin();
+}
+
+template<typename T, typename S, typename B>
+auto
+rbegin(const cb_impl__<T, S, B> &c)
+{
+	return c.rbegin();
+}
+
+template<typename T, typename S, typename B>
+auto
+crbegin(const cb_impl__<T, S, B> &c)
+{
+	return c.crbegin();
+}
+
+template<typename T, typename S, typename B>
+auto
+rend(cb_impl__<T, S, B> &c)
+{
+	return c.rend();
+}
+
+template<typename T, typename S, typename B>
+auto
+rend(const cb_impl__<T, S, B> &c)
+{
+	return c.rend();
+}
+
+template<typename T, typename S, typename B>
+auto
+crend(const cb_impl__<T, S, B> &c)
+{
+	return c.crend();
+}
+
+template<typename T, typename S, typename B>
+auto
+size(const cb_impl__<T, S, B> &c)
+{
+	return c.size();
+}
+
+template<typename T, typename S, typename B>
+cb_impl__<T, S, B>::ssize_type
+ssize(const cb_impl__<T, S, B> &c)
+{
+	return static_cast<cb_impl__<T, S, B>::ssize_type>(c.size());
+}
+
+template<typename T, typename S, typename B>
+bool
+empty(const cb_impl__<T, S, B> &c)
+{
+	return c.empty();
+}
+
+template<typename T, typename S, typename B>
+auto
+data(cb_impl__<T, S, B> &c)
+{
+	return c.data();
+}
+
+template<typename T, typename S, typename B>
+auto
+data(const cb_impl__<T, S, B> &c)
+{
+	return c.data();
+}
+
 /* template <class T, class S> void swap(cb_impl__<T, S>&, cb_impl__<T, S>&); */
 
 template<typename T, typename S>
