@@ -801,10 +801,10 @@ size(const cb_impl__<T, S, B> &c)
 }
 
 template<typename T, typename S, typename B>
-cb_impl__<T, S, B>::ssize_type
+typename cb_impl__<T, S, B>::ssize_type
 ssize(const cb_impl__<T, S, B> &c)
 {
-	return static_cast<cb_impl__<T, S, B>::ssize_type>(c.size());
+	return static_cast<typename cb_impl__<T, S, B>::ssize_type>(c.size());
 }
 
 template<typename T, typename S, typename B>
