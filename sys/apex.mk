@@ -12,6 +12,7 @@ endif
 
 TYPE := exec
 TARGET := apex
+OBJDIR := obj/$(subst /,_,$(APEX_SUBDIR)sys/$(TARGET))
 FLAGS += -Wframe-larger-than=384 -Wundef
 FLAGS += -fno-pie
 FLAGS += $(CONFIG_APEX_CFLAGS) $(CONFIG_APEX_CFLAGS_$(COMPILER))
@@ -105,6 +106,6 @@ include sys/$(ARCHDIR)/include.mk
 include $(CONFIG_MACHINEDIR)/sys/include.mk
 
 # C library
-$(APEX_SUBDIR)sys/lib/errno_EXTRA_CFLAGS := -fno-lto
-$(APEX_SUBDIR)sys/lib/raise_EXTRA_CFLAGS := -fno-lto
+$(OBJDIR)/$(APEX_SUBDIR)sys/lib/errno_EXTRA_CFLAGS := -fno-lto
+$(OBJDIR)/$(APEX_SUBDIR)sys/lib/raise_EXTRA_CFLAGS := -fno-lto
 MK += ../libc/libc.mk ../libc++/libc++.mk ../libcxxrt/libcxxrt.mk

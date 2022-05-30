@@ -3,6 +3,7 @@ ifneq ($(origin apex/bootimg_rule_exists),undefined)
 DEFAULT := y
 TYPE := imxrt_boot
 TARGET := $(CONFIG_BUILDDIR)/$(CONFIG_BOARD)_usdhc
+OBJDIR := obj/$(subst /,_,$(APEX_SUBDIR)$(CONFIG_BOARD)_usdhc)
 
 LDSCRIPT := $(CONFIG_APEXDIR)/cpu/nxp/imxrt10xx/image/usdhc_boot.ld
 CFLAGS := -fno-pie -O2
@@ -19,8 +20,8 @@ SOURCES := \
 
 IMG := bootimg
 
-$(APEX_SUBDIR)cpu/nxp/imxrt10xx/image/boot_data.o: $(IMG)
-$(APEX_SUBDIR)cpu/nxp/imxrt10xx/image/boot_data_EXTRA_CFLAGS := \
+$(OBJDIR)/$(APEX_SUBDIR)cpu/nxp/imxrt10xx/image/boot_data.o: $(IMG)
+$(OBJDIR)/$(APEX_SUBDIR)cpu/nxp/imxrt10xx/image/boot_data_EXTRA_CFLAGS := \
     -DIMAGE_SIZE="(CONFIG_LOADER_OFFSET + `stat -c %s $(APEX_SUBDIR)$(IMG)`)"
 
 include cpu/nxp/imxrt10xx/image/imxrt_boot.mk

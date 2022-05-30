@@ -12,6 +12,7 @@ endif
 
 TYPE := binary
 TARGET := boot
+OBJDIR := obj/$(subst /,_,$(APEX_SUBDIR)boot/$(TARGET))
 LDSCRIPT := arch/$(CONFIG_ARCH)/boot.ld
 FLAGS += -Wframe-larger-than=384
 FLAGS += -fno-pie
@@ -47,6 +48,6 @@ include boot/$(ARCHDIR)/include.mk
 include $(CONFIG_MACHINEDIR)/boot/include.mk
 
 # C library
-$(APEX_SUBDIR)boot/errno_EXTRA_CFLAGS := -fno-lto
-$(APEX_SUBDIR)boot/raise_EXTRA_CFLAGS := -fno-lto
+$(OBJDIR)/$(APEX_SUBDIR)boot/errno_EXTRA_CFLAGS := -fno-lto
+$(OBJDIR)/$(APEX_SUBDIR)boot/raise_EXTRA_CFLAGS := -fno-lto
 MK := ../libc/libc.mk

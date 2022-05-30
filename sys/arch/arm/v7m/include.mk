@@ -19,11 +19,11 @@ ASFLAGS += -mimplicit-it=thumb
 #
 # Ask clang not to use FPU registers in critical areas
 #
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/context_EXTRA_CFLAGS_clang := -mno-implicit-float
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/exception_EXTRA_CFLAGS_clang := -mno-implicit-float
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/mpu_EXTRA_CFLAGS_clang := -mno-implicit-float
-$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/syscall_EXTRA_CFLAGS_clang := -mno-implicit-float
-$(APEX_SUBDIR)sys/kern/sig_EXTRA_CFLAGS_clang := -mno-implicit-float
+$(OBJDIR)/$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/context_EXTRA_CFLAGS_clang := -mno-implicit-float
+$(OBJDIR)/$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/exception_EXTRA_CFLAGS_clang := -mno-implicit-float
+$(OBJDIR)/$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/mpu_EXTRA_CFLAGS_clang := -mno-implicit-float
+$(OBJDIR)/$(APEX_SUBDIR)sys/$(ARCHDIR)/$(CONFIG_SUBARCH)/syscall_EXTRA_CFLAGS_clang := -mno-implicit-float
+$(OBJDIR)/$(APEX_SUBDIR)sys/kern/sig_EXTRA_CFLAGS_clang := -mno-implicit-float
 
 #
 # Automatically generate offsets for assembly files
@@ -35,5 +35,5 @@ INCLUDE += $(CONFIG_BUILDDIR)/$(DIR)
 #
 # Files which depend on asm_def.h must have an explicit dependency here
 #
-$(DIR)/emulate.s: $(DIR)/asm_def.h
-$(DIR)/locore.s: $(DIR)/asm_def.h
+$(OBJDIR)/$(DIR)/emulate.s: $(DIR)/asm_def.h
+$(OBJDIR)/$(DIR)/locore.s: $(DIR)/asm_def.h

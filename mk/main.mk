@@ -128,6 +128,13 @@ define fn_process_sources
     ifeq ($$(origin INCLUDE),undefined)
         INCLUDE :=
     endif
+    ifneq ($$(origin OBJDIR),undefined)
+        OBJDIR := $$(OBJDIR)/
+    else
+        OBJDIR := obj/$$(subst /,_,$(tgt))/
+    endif
+
+    objdirs += $$(OBJDIR)
 
     # set target variables
     $(tgt)_CFLAGS := $$(CFLAGS)
@@ -135,7 +142,7 @@ define fn_process_sources
     $(tgt)_ASFLAGS := $$(ASFLAGS)
     $(tgt)_INCLUDE := $$(addprefix -I,$$(call fn_path_join,$$(mk_dir),$$(INCLUDE)))
     $(tgt)_SOURCES := $$(call fn_relative_path,$$(mk_dir),$$(SOURCES))
-    $(tgt)_BASENAME := $$(basename $$($(tgt)_SOURCES))
+    $(tgt)_BASENAME := $$(addprefix $$(OBJDIR),$$(basename $$($(tgt)_SOURCES)))
     $(tgt)_OBJS := $$(addsuffix .o,$$($(tgt)_BASENAME))
     $(tgt)_DEPS := $$(addsuffix .d,$$($(tgt)_BASENAME))
     $(tgt)_FLAGS := $$(addsuffix .*flags,$$($(tgt)_BASENAME))
@@ -177,6 +184,7 @@ define fn_process_sources
     # reset variables
     $$(eval undefine SOURCES)
     $$(eval undefine INCLUDE)
+    $$(eval undefine OBJDIR)
 endef
 
 #
@@ -414,19 +422,27 @@ $(eval $(call fn_flags_rule,%.cxxflags,$$($$($$*_TGT)_CXXFLAGS) $$($$*_EXTRA_CFL
 $(eval $(call fn_flags_rule,%.asflags,$$($$($$*_TGT)_ASFLAGS)))
 
 define cpp_rule
-%.o : %.$1 %.cxxflags
-	+$$($$($$*_TGT)_CXX) -c -MD -MP $$($$($$*_TGT)_CXXFLAGS) $$($$*_EXTRA_CFLAGS) $$($$*_EXTRA_CFLAGS_$$($$($$*_TGT)_COMPILER)) $$($$($$*_TGT)_INCLUDE) -o $$@ $$<
+    $(1)%.o : %.$(2) $(1)%.cxxflags
+	+$$($$($(1)$$*_TGT)_CXX) -c -MD -MP $$($$($(1)$$*_TGT)_CXXFLAGS) $$($(1)$$*_EXTRA_CFLAGS) $$($(1)$$*_EXTRA_CFLAGS_$$($$($(1)$$*_TGT)_COMPILER)) $$($$($(1)$$*_TGT)_INCLUDE) -o $$@ $$<
 endef
-$(foreach ext,$(CXX_EXT),$(eval $(call cpp_rule,$(ext))))
 
-%.o: %.c %.cflags
-	+$($($*_TGT)_CC) -c -MD -MP $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($*_EXTRA_CFLAGS_$($($*_TGT)_COMPILER)) $($($*_TGT)_INCLUDE) -o $@ $<
+#
+# Generate pattern rules for object dir
+#
+# Synopsis: $(eval $(call fn_generate_pattern_rules,<objdir>))
+#
+define fn_generate_pattern_rules
+    $$(foreach ext,$(CXX_EXT),$$(eval $$(call cpp_rule,$(1),$$(ext))))
 
-%.s: %.S %.cflags
-	$($($*_TGT)_CPP) -MD -MP -MT $*.s $($($*_TGT)_CFLAGS) $($*_EXTRA_CFLAGS) $($*_EXTRA_CFLAGS_$($($*_TGT)_COMPILER)) $($($*_TGT)_INCLUDE) -D__ASSEMBLY__ $< -o $@
+    $(1)%.o: %.c $(1)%.cflags
+	+$$($$($(1)$$*_TGT)_CC) -c -MD -MP $$($$($(1)$$*_TGT)_CFLAGS) $$($(1)$$*_EXTRA_CFLAGS) $$($(1)$$*_EXTRA_CFLAGS_$$($$($(1)$$*_TGT)_COMPILER)) $$($$($(1)$$*_TGT)_INCLUDE) -o $$@ $$<
 
-%.o: %.s %.asflags
-	$($($*_TGT)_AS) $($($*_TGT)_ASFLAGS) $($($*_TGT)_INCLUDE) -o $@ $<
+    $(1)%.s: %.S $(1)%.cflags
+	$$($$($(1)$$*_TGT)_CPP) -MD -MP -MT $(1)$$*.s $$($$($(1)$$*_TGT)_CFLAGS) $$($(1)$$*_EXTRA_CFLAGS) $$($(1)$$*_EXTRA_CFLAGS_$$($$($(1)$$*_TGT)_COMPILER)) $$($$($(1)$$*_TGT)_INCLUDE) -D__ASSEMBLY__ $$< -o $$@
+
+    $(1)%.o: $(1)%.s $(1)%.asflags
+	$$($$($(1)$$*_TGT)_AS) $$($$($(1)$$*_TGT)_ASFLAGS) $$($$($(1)$$*_TGT)_INCLUDE) -o $$@ $$<
+endef
 
 #
 # Process a '.mk' file.
@@ -536,6 +552,7 @@ endif
 # Globals used by fn_process_mkfile
 mk_dir_stack :=
 default_tgts :=
+objdirs :=
 
 # Trick to silence naughty 3rd party makefiles that ignore -s
 SHUTUP_IF_SILENT := $(if $(findstring -s,$(_MFLAGS)),> /dev/null,)
@@ -556,6 +573,10 @@ endif
 
 # Include main mk files
 $(foreach f,$(MK),$(eval $(call fn_process_mkfile,$(f))))
+
+# Generate pattern rules
+$(eval $(call fn_generate_pattern_rules,))
+$(foreach o,$(objdirs),$(eval $(call fn_generate_pattern_rules,$(o))))
 
 # Force dependency on default targets
 all: $(default_tgts)

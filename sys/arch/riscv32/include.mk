@@ -16,7 +16,7 @@ SOURCES += $(ARCHDIR)/pmp.cpp
 endif
 
 INCLUDE += \
-	$(CONFIG_BUILDDIR)/$(APEX_SUBDIR)/sys/$(ARCHDIR)
+	$(CONFIG_BUILDDIR)/$(APEX_SUBDIR)sys/$(ARCHDIR)
 
 #
 # Automatically generate offsets for assembly files
@@ -26,4 +26,4 @@ MK += $(ARCHDIR)/asm_def.mk
 #
 # Files which depend on asm_def.h require an explicit dependency
 #
-$(APEX_SUBDIR)sys/$(ARCHDIR)/locore.s: $(APEX_SUBDIR)sys/$(ARCHDIR)/asm_def.h
+$(OBJDIR)/$(APEX_SUBDIR)sys/$(ARCHDIR)/locore.s: $(APEX_SUBDIR)sys/$(ARCHDIR)/asm_def.h

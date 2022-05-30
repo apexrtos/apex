@@ -7,6 +7,7 @@
 
 TYPE := klib
 TARGET := libc.a
+OBJDIR := obj/$(subst /,_,$(APEX_SUBDIR)libc/$(TARGET))
 CFLAGS := $(CONFIG_MCPU) \
 	  -std=c99 -ffreestanding -frounding-math \
 	  -D_XOPEN_SOURCE=700 -Os -pipe -fomit-frame-pointer \
@@ -128,32 +129,32 @@ endif
 
 CFLAGS_MEMOPS := $(if $(filter $(COMPILER),gcc),-fno-tree-loop-distribute-patterns,)
 
-$(APEX_SUBDIR)libc/src/string/memchr_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/memcmp_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS)
-$(APEX_SUBDIR)libc/src/string/memcpy_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS) -fno-stack-protector
-$(APEX_SUBDIR)libc/src/string/memmove_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS)
-$(APEX_SUBDIR)libc/src/string/memset_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS) -fno-stack-protector
-$(APEX_SUBDIR)libc/src/string/stpcpy_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strchr_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strchrnul_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strcmp_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strcpy_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strcspn_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strdup_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strlcpy_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strlen_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strncmp_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strnlen_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strspn_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strstr_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/strtok_r_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wcschr_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wcslen_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wcsnlen_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wmemchr_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wmemcmp_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wmemcpy_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wmemmove_EXTRA_CFLAGS := -O3
-$(APEX_SUBDIR)libc/src/string/wmemset_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/memchr_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/memcmp_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS)
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/memcpy_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS) -fno-stack-protector
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/memmove_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS)
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/memset_EXTRA_CFLAGS := -O3 $(CFLAGS_MEMOPS) -fno-stack-protector
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/stpcpy_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strchr_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strchrnul_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strcmp_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strcpy_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strcspn_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strdup_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strlcpy_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strlen_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strncmp_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strnlen_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strspn_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strstr_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/strtok_r_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wcschr_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wcslen_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wcsnlen_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wmemchr_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wmemcmp_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wmemcpy_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wmemmove_EXTRA_CFLAGS := -O3
+$(OBJDIR)/$(APEX_SUBDIR)libc/src/string/wmemset_EXTRA_CFLAGS := -O3
 
 undefine CFLAGS_MEMOPS
